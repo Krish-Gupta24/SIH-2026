@@ -15,6 +15,7 @@ import {
   Zap,
   Activity,
   Compass,
+  Sparkles,
 } from "lucide-react";
 import { useShelterStore } from "@/lib/store/use-shelter-store";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
@@ -49,10 +50,16 @@ export function DashboardView() {
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
+            <Link href="/demo">
+              <Button size="lg" className="gap-2 font-black bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-600 hover:from-emerald-500 hover:to-teal-500 text-white shadow-lg shadow-emerald-600/30">
+                <Sparkles className="h-4 w-4" />
+                SIH Judge Demo (20 Steps)
+              </Button>
+            </Link>
             <Link href="/designer">
-              <Button size="lg" className="gap-2 font-bold shadow-lg shadow-blue-600/25">
-                <Wand2 className="h-4 w-4" />
-                Launch 13-Step Designer
+              <Button size="lg" variant="outline" className="gap-2 font-bold border-blue-500/40 hover:bg-blue-500/10 text-white">
+                <Wand2 className="h-4 w-4 text-blue-400" />
+                13-Step Designer
               </Button>
             </Link>
             <Link href="/simulations">

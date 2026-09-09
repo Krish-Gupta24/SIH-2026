@@ -22,6 +22,7 @@ import {
   X,
   Compass,
   ChevronDown,
+  Sparkles,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useShelterStore } from "@/lib/store/use-shelter-store";
@@ -36,6 +37,7 @@ interface NavItem {
 
 const NAV_ITEMS: NavItem[] = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+  { name: "Judge Demo", href: "/demo", icon: Sparkles, badge: "SIH" },
   { name: "3D Designer", href: "/designer/3d", icon: Box, badge: "3D" },
   { name: "Projects", href: "/projects", icon: FolderKanban },
   { name: "New Project", href: "/projects/new", icon: PlusCircle },
