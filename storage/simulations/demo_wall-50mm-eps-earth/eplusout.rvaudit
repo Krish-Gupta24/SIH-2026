@@ -1,0 +1,13 @@
+ ReadVarsESO
+ processing:C:\CODINGG\HACKATHON\SIH 2026\storage\simulations\demo_wall-50mm-eps-earth\in.rvi
+ input file:C:\CODINGG\HACKATHON\SIH 2026\storage\simulations\demo_wall-50mm-eps-earth\eplusout.eso
+ output file:C:\CODINGG\HACKATHON\SIH 2026\storage\simulations\demo_wall-50mm-eps-earth\eplusout.csv
+ getting all vars from:C:\CODINGG\HACKATHON\SIH 2026\storage\simulations\demo_wall-50mm-eps-earth\eplusout.eso
+  number variables requested for output=          16
+ ReadVars Run Time=00hr 00min  0.03sec
+ ReadVarsESO program completed successfully.
+ ReadVarsESO
+ processing:C:\CODINGG\HACKATHON\SIH 2026\storage\simulations\demo_wall-50mm-eps-earth\in.mvi
+ Requested ESO file=C:\CODINGG\HACKATHON\SIH 2026\storage\simulations\demo_wall-50mm-eps-earth\eplusout.mtr
+ does not exist.  ReadVarsESO program terminated.
+ ReadVarsESO program terminated.

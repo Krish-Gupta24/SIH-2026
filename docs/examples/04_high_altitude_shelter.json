@@ -1,0 +1,502 @@
+{
+  "schema_version": "1.0.0",
+
+  "project": {
+    "id": "d4e5f6a7-b8c9-0123-defa-234567890123",
+    "name": "High-Altitude Passive Solar Shelter — Ladakh Optimized",
+    "description": "Full-featured shelter designed for extreme cold at 4200m altitude near Pangong Tso, Ladakh. Features: 450mm rammed earth walls for thermal mass, 150mm XPS insulation, large south-facing double-low-e windows, internal water wall for thermal storage, minimal north openings, tight construction, south overhang for summer shading. Orientation 180° (south-facing). This represents the target design for the DRDO problem statement.",
+    "tags": ["high-altitude", "ladakh", "passive-solar", "thermal-mass", "water-wall", "extreme-cold", "drdo"],
+    "version": 3,
+    "created_at": "2026-09-09T17:30:00Z",
+    "updated_at": "2026-09-09T18:15:00Z",
+    "created_by": "user-0001-0001-0001-000000000001"
+  },
+
+  "location": {
+    "latitude": 33.7595,
+    "longitude": 78.6762,
+    "elevation": 4250.0,
+    "timezone_utc_offset": 5.5,
+    "city": "Merak",
+    "region": "Ladakh",
+    "country": "IN",
+    "climate_zone": "7",
+    "koppen_class": "BWk",
+    "weather_source": {
+      "type": "nasa_power",
+      "file_id": "wx-nasa-pangong-001",
+      "file_name": "NASA_POWER_Pangong_33.76N_78.68E_TMY.epw",
+      "station_name": null,
+      "station_wmo": null,
+      "is_synthetic": true
+    }
+  },
+
+  "geometry": {
+    "shape": "rectangular",
+    "dimensions": {
+      "length": 10.0,
+      "width": 6.0,
+      "height": 3.0
+    },
+    "orientation_deg": 180.0,
+    "roof": {
+      "type": "shed",
+      "slope_deg": 15.0,
+      "overhang_north": 0.2,
+      "overhang_south": 1.0,
+      "overhang_east": 0.3,
+      "overhang_west": 0.3
+    },
+    "floor_elevation": 0.15
+  },
+
+  "envelope": {
+    "walls": {
+      "north": {
+        "construction": {
+          "id": "con-wall-ha-north-001",
+          "name": "High-Altitude North Wall — Heavy Insulated",
+          "layers": [
+            {
+              "material_id": "mat-render-001",
+              "material": {
+                "id": "mat-render-001",
+                "name": "Cement Plaster Render",
+                "category": "plaster",
+                "conductivity": 0.72,
+                "density": 1860.0,
+                "specific_heat": 840.0,
+                "roughness": "medium_rough",
+                "thermal_absorptance": 0.9,
+                "solar_absorptance": 0.5,
+                "visible_absorptance": 0.5,
+                "source": "ashrae",
+                "source_reference": "ASHRAE HoF Ch 26",
+                "is_system": true
+              },
+              "thickness": 0.015
+            },
+            {
+              "material_id": "mat-rammed-earth-001",
+              "material": {
+                "id": "mat-rammed-earth-001",
+                "name": "Rammed Earth (Stabilized)",
+                "category": "masonry",
+                "conductivity": 0.75,
+                "density": 1900.0,
+                "specific_heat": 880.0,
+                "roughness": "rough",
+                "thermal_absorptance": 0.9,
+                "solar_absorptance": 0.65,
+                "visible_absorptance": 0.65,
+                "source": "research_paper",
+                "source_reference": "Reddy & Kumar, 2010 — Stabilised rammed earth walls, Building Research & Information",
+                "is_system": true
+              },
+              "thickness": 0.45
+            },
+            {
+              "material_id": "mat-xps-001",
+              "material": {
+                "id": "mat-xps-001",
+                "name": "Extruded Polystyrene (XPS)",
+                "category": "insulation",
+                "conductivity": 0.034,
+                "density": 35.0,
+                "specific_heat": 1400.0,
+                "roughness": "smooth",
+                "thermal_absorptance": 0.9,
+                "solar_absorptance": 0.5,
+                "visible_absorptance": 0.5,
+                "source": "bis",
+                "source_reference": "IS 12418:1988",
+                "is_system": true
+              },
+              "thickness": 0.15
+            },
+            {
+              "material_id": "mat-mudplaster-001",
+              "material": {
+                "id": "mat-mudplaster-001",
+                "name": "Mud Plaster (Traditional Ladakhi)",
+                "category": "plaster",
+                "conductivity": 0.75,
+                "density": 1500.0,
+                "specific_heat": 880.0,
+                "roughness": "rough",
+                "thermal_absorptance": 0.9,
+                "solar_absorptance": 0.7,
+                "visible_absorptance": 0.7,
+                "source": "research_paper",
+                "source_reference": "Singh et al., 2019",
+                "is_system": true
+              },
+              "thickness": 0.025
+            }
+          ],
+          "surface_type": "wall"
+        },
+        "surface_properties": null
+      },
+      "south": {
+        "construction": {
+          "id": "con-wall-ha-south-001",
+          "name": "High-Altitude South Wall — Solar Collector",
+          "layers": [
+            {
+              "material_id": "mat-render-dark-001",
+              "material": {
+                "id": "mat-render-dark-001",
+                "name": "Dark Cement Render (Solar Absorber)",
+                "category": "plaster",
+                "conductivity": 0.72,
+                "density": 1860.0,
+                "specific_heat": 840.0,
+                "roughness": "medium_rough",
+                "thermal_absorptance": 0.95,
+                "solar_absorptance": 0.90,
+                "visible_absorptance": 0.85,
+                "source": "ashrae",
+                "source_reference": "ASHRAE HoF Ch 26 — dark surface coating",
+                "is_system": true
+              },
+              "thickness": 0.015
+            },
+            {
+              "material_id": "mat-rammed-earth-001",
+              "thickness": 0.45
+            },
+            {
+              "material_id": "mat-xps-001",
+              "thickness": 0.1
+            },
+            {
+              "material_id": "mat-mudplaster-001",
+              "thickness": 0.025
+            }
+          ],
+          "surface_type": "wall"
+        },
+        "surface_properties": {
+          "solar_absorptance": 0.90,
+          "thermal_absorptance": 0.95,
+          "visible_absorptance": 0.85
+        }
+      },
+      "east": {
+        "construction": { "id": "con-wall-ha-north-001", "name": "High-Altitude Standard Wall", "layers": [
+          { "material_id": "mat-render-001", "thickness": 0.015 },
+          { "material_id": "mat-rammed-earth-001", "thickness": 0.45 },
+          { "material_id": "mat-xps-001", "thickness": 0.15 },
+          { "material_id": "mat-mudplaster-001", "thickness": 0.025 }
+        ], "surface_type": "wall" },
+        "surface_properties": null
+      },
+      "west": {
+        "construction": { "id": "con-wall-ha-north-001", "name": "High-Altitude Standard Wall", "layers": [
+          { "material_id": "mat-render-001", "thickness": 0.015 },
+          { "material_id": "mat-rammed-earth-001", "thickness": 0.45 },
+          { "material_id": "mat-xps-001", "thickness": 0.15 },
+          { "material_id": "mat-mudplaster-001", "thickness": 0.025 }
+        ], "surface_type": "wall" },
+        "surface_properties": null
+      }
+    },
+
+    "roof": {
+      "construction": {
+        "id": "con-roof-ha-001",
+        "name": "High-Altitude Insulated Roof",
+        "layers": [
+          { "material_id": "mat-gi-sheet-001", "thickness": 0.001 },
+          { "material_id": "mat-xps-001", "thickness": 0.2 },
+          {
+            "material_id": "mat-wool-felt-001",
+            "material": {
+              "id": "mat-wool-felt-001",
+              "name": "Wool Felt (Namda — Traditional Ladakhi)",
+              "category": "insulation",
+              "conductivity": 0.04,
+              "density": 160.0,
+              "specific_heat": 1360.0,
+              "roughness": "rough",
+              "thermal_absorptance": 0.9,
+              "solar_absorptance": 0.7,
+              "visible_absorptance": 0.7,
+              "source": "research_paper",
+              "source_reference": "Mani & Dhir, 2018 — Thermal insulation using pashmina and namda",
+              "is_system": true
+            },
+            "thickness": 0.025
+          },
+          { "material_id": "mat-plywood-001", "thickness": 0.012 }
+        ],
+        "surface_type": "roof"
+      },
+      "surface_properties": null
+    },
+
+    "floor": {
+      "construction": {
+        "id": "con-floor-ha-001",
+        "name": "High-Altitude Insulated Floor",
+        "layers": [
+          { "material_id": "mat-concrete-001", "thickness": 0.15 },
+          { "material_id": "mat-xps-001", "thickness": 0.1 },
+          {
+            "material_id": "mat-gravel-001",
+            "material": {
+              "id": "mat-gravel-001",
+              "name": "Compacted Gravel Base",
+              "category": "soil",
+              "conductivity": 1.3,
+              "density": 1800.0,
+              "specific_heat": 840.0,
+              "roughness": "rough",
+              "thermal_absorptance": 0.9,
+              "solar_absorptance": 0.6,
+              "visible_absorptance": 0.6,
+              "source": "ashrae",
+              "source_reference": "ASHRAE HoF Ch 26",
+              "is_system": true
+            },
+            "thickness": 0.15
+          }
+        ],
+        "surface_type": "floor"
+      },
+      "ground_contact": {
+        "type": "slab_on_grade",
+        "soil_conductivity": 0.8,
+        "ground_temperatures": [-12.0, -10.0, -6.0, 0.0, 6.0, 10.0, 12.0, 11.0, 7.0, 1.0, -5.0, -10.0]
+      },
+      "surface_properties": null
+    }
+  },
+
+  "windows": [
+    {
+      "id": "win-south-001",
+      "name": "South Window 1 — Large Passive Solar",
+      "wall_face": "south",
+      "position": { "offset_x": 0.5, "sill_height": 0.8 },
+      "width": 2.0,
+      "height": 1.5,
+      "glazing": {
+        "type": "double_argon_low_e",
+        "u_value": 1.1,
+        "shgc": 0.58,
+        "visible_transmittance": 0.65
+      },
+      "frame": { "type": "upvc", "width": 0.06, "u_value": 1.5 },
+      "shading": { "type": "overhang", "depth": 1.0, "top_offset": 0.1, "transmittance": 0.0 },
+      "schedule": { "type": "always_closed" }
+    },
+    {
+      "id": "win-south-002",
+      "name": "South Window 2 — Large Passive Solar",
+      "wall_face": "south",
+      "position": { "offset_x": 3.5, "sill_height": 0.8 },
+      "width": 2.0,
+      "height": 1.5,
+      "glazing": { "type": "double_argon_low_e", "u_value": 1.1, "shgc": 0.58, "visible_transmittance": 0.65 },
+      "frame": { "type": "upvc", "width": 0.06, "u_value": 1.5 },
+      "shading": { "type": "overhang", "depth": 1.0, "top_offset": 0.1, "transmittance": 0.0 },
+      "schedule": { "type": "always_closed" }
+    },
+    {
+      "id": "win-south-003",
+      "name": "South Window 3 — Large Passive Solar",
+      "wall_face": "south",
+      "position": { "offset_x": 6.5, "sill_height": 0.8 },
+      "width": 2.0,
+      "height": 1.5,
+      "glazing": { "type": "double_argon_low_e", "u_value": 1.1, "shgc": 0.58, "visible_transmittance": 0.65 },
+      "frame": { "type": "upvc", "width": 0.06, "u_value": 1.5 },
+      "shading": { "type": "overhang", "depth": 1.0, "top_offset": 0.1, "transmittance": 0.0 },
+      "schedule": { "type": "always_closed" }
+    },
+    {
+      "id": "win-east-001",
+      "name": "East Window — Small",
+      "wall_face": "east",
+      "position": { "offset_x": 2.0, "sill_height": 1.2 },
+      "width": 0.8,
+      "height": 0.6,
+      "glazing": { "type": "double_low_e", "u_value": 1.6, "shgc": 0.40, "visible_transmittance": 0.55 },
+      "frame": { "type": "upvc", "width": 0.04, "u_value": 2.0 },
+      "shading": { "type": "none" },
+      "schedule": { "type": "always_closed" }
+    }
+  ],
+
+  "doors": [
+    {
+      "id": "door-001",
+      "name": "South Entry — Double Vestibule Door",
+      "wall_face": "south",
+      "position": { "offset_x": 9.0, "offset_z": 0.0 },
+      "width": 0.9,
+      "height": 2.1,
+      "construction": {
+        "type": "insulated_metal",
+        "u_value": 1.2,
+        "has_glazing": true,
+        "glazing_fraction": 0.15,
+        "glazing_shgc": 0.58
+      },
+      "schedule": { "type": "always_closed" }
+    }
+  ],
+
+  "thermal_mass": [
+    {
+      "id": "tm-water-wall-001",
+      "name": "Internal Water Wall — South-facing Thermal Storage",
+      "material": {
+        "type": "water_wall",
+        "material_id": null,
+        "conductivity": 0.58,
+        "density": 1000.0,
+        "specific_heat": 4186.0
+      },
+      "geometry": {
+        "shape": "wall",
+        "width": 3.0,
+        "height": 2.0,
+        "depth": 0.2
+      },
+      "location": {
+        "placement": "against_south_wall",
+        "offset_from_wall": 0.05
+      },
+      "thickness": 0.2,
+      "exposed_area": 6.0
+    },
+    {
+      "id": "tm-stone-mass-001",
+      "name": "Interior Stone Partition — Central Thermal Mass",
+      "material": {
+        "type": "masonry_wall",
+        "material_id": "mat-stone-001",
+        "conductivity": null,
+        "density": null,
+        "specific_heat": null
+      },
+      "geometry": {
+        "shape": "wall",
+        "width": 3.0,
+        "height": 2.5,
+        "depth": 0.3
+      },
+      "location": {
+        "placement": "center",
+        "offset_from_wall": 0.0
+      },
+      "thickness": 0.3,
+      "exposed_area": 15.0
+    }
+  ],
+
+  "ventilation": {
+    "infiltration": {
+      "method": "ach",
+      "rate_ach": 0.15,
+      "construction_quality": "very_tight",
+      "coefficients": { "constant": 0.6, "temperature": 0.036, "wind_speed": 0.05, "wind_speed_sq": 0.0 },
+      "schedule": { "type": "always_open" }
+    },
+    "natural_ventilation": {
+      "enabled": true,
+      "strategy": "cross_ventilation",
+      "min_outdoor_temp": 18.0,
+      "max_outdoor_temp": 28.0,
+      "min_indoor_temp": 25.0,
+      "effective_area": 0.3,
+      "schedule": { "type": "daytime" }
+    },
+    "mechanical_ventilation": {
+      "enabled": true,
+      "flow_rate": 0.03,
+      "heat_recovery": true,
+      "heat_recovery_efficiency": 0.80,
+      "schedule": { "type": "always_open" }
+    }
+  },
+
+  "internal_loads": {
+    "occupancy": {
+      "num_people": 8,
+      "activity_level": "seated_working",
+      "metabolic_rate_met": 1.2,
+      "clothing_insulation_clo": 2.5,
+      "work_efficiency": 0.0,
+      "schedule": {
+        "type": "custom",
+        "hourly_fractions": [1,1,1,1,1,1,0.5,0.25,0.25,0.25,0.25,0.5,0.75,0.5,0.25,0.25,0.25,0.5,0.75,1,1,1,1,1]
+      }
+    },
+    "lighting": {
+      "enabled": true,
+      "power_density": 8.0,
+      "fraction_radiant": 0.6,
+      "schedule": {
+        "type": "custom",
+        "hourly_fractions": [0.1,0.1,0.1,0.1,0.1,0.1,0.3,0.5,0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.3,0.5,1.0,1.0,1.0,0.5,0.3,0.1]
+      }
+    },
+    "equipment": {
+      "enabled": true,
+      "power": 500.0,
+      "fraction_radiant": 0.3,
+      "fraction_latent": 0.05,
+      "schedule": { "type": "always_open" }
+    }
+  },
+
+  "design_targets": {
+    "comfort": {
+      "model": "both",
+      "target_indoor_temp_min": 16.0,
+      "target_indoor_temp_max": 26.0,
+      "acceptable_ppd_max": 25.0,
+      "adaptive_category": "category_iii"
+    },
+    "energy": {
+      "max_heating_demand": 60.0,
+      "max_heat_loss_coefficient": 120.0,
+      "min_solar_utilization": 0.4
+    },
+    "priority": { "primary": "comfort_hours", "secondary": "heating_demand" }
+  },
+
+  "simulation_settings": {
+    "engine": { "type": "energyplus", "version": "24.2.0" },
+    "weather": { "file_id": "wx-nasa-pangong-001", "file_name": "NASA_POWER_Pangong_33.76N_78.68E_TMY.epw" },
+    "run_period": { "start_month": 1, "start_day": 1, "end_month": 12, "end_day": 31, "num_warmup_days": 25 },
+    "timestep": 6,
+    "output_variables": [
+      { "name": "Zone Mean Air Temperature", "key": "*", "frequency": "hourly" },
+      { "name": "Zone Operative Temperature", "key": "*", "frequency": "hourly" },
+      { "name": "Zone Mean Radiant Temperature", "key": "*", "frequency": "hourly" },
+      { "name": "Surface Inside Face Temperature", "key": "*", "frequency": "hourly" },
+      { "name": "Surface Outside Face Temperature", "key": "*", "frequency": "hourly" },
+      { "name": "Surface Inside Face Conduction Heat Transfer Energy", "key": "*", "frequency": "hourly" },
+      { "name": "Zone Windows Total Transmitted Solar Radiation Rate", "key": "*", "frequency": "hourly" },
+      { "name": "Zone Infiltration Sensible Heat Loss Energy", "key": "*", "frequency": "hourly" },
+      { "name": "Zone Infiltration Sensible Heat Gain Energy", "key": "*", "frequency": "hourly" },
+      { "name": "Zone Mechanical Ventilation No Load Heat Removal Energy", "key": "*", "frequency": "hourly" },
+      { "name": "Zone People Total Heating Energy", "key": "*", "frequency": "hourly" },
+      { "name": "Site Outdoor Air Drybulb Temperature", "key": "*", "frequency": "hourly" },
+      { "name": "Site Outdoor Air Barometric Pressure", "key": "*", "frequency": "hourly" },
+      { "name": "Site Direct Solar Radiation Rate per Area", "key": "*", "frequency": "hourly" },
+      { "name": "Site Diffuse Solar Radiation Rate per Area", "key": "*", "frequency": "hourly" },
+      { "name": "Site Wind Speed", "key": "*", "frequency": "hourly" }
+    ],
+    "solar_distribution": "full_interior_and_exterior_with_reflections",
+    "convection_algorithm_inside": "TARP",
+    "convection_algorithm_outside": "DOE-2",
+    "ground_model": "monthly_averages"
+  }
+}

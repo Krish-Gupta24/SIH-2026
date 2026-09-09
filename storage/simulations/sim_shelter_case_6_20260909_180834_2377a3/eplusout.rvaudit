@@ -1,0 +1,13 @@
+ ReadVarsESO
+ processing:C:\CODINGG\HACKATHON\SIH 2026\storage\simulations\sim_shelter_case_6_20260909_180834_2377a3\in.rvi
+ input file:C:\CODINGG\HACKATHON\SIH 2026\storage\simulations\sim_shelter_case_6_20260909_180834_2377a3\eplusout.eso
+ output file:C:\CODINGG\HACKATHON\SIH 2026\storage\simulations\sim_shelter_case_6_20260909_180834_2377a3\eplusout.csv
+ getting all vars from:C:\CODINGG\HACKATHON\SIH 2026\storage\simulations\sim_shelter_case_6_20260909_180834_2377a3\eplusout.eso
+  number variables requested for output=          16
+ ReadVars Run Time=00hr 00min  0.02sec
+ ReadVarsESO program completed successfully.
+ ReadVarsESO
+ processing:C:\CODINGG\HACKATHON\SIH 2026\storage\simulations\sim_shelter_case_6_20260909_180834_2377a3\in.mvi
+ Requested ESO file=C:\CODINGG\HACKATHON\SIH 2026\storage\simulations\sim_shelter_case_6_20260909_180834_2377a3\eplusout.mtr
+ does not exist.  ReadVarsESO program terminated.
+ ReadVarsESO program terminated.

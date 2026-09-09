@@ -1,0 +1,241 @@
+{
+  "success": true,
+  "status": "COMPLETED",
+  "exit_code": 0,
+  "engine": "EnergyPlus",
+  "engine_version": "24.1.0-9d7789a3ac",
+  "command_executed": "C:\\Users\\krish\\EnergyPlusV24-1-0\\EnergyPlus-24.1.0-9d7789a3ac-Windows-x86_64\\energyplus.exe -w \"C:\\CODINGG\\HACKATHON\\SIH 2026\\simulation\\weather\\test_weather.epw\" -d \"C:\\CODINGG\\HACKATHON\\SIH 2026\\storage\\simulations\\sim_shelter_case_3_20260909_180832_15d2a2\" -r \"C:\\CODINGG\\HACKATHON\\SIH 2026\\storage\\simulations\\sim_shelter_case_3_20260909_180832_15d2a2\\in.idf\"",
+  "duration_seconds": 0.609,
+  "work_dir": "C:\\CODINGG\\HACKATHON\\SIH 2026\\storage\\simulations\\sim_shelter_case_3_20260909_180832_15d2a2",
+  "is_physically_valid": false,
+  "metadata": {
+    "shelter_id": "shelter_case_3",
+    "shelter_name": "10x5x3 (Flat)",
+    "weather_file": "test_weather.epw",
+    "idf_file": "in.idf",
+    "timestamp_utc": "2026-09-09T18:08:33.565945+00:00"
+  },
+  "error_inspection": {
+    "completed_successfully": true,
+    "severe_errors": 0,
+    "warnings": 3,
+    "summary_line": "************* EnergyPlus Completed Successfully-- 3 Warning; 0 Severe Errors; Elapsed Time=00hr 00min  0.28sec"
+  },
+  "thermal_performance": {
+    "indoor_temperature": {
+      "min_c": 14.93,
+      "max_c": 15.95,
+      "mean_c": 15.45
+    },
+    "outdoor_temperature": {
+      "min_c": -14.38,
+      "max_c": 2.38,
+      "mean_c": -5.5
+    },
+    "solar_radiation": {
+      "total_window_transmitted_kwh": 0.0,
+      "peak_transmitted_solar_w": 0.0
+    },
+    "timesteps_simulated": 48
+  },
+  "logs": {
+    "stdout_log": "C:\\CODINGG\\HACKATHON\\SIH 2026\\storage\\simulations\\sim_shelter_case_3_20260909_180832_15d2a2\\stdout.log",
+    "stderr_log": "C:\\CODINGG\\HACKATHON\\SIH 2026\\storage\\simulations\\sim_shelter_case_3_20260909_180832_15d2a2\\stderr.log",
+    "err_file": "C:\\CODINGG\\HACKATHON\\SIH 2026\\storage\\simulations\\sim_shelter_case_3_20260909_180832_15d2a2\\eplusout.err",
+    "csv_file": "C:\\CODINGG\\HACKATHON\\SIH 2026\\storage\\simulations\\sim_shelter_case_3_20260909_180832_15d2a2\\eplusout.csv"
+  },
+  "hourly_sample": [
+    {
+      "datetime": "01/01  01:00:00",
+      "zone_temp_c": 15.66,
+      "outdoor_temp_c": -4.5,
+      "solar_transmitted_w": 0.0,
+      "total_inside_conduction_w": -2.34,
+      "total_outside_conduction_w": 415.74
+    },
+    {
+      "datetime": "01/01  02:00:00",
+      "zone_temp_c": 15.63,
+      "outdoor_temp_c": -3.0,
+      "solar_transmitted_w": 0.0,
+      "total_inside_conduction_w": -2.34,
+      "total_outside_conduction_w": 238.71
+    },
+    {
+      "datetime": "01/01  03:00:00",
+      "zone_temp_c": 15.62,
+      "outdoor_temp_c": -3.62,
+      "solar_transmitted_w": 0.0,
+      "total_inside_conduction_w": -1.06,
+      "total_outside_conduction_w": 596.97
+    },
+    {
+      "datetime": "01/01  04:00:00",
+      "zone_temp_c": 15.6,
+      "outdoor_temp_c": -2.75,
+      "solar_transmitted_w": 0.0,
+      "total_inside_conduction_w": -2.28,
+      "total_outside_conduction_w": 44.45
+    },
+    {
+      "datetime": "01/01  05:00:00",
+      "zone_temp_c": 15.6,
+      "outdoor_temp_c": -2.0,
+      "solar_transmitted_w": 0.0,
+      "total_inside_conduction_w": 1.46,
+      "total_outside_conduction_w": -186.81
+    },
+    {
+      "datetime": "01/01  06:00:00",
+      "zone_temp_c": 15.62,
+      "outdoor_temp_c": -1.38,
+      "solar_transmitted_w": 0.0,
+      "total_inside_conduction_w": 0.99,
+      "total_outside_conduction_w": 238.4
+    },
+    {
+      "datetime": "01/01  07:00:00",
+      "zone_temp_c": 15.62,
+      "outdoor_temp_c": -1.0,
+      "solar_transmitted_w": 0.0,
+      "total_inside_conduction_w": -1.34,
+      "total_outside_conduction_w": 82.45
+    },
+    {
+      "datetime": "01/01  08:00:00",
+      "zone_temp_c": 15.62,
+      "outdoor_temp_c": -1.0,
+      "solar_transmitted_w": 0.0,
+      "total_inside_conduction_w": 0.55,
+      "total_outside_conduction_w": -796.77
+    },
+    {
+      "datetime": "01/01  09:00:00",
+      "zone_temp_c": 15.66,
+      "outdoor_temp_c": -0.38,
+      "solar_transmitted_w": 0.0,
+      "total_inside_conduction_w": 8.98,
+      "total_outside_conduction_w": -1881.9
+    },
+    {
+      "datetime": "01/01  10:00:00",
+      "zone_temp_c": 15.74,
+      "outdoor_temp_c": 1.25,
+      "solar_transmitted_w": 0.0,
+      "total_inside_conduction_w": 5.19,
+      "total_outside_conduction_w": -1064.16
+    },
+    {
+      "datetime": "01/01  11:00:00",
+      "zone_temp_c": 15.82,
+      "outdoor_temp_c": 2.0,
+      "solar_transmitted_w": 0.0,
+      "total_inside_conduction_w": 15.54,
+      "total_outside_conduction_w": -3541.18
+    },
+    {
+      "datetime": "01/01  12:00:00",
+      "zone_temp_c": 15.95,
+      "outdoor_temp_c": 1.38,
+      "solar_transmitted_w": 0.0,
+      "total_inside_conduction_w": 5.81,
+      "total_outside_conduction_w": 1346.89
+    },
+    {
+      "datetime": "01/01  13:00:00",
+      "zone_temp_c": 15.94,
+      "outdoor_temp_c": 2.25,
+      "solar_transmitted_w": 0.0,
+      "total_inside_conduction_w": -4.46,
+      "total_outside_conduction_w": 301.07
+    },
+    {
+      "datetime": "01/01  14:00:00",
+      "zone_temp_c": 15.91,
+      "outdoor_temp_c": 2.38,
+      "solar_transmitted_w": 0.0,
+      "total_inside_conduction_w": -3.28,
+      "total_outside_conduction_w": 1100.68
+    },
+    {
+      "datetime": "01/01  15:00:00",
+      "zone_temp_c": 15.86,
+      "outdoor_temp_c": 1.38,
+      "solar_transmitted_w": 0.0,
+      "total_inside_conduction_w": -7.28,
+      "total_outside_conduction_w": 1215.27
+    },
+    {
+      "datetime": "01/01  16:00:00",
+      "zone_temp_c": 15.8,
+      "outdoor_temp_c": 1.0,
+      "solar_transmitted_w": 0.0,
+      "total_inside_conduction_w": -5.34,
+      "total_outside_conduction_w": 378.08
+    },
+    {
+      "datetime": "01/01  17:00:00",
+      "zone_temp_c": 15.76,
+      "outdoor_temp_c": 0.38,
+      "solar_transmitted_w": 0.0,
+      "total_inside_conduction_w": -4.24,
+      "total_outside_conduction_w": 876.2
+    },
+    {
+      "datetime": "01/01  18:00:00",
+      "zone_temp_c": 15.72,
+      "outdoor_temp_c": -0.62,
+      "solar_transmitted_w": 0.0,
+      "total_inside_conduction_w": -5.05,
+      "total_outside_conduction_w": 727.42
+    },
+    {
+      "datetime": "01/01  19:00:00",
+      "zone_temp_c": 15.68,
+      "outdoor_temp_c": -1.62,
+      "solar_transmitted_w": 0.0,
+      "total_inside_conduction_w": -3.99,
+      "total_outside_conduction_w": 692.09
+    },
+    {
+      "datetime": "01/01  20:00:00",
+      "zone_temp_c": 15.65,
+      "outdoor_temp_c": -3.25,
+      "solar_transmitted_w": 0.0,
+      "total_inside_conduction_w": -4.18,
+      "total_outside_conduction_w": 871.78
+    },
+    {
+      "datetime": "01/01  21:00:00",
+      "zone_temp_c": 15.6,
+      "outdoor_temp_c": -4.62,
+      "solar_transmitted_w": 0.0,
+      "total_inside_conduction_w": -4.86,
+      "total_outside_conduction_w": 855.92
+    },
+    {
+      "datetime": "01/01  22:00:00",
+      "zone_temp_c": 15.56,
+      "outdoor_temp_c": -5.62,
+      "solar_transmitted_w": 0.0,
+      "total_inside_conduction_w": -4.7,
+      "total_outside_conduction_w": 852.91
+    },
+    {
+      "datetime": "01/01  23:00:00",
+      "zone_temp_c": 15.52,
+      "outdoor_temp_c": -6.62,
+      "solar_transmitted_w": 0.0,
+      "total_inside_conduction_w": -4.52,
+      "total_outside_conduction_w": 796.73
+    },
+    {
+      "datetime": "01/01  24:00:00",
+      "zone_temp_c": 15.48,
+      "outdoor_temp_c": -7.0,
+      "solar_transmitted_w": 0.0,
+      "total_inside_conduction_w": -3.73,
+      "total_outside_conduction_w": 610.75
+    }
+  ]
+}

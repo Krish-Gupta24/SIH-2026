@@ -1,0 +1,350 @@
+{
+  "schema_version": "1.0.0",
+
+  "project": {
+    "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+    "name": "Basic Rectangular Shelter",
+    "description": "Minimal rectangular shelter with single-layer walls, flat roof, no windows. Baseline for comparison.",
+    "tags": ["baseline", "rectangular", "flat-roof"],
+    "version": 1,
+    "created_at": "2026-09-09T16:00:00Z",
+    "updated_at": "2026-09-09T16:00:00Z",
+    "created_by": "user-0001-0001-0001-000000000001"
+  },
+
+  "location": {
+    "latitude": 34.1526,
+    "longitude": 77.5771,
+    "elevation": 3524.0,
+    "timezone_utc_offset": 5.5,
+    "city": "Leh",
+    "region": "Ladakh",
+    "country": "IN",
+    "climate_zone": "5B",
+    "koppen_class": "BWk",
+    "weather_source": {
+      "type": "epw_file",
+      "file_id": "wx-0001-0001-0001-000000000001",
+      "file_name": "IND_LA_Leh_TMYx.epw",
+      "station_name": "Leh / Kushok Bakula Rimpochee",
+      "station_wmo": "420710",
+      "is_synthetic": false
+    }
+  },
+
+  "geometry": {
+    "shape": "rectangular",
+    "dimensions": {
+      "length": 6.0,
+      "width": 4.0,
+      "height": 2.7
+    },
+    "orientation_deg": 180.0,
+    "roof": {
+      "type": "flat",
+      "slope_deg": 0.0,
+      "overhang_north": 0.0,
+      "overhang_south": 0.0,
+      "overhang_east": 0.0,
+      "overhang_west": 0.0
+    },
+    "floor_elevation": 0.0
+  },
+
+  "envelope": {
+    "walls": {
+      "north": {
+        "construction": {
+          "id": "con-wall-simple-001",
+          "name": "300mm Stone Wall",
+          "layers": [
+            {
+              "material_id": "mat-stone-001",
+              "material": {
+                "id": "mat-stone-001",
+                "name": "Local Stone Masonry",
+                "category": "masonry",
+                "conductivity": 1.8,
+                "density": 2400.0,
+                "specific_heat": 840.0,
+                "roughness": "rough",
+                "thermal_absorptance": 0.9,
+                "solar_absorptance": 0.7,
+                "visible_absorptance": 0.7,
+                "source": "ashrae",
+                "source_reference": "ASHRAE Handbook of Fundamentals, Ch 26, Table 4",
+                "is_system": true
+              },
+              "thickness": 0.3
+            }
+          ],
+          "surface_type": "wall"
+        },
+        "surface_properties": null
+      },
+      "south": {
+        "construction": {
+          "id": "con-wall-simple-001",
+          "name": "300mm Stone Wall",
+          "layers": [
+            {
+              "material_id": "mat-stone-001",
+              "material": {
+                "id": "mat-stone-001",
+                "name": "Local Stone Masonry",
+                "category": "masonry",
+                "conductivity": 1.8,
+                "density": 2400.0,
+                "specific_heat": 840.0,
+                "roughness": "rough",
+                "thermal_absorptance": 0.9,
+                "solar_absorptance": 0.7,
+                "visible_absorptance": 0.7,
+                "source": "ashrae",
+                "source_reference": "ASHRAE Handbook of Fundamentals, Ch 26, Table 4",
+                "is_system": true
+              },
+              "thickness": 0.3
+            }
+          ],
+          "surface_type": "wall"
+        },
+        "surface_properties": null
+      },
+      "east": {
+        "construction": {
+          "id": "con-wall-simple-001",
+          "name": "300mm Stone Wall",
+          "layers": [
+            {
+              "material_id": "mat-stone-001",
+              "material": {
+                "id": "mat-stone-001",
+                "name": "Local Stone Masonry",
+                "category": "masonry",
+                "conductivity": 1.8,
+                "density": 2400.0,
+                "specific_heat": 840.0,
+                "roughness": "rough",
+                "thermal_absorptance": 0.9,
+                "solar_absorptance": 0.7,
+                "visible_absorptance": 0.7,
+                "source": "ashrae",
+                "source_reference": "ASHRAE Handbook of Fundamentals, Ch 26, Table 4",
+                "is_system": true
+              },
+              "thickness": 0.3
+            }
+          ],
+          "surface_type": "wall"
+        },
+        "surface_properties": null
+      },
+      "west": {
+        "construction": {
+          "id": "con-wall-simple-001",
+          "name": "300mm Stone Wall",
+          "layers": [
+            {
+              "material_id": "mat-stone-001",
+              "material": {
+                "id": "mat-stone-001",
+                "name": "Local Stone Masonry",
+                "category": "masonry",
+                "conductivity": 1.8,
+                "density": 2400.0,
+                "specific_heat": 840.0,
+                "roughness": "rough",
+                "thermal_absorptance": 0.9,
+                "solar_absorptance": 0.7,
+                "visible_absorptance": 0.7,
+                "source": "ashrae",
+                "source_reference": "ASHRAE Handbook of Fundamentals, Ch 26, Table 4",
+                "is_system": true
+              },
+              "thickness": 0.3
+            }
+          ],
+          "surface_type": "wall"
+        },
+        "surface_properties": null
+      }
+    },
+
+    "roof": {
+      "construction": {
+        "id": "con-roof-simple-001",
+        "name": "200mm Concrete Slab Roof",
+        "layers": [
+          {
+            "material_id": "mat-concrete-001",
+            "material": {
+              "id": "mat-concrete-001",
+              "name": "Dense Concrete",
+              "category": "masonry",
+              "conductivity": 1.4,
+              "density": 2300.0,
+              "specific_heat": 880.0,
+              "roughness": "medium_rough",
+              "thermal_absorptance": 0.9,
+              "solar_absorptance": 0.6,
+              "visible_absorptance": 0.6,
+              "source": "ashrae",
+              "source_reference": "ASHRAE Handbook of Fundamentals, Ch 26",
+              "is_system": true
+            },
+            "thickness": 0.2
+          }
+        ],
+        "surface_type": "roof"
+      },
+      "surface_properties": null
+    },
+
+    "floor": {
+      "construction": {
+        "id": "con-floor-simple-001",
+        "name": "150mm Concrete Floor",
+        "layers": [
+          {
+            "material_id": "mat-concrete-001",
+            "material": {
+              "id": "mat-concrete-001",
+              "name": "Dense Concrete",
+              "category": "masonry",
+              "conductivity": 1.4,
+              "density": 2300.0,
+              "specific_heat": 880.0,
+              "roughness": "medium_rough",
+              "thermal_absorptance": 0.9,
+              "solar_absorptance": 0.6,
+              "visible_absorptance": 0.6,
+              "source": "ashrae",
+              "source_reference": "ASHRAE Handbook of Fundamentals, Ch 26",
+              "is_system": true
+            },
+            "thickness": 0.15
+          }
+        ],
+        "surface_type": "floor"
+      },
+      "ground_contact": {
+        "type": "slab_on_grade",
+        "soil_conductivity": 1.0,
+        "ground_temperatures": [-8.0, -6.0, -2.0, 4.0, 10.0, 14.0, 16.0, 15.0, 11.0, 5.0, -1.0, -6.0]
+      },
+      "surface_properties": null
+    }
+  },
+
+  "windows": [],
+  "doors": [
+    {
+      "id": "door-001",
+      "name": "Main Entry",
+      "wall_face": "south",
+      "position": {
+        "offset_x": 2.0,
+        "offset_z": 0.0
+      },
+      "width": 0.9,
+      "height": 2.1,
+      "construction": {
+        "type": "solid_wood",
+        "u_value": 3.0,
+        "has_glazing": false
+      },
+      "schedule": {
+        "type": "always_closed"
+      }
+    }
+  ],
+
+  "thermal_mass": [],
+
+  "ventilation": {
+    "infiltration": {
+      "method": "ach",
+      "rate_ach": 0.5,
+      "construction_quality": "average",
+      "coefficients": {
+        "constant": 1.0,
+        "temperature": 0.0,
+        "wind_speed": 0.0,
+        "wind_speed_sq": 0.0
+      },
+      "schedule": {
+        "type": "always_open"
+      }
+    },
+    "natural_ventilation": {
+      "enabled": false
+    },
+    "mechanical_ventilation": {
+      "enabled": false
+    }
+  },
+
+  "internal_loads": {
+    "occupancy": {
+      "num_people": 4,
+      "activity_level": "seated_relaxed",
+      "metabolic_rate_met": 1.0,
+      "clothing_insulation_clo": 1.5,
+      "work_efficiency": 0.0,
+      "schedule": {
+        "type": "always_open"
+      }
+    },
+    "lighting": {
+      "enabled": false
+    },
+    "equipment": {
+      "enabled": false
+    }
+  },
+
+  "design_targets": {
+    "comfort": {
+      "model": "adaptive",
+      "target_indoor_temp_min": 18.0,
+      "target_indoor_temp_max": 26.0,
+      "acceptable_ppd_max": 20.0,
+      "adaptive_category": "category_ii"
+    },
+    "energy": null,
+    "priority": {
+      "primary": "comfort_hours",
+      "secondary": null
+    }
+  },
+
+  "simulation_settings": {
+    "engine": {
+      "type": "energyplus",
+      "version": "24.2.0"
+    },
+    "weather": {
+      "file_id": "wx-0001-0001-0001-000000000001",
+      "file_name": "IND_LA_Leh_TMYx.epw"
+    },
+    "run_period": {
+      "start_month": 1,
+      "start_day": 1,
+      "end_month": 12,
+      "end_day": 31,
+      "num_warmup_days": 25
+    },
+    "timestep": 6,
+    "output_variables": [
+      { "name": "Zone Mean Air Temperature", "key": "*", "frequency": "hourly" },
+      { "name": "Zone Operative Temperature", "key": "*", "frequency": "hourly" },
+      { "name": "Zone Mean Radiant Temperature", "key": "*", "frequency": "hourly" },
+      { "name": "Site Outdoor Air Drybulb Temperature", "key": "*", "frequency": "hourly" }
+    ],
+    "solar_distribution": "full_interior_and_exterior",
+    "convection_algorithm_inside": "TARP",
+    "convection_algorithm_outside": "DOE-2",
+    "ground_model": "monthly_averages"
+  }
+}

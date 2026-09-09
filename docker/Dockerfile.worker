@@ -1,0 +1,39 @@
+# Simulation Worker Dockerfile with EnergyPlus runtime
+FROM ubuntu:24.04 AS base
+
+ENV DEBIAN_FRONTEND=noninteractive \
+    PYTHONUNBUFFERED=1 \
+    PYTHONPATH=/app \
+    ENERGYPLUS_VERSION=24.1.0
+
+WORKDIR /app
+
+# Install system utilities, python, and EnergyPlus
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    python3 \
+    python3-pip \
+    python3-venv \
+    curl \
+    ca-certificates \
+    libx11-6 \
+    libgomp1 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Download and install EnergyPlus 24.1.0 for Linux
+RUN curl -SLO https://github.com/NREL/EnergyPlus/releases/download/v24.1.0/EnergyPlus-24.1.0-9d7789a3ac-Linux-Ubuntu22.04-x86_64.tar.gz && \
+    tar -xzf EnergyPlus-24.1.0-9d7789a3ac-Linux-Ubuntu22.04-x86_64.tar.gz -C /usr/local/ && \
+    ln -s /usr/local/EnergyPlus-24-1-0/energyplus /usr/local/bin/energyplus && \
+    rm EnergyPlus-24.1.0-9d7789a3ac-Linux-Ubuntu22.04-x86_64.tar.gz
+
+# Python virtualenv setup
+ENV VIRTUAL_ENV=/opt/venv
+RUN python3 -m venv $VIRTUAL_ENV
+ENV PATH="$VIRTUAL_ENV/bin:$PATH"
+
+COPY backend/requirements.txt /app/backend/
+RUN pip install --no-cache-dir -r /app/backend/requirements.txt
+
+COPY backend /app/backend
+COPY simulation /app/simulation
+
+CMD ["celery", "-A", "backend.simulation.tasks", "worker", "--loglevel=info", "--concurrency=2"]

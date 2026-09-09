@@ -1,0 +1,35 @@
+[
+  {
+    "id": "mat-rammed-earth",
+    "name": "Rammed Earth (Local Ladakh)",
+    "conductivity": 1.25,
+    "density": 2000.0,
+    "specific_heat": 900.0,
+    "roughness": "Rough",
+    "provenance": "IS 3792 / DRDO DIHAR Leh Field Study",
+    "source_database": "IS_3792_2020",
+    "is_user_defined": false
+  },
+  {
+    "id": "mat-eps-insulation",
+    "name": "Expanded Polystyrene (EPS)",
+    "conductivity": 0.035,
+    "density": 25.0,
+    "specific_heat": 1400.0,
+    "roughness": "Smooth",
+    "provenance": "ASHRAE Handbook Fundamentals 2021",
+    "source_database": "ASHRAE_FUNDAMENTALS_2021",
+    "is_user_defined": false
+  },
+  {
+    "id": "mat-stone-granite",
+    "name": "Local Granite Stone Masonry",
+    "conductivity": 2.8,
+    "density": 2600.0,
+    "specific_heat": 820.0,
+    "roughness": "VeryRough",
+    "provenance": "NBC 2016 Part 8",
+    "source_database": "NBC_2016",
+    "is_user_defined": false
+  }
+]

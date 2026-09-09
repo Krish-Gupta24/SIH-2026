@@ -1,0 +1,330 @@
+{
+  "schema_version": "1.0.0",
+
+  "project": {
+    "id": "b2c3d4e5-f6a7-8901-bcde-f12345678901",
+    "name": "Insulated Stone Shelter — Multilayer Walls",
+    "description": "Rectangular shelter with composite multi-layer walls: exterior render, stone masonry, EPS insulation, interior mud plaster. Gable roof with insulation. Demonstrates multi-layer construction assemblies.",
+    "tags": ["multilayer", "insulated", "gable-roof", "ladakh"],
+    "version": 1,
+    "created_at": "2026-09-09T16:30:00Z",
+    "updated_at": "2026-09-09T16:30:00Z",
+    "created_by": "user-0001-0001-0001-000000000001"
+  },
+
+  "location": {
+    "latitude": 34.1526,
+    "longitude": 77.5771,
+    "elevation": 3524.0,
+    "timezone_utc_offset": 5.5,
+    "city": "Leh",
+    "region": "Ladakh",
+    "country": "IN",
+    "climate_zone": "5B",
+    "koppen_class": "BWk",
+    "weather_source": {
+      "type": "epw_file",
+      "file_id": "wx-0001-0001-0001-000000000001",
+      "file_name": "IND_LA_Leh_TMYx.epw",
+      "station_name": "Leh / Kushok Bakula Rimpochee",
+      "station_wmo": "420710",
+      "is_synthetic": false
+    }
+  },
+
+  "geometry": {
+    "shape": "rectangular",
+    "dimensions": {
+      "length": 8.0,
+      "width": 5.0,
+      "height": 2.8
+    },
+    "orientation_deg": 180.0,
+    "roof": {
+      "type": "gable",
+      "slope_deg": 25.0,
+      "overhang_north": 0.3,
+      "overhang_south": 0.6,
+      "overhang_east": 0.2,
+      "overhang_west": 0.2
+    },
+    "floor_elevation": 0.0
+  },
+
+  "envelope": {
+    "walls": {
+      "north": {
+        "construction": {
+          "id": "con-wall-multi-001",
+          "name": "Insulated Stone Wall — 4 Layer",
+          "layers": [
+            {
+              "material_id": "mat-render-001",
+              "material": {
+                "id": "mat-render-001",
+                "name": "Cement Plaster Render",
+                "category": "plaster",
+                "conductivity": 0.72,
+                "density": 1860.0,
+                "specific_heat": 840.0,
+                "roughness": "medium_rough",
+                "thermal_absorptance": 0.9,
+                "solar_absorptance": 0.5,
+                "visible_absorptance": 0.5,
+                "source": "ashrae",
+                "source_reference": "ASHRAE HoF Ch 26, Table 4",
+                "is_system": true
+              },
+              "thickness": 0.015
+            },
+            {
+              "material_id": "mat-stone-001",
+              "material": {
+                "id": "mat-stone-001",
+                "name": "Local Stone Masonry",
+                "category": "masonry",
+                "conductivity": 1.8,
+                "density": 2400.0,
+                "specific_heat": 840.0,
+                "roughness": "rough",
+                "thermal_absorptance": 0.9,
+                "solar_absorptance": 0.7,
+                "visible_absorptance": 0.7,
+                "source": "ashrae",
+                "source_reference": "ASHRAE HoF Ch 26, Table 4",
+                "is_system": true
+              },
+              "thickness": 0.3
+            },
+            {
+              "material_id": "mat-eps-001",
+              "material": {
+                "id": "mat-eps-001",
+                "name": "Expanded Polystyrene (EPS)",
+                "category": "insulation",
+                "conductivity": 0.036,
+                "density": 25.0,
+                "specific_heat": 1400.0,
+                "roughness": "smooth",
+                "thermal_absorptance": 0.9,
+                "solar_absorptance": 0.5,
+                "visible_absorptance": 0.5,
+                "source": "bis",
+                "source_reference": "IS 4671:1984 — Expanded Polystyrene",
+                "is_system": true
+              },
+              "thickness": 0.1
+            },
+            {
+              "material_id": "mat-mudplaster-001",
+              "material": {
+                "id": "mat-mudplaster-001",
+                "name": "Mud Plaster (Traditional Ladakhi)",
+                "category": "plaster",
+                "conductivity": 0.75,
+                "density": 1500.0,
+                "specific_heat": 880.0,
+                "roughness": "rough",
+                "thermal_absorptance": 0.9,
+                "solar_absorptance": 0.7,
+                "visible_absorptance": 0.7,
+                "source": "research_paper",
+                "source_reference": "Singh et al., 2019 — Thermal properties of traditional Ladakhi building materials",
+                "is_system": true
+              },
+              "thickness": 0.02
+            }
+          ],
+          "surface_type": "wall"
+        },
+        "surface_properties": null
+      },
+      "south": {
+        "construction": { "id": "con-wall-multi-001", "name": "Insulated Stone Wall — 4 Layer", "layers": [
+          { "material_id": "mat-render-001", "thickness": 0.015 },
+          { "material_id": "mat-stone-001", "thickness": 0.3 },
+          { "material_id": "mat-eps-001", "thickness": 0.1 },
+          { "material_id": "mat-mudplaster-001", "thickness": 0.02 }
+        ], "surface_type": "wall" },
+        "surface_properties": { "solar_absorptance": 0.3, "thermal_absorptance": 0.9, "visible_absorptance": 0.3 }
+      },
+      "east": {
+        "construction": { "id": "con-wall-multi-001", "name": "Insulated Stone Wall — 4 Layer", "layers": [
+          { "material_id": "mat-render-001", "thickness": 0.015 },
+          { "material_id": "mat-stone-001", "thickness": 0.3 },
+          { "material_id": "mat-eps-001", "thickness": 0.1 },
+          { "material_id": "mat-mudplaster-001", "thickness": 0.02 }
+        ], "surface_type": "wall" },
+        "surface_properties": null
+      },
+      "west": {
+        "construction": { "id": "con-wall-multi-001", "name": "Insulated Stone Wall — 4 Layer", "layers": [
+          { "material_id": "mat-render-001", "thickness": 0.015 },
+          { "material_id": "mat-stone-001", "thickness": 0.3 },
+          { "material_id": "mat-eps-001", "thickness": 0.1 },
+          { "material_id": "mat-mudplaster-001", "thickness": 0.02 }
+        ], "surface_type": "wall" },
+        "surface_properties": null
+      }
+    },
+
+    "roof": {
+      "construction": {
+        "id": "con-roof-multi-001",
+        "name": "Insulated Timber Roof — 3 Layer",
+        "layers": [
+          {
+            "material_id": "mat-gi-sheet-001",
+            "material": {
+              "id": "mat-gi-sheet-001",
+              "name": "Galvanized Iron Sheet",
+              "category": "metal",
+              "conductivity": 45.0,
+              "density": 7800.0,
+              "specific_heat": 480.0,
+              "roughness": "smooth",
+              "thermal_absorptance": 0.2,
+              "solar_absorptance": 0.6,
+              "visible_absorptance": 0.6,
+              "source": "ashrae",
+              "source_reference": "ASHRAE HoF Ch 26",
+              "is_system": true
+            },
+            "thickness": 0.001
+          },
+          {
+            "material_id": "mat-xps-001",
+            "material": {
+              "id": "mat-xps-001",
+              "name": "Extruded Polystyrene (XPS)",
+              "category": "insulation",
+              "conductivity": 0.034,
+              "density": 35.0,
+              "specific_heat": 1400.0,
+              "roughness": "smooth",
+              "thermal_absorptance": 0.9,
+              "solar_absorptance": 0.5,
+              "visible_absorptance": 0.5,
+              "source": "bis",
+              "source_reference": "IS 12418:1988",
+              "is_system": true
+            },
+            "thickness": 0.15
+          },
+          {
+            "material_id": "mat-plywood-001",
+            "material": {
+              "id": "mat-plywood-001",
+              "name": "Plywood",
+              "category": "timber",
+              "conductivity": 0.12,
+              "density": 540.0,
+              "specific_heat": 1210.0,
+              "roughness": "medium_smooth",
+              "thermal_absorptance": 0.9,
+              "solar_absorptance": 0.6,
+              "visible_absorptance": 0.6,
+              "source": "ashrae",
+              "source_reference": "ASHRAE HoF Ch 26",
+              "is_system": true
+            },
+            "thickness": 0.012
+          }
+        ],
+        "surface_type": "roof"
+      },
+      "surface_properties": null
+    },
+
+    "floor": {
+      "construction": {
+        "id": "con-floor-insul-001",
+        "name": "Insulated Concrete Floor — 3 Layer",
+        "layers": [
+          { "material_id": "mat-concrete-001", "thickness": 0.1 },
+          { "material_id": "mat-xps-001", "thickness": 0.075 },
+          { "material_id": "mat-concrete-001", "thickness": 0.1 }
+        ],
+        "surface_type": "floor"
+      },
+      "ground_contact": {
+        "type": "slab_on_grade",
+        "soil_conductivity": 1.0,
+        "ground_temperatures": [-8.0, -6.0, -2.0, 4.0, 10.0, 14.0, 16.0, 15.0, 11.0, 5.0, -1.0, -6.0]
+      },
+      "surface_properties": null
+    }
+  },
+
+  "windows": [],
+  "doors": [
+    {
+      "id": "door-001",
+      "name": "Main Entry",
+      "wall_face": "south",
+      "position": { "offset_x": 3.0, "offset_z": 0.0 },
+      "width": 0.9,
+      "height": 2.1,
+      "construction": { "type": "insulated_metal", "u_value": 1.8, "has_glazing": false },
+      "schedule": { "type": "always_closed" }
+    }
+  ],
+
+  "thermal_mass": [],
+
+  "ventilation": {
+    "infiltration": {
+      "method": "ach",
+      "rate_ach": 0.3,
+      "construction_quality": "tight",
+      "coefficients": { "constant": 1.0, "temperature": 0.0, "wind_speed": 0.0, "wind_speed_sq": 0.0 },
+      "schedule": { "type": "always_open" }
+    },
+    "natural_ventilation": { "enabled": false },
+    "mechanical_ventilation": { "enabled": false }
+  },
+
+  "internal_loads": {
+    "occupancy": {
+      "num_people": 6,
+      "activity_level": "seated_relaxed",
+      "metabolic_rate_met": 1.0,
+      "clothing_insulation_clo": 2.0,
+      "work_efficiency": 0.0,
+      "schedule": { "type": "always_open" }
+    },
+    "lighting": { "enabled": false },
+    "equipment": { "enabled": false }
+  },
+
+  "design_targets": {
+    "comfort": {
+      "model": "adaptive",
+      "target_indoor_temp_min": 18.0,
+      "target_indoor_temp_max": 26.0,
+      "acceptable_ppd_max": 20.0,
+      "adaptive_category": "category_ii"
+    },
+    "energy": { "max_heating_demand": 100.0 },
+    "priority": { "primary": "comfort_hours", "secondary": "heating_demand" }
+  },
+
+  "simulation_settings": {
+    "engine": { "type": "energyplus", "version": "24.2.0" },
+    "weather": { "file_id": "wx-0001-0001-0001-000000000001", "file_name": "IND_LA_Leh_TMYx.epw" },
+    "run_period": { "start_month": 1, "start_day": 1, "end_month": 12, "end_day": 31, "num_warmup_days": 25 },
+    "timestep": 6,
+    "output_variables": [
+      { "name": "Zone Mean Air Temperature", "key": "*", "frequency": "hourly" },
+      { "name": "Zone Operative Temperature", "key": "*", "frequency": "hourly" },
+      { "name": "Zone Mean Radiant Temperature", "key": "*", "frequency": "hourly" },
+      { "name": "Surface Inside Face Temperature", "key": "*", "frequency": "hourly" },
+      { "name": "Surface Inside Face Conduction Heat Transfer Energy", "key": "*", "frequency": "hourly" },
+      { "name": "Site Outdoor Air Drybulb Temperature", "key": "*", "frequency": "hourly" }
+    ],
+    "solar_distribution": "full_interior_and_exterior",
+    "convection_algorithm_inside": "TARP",
+    "convection_algorithm_outside": "DOE-2",
+    "ground_model": "monthly_averages"
+  }
+}

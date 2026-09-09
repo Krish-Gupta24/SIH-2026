@@ -1,0 +1,71 @@
+{
+  "id": "fixed-test-shelter-01",
+  "name": "Fixed Reference Test Shelter (6m x 4m x 3m)",
+  "description": "Standard monozone test shelter for EnergyPlus simulation validation",
+  "tags": ["reference", "validation", "monozone"],
+  "version": "1.0.0",
+  "location": {
+    "latitude": 34.1526,
+    "longitude": 77.5771,
+    "elevation": 3500.0,
+    "region": "Ladakh",
+    "climate_zone": "Cold",
+    "weather_source": "test_weather.epw"
+  },
+  "geometry": {
+    "shape": "Rectangle",
+    "length": 6.0,
+    "width": 4.0,
+    "height": 3.0,
+    "orientation": 0.0,
+    "roof_type": "Flat",
+    "roof_angle": 0.0,
+    "floor_elevation": 0.0
+  },
+  "envelope": {
+    "walls": {
+      "construction_id": "wall-insulated-earth",
+      "solar_absorptance": 0.7,
+      "layers": [
+        { "material": "EPS_Insulation", "thickness": 0.10 },
+        { "material": "RammedEarth", "thickness": 0.30 }
+      ]
+    },
+    "roof": {
+      "construction_id": "roof-insulated-metal",
+      "solar_absorptance": 0.6,
+      "layers": [
+        { "material": "MetalRoofing", "thickness": 0.005 },
+        { "material": "EPS_Insulation", "thickness": 0.12 }
+      ]
+    },
+    "floor": {
+      "construction_id": "floor-concrete-slab",
+      "layers": [
+        { "material": "ConcreteSlab", "thickness": 0.15 }
+      ],
+      "ground_contact": true
+    },
+    "windows": [
+      {
+        "id": "win-south-01",
+        "wall": "SOUTH",
+        "width": 2.0,
+        "height": 1.5,
+        "sill_height": 0.8,
+        "position_x": 2.0,
+        "glass_u_value": 1.4,
+        "glass_shgc": 0.62,
+        "glass_vlt": 0.75
+      }
+    ]
+  },
+  "ventilation": {
+    "infiltration_ach": 0.5
+  },
+  "internal_loads": {
+    "occupants": 2,
+    "lighting_w_m2": 3.0,
+    "equipment_w_m2": 2.0
+  }
+}

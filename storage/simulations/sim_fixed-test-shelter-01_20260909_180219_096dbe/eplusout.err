@@ -1,0 +1,16 @@
+Program Version,EnergyPlus, Version 24.1.0-9d7789a3ac, YMD=2026.09.09 23:32,
+   ** Severe  ** Line: 257 Index: 11 - Object contains more field values than maximum number of IDD fields and is not extensible.
+   ** Severe  ** Line: 257 Index: 11 - Error parsing "FenestrationSurface:Detailed". Error in following line.
+   ** Severe  ** ~~~   4.0, 0.0, 2.3;        !- Vertex 4 {m}
+   ** Severe  ** Line: 257 Index: 15 - "2.3" is not a valid Object Type.
+   ** Severe  ** <root>[BuildingSurface:Detailed][EastWall][sun_exposure] - "WindExposed" - Failed to match against any enum values.
+   ** Severe  ** <root>[BuildingSurface:Detailed][EastWall][vertices][3] - Missing required property 'vertex_z_coordinate'.
+   **  Fatal  ** Errors occurred on processing input file. Preceding condition(s) cause termination.
+   ...Summary of Errors that led to program termination:
+   ..... Reference severe error count=6
+   ..... Last severe error=<root>[BuildingSurface:Detailed][EastWall][vertices][3] - Missing required property 'vertex_z_coordinate'.
+   ************* Warning:  Node connection errors not checked - most system input has not been read (see previous warning).
+   ************* Fatal error -- final processing.  Program exited before simulations began.  See previous error messages.
+   ************* EnergyPlus Warmup Error Summary. During Warmup: 0 Warning; 0 Severe Errors.
+   ************* EnergyPlus Sizing Error Summary. During Sizing: 0 Warning; 0 Severe Errors.
+   ************* EnergyPlus Terminated--Fatal Error Detected. 0 Warning; 6 Severe Errors; Elapsed Time=00hr 00min  0.12sec

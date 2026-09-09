@@ -1,0 +1,349 @@
+{
+  "schema_version": "1.0.0",
+
+  "project": {
+    "id": "c3d4e5f6-a7b8-9012-cdef-123456789012",
+    "name": "Shelter with Windows, Doors, and Shading",
+    "description": "Demonstrates full fenestration: south-facing windows with overhangs for passive solar gain, minimal north windows, insulated entry door with glazing, and operable windows for summer ventilation.",
+    "tags": ["fenestration", "passive-solar", "shading", "ventilation"],
+    "version": 1,
+    "created_at": "2026-09-09T17:00:00Z",
+    "updated_at": "2026-09-09T17:00:00Z",
+    "created_by": "user-0001-0001-0001-000000000001"
+  },
+
+  "location": {
+    "latitude": 34.1526,
+    "longitude": 77.5771,
+    "elevation": 3524.0,
+    "timezone_utc_offset": 5.5,
+    "city": "Leh",
+    "region": "Ladakh",
+    "country": "IN",
+    "climate_zone": "5B",
+    "koppen_class": "BWk",
+    "weather_source": {
+      "type": "epw_file",
+      "file_id": "wx-0001-0001-0001-000000000001",
+      "file_name": "IND_LA_Leh_TMYx.epw",
+      "station_name": "Leh / Kushok Bakula Rimpochee",
+      "station_wmo": "420710",
+      "is_synthetic": false
+    }
+  },
+
+  "geometry": {
+    "shape": "rectangular",
+    "dimensions": {
+      "length": 8.0,
+      "width": 5.0,
+      "height": 2.8
+    },
+    "orientation_deg": 180.0,
+    "roof": {
+      "type": "gable",
+      "slope_deg": 25.0,
+      "overhang_north": 0.3,
+      "overhang_south": 0.8,
+      "overhang_east": 0.3,
+      "overhang_west": 0.3
+    },
+    "floor_elevation": 0.0
+  },
+
+  "envelope": {
+    "walls": {
+      "north": {
+        "construction": { "id": "con-wall-multi-001", "name": "Insulated Stone Wall", "layers": [
+          { "material_id": "mat-render-001", "thickness": 0.015 },
+          { "material_id": "mat-stone-001", "thickness": 0.3 },
+          { "material_id": "mat-eps-001", "thickness": 0.1 },
+          { "material_id": "mat-mudplaster-001", "thickness": 0.02 }
+        ], "surface_type": "wall" },
+        "surface_properties": null
+      },
+      "south": {
+        "construction": { "id": "con-wall-multi-001", "name": "Insulated Stone Wall", "layers": [
+          { "material_id": "mat-render-001", "thickness": 0.015 },
+          { "material_id": "mat-stone-001", "thickness": 0.3 },
+          { "material_id": "mat-eps-001", "thickness": 0.1 },
+          { "material_id": "mat-mudplaster-001", "thickness": 0.02 }
+        ], "surface_type": "wall" },
+        "surface_properties": { "solar_absorptance": 0.85, "thermal_absorptance": 0.9, "visible_absorptance": 0.7 }
+      },
+      "east": {
+        "construction": { "id": "con-wall-multi-001", "name": "Insulated Stone Wall", "layers": [
+          { "material_id": "mat-render-001", "thickness": 0.015 },
+          { "material_id": "mat-stone-001", "thickness": 0.3 },
+          { "material_id": "mat-eps-001", "thickness": 0.1 },
+          { "material_id": "mat-mudplaster-001", "thickness": 0.02 }
+        ], "surface_type": "wall" },
+        "surface_properties": null
+      },
+      "west": {
+        "construction": { "id": "con-wall-multi-001", "name": "Insulated Stone Wall", "layers": [
+          { "material_id": "mat-render-001", "thickness": 0.015 },
+          { "material_id": "mat-stone-001", "thickness": 0.3 },
+          { "material_id": "mat-eps-001", "thickness": 0.1 },
+          { "material_id": "mat-mudplaster-001", "thickness": 0.02 }
+        ], "surface_type": "wall" },
+        "surface_properties": null
+      }
+    },
+    "roof": {
+      "construction": { "id": "con-roof-multi-001", "name": "Insulated Timber Roof", "layers": [
+        { "material_id": "mat-gi-sheet-001", "thickness": 0.001 },
+        { "material_id": "mat-xps-001", "thickness": 0.15 },
+        { "material_id": "mat-plywood-001", "thickness": 0.012 }
+      ], "surface_type": "roof" },
+      "surface_properties": null
+    },
+    "floor": {
+      "construction": { "id": "con-floor-insul-001", "name": "Insulated Concrete Floor", "layers": [
+        { "material_id": "mat-concrete-001", "thickness": 0.1 },
+        { "material_id": "mat-xps-001", "thickness": 0.075 },
+        { "material_id": "mat-concrete-001", "thickness": 0.1 }
+      ], "surface_type": "floor" },
+      "ground_contact": {
+        "type": "slab_on_grade",
+        "soil_conductivity": 1.0,
+        "ground_temperatures": [-8.0, -6.0, -2.0, 4.0, 10.0, 14.0, 16.0, 15.0, 11.0, 5.0, -1.0, -6.0]
+      },
+      "surface_properties": null
+    }
+  },
+
+  "windows": [
+    {
+      "id": "win-south-001",
+      "name": "South Window 1 — Large (passive solar)",
+      "wall_face": "south",
+      "position": { "offset_x": 0.5, "sill_height": 0.9 },
+      "width": 1.8,
+      "height": 1.2,
+      "glazing": {
+        "type": "double_low_e",
+        "u_value": 1.6,
+        "shgc": 0.62,
+        "visible_transmittance": 0.70
+      },
+      "frame": {
+        "type": "upvc",
+        "width": 0.05,
+        "u_value": 2.0
+      },
+      "shading": {
+        "type": "overhang",
+        "depth": 0.8,
+        "top_offset": 0.1,
+        "transmittance": 0.0
+      },
+      "schedule": { "type": "always_closed" }
+    },
+    {
+      "id": "win-south-002",
+      "name": "South Window 2 — Large (passive solar)",
+      "wall_face": "south",
+      "position": { "offset_x": 3.5, "sill_height": 0.9 },
+      "width": 1.8,
+      "height": 1.2,
+      "glazing": {
+        "type": "double_low_e",
+        "u_value": 1.6,
+        "shgc": 0.62,
+        "visible_transmittance": 0.70
+      },
+      "frame": {
+        "type": "upvc",
+        "width": 0.05,
+        "u_value": 2.0
+      },
+      "shading": {
+        "type": "overhang",
+        "depth": 0.8,
+        "top_offset": 0.1,
+        "transmittance": 0.0
+      },
+      "schedule": { "type": "always_closed" }
+    },
+    {
+      "id": "win-south-003",
+      "name": "South Window 3 — Operable (summer ventilation)",
+      "wall_face": "south",
+      "position": { "offset_x": 6.0, "sill_height": 1.2 },
+      "width": 0.8,
+      "height": 0.6,
+      "glazing": {
+        "type": "double_clear",
+        "u_value": 2.8,
+        "shgc": 0.76,
+        "visible_transmittance": 0.81
+      },
+      "frame": {
+        "type": "upvc",
+        "width": 0.04,
+        "u_value": 2.0
+      },
+      "shading": { "type": "none" },
+      "schedule": {
+        "type": "custom",
+        "hourly_fractions": [0,0,0,0,0,0,0,0,0.5,1,1,1,1,1,1,1,0.5,0,0,0,0,0,0,0]
+      }
+    },
+    {
+      "id": "win-north-001",
+      "name": "North Window — Small (daylight only)",
+      "wall_face": "north",
+      "position": { "offset_x": 3.0, "sill_height": 1.5 },
+      "width": 0.6,
+      "height": 0.4,
+      "glazing": {
+        "type": "double_low_e",
+        "u_value": 1.6,
+        "shgc": 0.30,
+        "visible_transmittance": 0.55
+      },
+      "frame": {
+        "type": "upvc",
+        "width": 0.04,
+        "u_value": 2.0
+      },
+      "shading": { "type": "none" },
+      "schedule": { "type": "always_closed" }
+    },
+    {
+      "id": "win-east-001",
+      "name": "East Window — Medium",
+      "wall_face": "east",
+      "position": { "offset_x": 1.5, "sill_height": 0.9 },
+      "width": 1.0,
+      "height": 1.0,
+      "glazing": {
+        "type": "double_clear",
+        "u_value": 2.8,
+        "shgc": 0.76,
+        "visible_transmittance": 0.81
+      },
+      "frame": {
+        "type": "upvc",
+        "width": 0.05,
+        "u_value": 2.0
+      },
+      "shading": { "type": "none" },
+      "schedule": { "type": "always_closed" }
+    }
+  ],
+
+  "doors": [
+    {
+      "id": "door-001",
+      "name": "Main Entry Door — Insulated with glazing",
+      "wall_face": "south",
+      "position": { "offset_x": 2.5, "offset_z": 0.0 },
+      "width": 0.9,
+      "height": 2.1,
+      "construction": {
+        "type": "insulated_metal",
+        "u_value": 1.5,
+        "has_glazing": true,
+        "glazing_fraction": 0.25,
+        "glazing_shgc": 0.62
+      },
+      "schedule": { "type": "always_closed" }
+    },
+    {
+      "id": "door-002",
+      "name": "Rear Service Door",
+      "wall_face": "north",
+      "position": { "offset_x": 6.0, "offset_z": 0.0 },
+      "width": 0.8,
+      "height": 2.0,
+      "construction": {
+        "type": "insulated_metal",
+        "u_value": 1.8,
+        "has_glazing": false
+      },
+      "schedule": { "type": "always_closed" }
+    }
+  ],
+
+  "thermal_mass": [],
+
+  "ventilation": {
+    "infiltration": {
+      "method": "ach",
+      "rate_ach": 0.3,
+      "construction_quality": "tight",
+      "coefficients": { "constant": 0.6, "temperature": 0.03, "wind_speed": 0.04, "wind_speed_sq": 0.0 },
+      "schedule": { "type": "always_open" }
+    },
+    "natural_ventilation": {
+      "enabled": true,
+      "strategy": "cross_ventilation",
+      "min_outdoor_temp": 15.0,
+      "max_outdoor_temp": 30.0,
+      "min_indoor_temp": 24.0,
+      "effective_area": 0.4,
+      "schedule": { "type": "daytime" }
+    },
+    "mechanical_ventilation": { "enabled": false }
+  },
+
+  "internal_loads": {
+    "occupancy": {
+      "num_people": 6,
+      "activity_level": "seated_relaxed",
+      "metabolic_rate_met": 1.0,
+      "clothing_insulation_clo": 1.5,
+      "work_efficiency": 0.0,
+      "schedule": { "type": "always_open" }
+    },
+    "lighting": {
+      "enabled": true,
+      "power_density": 5.0,
+      "fraction_radiant": 0.7,
+      "schedule": { "type": "nighttime" }
+    },
+    "equipment": { "enabled": false }
+  },
+
+  "design_targets": {
+    "comfort": {
+      "model": "both",
+      "target_indoor_temp_min": 18.0,
+      "target_indoor_temp_max": 26.0,
+      "acceptable_ppd_max": 20.0,
+      "adaptive_category": "category_ii"
+    },
+    "energy": {
+      "max_heating_demand": 80.0,
+      "min_solar_utilization": 0.3
+    },
+    "priority": { "primary": "comfort_hours", "secondary": "heating_demand" }
+  },
+
+  "simulation_settings": {
+    "engine": { "type": "energyplus", "version": "24.2.0" },
+    "weather": { "file_id": "wx-0001-0001-0001-000000000001", "file_name": "IND_LA_Leh_TMYx.epw" },
+    "run_period": { "start_month": 1, "start_day": 1, "end_month": 12, "end_day": 31, "num_warmup_days": 25 },
+    "timestep": 6,
+    "output_variables": [
+      { "name": "Zone Mean Air Temperature", "key": "*", "frequency": "hourly" },
+      { "name": "Zone Operative Temperature", "key": "*", "frequency": "hourly" },
+      { "name": "Zone Mean Radiant Temperature", "key": "*", "frequency": "hourly" },
+      { "name": "Surface Inside Face Temperature", "key": "*", "frequency": "hourly" },
+      { "name": "Surface Outside Face Temperature", "key": "*", "frequency": "hourly" },
+      { "name": "Surface Inside Face Conduction Heat Transfer Energy", "key": "*", "frequency": "hourly" },
+      { "name": "Zone Windows Total Transmitted Solar Radiation Rate", "key": "*", "frequency": "hourly" },
+      { "name": "Zone Infiltration Sensible Heat Loss Energy", "key": "*", "frequency": "hourly" },
+      { "name": "Zone Infiltration Sensible Heat Gain Energy", "key": "*", "frequency": "hourly" },
+      { "name": "Site Outdoor Air Drybulb Temperature", "key": "*", "frequency": "hourly" },
+      { "name": "Site Direct Solar Radiation Rate per Area", "key": "*", "frequency": "hourly" },
+      { "name": "Site Diffuse Solar Radiation Rate per Area", "key": "*", "frequency": "hourly" }
+    ],
+    "solar_distribution": "full_interior_and_exterior",
+    "convection_algorithm_inside": "TARP",
+    "convection_algorithm_outside": "DOE-2",
+    "ground_model": "monthly_averages"
+  }
+}
