@@ -1,13 +1,23 @@
 """Engineering validation rules, physical validity checkers, and provenance auditors."""
 
-from typing import Dict, Any, List, Tuple
+from backend.validation.engineering_validation_framework import (
+    EngineeringValidationFramework,
+    ControlledSensitivityTester,
+    NumericalSanityChecker,
+    ReferenceCaseComparator,
+    ControlledTestResult,
+    NumericalSanityAudit,
+    ReferenceComparisonResult,
+    EngineeringValidationReport,
+)
 
-
-class EngineeringValidator:
-    """Enforces non-fabrication rules, physical property bounds, and geometry validity."""
-
-    @staticmethod
-    def validate_shelter_physics(data: Dict[str, Any]) -> Tuple[bool, List[str]]:
-        """Validate that all thermal and geometry properties adhere to physical bounds."""
-        errors: List[str] = []
-        return len(errors) == 0, errors
+__all__ = [
+    "EngineeringValidationFramework",
+    "ControlledSensitivityTester",
+    "NumericalSanityChecker",
+    "ReferenceCaseComparator",
+    "ControlledTestResult",
+    "NumericalSanityAudit",
+    "ReferenceComparisonResult",
+    "EngineeringValidationReport",
+]

@@ -19,4 +19,9 @@ class SimulationValidator:
     ) -> Tuple[bool, List[str]]:
         """Verify indoor temperatures do not exceed physical extremes."""
         anomalies: List[str] = []
+        for idx, t in enumerate(indoor_temps):
+            if t < min_allowed_c:
+                anomalies.append(f"Temperature {t}°C at index {idx} below minimum threshold {min_allowed_c}°C.")
+            elif t > max_allowed_c:
+                anomalies.append(f"Temperature {t}°C at index {idx} exceeds maximum threshold {max_allowed_c}°C.")
         return len(anomalies) == 0, anomalies

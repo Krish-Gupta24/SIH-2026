@@ -10,6 +10,8 @@ from typing import Dict, Any, List, Optional, Tuple
 from simulation.generators.energyplus_generator import EnergyPlusIDFGenerator
 from simulation.runners.energyplus_runner import EnergyPlusRunner, SimulationExecutionOutput
 from simulation.parsers.energyplus_parser import EnergyPlusOutputParser
+from simulation.results.result import SimulationResult
+from simulation.results.parser import EnergyPlusResultParser
 
 
 class EnergyPlusEngine:
@@ -19,6 +21,7 @@ class EnergyPlusEngine:
         self.runner = EnergyPlusRunner(custom_executable_path=executable_path)
         self.generator = EnergyPlusIDFGenerator(engine_version=self.runner.detected_version or "24.1.0")
         self.parser = EnergyPlusOutputParser()
+        self.result_parser = EnergyPlusResultParser()
 
         # Engine execution state
         self.status = "INITIALIZED" if self.runner.executable_path else "ENGINE_NOT_FOUND"
@@ -28,6 +31,7 @@ class EnergyPlusEngine:
         self.work_dir: Optional[str] = None
         self.execution_output: Optional[SimulationExecutionOutput] = None
         self.error_summary: Optional[Dict[str, Any]] = None
+        self.simulation_result: Optional[SimulationResult] = None
         self.normalized_results: Optional[Dict[str, Any]] = None
 
     def validate_model(self, shelter_model: Dict[str, Any]) -> Tuple[bool, List[str]]:
@@ -162,7 +166,19 @@ class EnergyPlusEngine:
             }
             return self.normalized_results
 
-        # Parse CSV time-series and temperature results
+        # Parse raw artifacts into normalized SimulationResult
+        parser_meta = {
+            "engine_name": "EnergyPlus",
+            "engine_version": self.runner.detected_version or "24.1.0",
+            "model_version": self.shelter_model.get("version", "1.0.0") if self.shelter_model else "1.0.0",
+            "weather_dataset": Path(self.epw_path).name,
+            "execution_duration_seconds": self.execution_output.duration_seconds,
+            "is_unconditioned": True,
+        }
+        self.simulation_result = self.result_parser.parse(self.work_dir, metadata=parser_meta)
+        result_dict = self.simulation_result.to_dict()
+
+        # Parse CSV time-series and legacy metrics for backward compatibility
         csv_data = self.parser.parse_csv_results(self.execution_output.csv_file_path)
 
         self.status = "COMPLETED"
@@ -177,6 +193,7 @@ class EnergyPlusEngine:
             "work_dir": self.work_dir,
             "is_physically_valid": False,  # Model has completed; engineering validation pending
             "metadata": {
+                **result_dict["metadata"],
                 "shelter_id": self.shelter_model.get("id") if self.shelter_model else None,
                 "shelter_name": self.shelter_model.get("name") if self.shelter_model else None,
                 "weather_file": Path(self.epw_path).name,
@@ -190,11 +207,31 @@ class EnergyPlusEngine:
                 "summary_line": self.error_summary.get("summary_line"),
             },
             "thermal_performance": {
-                "indoor_temperature": csv_data.get("indoor_temperature", {}),
+                "indoor_temperature": {
+                    "min_c": self.simulation_result.comfort.indoor_min_c,
+                    "max_c": self.simulation_result.comfort.indoor_max_c,
+                    "mean_c": self.simulation_result.comfort.indoor_mean_c,
+                },
                 "outdoor_temperature": csv_data.get("outdoor_temperature", {}),
                 "solar_radiation": csv_data.get("solar_radiation", {}),
-                "timesteps_simulated": csv_data.get("timesteps_count", 0),
+                "timesteps_simulated": self.simulation_result.timesteps_count,
             },
+            # Canonical normalized result schema
+            "timestamps": result_dict["timestamps"],
+            "indoor_temperature": result_dict["indoor_temperature"],
+            "outdoor_temperature": result_dict["outdoor_temperature"],
+            "solar_radiation": result_dict["solar_radiation"],
+            "solar_gains": result_dict["solar_gains"],
+            "wall_heat_transfer": result_dict["wall_heat_transfer"],
+            "roof_heat_transfer": result_dict["roof_heat_transfer"],
+            "floor_heat_transfer": result_dict["floor_heat_transfer"],
+            "window_heat_transfer": result_dict["window_heat_transfer"],
+            "door_heat_transfer": result_dict["door_heat_transfer"],
+            "infiltration_heat_transfer": result_dict["infiltration_heat_transfer"],
+            "envelope": result_dict["envelope"],
+            "solar": result_dict["solar"],
+            "energy": result_dict["energy"],
+            "comfort": result_dict["comfort"],
             "logs": {
                 "stdout_log": self.execution_output.stdout_log_path,
                 "stderr_log": self.execution_output.stderr_log_path,
@@ -225,3 +262,7 @@ class EnergyPlusEngine:
     def get_results(self) -> Optional[Dict[str, Any]]:
         """Return normalized simulation results if completed."""
         return self.normalized_results
+
+    def get_simulation_result(self) -> Optional[SimulationResult]:
+        """Return typed SimulationResult instance if completed."""
+        return self.simulation_result

@@ -1,10 +1,16 @@
 /**
- * Multi-Objective Optimization Feature Module
- * Responsible for configuring design variable bounds (insulation thickness, WWR, orientation),
- * running NSGA-II iterations, and exploring interactive 2D/3D Pareto fronts.
+ * Multi-Objective Parametric Optimization Feature Module
+ * Deterministic parameter sweeps across 9 thermal design variables with
+ * physics-based validation, constraints enforcement, Pareto frontier calculation,
+ * and structured 7-section Engineering Recommendation Layer.
  */
 
-export interface OptimizationObjectiveConfig {
-  name: "min_heating_demand" | "min_initial_cost" | "max_comfort_hours";
-  weight: number;
-}
+export * from "./types";
+export * from "./optimization-engine";
+export * from "./recommendation-engine";
+export * from "./OptimizationView";
+export * from "./components/OptimizationSetupCard";
+export * from "./components/OptimalCandidateCard";
+export * from "./components/RecommendedDesignReportCard";
+export * from "./components/ParetoAndSensitivityCharts";
+export * from "./components/CandidateRankingsTable";

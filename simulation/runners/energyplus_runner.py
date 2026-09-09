@@ -29,6 +29,9 @@ class SimulationExecutionOutput:
     csv_file_path: str
 
 
+from backend.core.binary_allowlist import BinaryAllowlist, SecurityException
+
+
 class EnergyPlusRunner:
     """Detects EnergyPlus binary, validates version, and executes simulations in isolated directories."""
 
@@ -40,21 +43,24 @@ class EnergyPlusRunner:
         """Locate EnergyPlus executable across environment variables and standard installation paths."""
         candidates = []
 
-        if custom_path and Path(custom_path).is_file():
-            candidates.append(custom_path)
+        if custom_path:
+            # Strictly validate custom candidate path against security allowlist
+            validated_custom = BinaryAllowlist.validate_executable(custom_path)
+            candidates.append(validated_custom)
 
         env_exe = os.environ.get("ENERGYPLUS_EXE")
         if env_exe and Path(env_exe).is_file():
-            candidates.append(env_exe)
+            if BinaryAllowlist.is_binary_name_allowed(env_exe) and BinaryAllowlist.is_path_in_approved_directory(env_exe):
+                candidates.append(env_exe)
 
         user_profile = os.environ.get("USERPROFILE", "")
         if user_profile:
             # Check user profile installation
             p1 = Path(user_profile) / "EnergyPlusV24-1-0" / "energyplus.exe"
             p2 = Path(user_profile) / "EnergyPlusV24-1-0" / "EnergyPlus-24.1.0-9d7789a3ac-Windows-x86_64" / "energyplus.exe"
-            if p1.is_file():
+            if p1.is_file() and BinaryAllowlist.is_binary_name_allowed(str(p1)):
                 candidates.append(str(p1))
-            if p2.is_file():
+            if p2.is_file() and BinaryAllowlist.is_binary_name_allowed(str(p2)):
                 candidates.append(str(p2))
 
         # Standard Windows paths
@@ -64,12 +70,12 @@ class EnergyPlusRunner:
             r"C:\Program Files\EnergyPlusV24-1-0\energyplus.exe",
         ]
         for sp in std_paths:
-            if Path(sp).is_file():
+            if Path(sp).is_file() and BinaryAllowlist.is_binary_name_allowed(sp):
                 candidates.append(sp)
 
         # In PATH
         which_path = shutil.which("energyplus")
-        if which_path:
+        if which_path and BinaryAllowlist.is_binary_name_allowed(which_path):
             candidates.append(which_path)
 
         for exe in candidates:
@@ -81,17 +87,9 @@ class EnergyPlusRunner:
 
     @staticmethod
     def _probe_version(exe_path: str) -> Optional[str]:
-        """Execute energyplus -v to determine exact version."""
-        try:
-            res = subprocess.run([exe_path, "-v"], capture_output=True, text=True, timeout=10)
-            output = res.stdout.strip() or res.stderr.strip()
-            # Output looks like: "EnergyPlus, Version 24.1.0-9d7789a3ac, YMD=..."
-            for part in output.split(","):
-                if "Version" in part:
-                    return part.replace("Version", "").strip()
-            return output if output else "Unknown"
-        except Exception:
-            return None
+        """Execute energyplus -v to determine exact version with security probe."""
+        return BinaryAllowlist.probe_energyplus_version(exe_path)
+
 
     def run(
         self,

@@ -1,8 +1,23 @@
-"""Multi-objective optimization package using genetic algorithms (NSGA-II)."""
+"""Optimization package for shelter thermal engineering design space exploration."""
 
-from typing import List, Dict, Any
+from backend.optimization.parameter_sweep_optimizer import (
+    ParameterSweepOptimizer,
+    SweepParameterConfig,
+    OptimizationConstraint,
+    CandidateEvaluation,
+    OptimizationRunMetadata,
+)
+from backend.optimization.recommendation_engine import (
+    RecommendationEngine,
+    RecommendationReport,
+)
 
-
-class MultiObjectiveOptimizer:
-    """Configures and runs NSGA-II optimization loops for shelter thermal performance."""
-    pass
+__all__ = [
+    "ParameterSweepOptimizer",
+    "SweepParameterConfig",
+    "OptimizationConstraint",
+    "CandidateEvaluation",
+    "OptimizationRunMetadata",
+    "RecommendationEngine",
+    "RecommendationReport",
+]

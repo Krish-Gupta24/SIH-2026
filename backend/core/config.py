@@ -53,5 +53,27 @@ class Settings(BaseSettings):
     FRONTEND_URL: str = "http://localhost:3000"
     CORS_ORIGINS: List[str] = ["http://localhost:3000", "http://127.0.0.1:3000"]
 
+    # Security & Resource Throttling
+    MAX_CONCURRENT_SIMULATIONS: int = 4
+    MAX_SIMULATION_TIMEOUT_SECONDS: int = 1800
+    MAX_REQUEST_BODY_BYTES: int = 15 * 1024 * 1024  # 15 MB
+    RATE_LIMIT_SIMULATION_PER_MINUTE: int = 15
+    RATE_LIMIT_GENERAL_PER_MINUTE: int = 60
+
+    @field_validator("SECRET_KEY")
+    @classmethod
+    def validate_production_secret(cls, v: str, info) -> str:
+        """Enforce strong, non-default secret key when running in production."""
+        # Check environment from values if available
+        env = os.environ.get("ENVIRONMENT", "development").lower()
+        if env == "production":
+            if "default-insecure" in v or len(v) < 32:
+                raise ValueError(
+                    "SECURITY CRITICAL: Default or weak SECRET_KEY detected in production environment. "
+                    "You must supply a cryptographically secure 32+ character SECRET_KEY."
+                )
+        return v
+
 
 settings = Settings()
+
