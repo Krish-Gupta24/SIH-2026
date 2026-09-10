@@ -12,6 +12,7 @@ from simulation.runners.energyplus_runner import EnergyPlusRunner, SimulationExe
 from simulation.parsers.energyplus_parser import EnergyPlusOutputParser
 from simulation.results.result import SimulationResult
 from simulation.results.parser import EnergyPlusResultParser
+from simulation.validation.opening_validator import OpeningValidator
 
 
 class EnergyPlusEngine:
@@ -56,21 +57,25 @@ class EnergyPlusEngine:
             if height <= 0:
                 errors.append(f"Invalid height: {height}. Must be > 0.")
 
-        # Check window constraints if present
-        envelope = shelter_model.get("envelope", {})
-        windows = envelope.get("windows", [])
-        for win in windows:
-            w_width = win.get("width", 0)
-            w_height = win.get("height", 0)
-            sill = win.get("sill_height", 0)
-            pos_x = win.get("position_x", 0)
+        # Check window and door constraints if present
+        windows = shelter_model.get("windows", []) or shelter_model.get("envelope", {}).get("windows", [])
+        doors = shelter_model.get("doors", []) or shelter_model.get("envelope", {}).get("doors", [])
+        if geom and (windows or doors):
+            is_valid, opening_errors = OpeningValidator.validate_openings(windows, doors, geom)
+            if not is_valid:
+                errors.extend(opening_errors)
 
-            if w_width <= 0 or w_height <= 0:
-                errors.append(f"Invalid window dimensions: {w_width}x{w_height}.")
-            if pos_x + w_width > geom.get("length", 0):
-                errors.append(f"Window width exceeds wall length on {win.get('wall')}.")
-            if sill + w_height > geom.get("height", 0):
-                errors.append(f"Window height + sill exceeds wall height.")
+        # Check ventilation and infiltration constraints
+        from simulation.validation.ventilation_validator import VentilationValidator
+        is_vent_valid, vent_errors = VentilationValidator.validate_ventilation(shelter_model)
+        if not is_vent_valid:
+            errors.extend(vent_errors)
+
+        # Check thermal mass constraints
+        from simulation.validation.thermal_mass_validator import ThermalMassValidator
+        is_tm_valid, tm_errors = ThermalMassValidator.validate_thermal_mass(shelter_model)
+        if not is_tm_valid:
+            errors.extend(tm_errors)
 
         return len(errors) == 0, errors
 

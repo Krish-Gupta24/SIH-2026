@@ -51,6 +51,7 @@ class TestAsyncSimulationWorkflow(unittest.TestCase):
             "weather_file": self.weather_file,
             "run_period_days": 1,
             "timeout_seconds": 60,
+            "allow_test_data": True,
         }
 
         # 1. Dispatch through direct /simulate endpoint
@@ -119,6 +120,7 @@ class TestAsyncSimulationWorkflow(unittest.TestCase):
             "shelter_model": invalid_shelter,
             "weather_file": self.weather_file,
             "run_period_days": 1,
+            "allow_test_data": True,
         }
 
         response = self.client.post("/simulate", json=payload)
@@ -166,6 +168,7 @@ class TestAsyncSimulationWorkflow(unittest.TestCase):
                 "weather_file": self.weather_file,
                 "run_period_days": 1,
                 "timeout_seconds": 5,
+                "allow_test_data": True,
             }
 
             response = self.client.post("/simulate", json=payload)

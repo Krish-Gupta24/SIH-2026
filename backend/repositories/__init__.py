@@ -1,7 +1,9 @@
 """Data access layer repositories."""
 
 from typing import Generic, TypeVar, Type, Optional, List
+# pyrefly: ignore [missing-import]
 from sqlalchemy.ext.asyncio import AsyncSession
+# pyrefly: ignore [missing-import]
 from sqlalchemy.future import select
 
 ModelType = TypeVar("ModelType")

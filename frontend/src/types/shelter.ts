@@ -29,7 +29,7 @@ export interface GeometryModel {
   length: number;              // Length in meters (m)
   width: number;               // Width in meters (m)
   height: number;              // Height in meters (m)
-  orientation: number;         // Primary solar facade azimuth (0° = True South solar alignment, clockwise rotation towards West)
+  orientation: number;         // Building North Axis azimuth (0° = True North aligned, primary solar facade faces True South; rotates clockwise 0°-359°)
   roofType: "Flat" | "Shed" | "Gable";
   roofAngle: number;           // Pitch angle in degrees (°)
   floorElevation: number;      // Floor height above grade (m)

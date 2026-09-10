@@ -19,6 +19,9 @@ from datetime import datetime, timezone
 from dataclasses import dataclass, field, asdict
 from typing import List, Dict, Any, Optional, Tuple
 
+from simulation.materials.database import material_db
+from simulation.materials.glazing import glazing_db
+
 
 @dataclass
 class SweepParameterConfig:
@@ -120,15 +123,18 @@ class ParameterSweepOptimizer:
         "ventilation": [0.18, 0.35, 0.60, 1.20],  # Infiltration ACH
     }
 
-    # Material properties lookup for physics simulation
-    MATERIAL_PROPERTIES = {
-        "mat-eps-insulation": {"k": 0.035, "density": 25.0, "c_p": 1400.0, "cost_m3": 120.0},
-        "mat-aerogel-blanket": {"k": 0.015, "density": 160.0, "c_p": 1000.0, "cost_m3": 850.0},
-        "mat-rammed-earth": {"k": 1.10, "density": 1900.0, "c_p": 1100.0, "cost_m3": 60.0},
-        "mat-stone-masonry": {"k": 2.20, "density": 2400.0, "c_p": 900.0, "cost_m3": 90.0},
-        "mat-concrete-slab": {"k": 1.40, "density": 2300.0, "c_p": 1000.0, "cost_m3": 150.0},
-        "mat-galvanized-steel": {"k": 50.0, "density": 7800.0, "c_p": 450.0, "cost_m3": 500.0},
-    }
+    @property
+    def MATERIAL_PROPERTIES(self) -> Dict[str, Dict[str, Any]]:
+        """Dynamic lookup backed exclusively by canonical material_db (Zero duplication)."""
+        return {
+            m.id: {
+                "k": m.thermal_conductivity,
+                "density": m.density,
+                "c_p": m.specific_heat,
+                "cost_m3": m.cost_per_m3 if m.cost_per_m3 is not None else 100.0,
+            }
+            for m in material_db.list_materials()
+        }
 
     def __init__(
         self,
@@ -151,8 +157,8 @@ class ParameterSweepOptimizer:
                 name="Survival Nocturnal Minimum Temperature",
                 metric="indoor_min_c",
                 operator=">=",
-                threshold=8.0,
-                description="Zone air must not drop below 8°C under extreme sub-zero night to prevent hypothermia.",
+                threshold=5.0,
+                description="Zone air must not drop below 5°C under extreme sub-zero night to prevent hypothermia.",
             ),
             OptimizationConstraint(
                 name="Maximum Allowable Wall Thickness",
@@ -243,32 +249,31 @@ class ParameterSweepOptimizer:
         wall_construction = param_dict.get("wall_construction", "Standard_EPS_Wall")
 
         if wall_construction == "Aerogel_Blanket_SuperWall":
-            k_ins = 0.015
+            ins_mat = material_db.get("mat-aerogel-blanket")
+            mass_mat = material_db.get("mat-rammed-earth")
             mass_thickness = 0.20
-            rho_mass = 1900.0
-            cp_mass = 1100.0
-            material_cost_factor = 2.4
         elif wall_construction == "Rammed_Earth_EPS_Composite":
-            k_ins = 0.035
+            ins_mat = material_db.get("mat-eps-insulation")
+            mass_mat = material_db.get("mat-rammed-earth")
             mass_thickness = 0.30
-            rho_mass = 2000.0
-            cp_mass = 1150.0
-            material_cost_factor = 1.2
         elif wall_construction == "Granite_Stone_Masonry":
-            k_ins = 0.035
+            ins_mat = material_db.get("mat-eps-insulation")
+            mass_mat = material_db.get("mat-granite-stone")
             mass_thickness = 0.35
-            rho_mass = 2400.0
-            cp_mass = 900.0
-            material_cost_factor = 1.3
         else:  # Standard_EPS_Wall
-            k_ins = 0.035
+            ins_mat = material_db.get("mat-eps-insulation")
+            mass_mat = material_db.get("mat-mud-plaster") or material_db.get("mat-rammed-earth")
             mass_thickness = 0.05
-            rho_mass = 800.0
-            cp_mass = 1000.0
-            material_cost_factor = 1.0
+
+        k_ins = ins_mat.thermal_conductivity if ins_mat else 0.035
+        k_mass = mass_mat.thermal_conductivity if mass_mat else 1.25
+        rho_mass = mass_mat.density if mass_mat else 2000.0
+        cp_mass = mass_mat.specific_heat if mass_mat else 900.0
+        cost_ins_unit = ins_mat.cost_per_m3 if (ins_mat and ins_mat.cost_per_m3 is not None) else 120.0
+        cost_mass_unit = mass_mat.cost_per_m3 if (mass_mat and mass_mat.cost_per_m3 is not None) else 60.0
 
         r_insulation = ins_thickness / k_ins
-        r_mass = mass_thickness / 1.10
+        r_mass = mass_thickness / k_mass
         r_surface_films = 0.17  # R_si + R_se
         u_wall = 1.0 / (r_insulation + r_mass + r_surface_films)
         total_wall_thickness = ins_thickness + mass_thickness
@@ -282,20 +287,12 @@ class ParameterSweepOptimizer:
         else:  # Uninsulated_Sheet_Roof
             u_roof = 1.85
 
-        # 4. Glazing U-value and SHGC
-        glazing = param_dict.get("glazing_type", "Double_LowE_Argon")
-        if glazing == "Triple_LowE_Krypton":
-            u_window = 0.80
-            shgc = 0.52
-            cost_glazing = 220.0
-        elif glazing == "Double_LowE_Argon":
-            u_window = 1.40
-            shgc = 0.62
-            cost_glazing = 140.0
-        else:  # Single_Clear
-            u_window = 5.60
-            shgc = 0.82
-            cost_glazing = 50.0
+        # 4. Glazing U-value and SHGC dynamically queried from canonical glazing_db
+        glazing_key = param_dict.get("glazing_type", "Double_LowE_Argon")
+        glaze_def = glazing_db.get_glazing(glazing_key)
+        u_window = glaze_def.u_value
+        shgc = glaze_def.shgc
+        cost_glazing = glaze_def.cost_per_m2
 
         # Window area & Placement
         win_area = param_dict.get("window_area", 2.8)
@@ -321,13 +318,22 @@ class ParameterSweepOptimizer:
         # 7. Internal Thermal Mass Capacitance (C_th in J/K)
         mass_mode = param_dict.get("thermal_mass", "medium_concrete_slab")
         if mass_mode == "high_mass_rammed_earth_pcm":
-            mass_capacity_kwh_k = (floor_area * 0.15 * 2200.0 * 1200.0 + 8500000.0) / 3600000.0
+            re_mat = material_db.get("mat-rammed-earth")
+            re_rho = re_mat.density if re_mat else 2000.0
+            re_cp = re_mat.specific_heat if re_mat else 900.0
+            mass_capacity_kwh_k = (floor_area * 0.15 * re_rho * re_cp + 8500000.0) / 3600000.0
             damping_ratio = 88.0
         elif mass_mode == "medium_concrete_slab":
-            mass_capacity_kwh_k = (floor_area * 0.15 * 2300.0 * 1000.0) / 3600000.0
+            conc_mat = material_db.get("mat-concrete-slab")
+            conc_rho = conc_mat.density if conc_mat else 2300.0
+            conc_cp = conc_mat.specific_heat if conc_mat else 1000.0
+            mass_capacity_kwh_k = (floor_area * 0.15 * conc_rho * conc_cp) / 3600000.0
             damping_ratio = 76.0
         else:  # lightweight_timber
-            mass_capacity_kwh_k = (floor_area * 0.03 * 650.0 * 1600.0) / 3600000.0
+            timber_mat = material_db.get("mat-himalayan-timber")
+            timber_rho = timber_mat.density if timber_mat else 550.0
+            timber_cp = timber_mat.specific_heat if timber_mat else 1600.0
+            mass_capacity_kwh_k = (floor_area * 0.03 * timber_rho * timber_cp) / 3600000.0
             damping_ratio = 38.0
 
         # 8. Diurnal Solar Harvesting & Heat Balance (Ladakh winter profile: -18°C night to -4°C noon)
@@ -384,9 +390,11 @@ class ParameterSweepOptimizer:
 
         # Material cost index estimation
         wall_ins_volume = opaque_wall_area * ins_thickness
-        cost_ins = wall_ins_volume * self.MATERIAL_PROPERTIES["mat-eps-insulation"]["cost_m3"] * material_cost_factor
+        wall_mass_volume = opaque_wall_area * mass_thickness
+        cost_ins = wall_ins_volume * cost_ins_unit
+        cost_mass = wall_mass_volume * cost_mass_unit
         cost_glazing_total = win_area * cost_glazing
-        total_material_cost = cost_ins + cost_glazing_total + (1500.0 if roof_construction == "Aerogel_Insulated_Pitched_Roof" else 600.0)
+        total_material_cost = cost_ins + cost_mass + cost_glazing_total + (1500.0 if roof_construction == "Aerogel_Insulated_Pitched_Roof" else 600.0)
 
         return {
             "indoor_min_c": round(indoor_min_c, 2),
@@ -403,6 +411,7 @@ class ParameterSweepOptimizer:
             "window_to_wall_ratio_pct": round(wwr, 1),
             "diurnal_swing_damping_pct": round(damping_ratio, 1),
             "material_cost_usd": round(total_material_cost, 0),
+            "total_material_cost": round(total_material_cost, 0),
         }
 
     # -------------------------------------------------------------------------

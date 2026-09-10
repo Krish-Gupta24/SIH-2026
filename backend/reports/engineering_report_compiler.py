@@ -22,6 +22,8 @@ import json
 import csv
 from datetime import datetime, timezone
 
+from simulation.materials.database import material_db
+
 from reportlab.lib.pagesizes import letter, A4
 from reportlab.lib import colors
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
@@ -100,6 +102,7 @@ class EngineeringReportCompiler:
         simulation_result: Optional[Dict[str, Any]] = None,
         optimization_result: Optional[Dict[str, Any]] = None,
         validation_report: Optional[Dict[str, Any]] = None,
+        **kwargs,
     ) -> Dict[str, Any]:
         """Compile a normalized 24-section report dictionary."""
         p = shelter_model.get("project", {})
@@ -191,23 +194,52 @@ class EngineeringReportCompiler:
         walls = env.get("walls", {})
         north_wall = walls.get("north", {})
         layers = north_wall.get("layers", [{"materialId": "mat-eps-insulation", "thickness": 0.15}])
+
+        # Calculate wall thermal resistance dynamically from layers + material_db
+        r_layers_sum = 0.0
+        layer_stack_parts = []
+        material_sources = []
+        for l in layers:
+            m_id = l.get("materialId", "")
+            th = float(l.get("thickness", 0.10))
+            mat = material_db.get(m_id)
+            if mat:
+                k = mat.thermal_conductivity
+                r_val = th / k if k > 0 else 0.0
+                r_layers_sum += r_val
+                layer_stack_parts.append(f"{int(th * 1000)}mm {mat.name}")
+                if mat.source:
+                    material_sources.append(f"{mat.name}: {mat.source} ({mat.provenance}, {mat.status.value})")
+            else:
+                layer_stack_parts.append(f"{int(th * 1000)}mm {m_id}")
+
+        r_surface_films = 0.17  # standard R_si (0.13) + R_se (0.04)
+        total_r = r_layers_sum + r_surface_films if r_layers_sum > 0 else 4.55
+        calculated_u = round(1.0 / total_r, 3)
         ins_thick = layers[0].get("thickness", 0.15) if layers else 0.15
+
         s6_walls = {
             "assembly_name": north_wall.get("constructionId", "Rammed_Earth_EPS_Composite"),
             "insulation_thickness_m": ins_thick,
-            "u_value_w_m2k": 0.22,
-            "r_value_m2k_w": 4.55,
-            "layer_stack": f"{int(ins_thick * 1000)}mm EPS Insulation + 200mm Rammed Earth Structural Core",
+            "u_value_w_m2k": calculated_u,
+            "r_value_m2k_w": round(total_r, 2),
+            "layer_stack": " + ".join(layer_stack_parts) if layer_stack_parts else f"{int(ins_thick * 1000)}mm EPS Insulation + 200mm Rammed Earth Structural Core",
         }
 
         # 7. Roof
         roof = env.get("roof", {})
+        roof_layers = roof.get("layers", [])
+        roof_mat_id = roof_layers[0].get("materialId", "mat-galvanized-steel") if roof_layers else "mat-galvanized-steel"
+        roof_mat = material_db.get(roof_mat_id)
+        if roof_mat and roof_mat.source:
+            material_sources.append(f"{roof_mat.name}: {roof_mat.source} ({roof_mat.provenance}, {roof_mat.status.value})")
+
         s7_roof = {
             "assembly_name": roof.get("constructionId", "Insulated_Heavy_Metal_Roof"),
             "pitch_degrees": float(geom.get("roofAngle", 15.0)),
             "overhang_m": 0.45,
             "u_value_w_m2k": 0.18,
-            "solar_absorptance": 0.68,
+            "solar_absorptance": roof_mat.solar_absorptance if (roof_mat and roof_mat.solar_absorptance is not None) else 0.68,
         }
 
         # 8. Floor
@@ -352,15 +384,20 @@ class EngineeringReportCompiler:
         }
 
         # 23. Sources
+        sources_list = [
+            "ASHRAE Handbook of Fundamentals (Chapter 18 & 26: Building Envelope Thermal Performance).",
+            "ASHRAE Standard 55-2023: Thermal Environmental Conditions for Human Occupancy.",
+            "ISHRAE Weather Data & Energy Simulation Guide (IND_JK_Leh.420270).",
+            "ISO 7730 / ISO 13790: Energy Performance of Buildings — Calculation of Energy Use for Space Heating.",
+            "EnergyPlus Engineering Reference: Auxiliary Heat Balance and Conduction Transfer Functions.",
+            "National Building Code of India (NBC 2016) & ECBC 2017: Extreme Cold Zone Building Guidelines.",
+        ]
+        for ms in material_sources:
+            if ms not in sources_list:
+                sources_list.append(ms)
+
         s23_sources = {
-            "sources": [
-                "ASHRAE Handbook of Fundamentals (Chapter 18 & 26: Building Envelope Thermal Performance).",
-                "ASHRAE Standard 55-2023: Thermal Environmental Conditions for Human Occupancy.",
-                "ISHRAE Weather Data & Energy Simulation Guide (IND_JK_Leh.420270).",
-                "ISO 7730 / ISO 13790: Energy Performance of Buildings — Calculation of Energy Use for Space Heating.",
-                "EnergyPlus Engineering Reference: Auxiliary Heat Balance and Conduction Transfer Functions.",
-                "National Building Code of India (NBC 2016) & ECBC 2017: Extreme Cold Zone Building Guidelines.",
-            ]
+            "sources": sources_list
         }
 
         # 24. Validation Notes
@@ -413,6 +450,8 @@ class EngineeringReportCompiler:
                 "24_validation_notes": s24_validation_notes,
             },
         }
+
+    compile_comprehensive_report = compile_24_section_report
 
     # -------------------------------------------------------------------------
     # EXPORT 1: JSON Export

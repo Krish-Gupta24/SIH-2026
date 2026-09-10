@@ -9,7 +9,7 @@ const Shelter3DDesigner = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="flex h-[calc(100vh-4rem)] flex-col items-center justify-center space-y-4 bg-slate-950 text-slate-400">
+      <div className="flex h-screen flex-col items-center justify-center space-y-4 bg-slate-950 text-slate-400">
         <div className="relative">
           <Box className="h-12 w-12 text-sky-500 animate-pulse" />
           <Loader2 className="absolute -bottom-2 -right-2 h-5 w-5 text-sky-400 animate-spin" />

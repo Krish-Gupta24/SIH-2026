@@ -51,6 +51,9 @@ class SimulationJobRecord:
     celery_task_id: Optional[str] = None
     logs: Dict[str, Any] = field(default_factory=dict)
     normalized_results: Optional[Dict[str, Any]] = None
+    weather_provenance: Optional[Dict[str, Any]] = None
+    simulation_period: Optional[Dict[str, Any]] = None
+    allow_test_data: bool = False
 
     def to_public_dict(self) -> Dict[str, Any]:
         """Convert record to public-facing dictionary, strictly redacting internal filesystem paths."""
@@ -62,6 +65,9 @@ class SimulationJobRecord:
             "engine": self.engine,
             "engine_version": self.engine_version,
             "weather_file": self.weather_file,
+            "weather_provenance": self.weather_provenance,
+            "simulation_period": self.simulation_period,
+            "allow_test_data": self.allow_test_data,
             "run_period_days": self.run_period_days,
             "created_at": self.created_at,
             "started_at": self.started_at,
@@ -89,6 +95,9 @@ class SimulationJobStore:
         run_period_days: int = 3,
         timeout_seconds: int = 600,
         engine: str = "EnergyPlus",
+        allow_test_data: bool = False,
+        weather_provenance: Optional[Dict[str, Any]] = None,
+        simulation_period: Optional[Dict[str, Any]] = None,
     ) -> SimulationJobRecord:
         """Create and register a new simulation record in queued status."""
         record = SimulationJobRecord(
@@ -101,6 +110,9 @@ class SimulationJobStore:
             run_period_days=run_period_days,
             timeout_seconds=timeout_seconds,
             engine=engine,
+            allow_test_data=allow_test_data,
+            weather_provenance=weather_provenance,
+            simulation_period=simulation_period,
         )
         self._jobs[job_id] = record
         return record
@@ -121,6 +133,8 @@ class SimulationJobStore:
         logs: Optional[Dict[str, Any]] = None,
         normalized_results: Optional[Dict[str, Any]] = None,
         celery_task_id: Optional[str] = None,
+        weather_provenance: Optional[Dict[str, Any]] = None,
+        simulation_period: Optional[Dict[str, Any]] = None,
     ) -> Optional[SimulationJobRecord]:
         """Atomically transition job status and attach execution artifacts."""
         job = self._jobs.get(job_id)
@@ -151,6 +165,10 @@ class SimulationJobStore:
             job.normalized_results = normalized_results
         if celery_task_id is not None:
             job.celery_task_id = celery_task_id
+        if weather_provenance is not None:
+            job.weather_provenance = weather_provenance
+        if simulation_period is not None:
+            job.simulation_period = simulation_period
 
         return job
 

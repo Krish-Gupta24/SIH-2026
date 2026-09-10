@@ -92,13 +92,32 @@ readvars.audit
 
 # Environment Variables & Secrets
 .env
+.env.*
+!.env.example
 .env*.local
 .env.local
+.env.development
 .env.development.local
+.env.test
 .env.test.local
+.env.staging
+.env.staging.local
+.env.production
 .env.production.local
 *.pem
 *.key
+*.pfx
+*.p12
+*.cer
+*.crt
+*.lic
+
+# Storage & Transient Simulation Artifacts
+storage/simulations/*
+!storage/simulations/.gitkeep
+storage/reports/*
+!storage/reports/.gitkeep
+storage/weather/*.tmp
 
 # Operating System & IDE Files
 .DS_Store

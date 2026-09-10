@@ -7,14 +7,34 @@ from sqlalchemy.orm import declarative_base
 
 from backend.core.config import settings
 
-# Determine pool settings based on database dialect
+from urllib.parse import urlparse, parse_qs, urlencode, urlunparse
+
+# Determine pool settings based on database dialect and normalize URL for async drivers
+raw_url = settings.DATABASE_URL
 connect_args = {}
 pool_kwargs = {
     "echo": settings.DEBUG,
     "future": True,
 }
 
-if "postgresql" in settings.DATABASE_URL:
+# Normalize dialect prefix and connection query params for asyncpg
+parsed = urlparse(raw_url)
+scheme = parsed.scheme
+if scheme in ("postgresql", "postgres"):
+    scheme = "postgresql+asyncpg"
+elif scheme == "sqlite":
+    scheme = "sqlite+aiosqlite"
+
+query_dict = parse_qs(parsed.query)
+if "sslmode" in query_dict or "ssl" in query_dict:
+    connect_args["ssl"] = "require"
+    query_dict.pop("sslmode", None)
+    query_dict.pop("channel_binding", None)
+
+query_str = urlencode(query_dict, doseq=True)
+normalized_url = urlunparse((scheme, parsed.netloc, parsed.path, parsed.params, query_str, parsed.fragment))
+
+if "postgresql" in normalized_url:
     pool_kwargs.update({
         "pool_size": 20,
         "max_overflow": 10,
@@ -23,7 +43,7 @@ if "postgresql" in settings.DATABASE_URL:
     })
 
 engine = create_async_engine(
-    settings.DATABASE_URL,
+    normalized_url,
     connect_args=connect_args,
     **pool_kwargs,
 )

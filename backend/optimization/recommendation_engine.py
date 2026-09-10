@@ -21,6 +21,9 @@ from dataclasses import dataclass, field, asdict
 from typing import Dict, Any, List, Optional
 import math
 
+from simulation.materials.database import material_db
+from simulation.materials.glazing import glazing_db
+
 
 @dataclass
 class LocationSpecification:
@@ -581,7 +584,17 @@ class RecommendationEngine:
         )
 
         ori_val = float(params.get("orientation", geom.get("orientation", 0.0)))
-        facing = "True South (Solar Optimal)" if ori_val == 0.0 else f"{ori_val}° from South"
+        if ori_val == 0.0:
+            facing = "True North Axis 0° (Solar Facade facing True South — Optimal)"
+        elif ori_val == 90.0:
+            facing = "True North Axis 90° (Solar Facade facing True West)"
+        elif ori_val == 180.0:
+            facing = "True North Axis 180° (Solar Facade facing True North)"
+        elif ori_val == 270.0:
+            facing = "True North Axis 270° (Solar Facade facing True East)"
+        else:
+            facing = f"True North Axis {ori_val:.1f}° Clockwise"
+
         ori_spec = OrientationSpecification(
             azimuth_degrees=ori_val,
             cardinal_facing=facing,
@@ -596,8 +609,9 @@ class RecommendationEngine:
         ins_thick = float(params.get("insulation_thickness", 0.15))
         total_wall_thick = float(metrics.get("wall_thickness_m", ins_thick + 0.05))
 
-        k_ins = 0.015 if "Aerogel" in wall_const else 0.035
-        ins_mat = "Silica Aerogel Thermal Blanket" if "Aerogel" in wall_const else "Expanded Polystyrene (EPS)"
+        ins_mat_obj = material_db.get("mat-aerogel-blanket") if "Aerogel" in wall_const else material_db.get("mat-eps-insulation")
+        k_ins = ins_mat_obj.thermal_conductivity if ins_mat_obj else (0.015 if "Aerogel" in wall_const else 0.035)
+        ins_mat = ins_mat_obj.name if ins_mat_obj else ("Silica Aerogel Thermal Blanket" if "Aerogel" in wall_const else "Expanded Polystyrene (EPS)")
         u_wall = float(metrics.get("u_wall", 0.22))
         r_wall = 1.0 / max(0.01, u_wall)
 
@@ -635,8 +649,9 @@ class RecommendationEngine:
         win_area = float(params.get("window_area", 2.8))
         wwr = float(metrics.get("wwr_pct", (win_area / (length * height)) * 100))
         glazing = str(params.get("glazing_type", "Double_LowE_Argon"))
-        u_win = 0.80 if "Triple" in glazing else 1.40 if "Double" in glazing else 5.60
-        shgc = 0.52 if "Triple" in glazing else 0.62 if "Double" in glazing else 0.82
+        glaze_def = glazing_db.get_glazing(glazing)
+        u_win = glaze_def.u_value
+        shgc = glaze_def.shgc
 
         win_spec = WindowsSpecification(
             window_count=2,

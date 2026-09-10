@@ -26,7 +26,7 @@ export function ShelterMesh({
 
   const geom = useMemo(() => deriveShelter3DGeometry(model), [model]);
 
-  // Convert orientation degrees to radians around vertical Y axis
+  // Convert orientation degrees to radians around vertical Y axis (negated for clockwise rotation in Three.js)
   const orientationRad = ((model.geometry.orientation || 0) * Math.PI) / 180;
 
   const handlePointerOver = (e: ThreeEvent<PointerEvent>, id: string) => {
@@ -40,7 +40,7 @@ export function ShelterMesh({
   };
 
   return (
-    <group rotation={[0, orientationRad, 0]}>
+    <group rotation={[0, -orientationRad, 0]}>
       {/* 1. Ground Slab / Floor */}
       <mesh
         position={geom.floor.center}

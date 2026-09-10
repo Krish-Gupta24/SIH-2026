@@ -1,6 +1,8 @@
 """Material and multi-layer construction assembly models."""
 
+# pyrefly: ignore [missing-import]
 from sqlalchemy import Column, String, Text, Float, Boolean, Integer, ForeignKey, UniqueConstraint, Index
+# pyrefly: ignore [missing-import]
 from sqlalchemy.orm import relationship
 from backend.models.base import BaseEntity
 

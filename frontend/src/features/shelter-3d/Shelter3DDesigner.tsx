@@ -62,7 +62,7 @@ export function Shelter3DDesigner() {
 
   if (!activeProject) {
     return (
-      <div className="flex h-[75vh] flex-col items-center justify-center space-y-4 text-center">
+      <div className="flex h-screen flex-col items-center justify-center space-y-4 text-center bg-slate-950">
         <Box className="h-12 w-12 text-slate-500 animate-pulse" />
         <h2 className="text-xl font-bold text-white">No Active Shelter Project</h2>
         <p className="text-sm text-slate-400 max-w-md">
@@ -154,7 +154,7 @@ export function Shelter3DDesigner() {
   const wwr = totalWallArea > 0 ? (totalWindowArea / totalWallArea) * 100 : 0;
 
   return (
-    <div className="flex flex-col h-[calc(100vh-4rem)] -m-6 bg-slate-950 text-slate-100 overflow-hidden select-none">
+    <div className="flex flex-col h-screen bg-slate-950 text-slate-100 overflow-hidden select-none">
       {/* 1. Header Toolbar */}
       <div className="flex items-center justify-between px-4 py-2.5 bg-slate-900/90 border-b border-slate-800/80 backdrop-blur-md z-20">
         <div className="flex items-center gap-3">

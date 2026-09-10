@@ -16,6 +16,7 @@ from backend.simulation.store import (
 )
 from backend.core.path_security import validate_weather_file, resolve_safe_path
 from backend.core.binary_allowlist import SecurityException
+from backend.weather.validator import WeatherValidator
 from simulation.generators.energyplus_generator import EnergyPlusIDFGenerator
 from simulation.runners.energyplus_runner import EnergyPlusRunner
 from simulation.parsers.energyplus_parser import EnergyPlusOutputParser
@@ -39,11 +40,16 @@ def run_simulation_task(
     simulation_id: str,
     shelter_model: Dict[str, Any],
     weather_file_path: str,
-    run_period_days: int = 3,
+    run_period_days: Optional[int] = None,
     start_month: int = 1,
     start_day: int = 1,
+    end_month: Optional[int] = None,
+    end_day: Optional[int] = None,
+    timestep: int = 4,
+    is_annual: bool = False,
     timeout_seconds: int = 600,
     cleanup_scratch_files: bool = True,
+    allow_test_data: bool = False,
 ) -> Dict[str, Any]:
     """Execute complete building thermal simulation workflow through the 7 lifecycle stages."""
     # 1. PREPARING
@@ -83,14 +89,36 @@ def run_simulation_task(
                     break
 
         if not epw or not epw.exists():
-            fallback_epw = Path("simulation/weather/test_weather.epw").resolve()
-            if fallback_epw.exists():
-                epw = fallback_epw
-            else:
-                raise FileNotFoundError(f"Weather dataset file not found: {raw_epw.name}")
+            raise FileNotFoundError(
+                f"Weather dataset file not found: '{raw_epw.name}'. "
+                f"Silent fallback to test weather is strictly prohibited under Weather Data Policy."
+            )
 
         # Strict validation of weather file (format, magic header, size)
         validate_weather_file(epw)
+
+        # Meteorological & spatial validation against shelter model
+        loc_spec = shelter_model.get("location", {})
+        expected_lat = loc_spec.get("latitude")
+        expected_lon = loc_spec.get("longitude")
+
+        weather_val = WeatherValidator.validate_epw_file(
+            epw,
+            expected_latitude=expected_lat,
+            expected_longitude=expected_lon,
+        )
+
+        if not weather_val.is_valid:
+            joined_errs = "; ".join(weather_val.errors)
+            raise ValueError(f"Weather dataset failed physical validation: {joined_errs}")
+
+        if weather_val.is_test_data and not allow_test_data:
+            raise ValueError(
+                f"Simulation blocked: Weather file '{epw.name}' is classified as TEST DATA. "
+                f"A production simulation cannot use test weather without explicit confirmation (allow_test_data=True)."
+            )
+
+        weather_provenance = weather_val.to_dict()
 
 
         # Initialize runner & generator
@@ -98,7 +126,7 @@ def run_simulation_task(
         detected_version = runner.detected_version or "24.1.0"
         generator = EnergyPlusIDFGenerator(engine_version=detected_version)
 
-        # Generate IDF in isolated directory
+        # Generate IDF in isolated directory with dynamic simulation period
         idf_path = str((work_path / "in.idf").resolve())
         generator.generate_idf(
             shelter=shelter_model,
@@ -106,6 +134,10 @@ def run_simulation_task(
             run_period_days=run_period_days,
             start_month=start_month,
             start_day=start_day,
+            end_month=end_month,
+            end_day=end_day,
+            timestep=timestep,
+            is_annual=is_annual,
         )
 
         # 2. RUNNING
@@ -166,12 +198,30 @@ def run_simulation_task(
             )
             return {"success": False, "status": "failed", "error": sanitize_message(joined_err)}
 
+        # Resolve simulation period metadata
+        total_days = run_period_days or (365 if is_annual else 3)
+        period_metadata = {
+            "is_annual": is_annual,
+            "start_month": start_month,
+            "start_day": start_day,
+            "end_month": end_month,
+            "end_day": end_day,
+            "run_period_days": total_days,
+            "timestep_per_hour": timestep,
+            "timestep_minutes": 60 // timestep,
+            "total_timesteps": total_days * 24 * timestep,
+        }
+
         # Parse normalized simulation results
         parser_meta = {
             "engine_name": "EnergyPlus",
             "engine_version": detected_version,
             "model_version": shelter_model.get("version", "1.0.0"),
             "weather_dataset": epw.name,
+            "weather_provenance": weather_provenance,
+            "simulation_period": period_metadata,
+            "envelope_construction_metadata": generator.envelope_construction_metadata,
+            "envelope_fallback_warnings": generator.fallback_warnings,
             "execution_duration_seconds": exec_output.duration_seconds,
             "is_unconditioned": True,
         }
@@ -196,6 +246,8 @@ def run_simulation_task(
             duration_seconds=exec_output.duration_seconds,
             exit_code=0,
             engine_version=detected_version,
+            weather_provenance=weather_provenance,
+            simulation_period=period_metadata,
         )
 
         return {

@@ -73,6 +73,9 @@ export function MaterialsView() {
       thermalConductivity: k,
       density: rho,
       specificHeat: cp,
+      status: "USER_DEFINED",
+      provenance: "User Defined",
+      source: "User Input via Materials Designer",
       notes: newMatNotes.trim() || "User-defined custom engineering material.",
     });
 
@@ -202,6 +205,7 @@ export function MaterialsView() {
               <TableRow>
                 <TableHead>Material Name</TableHead>
                 <TableHead>Category</TableHead>
+                <TableHead>Status & Provenance</TableHead>
                 <TableHead>Conductivity (W/m-K)</TableHead>
                 <TableHead>Density (kg/m³)</TableHead>
                 <TableHead>Specific Heat (J/kg-K)</TableHead>
@@ -220,6 +224,24 @@ export function MaterialsView() {
                     <Badge variant="outline" className="text-[10px]">
                       {m.category}
                     </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <div className="space-y-1">
+                      {m.status === "VERIFIED" ? (
+                        <Badge variant="outline" className="border-emerald-500/40 text-emerald-400 bg-emerald-950/20 text-[10px] gap-1">
+                          <ShieldCheck className="h-3 w-3" /> VERIFIED
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline" className="border-amber-500/40 text-amber-400 bg-amber-950/20 text-[10px]">
+                          {m.status || "USER_DEFINED"}
+                        </Badge>
+                      )}
+                      {m.source && (
+                        <div className="text-[10px] text-slate-400 truncate max-w-[200px]" title={m.source}>
+                          {m.source}
+                        </div>
+                      )}
+                    </div>
                   </TableCell>
                   <TableCell className="font-mono font-bold text-blue-400">
                     {m.thermalConductivity}

@@ -34,7 +34,7 @@ def test_api_materials_endpoint():
     eps = next(m for m in materials if m["id"] == "mat-eps-insulation")
     assert eps["thermal_conductivity"] == 0.035
     assert eps["density"] == 25.0
-    assert eps["status"] == "verified"
+    assert eps["status"].upper() == "VERIFIED"
 
 
 def test_api_weather_endpoint():

@@ -16,7 +16,7 @@ const REGION_PRESETS = [
     elevation: 3500.0,
     region: "Leh Ladakh, India",
     climateZone: "Cold / Extreme Alpine",
-    weatherSource: "test_weather.epw",
+    weatherSource: "IND_JK_Leh.420270_ISHRAE.epw",
     designWinter: -20.0,
     designSummer: 28.0,
   },
@@ -178,12 +178,37 @@ export function Step2Location({ form, advancedMode }: StepProps) {
           label="Weather Source Dataset"
           tooltip="Associated EPW (EnergyPlus Weather) dataset used for annual or design-day simulation."
           error={errors.location?.weatherSource?.message}
+          warning={
+            watch("location.weatherSource")?.toLowerCase().includes("test_weather")
+              ? "TEST DATA ONLY: Production simulation with test weather is blocked unless explicitly confirmed."
+              : undefined
+          }
         >
-          <input
-            {...register("location.weatherSource")}
-            type="text"
-            className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-emerald-500 focus:outline-none dark:border-slate-700 dark:bg-slate-900 dark:text-white"
-          />
+          <div className="space-y-1.5">
+            <input
+              {...register("location.weatherSource")}
+              type="text"
+              placeholder="e.g. IND_JK_Leh.420270_ISHRAE.epw"
+              className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-emerald-500 focus:outline-none dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+            />
+            <div className="flex items-center gap-2">
+              {watch("location.weatherSource")?.toLowerCase().includes("test_weather") ? (
+                <span className="inline-flex items-center rounded-full bg-amber-500/10 px-2 py-0.5 text-[10px] font-bold tracking-wide text-amber-500 ring-1 ring-inset ring-amber-500/20">
+                  TEST DATA
+                </span>
+              ) : watch("location.weatherSource")?.toLowerCase().includes("user_defined") ||
+                watch("location.weatherSource")?.toLowerCase().includes("manual") ? (
+                <span className="inline-flex items-center rounded-full bg-purple-500/10 px-2 py-0.5 text-[10px] font-bold tracking-wide text-purple-400 ring-1 ring-inset ring-purple-500/20">
+                  USER-DEFINED
+                </span>
+              ) : (
+                <span className="inline-flex items-center rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold tracking-wide text-emerald-400 ring-1 ring-inset ring-emerald-500/20">
+                  REAL DATA
+                </span>
+              )}
+              <span className="text-[10px] text-slate-400">Policy: Zero Silent Fallback</span>
+            </div>
+          </div>
         </FieldWrapper>
 
         {advancedMode && (

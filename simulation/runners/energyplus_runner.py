@@ -38,6 +38,11 @@ class EnergyPlusRunner:
     def __init__(self, custom_executable_path: Optional[str] = None):
         self.executable_path, self.detected_version = self._resolve_binary(custom_executable_path)
 
+    @property
+    def is_available(self) -> bool:
+        """Return True if a valid EnergyPlus binary was resolved on host."""
+        return self.executable_path is not None and Path(self.executable_path).is_file()
+
     @classmethod
     def _resolve_binary(cls, custom_path: Optional[str] = None) -> Tuple[Optional[str], Optional[str]]:
         """Locate EnergyPlus executable across environment variables and standard installation paths."""

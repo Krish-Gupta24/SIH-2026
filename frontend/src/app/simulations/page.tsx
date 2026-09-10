@@ -1,3 +1,4 @@
+import React, { Suspense } from "react";
 import { AppShell } from "@/components/layout/AppShell";
 import { SimulationsView } from "@/features/simulations/SimulationsView";
 
@@ -9,7 +10,9 @@ export const metadata = {
 export default function SimulationsPage() {
   return (
     <AppShell>
-      <SimulationsView />
+      <Suspense fallback={<div className="text-slate-400 p-8 text-center">Loading simulation queue...</div>}>
+        <SimulationsView />
+      </Suspense>
     </AppShell>
   );
 }

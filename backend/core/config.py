@@ -28,6 +28,7 @@ class Settings(BaseSettings):
     DATABASE_URL: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/shelter_thermal_db"
 
     # Redis & Celery
+    ENABLE_CELERY: bool = False
     REDIS_HOST: str = "localhost"
     REDIS_PORT: int = 6379
     CELERY_BROKER_URL: str = "redis://localhost:6379/0"

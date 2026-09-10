@@ -7,9 +7,18 @@ from dataclasses import dataclass, field
 
 class MaterialStatus(str, Enum):
     """Integrity and provenance status for physical materials."""
-    VERIFIED = "verified"         # Sourced from standard/peer-reviewed reference (ASHRAE, IS, NBC)
-    USER_DEFINED = "user-defined" # Created by user with explicit parameters
-    ESTIMATED = "estimated"       # Computed or interpolated from physical correlations
+    VERIFIED = "VERIFIED"         # Sourced from standard/peer-reviewed reference (ASHRAE, IS, NBC)
+    USER_DEFINED = "USER_DEFINED" # Created by user with explicit parameters
+    TEST_ONLY = "TEST_ONLY"       # Synthetic or automated test fixture only
+
+    @classmethod
+    def _missing_(cls, value):
+        if isinstance(value, str):
+            val_norm = value.upper().replace("-", "_")
+            for member in cls:
+                if member.value == val_norm:
+                    return member
+        return None
 
 
 @dataclass(frozen=True)
@@ -21,6 +30,7 @@ class Material:
     density: float                 # kg/m³
     thermal_conductivity: float    # W/(m·K)
     specific_heat: float           # J/(kg·K)
+    category: str = "General"      # "Insulation", "Mass / Masonry", "Structure / Metal", "Wood / Finish", "Glazing"
     thermal_absorptance: float = 0.90   # Emissivity / Longwave absorptance (0.0 to 1.0)
     solar_absorptance: float = 0.70     # Shortwave solar absorptance (0.0 to 1.0)
     visible_absorptance: float = 0.70   # Visible light absorptance (0.0 to 1.0)
@@ -29,6 +39,8 @@ class Material:
     source: str = "IS 3792:1978"        # Published standard / dataset name
     provenance: str = "Table 1"         # Exact citation / clause / table
     status: MaterialStatus = MaterialStatus.VERIFIED
+    notes: str = ""                     # Engineering application notes
+    cost_per_m3: Optional[float] = None # Reference cost index ($/m3)
 
     thickness: Optional[float] = None  # Optional nominal/default thickness (m)
 
@@ -68,6 +80,7 @@ class Material:
         d = {
             "id": self.id,
             "name": self.name,
+            "category": self.category,
             "density": self.density,
             "thermal_conductivity": self.thermal_conductivity,
             "specific_heat": self.specific_heat,
@@ -80,7 +93,10 @@ class Material:
             "source": self.source,
             "provenance": self.provenance,
             "status": self.status.value,
+            "notes": self.notes,
         }
+        if self.cost_per_m3 is not None:
+            d["cost_per_m3"] = self.cost_per_m3
         if self.thickness is not None:
             d["thickness"] = self.thickness
         return d
@@ -124,8 +140,8 @@ class Construction:
 
     def __post_init__(self):
         self.surface_type = self.surface_type.upper()
-        if self.surface_type not in ("WALL", "ROOF", "FLOOR", "PARTITION"):
-            raise ValueError(f"Invalid surface_type '{self.surface_type}'. Must be WALL, ROOF, FLOOR, or PARTITION.")
+        if self.surface_type not in ("WALL", "ROOF", "FLOOR", "PARTITION", "DOOR"):
+            raise ValueError(f"Invalid surface_type '{self.surface_type}'. Must be WALL, ROOF, FLOOR, PARTITION, or DOOR.")
         self._validate_layers()
 
     def _validate_layers(self):
@@ -199,10 +215,10 @@ class Construction:
     @property
     def status(self) -> MaterialStatus:
         """Derived provenance status based on constituent materials."""
+        if any(l.material.status == MaterialStatus.TEST_ONLY for l in self.layers):
+            return MaterialStatus.TEST_ONLY
         if any(l.material.status == MaterialStatus.USER_DEFINED for l in self.layers):
             return MaterialStatus.USER_DEFINED
-        if any(l.material.status == MaterialStatus.ESTIMATED for l in self.layers):
-            return MaterialStatus.ESTIMATED
         return MaterialStatus.VERIFIED
 
     def to_dict(self) -> Dict[str, Any]:

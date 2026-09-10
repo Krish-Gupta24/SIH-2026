@@ -1,0 +1,19 @@
+{
+  "pythonPath": "./.venv/Scripts/python.exe",
+  "venvPath": ".",
+  "venv": ".venv",
+  "pythonVersion": "3.14",
+  "typeCheckingMode": "basic",
+  "include": [
+    "backend",
+    "simulation",
+    "tests"
+  ],
+  "exclude": [
+    "frontend",
+    "**/__pycache__",
+    "**/*.pyc"
+  ],
+  "reportMissingImports": "none",
+  "reportMissingModuleSource": "none"
+}
