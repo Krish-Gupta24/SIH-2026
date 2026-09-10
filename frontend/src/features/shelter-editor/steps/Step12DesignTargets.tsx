@@ -122,6 +122,66 @@ export function Step12DesignTargets({ form, advancedMode }: StepProps) {
             className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-emerald-500 focus:outline-none dark:border-slate-700 dark:bg-slate-900 dark:text-white"
           />
         </FieldWrapper>
+        <FieldWrapper
+          label="Target Indoor Temperature"
+          unit="°C"
+          tooltip="Nominal desired indoor operative temperature setpoint or midpoint (e.g. 20°C–22°C)."
+          error={errors.designTargets?.targetIndoorTempC?.message}
+        >
+          <input
+            {...register("designTargets.targetIndoorTempC", { valueAsNumber: true })}
+            type="number"
+            step="0.5"
+            min="0"
+            max="30"
+            className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-emerald-500 focus:outline-none dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+          />
+        </FieldWrapper>
+
+        <FieldWrapper
+          label="Comfort Standard / Model"
+          tooltip="Formal standard or operational criteria applied (e.g. ASHRAE 55 Adaptive, ISO 7730 PMV/PPD, Custom Operational Band)."
+          error={errors.designTargets?.comfortModel?.message}
+        >
+          <select
+            {...register("designTargets.comfortModel")}
+            className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-emerald-500 focus:outline-none dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+          >
+            <option value="ASHRAE Standard 55 Adaptive Model (High Altitude)">ASHRAE 55 Adaptive Model (High Altitude)</option>
+            <option value="EN 16798-1 / ISO 7730 Category II">EN 16798-1 / ISO 7730 Category II</option>
+            <option value="NBC 2016 Cold Alpine Guideline">NBC 2016 Cold Alpine Guideline</option>
+            <option value="DesignTargets Operational Band (User Defined)">DesignTargets Operational Band (User Defined)</option>
+          </select>
+        </FieldWrapper>
+
+        <FieldWrapper
+          label="Comfort Assumptions"
+          tooltip="Document assumptions regarding occupant clothing (clo), metabolic rate (met), and air velocity."
+          error={errors.designTargets?.assumptions?.message}
+        >
+          <input
+            {...register("designTargets.assumptions")}
+            type="text"
+            className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-emerald-500 focus:outline-none dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+          />
+        </FieldWrapper>
+
+        <FieldWrapper
+          label="Applicable Operational Conditions"
+          tooltip="Operational environment where this thermal comfort definition is valid."
+          error={errors.designTargets?.applicableConditions?.message}
+        >
+          <input
+            {...register("designTargets.applicableConditions")}
+            type="text"
+            className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-emerald-500 focus:outline-none dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+          />
+        </FieldWrapper>
+      </div>
+
+      <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-xs text-slate-600 dark:border-slate-800 dark:bg-slate-900/50 dark:text-slate-400">
+        <span className="font-semibold text-slate-900 dark:text-slate-200">Engineering Notice: </span>
+        Thermal comfort criteria are conditionally defined by project design targets and local acclimatization. The application does not claim universal comfort based on one arbitrary fixed range.
       </div>
     </div>
   );

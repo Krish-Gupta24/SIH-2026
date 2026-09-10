@@ -25,6 +25,29 @@ class GeometrySchema(CoreSchema):
     floor_elevation: float = Field(default=0.0, ge=0.0, description="Floor height above grade in meters")
 
 
+class ComfortTargetsSchema(CoreSchema):
+    model: Optional[str] = "DesignTargets Operational Band"
+    target_indoor_temp_min: Optional[float] = 18.0
+    target_indoor_temp_max: Optional[float] = 26.0
+    target_indoor_temp: Optional[float] = 22.0
+    acceptable_ppd_max: Optional[float] = 20.0
+    adaptive_category: Optional[str] = "category_ii"
+    assumptions: Optional[str] = None
+    applicable_conditions: Optional[str] = None
+
+
+class DesignTargetsSchema(CoreSchema):
+    comfort: Optional[ComfortTargetsSchema] = None
+    comfortTempMinC: Optional[float] = None
+    comfortTempMaxC: Optional[float] = None
+    targetIndoorTempC: Optional[float] = None
+    comfortModel: Optional[str] = None
+    assumptions: Optional[str] = None
+    applicableConditions: Optional[str] = None
+    targetComfortPercent: Optional[float] = None
+    maxAnnualHeatingDemandKwhM2: Optional[float] = None
+
+
 class ShelterModelSchema(CoreSchema):
     id: str
     name: str
@@ -33,4 +56,6 @@ class ShelterModelSchema(CoreSchema):
     version: str = "1.0.0"
     location: LocationSchema
     geometry: GeometrySchema
+    design_targets: Optional[Dict[str, Any]] = None
+    designTargets: Optional[Dict[str, Any]] = None
     metadata: Dict[str, Any] = Field(default_factory=dict)

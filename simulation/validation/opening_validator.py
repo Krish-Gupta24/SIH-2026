@@ -9,13 +9,35 @@ Validates all architectural openings (windows and doors) against:
 """
 
 import math
+from dataclasses import dataclass
 from typing import Dict, List, Any, Tuple, Optional
+
+
+@dataclass
+class ValidationResult:
+    """Standardized validation outcome container."""
+    is_valid: bool
+    errors: List[str]
+
+    def __bool__(self) -> bool:
+        return self.is_valid
 
 
 class OpeningValidator:
     """Rigorous validator for shelter window and door openings."""
 
     CARDINAL_WALLS = ("north", "south", "east", "west")
+
+    @classmethod
+    def validate(cls, shelter_model: Dict[str, Any]) -> ValidationResult:
+        """Validate all openings in a canonical shelter model."""
+        openings = shelter_model.get("openings", {})
+        windows = openings.get("windows", [])
+        doors = openings.get("doors", [])
+        geometry = shelter_model.get("geometry", {})
+        is_valid, errors = cls.validate_openings(windows, doors, geometry)
+        return ValidationResult(is_valid=is_valid, errors=errors)
+
 
     @classmethod
     def get_wall_dimensions(cls, wall: str, geometry: Dict[str, Any]) -> Tuple[float, float]:

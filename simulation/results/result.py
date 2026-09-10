@@ -21,6 +21,8 @@ class EngineMetadata:
     completed_successfully: bool = True
     environment_name: Optional[str] = None
     notes: Optional[str] = None
+    simulation_id: Optional[str] = None
+    design_name: Optional[str] = None
 
     def to_dict(self) -> Dict[str, Any]:
         return asdict(self)
@@ -46,12 +48,17 @@ class EnvelopeHeatTransfer:
 
 @dataclass
 class SolarPerformance:
-    """Solar irradiance and transmitted solar gain metrics (Watts / W/m²)."""
+    """Solar irradiance, transmitted, absorbed, and window heat gain metrics (Watts / W/m²)."""
     direct_normal_irradiance: List[float] = field(default_factory=list)      # W/m²
     diffuse_horizontal_irradiance: List[float] = field(default_factory=list)  # W/m²
     global_horizontal_irradiance: List[float] = field(default_factory=list)   # W/m²
     solar_gains_total: List[float] = field(default_factory=list)             # Watts (transmitted through glazing)
     solar_gains_by_window: Dict[str, List[float]] = field(default_factory=dict)
+    window_heat_gains_total: List[float] = field(default_factory=list)       # Watts (total window heat gain: solar + glass heat balance)
+    absorbed_solar_glazing: List[float] = field(default_factory=list)        # Watts (absorbed solar in glazing layers)
+    absorbed_solar_surfaces: List[float] = field(default_factory=list)       # Watts (absorbed solar on exterior opaque surfaces)
+    useful_solar_gain_total_kwh: float = 0.0
+    status: str = "AVAILABLE"
 
     def to_dict(self) -> Dict[str, Any]:
         return asdict(self)
@@ -67,6 +74,29 @@ class EnergyMetrics:
     envelope_losses_kwh: Dict[str, float] = field(default_factory=dict)  # wall, roof, floor, window, door, infiltration
     envelope_gains_kwh: Dict[str, float] = field(default_factory=dict)
     total_solar_gains_kwh: float = 0.0
+    status: str = "AVAILABLE"
+
+    def to_dict(self) -> Dict[str, Any]:
+        return asdict(self)
+
+
+@dataclass
+class ComfortDefinition:
+    """Explicit definition, standard, and boundary conditions used for thermal comfort evaluation."""
+    min_acceptable_temperature_c: float = 18.0
+    max_acceptable_temperature_c: float = 26.0
+    target_indoor_temperature_c: Optional[float] = None
+    standard_or_model_name: str = "DesignTargets Operational Band"
+    assumptions: str = "Defined by project DesignTargets; occupant clothing and activity adjusted for site conditions."
+    applicable_conditions: str = "High-altitude unconditioned or passively heated cold-climate shelter."
+    is_universal_comfort_claimed: bool = False
+    target_range_str: str = "18.0°C – 26.0°C"
+
+    def __post_init__(self):
+        if not self.target_range_str or self.target_range_str == "18.0°C – 26.0°C":
+            self.target_range_str = f"{self.min_acceptable_temperature_c:.1f}°C – {self.max_acceptable_temperature_c:.1f}°C"
+        if self.target_indoor_temperature_c is None:
+            self.target_indoor_temperature_c = round((self.min_acceptable_temperature_c + self.max_acceptable_temperature_c) / 2.0, 1)
 
     def to_dict(self) -> Dict[str, Any]:
         return asdict(self)
@@ -77,18 +107,31 @@ class ComfortMetrics:
     """Thermal comfort analysis and degree-hours within operational boundary conditions."""
     is_valid: bool = False
     validity_reason: str = "Unvalidated"
+    status: str = "UNAVAILABLE"
     comfort_temperature_min_c: float = 18.0
     comfort_temperature_max_c: float = 26.0
-    hours_in_comfort_band: float = 0.0
-    hours_below_comfort: float = 0.0
-    hours_above_comfort: float = 0.0
-    percent_time_comfortable: float = 0.0
-    underheating_degree_hours_c_h: float = 0.0
-    overheating_degree_hours_c_h: float = 0.0
-    indoor_min_c: float = 0.0
-    indoor_max_c: float = 0.0
-    indoor_mean_c: float = 0.0
-    diurnal_temperature_swing_c: float = 0.0
+    target_indoor_temperature_c: Optional[float] = None
+    target_range_str: str = "18.0°C – 26.0°C"
+    comfort_definition: Optional[ComfortDefinition] = None
+    is_universal_comfort_claimed: bool = False
+
+    # Standardized reporting fields required by engineering specification
+    hours_inside_target: Optional[float] = None
+    hours_below_target: Optional[float] = None
+    hours_above_target: Optional[float] = None
+
+    # Backward compatible aliases
+    hours_in_comfort_band: Optional[float] = None
+    hours_below_comfort: Optional[float] = None
+    hours_above_comfort: Optional[float] = None
+
+    percent_time_comfortable: Optional[float] = None
+    underheating_degree_hours_c_h: Optional[float] = None
+    overheating_degree_hours_c_h: Optional[float] = None
+    indoor_min_c: Optional[float] = None
+    indoor_max_c: Optional[float] = None
+    indoor_mean_c: Optional[float] = None
+    diurnal_temperature_swing_c: Optional[float] = None
 
     def to_dict(self) -> Dict[str, Any]:
         return asdict(self)
@@ -198,6 +241,8 @@ class SimulationResult:
             completed_successfully=meta_dict.get("completed_successfully", True),
             environment_name=meta_dict.get("environment_name"),
             notes=meta_dict.get("notes"),
+            simulation_id=meta_dict.get("simulation_id"),
+            design_name=meta_dict.get("design_name"),
         )
 
         env_dict = data.get("envelope", {})
@@ -218,6 +263,11 @@ class SimulationResult:
             global_horizontal_irradiance=sol_dict.get("global_horizontal_irradiance", []),
             solar_gains_total=sol_dict.get("solar_gains_total", []),
             solar_gains_by_window=sol_dict.get("solar_gains_by_window", {}),
+            window_heat_gains_total=sol_dict.get("window_heat_gains_total", []),
+            absorbed_solar_glazing=sol_dict.get("absorbed_solar_glazing", []),
+            absorbed_solar_surfaces=sol_dict.get("absorbed_solar_surfaces", []),
+            useful_solar_gain_total_kwh=sol_dict.get("useful_solar_gain_total_kwh", 0.0),
+            status=sol_dict.get("status", "AVAILABLE"),
         )
 
         eng_dict = data.get("energy", {})
@@ -235,18 +285,19 @@ class SimulationResult:
         comfort = ComfortMetrics(
             is_valid=comf_dict.get("is_valid", False),
             validity_reason=comf_dict.get("validity_reason", ""),
+            status=comf_dict.get("status", "AVAILABLE" if comf_dict.get("is_valid", False) else "UNAVAILABLE"),
             comfort_temperature_min_c=comf_dict.get("comfort_temperature_min_c", 18.0),
             comfort_temperature_max_c=comf_dict.get("comfort_temperature_max_c", 26.0),
-            hours_in_comfort_band=comf_dict.get("hours_in_comfort_band", 0.0),
-            hours_below_comfort=comf_dict.get("hours_below_comfort", 0.0),
-            hours_above_comfort=comf_dict.get("hours_above_comfort", 0.0),
-            percent_time_comfortable=comf_dict.get("percent_time_comfortable", 0.0),
-            underheating_degree_hours_c_h=comf_dict.get("underheating_degree_hours_c_h", 0.0),
-            overheating_degree_hours_c_h=comf_dict.get("overheating_degree_hours_c_h", 0.0),
-            indoor_min_c=comf_dict.get("indoor_min_c", 0.0),
-            indoor_max_c=comf_dict.get("indoor_max_c", 0.0),
-            indoor_mean_c=comf_dict.get("indoor_mean_c", 0.0),
-            diurnal_temperature_swing_c=comf_dict.get("diurnal_temperature_swing_c", 0.0),
+            hours_in_comfort_band=comf_dict.get("hours_in_comfort_band"),
+            hours_below_comfort=comf_dict.get("hours_below_comfort"),
+            hours_above_comfort=comf_dict.get("hours_above_comfort"),
+            percent_time_comfortable=comf_dict.get("percent_time_comfortable"),
+            underheating_degree_hours_c_h=comf_dict.get("underheating_degree_hours_c_h"),
+            overheating_degree_hours_c_h=comf_dict.get("overheating_degree_hours_c_h"),
+            indoor_min_c=comf_dict.get("indoor_min_c"),
+            indoor_max_c=comf_dict.get("indoor_max_c"),
+            indoor_mean_c=comf_dict.get("indoor_mean_c"),
+            diurnal_temperature_swing_c=comf_dict.get("diurnal_temperature_swing_c"),
         )
 
         return cls(

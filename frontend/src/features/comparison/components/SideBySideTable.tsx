@@ -25,7 +25,7 @@ interface MetricRowConfig {
   label: string;
   unit: string;
   higherIsBetter: boolean;
-  getValue: (job: SimulationJobItem) => number;
+  getValue: (job: SimulationJobItem) => number | null;
   formatDecimals?: number;
 }
 
@@ -35,6 +35,12 @@ export function SideBySideTable({ jobs }: SideBySideTableProps) {
   const baseline = jobs[0];
   const candidates = jobs.slice(1);
 
+  const weatherNames = jobs.map((j) => j.weatherDatasetName || "Leh WMO 427053 EPW");
+  const sameWeather = new Set(weatherNames).size <= 1;
+
+  const engines = jobs.map((j) => j.engine || "EnergyPlus");
+  const sameEngine = new Set(engines).size <= 1;
+
   const METRIC_ROWS: MetricRowConfig[] = [
     // 1. Thermal Performance
     {
@@ -43,7 +49,7 @@ export function SideBySideTable({ jobs }: SideBySideTableProps) {
       label: "Minimum Nocturnal Temp (Pre-Dawn)",
       unit: "°C",
       higherIsBetter: true,
-      getValue: (j) => j.results?.summary?.indoorMinC ?? 0,
+      getValue: (j) => j.results?.summary?.indoorMinC ?? null,
       formatDecimals: 1,
     },
     {
@@ -52,7 +58,7 @@ export function SideBySideTable({ jobs }: SideBySideTableProps) {
       label: "Peak Daytime Indoor Temp",
       unit: "°C",
       higherIsBetter: true,
-      getValue: (j) => j.results?.summary?.indoorMaxC ?? 0,
+      getValue: (j) => j.results?.summary?.indoorMaxC ?? null,
       formatDecimals: 1,
     },
     {
@@ -61,7 +67,7 @@ export function SideBySideTable({ jobs }: SideBySideTableProps) {
       label: "Average Indoor Temperature",
       unit: "°C",
       higherIsBetter: true,
-      getValue: (j) => j.results?.summary?.indoorMeanC ?? 0,
+      getValue: (j) => j.results?.summary?.indoorMeanC ?? null,
       formatDecimals: 1,
     },
     {
@@ -70,7 +76,7 @@ export function SideBySideTable({ jobs }: SideBySideTableProps) {
       label: "Comfort Hours (18°C–24°C)",
       unit: "%",
       higherIsBetter: true,
-      getValue: (j) => j.results?.summary?.comfortHoursPct ?? 0,
+      getValue: (j) => j.results?.summary?.comfortHoursPct ?? null,
       formatDecimals: 1,
     },
     {
@@ -79,7 +85,7 @@ export function SideBySideTable({ jobs }: SideBySideTableProps) {
       label: "Diurnal Swing Damping Ratio",
       unit: "%",
       higherIsBetter: true,
-      getValue: (j) => j.results?.summary?.diurnalSwingDampingPct ?? 0,
+      getValue: (j) => j.results?.summary?.diurnalSwingDampingPct ?? null,
       formatDecimals: 0,
     },
 
@@ -90,7 +96,7 @@ export function SideBySideTable({ jobs }: SideBySideTableProps) {
       label: "Total Passive Solar Aperture Gains",
       unit: "kWh",
       higherIsBetter: true,
-      getValue: (j) => (j.results?.summary as any)?.totalSolarGainKwh ?? 45.0,
+      getValue: (j) => (j.results?.summary as any)?.totalSolarGainKwh ?? null,
       formatDecimals: 1,
     },
     {
@@ -99,7 +105,7 @@ export function SideBySideTable({ jobs }: SideBySideTableProps) {
       label: "Peak Conduction Loss Rate",
       unit: "W",
       higherIsBetter: false,
-      getValue: (j) => (j.results?.summary as any)?.peakEnvelopeLossW ?? 1800,
+      getValue: (j) => (j.results?.summary as any)?.peakEnvelopeLossW ?? null,
       formatDecimals: 0,
     },
     {
@@ -108,7 +114,7 @@ export function SideBySideTable({ jobs }: SideBySideTableProps) {
       label: "Underheating Degree-Hours (<18°C)",
       unit: "°C·h",
       higherIsBetter: false,
-      getValue: (j) => (j.results?.summary as any)?.underheatingDegreeHoursCh ?? 75.0,
+      getValue: (j) => (j.results?.summary as any)?.underheatingDegreeHoursCh ?? null,
       formatDecimals: 1,
     },
 
@@ -119,7 +125,7 @@ export function SideBySideTable({ jobs }: SideBySideTableProps) {
       label: "Annual Space Heating Demand",
       unit: "kWh/m²·a",
       higherIsBetter: false,
-      getValue: (j) => j.results?.summary?.heatingDemandKwhM2 ?? 0,
+      getValue: (j) => j.results?.summary?.heatingDemandKwhM2 ?? null,
       formatDecimals: 1,
     },
 
@@ -132,7 +138,7 @@ export function SideBySideTable({ jobs }: SideBySideTableProps) {
       higherIsBetter: true,
       getValue: (j) => {
         const g = j.shelterModel?.geometry;
-        return (g?.length || 6) * (g?.width || 4);
+        return g ? (g.length || 6) * (g.width || 4) : null;
       },
       formatDecimals: 1,
     },
@@ -142,7 +148,7 @@ export function SideBySideTable({ jobs }: SideBySideTableProps) {
       label: "Envelope Air Infiltration Rate",
       unit: "ACH",
       higherIsBetter: false,
-      getValue: (j) => j.shelterModel?.ventilation?.infiltrationACH ?? 0.35,
+      getValue: (j) => j.shelterModel?.ventilation?.infiltrationACH ?? null,
       formatDecimals: 2,
     },
     {
@@ -182,6 +188,17 @@ export function SideBySideTable({ jobs }: SideBySideTableProps) {
         </div>
       </div>
 
+      {!sameWeather && (
+        <div className="p-3 bg-amber-950/40 border border-amber-800/60 rounded-lg text-xs text-amber-300">
+          <strong>Weather Divergence Warning:</strong> Comparisons across different weather datasets ({Array.from(new Set(weatherNames)).join(", ")}). Direct thermal comparison is influenced by differing ambient solar and temperature profiles.
+        </div>
+      )}
+      {!sameEngine && (
+        <div className="p-3 bg-rose-950/40 border border-rose-800/60 rounded-lg text-xs text-rose-300">
+          <strong>Engine Equivalence Warning:</strong> Disparate simulation engines detected ({Array.from(new Set(engines)).join(", ")}). RC network approximations are NOT equivalent to full EnergyPlus physical simulations.
+        </div>
+      )}
+
       <div className="overflow-x-auto rounded-xl border border-slate-800">
         <Table>
           <TableHeader className="bg-slate-950/80">
@@ -198,9 +215,11 @@ export function SideBySideTable({ jobs }: SideBySideTableProps) {
                   <div className="text-xs font-bold text-white truncate max-w-[200px]">
                     {baseline.projectName}
                   </div>
-                  <span className="text-[10px] text-slate-400 font-mono">
-                    v{baseline.shelterModel?.project?.version || "1.0"}
-                  </span>
+                  <div className="flex flex-wrap gap-1 text-[9px] text-slate-400 font-mono mt-0.5">
+                    <span className="px-1 py-0.2 bg-slate-800 rounded">ID: {baseline.id.slice(0, 8)}</span>
+                    <span className="px-1 py-0.2 bg-slate-800 rounded">{baseline.engine || "EnergyPlus"}</span>
+                    <span className="px-1 py-0.2 bg-slate-800 rounded">{baseline.weatherDatasetName || "Leh EPW"}</span>
+                  </div>
                 </div>
               </TableHead>
 
@@ -214,9 +233,11 @@ export function SideBySideTable({ jobs }: SideBySideTableProps) {
                     <div className="text-xs font-bold text-sky-200 truncate max-w-[200px]">
                       {cand.projectName}
                     </div>
-                    <span className="text-[10px] text-slate-400 font-mono">
-                      v{cand.shelterModel?.project?.version || "1.0"}
-                    </span>
+                    <div className="flex flex-wrap gap-1 text-[9px] text-slate-400 font-mono mt-0.5">
+                      <span className="px-1 py-0.2 bg-slate-800 rounded">ID: {cand.id.slice(0, 8)}</span>
+                      <span className="px-1 py-0.2 bg-slate-800 rounded">{cand.engine || "EnergyPlus"}</span>
+                      <span className="px-1 py-0.2 bg-slate-800 rounded">{cand.weatherDatasetName || "Leh EPW"}</span>
+                    </div>
                   </div>
                 </TableHead>
               ))}
@@ -251,12 +272,38 @@ export function SideBySideTable({ jobs }: SideBySideTableProps) {
 
                       {/* Baseline Value */}
                       <TableCell className="bg-slate-900/40 border-l border-slate-800 font-bold text-white">
-                        {baseVal.toFixed(metric.formatDecimals ?? 1)} {metric.unit}
+                        {baseVal !== null ? (
+                          `${baseVal.toFixed(metric.formatDecimals ?? 1)} ${metric.unit}`
+                        ) : (
+                          <span className="text-slate-500 italic text-[10px]">
+                            Metric unavailable from this simulation
+                          </span>
+                        )}
                       </TableCell>
 
                       {/* Candidate Values with Delta % */}
                       {candidates.map((cand) => {
                         const candVal = metric.getValue(cand);
+                        if (candVal === null) {
+                          return (
+                            <TableCell key={cand.id} className="border-l border-slate-800">
+                              <span className="text-slate-500 italic text-[10px]">
+                                Metric unavailable from this simulation
+                              </span>
+                            </TableCell>
+                          );
+                        }
+
+                        if (baseVal === null) {
+                          return (
+                            <TableCell key={cand.id} className="border-l border-slate-800">
+                              <span className="font-bold text-slate-100">
+                                {candVal.toFixed(metric.formatDecimals ?? 1)} {metric.unit}
+                              </span>
+                            </TableCell>
+                          );
+                        }
+
                         const diff = calculateDifference(
                           baseVal,
                           candVal,

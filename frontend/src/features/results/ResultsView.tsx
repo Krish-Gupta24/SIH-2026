@@ -102,40 +102,70 @@ export function ResultsView() {
   const doorHeatTransfer = hourlyTimeseries.map((t) => t.doorHeatTransferW);
   const infiltrationHeatTransfer = hourlyTimeseries.map((t) => t.infiltrationHeatTransferW);
 
-  // Derive comfort metrics from summary or defaults
+  // Derive comfort metrics from verified summary or null
+  const rawUnderheating = (summary as any)?.underheatingDegreeHoursCh ?? (activeJob.results as any)?.comfort?.underheating_degree_hours_c_h;
+  const underheatingDegreeHoursCh = typeof rawUnderheating === "number" ? rawUnderheating : null;
+
   const comfortMetrics = {
-    isValid: true,
-    validityReason: "ASHRAE 55 Adaptive Comfort criteria satisfied for alpine climate zone.",
+    isValid: (activeJob.results as any)?.comfort?.is_valid ?? true,
+    validityReason: (activeJob.results as any)?.comfort?.validity_reason || "ASHRAE 55 Adaptive Comfort criteria evaluated for alpine climate zone.",
     comfortTemperatureMinC: 18.0,
     comfortTemperatureMaxC: 26.0,
-    hoursInComfortBand: (summary.comfortHoursPct / 100) * timestamps.length,
-    hoursBelowComfort: ((100 - summary.comfortHoursPct) / 100) * timestamps.length,
+    hoursInComfortBand: typeof summary.comfortHoursPct === "number" ? (summary.comfortHoursPct / 100) * timestamps.length : null,
+    hoursBelowComfort: typeof summary.comfortHoursPct === "number" ? ((100 - summary.comfortHoursPct) / 100) * timestamps.length : null,
     hoursAboveComfort: 0,
     percentTimeComfortable: summary.comfortHoursPct,
-    underheatingDegreeHoursCh: (summary as any).underheatingDegreeHoursCh || 68.4,
+    underheatingDegreeHoursCh,
     overheatingDegreeHoursCh: 0,
     indoorMinC: summary.indoorMinC,
     indoorMaxC: summary.indoorMaxC,
     indoorMeanC: summary.indoorMeanC,
-    diurnalTemperatureSwingC: Number((summary.indoorMaxC - summary.indoorMinC).toFixed(1)),
+    diurnalTemperatureSwingC: typeof summary.indoorMaxC === "number" && typeof summary.indoorMinC === "number"
+      ? Number((summary.indoorMaxC - summary.indoorMinC).toFixed(1))
+      : null,
   };
+
+  // Dynamically compute envelope losses from verified timeseries integration if available
+  const integrateLossKwh = (series: number[]) => {
+    if (!series || series.length === 0) return 0;
+    const negSum = series.reduce((acc, val) => acc + (val < 0 ? Math.abs(val) : 0), 0);
+    return Number((negSum / 1000).toFixed(1));
+  };
+
+  const wallLoss = integrateLossKwh(wallHeatTransfer);
+  const roofLoss = integrateLossKwh(roofHeatTransfer);
+  const floorLoss = integrateLossKwh(floorHeatTransfer);
+  const windowLoss = integrateLossKwh(windowHeatTransfer);
+  const doorLoss = integrateLossKwh(doorHeatTransfer);
+  const infilLoss = integrateLossKwh(infiltrationHeatTransfer);
+  const hasTimeseriesLosses = (wallLoss + roofLoss + floorLoss + windowLoss + doorLoss + infilLoss) > 0;
+
+  const rawEnvelopeLosses = (activeJob.results as any)?.energy?.envelope_losses_kwh;
+  const envelopeLossesKwh = rawEnvelopeLosses && Object.keys(rawEnvelopeLosses).length > 0
+    ? rawEnvelopeLosses
+    : hasTimeseriesLosses
+    ? {
+        walls: wallLoss,
+        roof: roofLoss,
+        floor: floorLoss,
+        windows: windowLoss,
+        doors: doorLoss,
+        infiltration: infilLoss,
+      }
+    : null;
+
+  const rawSolarGain = (summary as any)?.totalSolarGainKwh ?? (activeJob.results as any)?.solar?.useful_solar_gain_total_kwh;
+  const totalSolarGainsKwh = typeof rawSolarGain === "number" ? rawSolarGain : null;
 
   // Derive energy metrics
   const energyMetrics = {
-    heatingDemandKwh: summary.heatingDemandKwhM2 * 24, // based on 24m² floor
+    heatingDemandKwh: typeof summary.heatingDemandKwhM2 === "number" ? summary.heatingDemandKwhM2 * 24 : null, // based on 24m² floor
     coolingDemandKwh: 0,
-    netEnergyDemandKwh: summary.heatingDemandKwhM2 * 24,
+    netEnergyDemandKwh: typeof summary.heatingDemandKwhM2 === "number" ? summary.heatingDemandKwhM2 * 24 : null,
     isUnconditioned: true,
-    envelopeLossesKwh: {
-      walls: 42.5,
-      roof: 28.0,
-      floor: 12.4,
-      windows: 18.2,
-      doors: 6.5,
-      infiltration: 21.0,
-    },
+    envelopeLossesKwh,
     envelopeGainsKwh: {},
-    totalSolarGainsKwh: (summary as any).totalSolarGainKwh || 48.6,
+    totalSolarGainsKwh,
   };
 
   return (
@@ -307,6 +337,11 @@ export function ResultsView() {
             timestamps={timestamps}
             solarRadiation={solarRadiation}
             solarGains={solarGains}
+            directNormal={activeJob.results.solar?.directNormalIrradiance || (activeJob.results as any)?.solar?.direct_normal_irradiance}
+            windowHeatGains={(activeJob.results as any)?.solar?.window_heat_gains_total || (activeJob.results as any)?.solar?.windowHeatGainsTotal}
+            absorbedGlazing={(activeJob.results as any)?.solar?.absorbed_solar_glazing || (activeJob.results as any)?.solar?.absorbedSolarGlazing}
+            absorbedSurfaces={(activeJob.results as any)?.solar?.absorbed_solar_surfaces || (activeJob.results as any)?.solar?.absorbedSolarSurfaces}
+            usefulSolarGainKwh={(activeJob.results as any)?.solar?.useful_solar_gain_total_kwh ?? (activeJob.results as any)?.solar?.usefulSolarGainTotalKwh ?? (summary as any)?.totalSolarGainKwh}
             unit={unit}
           />
         </TabsContent>

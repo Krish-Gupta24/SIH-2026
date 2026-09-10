@@ -66,7 +66,7 @@ export interface ReproducibilityManifest {
     dimensions: string;
     floorAreaM2: number;
     volumeM3: number;
-    wallUValueApprox: number;
-    infiltrationACH: number;
+    wallUValueApprox: number | string | null;
+    infiltrationACH: number | string | null;
   }[];
 }

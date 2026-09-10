@@ -13,6 +13,7 @@ from simulation.parsers.energyplus_parser import EnergyPlusOutputParser
 from simulation.results.result import SimulationResult
 from simulation.results.parser import EnergyPlusResultParser
 from simulation.validation.opening_validator import OpeningValidator
+from simulation.validation.result_completeness_validator import ResultCompletenessValidator, CompletenessStatus
 
 
 class EnergyPlusEngine:
@@ -171,6 +172,10 @@ class EnergyPlusEngine:
             }
             return self.normalized_results
 
+        # Extract comfort criteria from ShelterModel DesignTargets
+        from simulation.results.metrics import parse_comfort_definition
+        comf_def = parse_comfort_definition(self.shelter_model)
+
         # Parse raw artifacts into normalized SimulationResult
         parser_meta = {
             "engine_name": "EnergyPlus",
@@ -179,6 +184,13 @@ class EnergyPlusEngine:
             "weather_dataset": Path(self.epw_path).name,
             "execution_duration_seconds": self.execution_output.duration_seconds,
             "is_unconditioned": True,
+            "comfort_definition": comf_def,
+            "comfort_min_c": comf_def.min_acceptable_temperature_c,
+            "comfort_max_c": comf_def.max_acceptable_temperature_c,
+            "target_temp_c": comf_def.target_indoor_temperature_c,
+            "comfort_model_name": comf_def.standard_or_model_name,
+            "comfort_assumptions": comf_def.assumptions,
+            "comfort_applicable_conditions": comf_def.applicable_conditions,
         }
         self.simulation_result = self.result_parser.parse(self.work_dir, metadata=parser_meta)
         result_dict = self.simulation_result.to_dict()
@@ -186,17 +198,30 @@ class EnergyPlusEngine:
         # Parse CSV time-series and legacy metrics for backward compatibility
         csv_data = self.parser.parse_csv_results(self.execution_output.csv_file_path)
 
-        self.status = "COMPLETED"
+        # Strict completeness validation
+        shelter_id = self.shelter_model.get("id", "shelter") if self.shelter_model else "shelter"
+        completeness = ResultCompletenessValidator.validate_simulation_result(
+            result=self.simulation_result,
+            simulation_id=shelter_id,
+            engine_status="EXECUTED",
+        )
+        self.status = completeness.status.value
+        is_success = completeness.status != CompletenessStatus.INVALID
+
         self.normalized_results = {
-            "success": True,
+            "success": is_success,
             "status": self.status,
+            "completeness_status": completeness.status.value,
+            "completeness_report": completeness.to_dict(),
+            "metric_availability": completeness.availability_by_metric,
+            "comfort_definition": self.simulation_result.comfort.comfort_definition.to_dict() if self.simulation_result.comfort.comfort_definition else None,
             "exit_code": self.execution_output.exit_code,
             "engine": "EnergyPlus",
             "engine_version": self.runner.detected_version,
             "command_executed": self.execution_output.command_executed,
             "duration_seconds": self.execution_output.duration_seconds,
             "work_dir": self.work_dir,
-            "is_physically_valid": False,  # Model has completed; engineering validation pending
+            "is_physically_valid": completeness.is_physically_complete,
             "metadata": {
                 **result_dict["metadata"],
                 "shelter_id": self.shelter_model.get("id") if self.shelter_model else None,
@@ -220,6 +245,22 @@ class EnergyPlusEngine:
                 "outdoor_temperature": csv_data.get("outdoor_temperature", {}),
                 "solar_radiation": csv_data.get("solar_radiation", {}),
                 "timesteps_simulated": self.simulation_result.timesteps_count,
+                "comfort": {
+                    "target_range": self.simulation_result.comfort.target_range_str,
+                    "target_indoor_temperature_c": self.simulation_result.comfort.target_indoor_temperature_c,
+                    "actual_temperature": {
+                        "min_c": self.simulation_result.comfort.indoor_min_c,
+                        "max_c": self.simulation_result.comfort.indoor_max_c,
+                        "mean_c": self.simulation_result.comfort.indoor_mean_c,
+                    },
+                    "hours_inside_target": self.simulation_result.comfort.hours_inside_target,
+                    "hours_below_target": self.simulation_result.comfort.hours_below_target,
+                    "hours_above_target": self.simulation_result.comfort.hours_above_target,
+                    "percent_time_comfortable": self.simulation_result.comfort.percent_time_comfortable,
+                    "underheating_degree_hours_c_h": self.simulation_result.comfort.underheating_degree_hours_c_h,
+                    "overheating_degree_hours_c_h": self.simulation_result.comfort.overheating_degree_hours_c_h,
+                    "comfort_definition": self.simulation_result.comfort.comfort_definition.to_dict() if self.simulation_result.comfort.comfort_definition else None,
+                },
             },
             # Canonical normalized result schema
             "timestamps": result_dict["timestamps"],

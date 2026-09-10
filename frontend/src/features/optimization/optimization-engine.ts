@@ -441,6 +441,10 @@ export function runClientParameterSweep(
     evaluated.push({
       id: `cand-${String(idx + 1).padStart(3, "0")}`,
       rank: 0,
+      simulationId: `sim-rc-${String(idx + 1).padStart(3, "0")}`,
+      engineVersion: "RC Model (Client Approximation)",
+      weatherDataset: model.location?.region || "Local Design Baseline",
+      status: "COMPLETED",
       parameters: params,
       metrics,
       objectiveScore: score,
@@ -488,7 +492,8 @@ export function runClientParameterSweep(
   return {
     runId,
     timestamp: new Date().toISOString(),
-    algorithm: "Deterministic Parameter Sweep",
+    algorithm: "Deterministic Parameter Sweep (RC Approximation)",
+    engineVersion: "RC Model (Client Preview)",
     objective,
     objectiveTitle: objConfig?.label || "Maximize Comfort",
     baseProjectId: model.id,
@@ -496,10 +501,107 @@ export function runClientParameterSweep(
     totalGenerated: combinations.length,
     validCount,
     feasibleCount,
+    failedCount: 0,
     executionDurationSec: Number(durationSec.toFixed(2)),
     parametersSwept: selectedParameters,
     bestCandidate,
     rankedCandidates: evaluated,
     paretoCandidates: evaluated.filter((c) => c.isPareto),
+  };
+}
+
+export async function runBackendEnergyPlusSweep(
+  model: ShelterModel,
+  selectedParameters: SweptParameterId[],
+  objective: OptimizationObjectiveId,
+  constraints: OptimizationConstraintConfig[],
+  maxCandidates: number = 25,
+  runPeriodDays: number = 3
+): Promise<OptimizationSweepResult> {
+  const payload = {
+    shelter_model: model,
+    objective,
+    parameters_to_sweep: selectedParameters,
+    constraints: constraints.filter((c) => c.enabled).map((c) => ({
+      name: c.name,
+      metric:
+        c.metric === "indoorMinC"
+          ? "indoor_min_c"
+          : c.metric === "wallThicknessM"
+          ? "total_wall_thickness_m"
+          : c.metric === "wwrPct"
+          ? "window_to_wall_ratio_pct"
+          : "comfort_hours_pct",
+      operator: c.operator,
+      threshold: c.threshold,
+      description: c.description,
+    })),
+    max_candidates: maxCandidates,
+    run_period_days: runPeriodDays,
+  };
+
+  const response = await fetch("/api/v1/optimization/sweep", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    const errText = await response.text();
+    throw new Error(`EnergyPlus optimization sweep failed (${response.status}): ${errText}`);
+  }
+
+  const data = await response.json();
+  const meta = data.metadata || {};
+
+  const ranked: CandidateResult[] = (data.ranked_candidates || []).map((c: any) => ({
+    id: c.candidate_id,
+    rank: c.rank,
+    simulationId: c.simulation_id,
+    engineVersion: c.engine_version || meta.engine_version || "EnergyPlus v24.1.0",
+    weatherDataset: c.weather_dataset || meta.weather_dataset,
+    status: c.status || "COMPLETED",
+    parameters: c.parameters,
+    metrics: {
+      indoorMinC: c.metrics?.indoor_min_c ?? 0,
+      indoorMaxC: c.metrics?.indoor_max_c ?? 0,
+      indoorMeanC: c.metrics?.indoor_mean_c ?? 0,
+      diurnalSwingC: c.metrics?.diurnal_swing_c ?? 0,
+      comfortHoursPct: c.metrics?.comfort_hours_pct ?? 0,
+      heatingDemandKwhM2: c.metrics?.heating_demand_kwh_m2 ?? 0,
+      peakHeatLossW: c.metrics?.peak_heat_loss_w ?? 0,
+      totalSolarGainKwh: c.metrics?.total_solar_gain_kwh ?? 0,
+      totalHeatLossUA: c.metrics?.total_heat_loss_rate_ua ?? 0,
+      wallThicknessM: c.metrics?.total_wall_thickness_m ?? 0,
+      wwrPct: c.metrics?.window_to_wall_ratio_pct ?? 0,
+      dampingRatioPct: c.metrics?.diurnal_swing_damping_pct ?? 0,
+      materialCostUsd: c.metrics?.material_cost_usd ?? 0,
+    },
+    objectiveScore: c.objective_score ?? 0,
+    isFeasible: c.is_feasible ?? false,
+    violations: c.constraint_violations || [],
+    isPareto: c.is_pareto_optimal || false,
+  }));
+
+  const best = ranked[0] || null;
+
+  return {
+    runId: meta.run_id || `opt-${Date.now()}`,
+    timestamp: meta.timestamp || new Date().toISOString(),
+    algorithm: meta.algorithm || "Deterministic Parameter Sweep (EnergyPlus Physical Simulation)",
+    engineVersion: meta.engine_version || "24.1.0",
+    objective,
+    objectiveTitle: OPTIMIZATION_OBJECTIVES.find((o) => o.id === objective)?.label || "Maximize Comfort",
+    baseProjectId: meta.base_project_id || model.id,
+    weatherDataset: meta.weather_dataset || "Weather EPW",
+    totalGenerated: meta.total_generated || ranked.length,
+    validCount: meta.valid_count || ranked.length,
+    feasibleCount: meta.feasible_count || ranked.filter((r) => r.isFeasible).length,
+    failedCount: meta.failed_count || ranked.filter((r) => r.status === "FAILED").length,
+    executionDurationSec: meta.execution_duration_seconds || 0,
+    parametersSwept: selectedParameters,
+    bestCandidate: best,
+    rankedCandidates: ranked,
+    paretoCandidates: ranked.filter((r) => r.isPareto),
   };
 }

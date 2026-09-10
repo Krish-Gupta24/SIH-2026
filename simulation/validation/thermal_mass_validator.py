@@ -8,6 +8,7 @@ sound penetration thicknesses, and zone exposure parameters without arbitrary fa
 import math
 from typing import Any, Dict, List, Optional, Tuple, Union
 from simulation.materials.database import material_db
+from simulation.validation.opening_validator import ValidationResult
 
 
 class ThermalMassValidator:
@@ -17,6 +18,13 @@ class ThermalMassValidator:
     MIN_THICKNESS_M = 0.005
     MAX_SURFACE_AREA_M2 = 1000.0
     MIN_SURFACE_AREA_M2 = 0.05
+
+    @classmethod
+    def validate(cls, shelter_model: Dict[str, Any]) -> ValidationResult:
+        """Validate thermal mass configuration in shelter model."""
+        is_valid, errors = cls.validate_thermal_mass(shelter_model)
+        return ValidationResult(is_valid=is_valid, errors=errors)
+
 
     KNOWN_MASS_TYPES = {
         "floorslab", "floor_slab", "floor",

@@ -10,6 +10,7 @@ from backend.api.v1.endpoints import (
     optimization,
     reports,
     auth,
+    validation,
 )
 
 api_router = APIRouter()
@@ -22,4 +23,5 @@ api_router.include_router(weather.router, prefix="/weather", tags=["Climate & We
 api_router.include_router(materials.router, prefix="/materials", tags=["Materials & Constructions"])
 api_router.include_router(optimization.router, prefix="/optimization", tags=["Multi-Objective Optimization"])
 api_router.include_router(reports.router, prefix="/reports", tags=["Reports & Provenance"])
+api_router.include_router(validation.router, prefix="/validation", tags=["Empirical Validation"])
 

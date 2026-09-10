@@ -68,6 +68,10 @@ export interface CandidateMetrics {
 export interface CandidateResult {
   id: string;
   rank: number;
+  simulationId?: string;
+  engineVersion?: string;
+  weatherDataset?: string;
+  status?: "COMPLETED" | "FAILED";
   parameters: Record<string, any>;
   metrics: CandidateMetrics;
   objectiveScore: number;
@@ -80,6 +84,7 @@ export interface OptimizationSweepResult {
   runId: string;
   timestamp: string;
   algorithm: string;
+  engineVersion?: string;
   objective: OptimizationObjectiveId;
   objectiveTitle: string;
   baseProjectId: string;
@@ -87,6 +92,7 @@ export interface OptimizationSweepResult {
   totalGenerated: number;
   validCount: number;
   feasibleCount: number;
+  failedCount?: number;
   executionDurationSec: number;
   parametersSwept: SweptParameterId[];
   bestCandidate: CandidateResult;

@@ -271,6 +271,26 @@ async def queue_simulation(req: SimulationRequest, request: Request):
 
 
 @router.get(
+    "/output-variables",
+    summary="Get centralized EnergyPlus output variable registry and concept mappings",
+)
+async def get_output_variables():
+    """Return verified output variable specifications and solar concepts."""
+    from simulation.results.output_registry import OutputVariableRegistry
+    return {
+        "variables": OutputVariableRegistry.get_mapping_table(),
+        "total_count": len(OutputVariableRegistry.get_all()),
+        "solar_concepts": [
+            "incident solar radiation",
+            "transmitted solar radiation where supported",
+            "absorbed solar gains where supported",
+            "solar heat gain through windows",
+            "total useful solar gain",
+        ],
+    }
+
+
+@router.get(
     "/{simulation_id}",
     summary="Get current simulation lifecycle status",
 )

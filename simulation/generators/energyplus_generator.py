@@ -16,6 +16,7 @@ from simulation.materials.glazing import glazing_db, GlazingDefinition, FrameDef
 from simulation.validation.opening_validator import OpeningValidator
 from simulation.validation.ventilation_validator import VentilationValidator
 from simulation.validation.thermal_mass_validator import ThermalMassValidator
+from simulation.results.output_registry import OutputVariableRegistry
 
 
 class EnergyPlusIDFGenerator:
@@ -27,6 +28,53 @@ class EnergyPlusIDFGenerator:
         self.last_envelope_constructions: Dict[str, Construction] = {}
         self.fallback_warnings: List[str] = []
         self.envelope_construction_metadata: Dict[str, Any] = {}
+
+    def generate(
+        self,
+        shelter_model: Optional[Dict[str, Any]] = None,
+        run_period_days: Optional[int] = 1,
+        start_month: int = 1,
+        start_day: int = 1,
+        timesteps_per_hour: int = 4,
+        *args,
+        **kwargs,
+    ) -> str:
+        """Generate and return raw EnergyPlus IDF content string."""
+        import tempfile
+        import os
+
+        # Support positional arguments if passed
+        model = shelter_model
+        if model is None and len(args) > 0:
+            model = args[0]
+        if len(args) > 1:
+            run_period_days = args[1]
+        if len(args) > 2:
+            start_month = args[2]
+        if len(args) > 3:
+            start_day = args[3]
+        if len(args) > 4:
+            timesteps_per_hour = args[4]
+
+        fd, temp_path = tempfile.mkstemp(suffix=".idf")
+        os.close(fd)
+        try:
+            self.generate_idf(
+                shelter=model,
+                output_path=temp_path,
+                run_period_days=run_period_days,
+                start_month=start_month,
+                start_day=start_day,
+                timestep=timesteps_per_hour,
+            )
+            with open(temp_path, "r", encoding="utf-8") as f:
+                return f.read()
+        finally:
+            if os.path.exists(temp_path):
+                try:
+                    os.remove(temp_path)
+                except OSError:
+                    pass
 
     @staticmethod
     def calculate_geometry_properties(
@@ -367,7 +415,11 @@ class EnergyPlusIDFGenerator:
             }
 
         # Resolve door constructions dynamically
-        doors = shelter.get("doors", []) or env.get("doors", [])
+        doors = (
+            shelter.get("doors", [])
+            or shelter.get("openings", {}).get("doors", [])
+            or env.get("doors", [])
+        )
         for idx, door in enumerate(doors):
             raw_wall = str(door.get("wall") or door.get("wall_id", "north")).strip().lower()
             wall_key = raw_wall.replace("wall_", "").replace("_wall", "")
@@ -520,7 +572,7 @@ class EnergyPlusIDFGenerator:
         lat = float(loc.get("latitude", 34.15))
         lon = float(loc.get("longitude", 77.58))
         elevation = float(loc.get("elevation", 3500.0))
-        loc_name = loc.get("region", "Leh_Ladakh_IND").replace(" ", "_")
+        loc_name = re.sub(r'[^a-zA-Z0-9_-]', '_', str(loc.get("region", "Leh_Ladakh_IND")))
 
         # Compute geometry properties
         props = self.calculate_geometry_properties(length, width, height, roof_type, roof_angle)
@@ -727,8 +779,16 @@ class EnergyPlusIDFGenerator:
         idf_lines.extend(surfaces)
 
         # Fenestration (Windows & Doors) generation from canonical ShelterModel
-        windows = shelter.get("windows", []) or shelter.get("envelope", {}).get("windows", [])
-        doors = shelter.get("doors", []) or shelter.get("envelope", {}).get("doors", [])
+        windows = (
+            shelter.get("windows", [])
+            or shelter.get("openings", {}).get("windows", [])
+            or shelter.get("envelope", {}).get("windows", [])
+        )
+        doors = (
+            shelter.get("doors", [])
+            or shelter.get("openings", {}).get("doors", [])
+            or shelter.get("envelope", {}).get("doors", [])
+        )
         fenestration_lines = self._build_fenestrations(
             windows=windows,
             doors=doors,
@@ -844,24 +904,18 @@ class EnergyPlusIDFGenerator:
             ])
 
         idf_lines.extend([
-            f"!- ==========================================================================",
-            f"!- OUTPUT REQUESTS",
-            f"!- ==========================================================================",
-            f"Output:Variable, *, Zone Mean Air Temperature, Hourly;",
-            f"Output:Variable, *, Site Outdoor Air Drybulb Temperature, Hourly;",
-            f"Output:Variable, *, Site Direct Solar Radiation Rate per Area, Hourly;",
-            f"Output:Variable, *, Site Diffuse Solar Radiation Rate per Area, Hourly;",
-            f"Output:Variable, *, Surface Inside Face Conduction Heat Transfer Rate, Hourly;",
-            f"Output:Variable, *, Surface Outside Face Conduction Heat Transfer Rate, Hourly;",
-            f"Output:Variable, *, Surface Window Transmitted Solar Radiation Rate, Hourly;",
-            f"Output:Variable, *, Zone Infiltration Sensible Heat Loss Energy, Hourly;",
-            f"Output:Variable, *, Zone Infiltration Sensible Heat Gain Energy, Hourly;",
-            f"Output:Variable, *, Zone Infiltration Air Change Rate, Hourly;",
-            f"Output:Variable, *, Zone Infiltration Current Density Volume Flow Rate, Hourly;",
-            f"Output:Table:SummaryReports, AllSummary;",
-            f"OutputControl:Table:Style, HTML;",
-            f"Output:VariableDictionary, Regular;",
-            f"",
+            "!- ==========================================================================",
+            "!- OUTPUT REQUESTS",
+            "!- ==========================================================================",
+        ])
+        # Output requests driven strictly by centralized OutputVariableRegistry
+        output_requests = OutputVariableRegistry.get_idf_output_lines()
+        idf_lines.extend(output_requests)
+        idf_lines.extend([
+            "Output:Table:SummaryReports, AllSummary;",
+            "OutputControl:Table:Style, HTML;",
+            "Output:VariableDictionary, Regular;",
+            "",
         ])
 
         target_file = Path(output_path)
@@ -1676,3 +1730,7 @@ class EnergyPlusIDFGenerator:
             ])
 
         return lines
+
+
+# Backward compatibility alias
+EnergyPlusGenerator = EnergyPlusIDFGenerator

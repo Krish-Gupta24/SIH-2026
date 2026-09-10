@@ -118,6 +118,7 @@ class WeatherValidator:
         max_coordinate_delta_km: float = 150.0,
     ) -> WeatherValidationResult:
         """Perform comprehensive validation of an EPW file."""
+        epw_path = Path(epw_path)
         if not epw_path.is_file():
             return WeatherValidationResult(
                 is_valid=False,
@@ -167,11 +168,9 @@ class WeatherValidator:
         if file_name.lower() == "test_weather.epw" or "test_weather" in file_name.lower():
             classification = WeatherClassification.TEST_DATA
             is_test_data = True
-        elif location_header and "Denver" in location_header.city and "Golden" in location_header.city:
-            # Denver test file identifier
-            if file_name.lower() != "ind_denver.epw":
-                classification = WeatherClassification.TEST_DATA
-                is_test_data = True
+        elif location_header and ("Denver" in location_header.city or "Golden" in location_header.city or location_header.wmo_id in ("724666", "725300")):
+            classification = WeatherClassification.TEST_DATA
+            is_test_data = True
         elif "manual" in file_name.lower() or "user_defined" in file_name.lower():
             classification = WeatherClassification.USER_DEFINED
         elif location_header and "USER" in location_header.data_source.upper():

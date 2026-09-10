@@ -92,7 +92,7 @@ export function evaluateObjectiveWinner(
       case "passive-resilience": {
         // Score primarily on Min Indoor Temp (°C), with bonus for damping ratio
         const minTemp = summary.indoorMinC;
-        const damping = summary.diurnalSwingDampingPct || 50;
+        const damping = summary.diurnalSwingDampingPct ?? 0;
         scoresByJobId[job.id] = Number((minTemp * 3.5 + damping * 0.4).toFixed(2));
         break;
       }
@@ -118,7 +118,7 @@ export function evaluateObjectiveWinner(
         const cScore = summary.comfortHoursPct * 0.35;
         const tScore = Math.min(100, Math.max(0, (summary.indoorMinC + 10) * 4)) * 0.30;
         const eScore = Math.min(100, Math.max(0, (180 - summary.heatingDemandKwhM2) * 0.6)) * 0.20;
-        const dScore = (summary.diurnalSwingDampingPct || 50) * 0.15;
+        const dScore = (summary.diurnalSwingDampingPct ?? 0) * 0.15;
         scoresByJobId[job.id] = Number((cScore + tScore + eScore + dScore).toFixed(1));
         break;
       }
@@ -137,7 +137,7 @@ export function evaluateObjectiveWinner(
   const marginPct =
     runnerScore > 0
       ? Math.round(((winScore - runnerScore) / runnerScore) * 100)
-      : 25;
+      : 0;
 
   const winSummary = winner?.results?.summary;
   const runnerSummary = runnerUp?.results?.summary;
@@ -239,10 +239,22 @@ export function generateReproducibilityManifest(jobs: SimulationJobItem[]): Repr
       const floorArea = L * W;
       const vol = floorArea * H;
 
-      const isAerogel = j.projectName.toLowerCase().includes("aerogel");
-      const isBase = j.projectName.toLowerCase().includes("baseline");
-      const approxU = isAerogel ? 0.18 : isBase ? 1.45 : 0.32;
-      const ach = j.shelterModel?.ventilation?.infiltrationACH || (isAerogel ? 0.18 : isBase ? 1.2 : 0.35);
+      const layers = j.shelterModel?.envelope?.walls?.south?.layers || j.shelterModel?.envelope?.walls?.north?.layers;
+      let approxU: number | string = "Metric unavailable from this simulation";
+      if (layers && layers.length > 0) {
+        let totalR = 0.17;
+        for (const l of layers) {
+          const k = l.materialId?.includes("aerogel") ? 0.015 : l.materialId?.includes("eps") ? 0.035 : l.materialId?.includes("earth") ? 1.1 : 0.04;
+          totalR += (l.thickness || 0.1) / k;
+        }
+        approxU = Number((1.0 / totalR).toFixed(2));
+      } else if (typeof (j.results?.summary as any)?.totalHeatLossUA === "number" && floorArea > 0) {
+        approxU = Number(((j.results?.summary as any).totalHeatLossUA / (floorArea * 3.5)).toFixed(2));
+      }
+
+      const ach = typeof j.shelterModel?.ventilation?.infiltrationACH === "number"
+        ? j.shelterModel.ventilation.infiltrationACH
+        : "Metric unavailable from this simulation";
 
       return {
         jobId: j.id,

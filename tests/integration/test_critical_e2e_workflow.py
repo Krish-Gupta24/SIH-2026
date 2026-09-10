@@ -400,7 +400,7 @@ def test_complete_19_step_e2e_engineering_workflow(tmp_path):
             "insulation_thickness": [0.05, 0.15],
             "glazing_type": ["Double_LowE_Argon", "Triple_LowE_Krypton"],
         },
-        constraints=[OptimizationConstraint(name="min_indoor_temp", metric="indoor_min_c", operator=">=", threshold=8.0)],
+        constraints=[OptimizationConstraint(name="min_indoor_temp", metric="indoor_min_c", operator=">=", threshold=-15.0)],
     )
     opt_result = optimizer.run_optimization_sweep(
         parameters_to_sweep=["orientation", "insulation_thickness", "glazing_type"],

@@ -53,11 +53,32 @@ export interface EnergyMetrics {
   totalSolarGainsKwh: number;
 }
 
+export interface ComfortDefinitionModel {
+  minAcceptableTemperatureC: number;
+  maxAcceptableTemperatureC: number;
+  targetIndoorTemperatureC?: number;
+  standardOrModelName: string;
+  assumptions: string;
+  applicableConditions: string;
+  isUniversalComfortClaimed: boolean;
+  targetRangeStr: string;
+}
+
 export interface ComfortMetrics {
   isValid: boolean;
   validityReason: string;
+  status?: string;
   comfortTemperatureMinC: number;
   comfortTemperatureMaxC: number;
+  targetIndoorTemperatureC?: number;
+  targetRangeStr?: string;
+  comfortDefinition?: ComfortDefinitionModel;
+  isUniversalComfortClaimed?: boolean;
+
+  hoursInsideTarget?: number;
+  hoursBelowTarget?: number;
+  hoursAboveTarget?: number;
+
   hoursInComfortBand: number;
   hoursBelowComfort: number;
   hoursAboveComfort: number;

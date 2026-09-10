@@ -2,6 +2,7 @@
 
 import math
 from typing import Any, Dict, List, Optional, Tuple
+from simulation.validation.opening_validator import ValidationResult
 
 
 class VentilationValidator:
@@ -10,6 +11,13 @@ class VentilationValidator:
     DEFAULT_INFILTRATION_ACH = 0.5
     MAX_ACH_LIMIT = 15.0
     DEFAULT_NATURAL_ACH = 1.0
+
+    @classmethod
+    def validate(cls, shelter_model: Dict[str, Any]) -> ValidationResult:
+        """Validate ventilation configuration in shelter model."""
+        is_valid, errors = cls.validate_ventilation(shelter_model)
+        return ValidationResult(is_valid=is_valid, errors=errors)
+
 
     @classmethod
     def resolve_ventilation(cls, shelter: Dict[str, Any]) -> Dict[str, Any]:

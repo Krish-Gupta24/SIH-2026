@@ -52,15 +52,21 @@ export function SummaryKpiCards({ summary, unit }: SummaryKpiCardsProps) {
   const eUnit = getEnergyUnit(unit);
   const edUnit = getEnergyDensityUnit(unit);
 
-  const indoorMin = convertTemperature(summary.indoorMinC, unit);
-  const outdoorMin = convertTemperature(summary.outdoorMinC, unit);
-  const indoorMax = convertTemperature(summary.indoorMaxC, unit);
-  const outdoorMax = convertTemperature(summary.outdoorMaxC, unit);
-  const indoorMean = convertTemperature(summary.indoorMeanC, unit);
+  const indoorMin = typeof summary.indoorMinC === "number" ? convertTemperature(summary.indoorMinC, unit) : null;
+  const outdoorMin = typeof summary.outdoorMinC === "number" ? convertTemperature(summary.outdoorMinC, unit) : null;
+  const indoorMax = typeof summary.indoorMaxC === "number" ? convertTemperature(summary.indoorMaxC, unit) : null;
+  const outdoorMax = typeof summary.outdoorMaxC === "number" ? convertTemperature(summary.outdoorMaxC, unit) : null;
+  const indoorMean = typeof summary.indoorMeanC === "number" ? convertTemperature(summary.indoorMeanC, unit) : null;
 
-  const heatingDemand = convertEnergyDensity(summary.heatingDemandKwhM2, unit);
-  const peakLoss = convertPower(summary.peakEnvelopeLossW || 1850, unit);
-  const solarGain = convertEnergy(summary.totalSolarGainKwh || 48.6, unit);
+  const heatingDemand = typeof summary.heatingDemandKwhM2 === "number" ? convertEnergyDensity(summary.heatingDemandKwhM2, unit) : null;
+  const hasPeakLoss = typeof summary.peakEnvelopeLossW === "number";
+  const peakLoss = hasPeakLoss ? convertPower(summary.peakEnvelopeLossW!, unit) : null;
+
+  const hasSolarGain = typeof summary.totalSolarGainKwh === "number";
+  const solarGain = hasSolarGain ? convertEnergy(summary.totalSolarGainKwh!, unit) : null;
+
+  const hasUnderheating = typeof summary.underheatingDegreeHoursCh === "number";
+  const underheatingVal = hasUnderheating ? summary.underheatingDegreeHoursCh! : null;
 
   return (
     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -75,17 +81,27 @@ export function SummaryKpiCards({ summary, unit }: SummaryKpiCardsProps) {
           </div>
         </div>
         <div className="mt-2 flex items-baseline gap-1.5">
-          <span className="text-2xl font-bold font-mono text-blue-400 tracking-tight">
-            {formatNumber(indoorMin, 1)}
-          </span>
-          <span className="text-xs font-semibold text-slate-400">{tUnit}</span>
+          {indoorMin !== null ? (
+            <>
+              <span className="text-2xl font-bold font-mono text-blue-400 tracking-tight">
+                {formatNumber(indoorMin, 1)}
+              </span>
+              <span className="text-xs font-semibold text-slate-400">{tUnit}</span>
+            </>
+          ) : (
+            <span className="text-xs text-slate-500 italic py-1">Metric unavailable from this simulation</span>
+          )}
         </div>
         <div className="mt-1.5 flex items-center gap-1 text-[11px] text-slate-500 font-mono">
           <span>Ambient Min:</span>
-          <span className="text-slate-400 font-semibold">{formatNumber(outdoorMin, 1)}{tUnit}</span>
-          <span className="text-emerald-400 font-bold ml-auto">
-            +{formatNumber(indoorMin - outdoorMin, 1)}Δ
+          <span className="text-slate-400 font-semibold">
+            {outdoorMin !== null ? `${formatNumber(outdoorMin, 1)}${tUnit}` : "—"}
           </span>
+          {indoorMin !== null && outdoorMin !== null && (
+            <span className="text-emerald-400 font-bold ml-auto">
+              +{formatNumber(indoorMin - outdoorMin, 1)}Δ
+            </span>
+          )}
         </div>
       </Card>
 
@@ -100,16 +116,24 @@ export function SummaryKpiCards({ summary, unit }: SummaryKpiCardsProps) {
           </div>
         </div>
         <div className="mt-2 flex items-baseline gap-1.5">
-          <span className="text-2xl font-bold font-mono text-amber-400 tracking-tight">
-            {formatNumber(indoorMax, 1)}
-          </span>
-          <span className="text-xs font-semibold text-slate-400">{tUnit}</span>
+          {indoorMax !== null ? (
+            <>
+              <span className="text-2xl font-bold font-mono text-amber-400 tracking-tight">
+                {formatNumber(indoorMax, 1)}
+              </span>
+              <span className="text-xs font-semibold text-slate-400">{tUnit}</span>
+            </>
+          ) : (
+            <span className="text-xs text-slate-500 italic py-1">Metric unavailable from this simulation</span>
+          )}
         </div>
         <div className="mt-1.5 flex items-center gap-1 text-[11px] text-slate-500 font-mono">
           <span>Mean Zone:</span>
-          <span className="text-slate-400 font-semibold">{formatNumber(indoorMean, 1)}{tUnit}</span>
+          <span className="text-slate-400 font-semibold">
+            {indoorMean !== null ? `${formatNumber(indoorMean, 1)}${tUnit}` : "—"}
+          </span>
           <span className="text-slate-400 ml-auto">
-            Amb Max: {formatNumber(outdoorMax, 1)}{tUnit}
+            Amb Max: {outdoorMax !== null ? `${formatNumber(outdoorMax, 1)}${tUnit}` : "—"}
           </span>
         </div>
       </Card>
@@ -125,19 +149,27 @@ export function SummaryKpiCards({ summary, unit }: SummaryKpiCardsProps) {
           </div>
         </div>
         <div className="mt-2 flex items-baseline gap-1.5">
-          <span className="text-2xl font-bold font-mono text-emerald-400 tracking-tight">
-            {formatNumber(summary.comfortHoursPct, 1)}
-          </span>
-          <span className="text-xs font-semibold text-slate-400">%</span>
+          {typeof summary.comfortHoursPct === "number" ? (
+            <>
+              <span className="text-2xl font-bold font-mono text-emerald-400 tracking-tight">
+                {formatNumber(summary.comfortHoursPct, 1)}
+              </span>
+              <span className="text-xs font-semibold text-slate-400">%</span>
+            </>
+          ) : (
+            <span className="text-xs text-slate-500 italic py-1">Metric unavailable from this simulation</span>
+          )}
         </div>
         <div className="mt-1.5 flex items-center justify-between text-[11px]">
           <span className="text-slate-500">18°C–24°C Band</span>
-          <Badge
-            variant={summary.comfortHoursPct >= 75 ? "outline" : "secondary"}
-            className="text-[9px] py-0 px-1 font-mono text-emerald-400 border-emerald-500/30"
-          >
-            {summary.comfortHoursPct >= 75 ? "Target Met" : "Moderate"}
-          </Badge>
+          {typeof summary.comfortHoursPct === "number" && (
+            <Badge
+              variant={summary.comfortHoursPct >= 75 ? "outline" : "secondary"}
+              className="text-[9px] py-0 px-1 font-mono text-emerald-400 border-emerald-500/30"
+            >
+              {summary.comfortHoursPct >= 75 ? "Target Met" : "Moderate"}
+            </Badge>
+          )}
         </div>
       </Card>
 
@@ -152,14 +184,20 @@ export function SummaryKpiCards({ summary, unit }: SummaryKpiCardsProps) {
           </div>
         </div>
         <div className="mt-2 flex items-baseline gap-1.5">
-          <span className="text-2xl font-bold font-mono text-indigo-400 tracking-tight">
-            {formatNumber(summary.diurnalSwingDampingPct, 1)}
-          </span>
-          <span className="text-xs font-semibold text-slate-400">%</span>
+          {typeof summary.diurnalSwingDampingPct === "number" ? (
+            <>
+              <span className="text-2xl font-bold font-mono text-indigo-400 tracking-tight">
+                {formatNumber(summary.diurnalSwingDampingPct, 1)}
+              </span>
+              <span className="text-xs font-semibold text-slate-400">%</span>
+            </>
+          ) : (
+            <span className="text-xs text-slate-500 italic py-1">Metric unavailable from this simulation</span>
+          )}
         </div>
         <div className="mt-1.5 flex items-center justify-between text-[11px] text-slate-500">
           <span>Mass buffering efficiency</span>
-          <span className="text-indigo-400 font-mono font-semibold">High Mass</span>
+          <span className="text-indigo-400 font-mono font-semibold">Active</span>
         </div>
       </Card>
 
@@ -174,10 +212,16 @@ export function SummaryKpiCards({ summary, unit }: SummaryKpiCardsProps) {
           </div>
         </div>
         <div className="mt-2 flex items-baseline gap-1.5">
-          <span className="text-2xl font-bold font-mono text-rose-400 tracking-tight">
-            {formatNumber(heatingDemand, 1)}
-          </span>
-          <span className="text-xs font-semibold text-slate-400">{edUnit}</span>
+          {heatingDemand !== null ? (
+            <>
+              <span className="text-2xl font-bold font-mono text-rose-400 tracking-tight">
+                {formatNumber(heatingDemand, 1)}
+              </span>
+              <span className="text-xs font-semibold text-slate-400">{edUnit}</span>
+            </>
+          ) : (
+            <span className="text-xs text-slate-500 italic py-1">Metric unavailable from this simulation</span>
+          )}
         </div>
         <div className="mt-1.5 text-[11px] text-slate-500">
           Passive solar savings accounted
@@ -195,10 +239,18 @@ export function SummaryKpiCards({ summary, unit }: SummaryKpiCardsProps) {
           </div>
         </div>
         <div className="mt-2 flex items-baseline gap-1.5">
-          <span className="text-2xl font-bold font-mono text-red-400 tracking-tight">
-            {formatNumber(peakLoss, 0)}
-          </span>
-          <span className="text-xs font-semibold text-slate-400">{pUnit}</span>
+          {hasPeakLoss ? (
+            <>
+              <span className="text-2xl font-bold font-mono text-red-400 tracking-tight">
+                {formatNumber(peakLoss!, 0)}
+              </span>
+              <span className="text-xs font-semibold text-slate-400">{pUnit}</span>
+            </>
+          ) : (
+            <span className="text-xs text-slate-500 italic py-1">
+              Metric unavailable from this simulation
+            </span>
+          )}
         </div>
         <div className="mt-1.5 text-[11px] text-slate-500 font-mono">
           Through walls, roof & glazing
@@ -216,10 +268,18 @@ export function SummaryKpiCards({ summary, unit }: SummaryKpiCardsProps) {
           </div>
         </div>
         <div className="mt-2 flex items-baseline gap-1.5">
-          <span className="text-2xl font-bold font-mono text-yellow-400 tracking-tight">
-            {formatNumber(solarGain, 1)}
-          </span>
-          <span className="text-xs font-semibold text-slate-400">{eUnit}</span>
+          {hasSolarGain ? (
+            <>
+              <span className="text-2xl font-bold font-mono text-yellow-400 tracking-tight">
+                {formatNumber(solarGain!, 1)}
+              </span>
+              <span className="text-xs font-semibold text-slate-400">{eUnit}</span>
+            </>
+          ) : (
+            <span className="text-xs text-slate-500 italic py-1">
+              Metric unavailable from this simulation
+            </span>
+          )}
         </div>
         <div className="mt-1.5 text-[11px] text-slate-500">
           Transmitted south aperture gain
@@ -237,10 +297,18 @@ export function SummaryKpiCards({ summary, unit }: SummaryKpiCardsProps) {
           </div>
         </div>
         <div className="mt-2 flex items-baseline gap-1.5">
-          <span className="text-2xl font-bold font-mono text-cyan-400 tracking-tight">
-            {formatNumber(summary.underheatingDegreeHoursCh || 86.4, 1)}
-          </span>
-          <span className="text-xs font-semibold text-slate-400">{tUnit}·h</span>
+          {hasUnderheating ? (
+            <>
+              <span className="text-2xl font-bold font-mono text-cyan-400 tracking-tight">
+                {formatNumber(underheatingVal!, 1)}
+              </span>
+              <span className="text-xs font-semibold text-slate-400">{tUnit}·h</span>
+            </>
+          ) : (
+            <span className="text-xs text-slate-500 italic py-1">
+              Metric unavailable from this simulation
+            </span>
+          )}
         </div>
         <div className="mt-1.5 text-[11px] text-slate-500">
           Deficit below 18°C base

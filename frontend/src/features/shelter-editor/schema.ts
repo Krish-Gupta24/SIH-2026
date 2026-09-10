@@ -135,6 +135,10 @@ export const shelterFormSchema = z.object({
   designTargets: z.object({
     comfortTempMinC: z.number().min(-10).max(25, "Min comfort must be in [-10, 25] °C").default(18.0),
     comfortTempMaxC: z.number().min(15).max(35, "Max comfort must be in [15, 35] °C").default(26.0),
+    targetIndoorTempC: z.number().min(-10).max(35, "Target must be in [-10, 35] °C").default(22.0),
+    comfortModel: z.string().default("DesignTargets Operational Band"),
+    assumptions: z.string().default("Defined by project DesignTargets; occupant clothing and activity adjusted for site conditions."),
+    applicableConditions: z.string().default("High-altitude unconditioned or passively heated cold-climate shelter."),
     maxAnnualHeatingDemandKwhM2: z.number().min(0).max(500, "Limit in [0, 500] kWh/m²").default(120.0),
     targetComfortPercent: z.number().min(0).max(100, "Percentage in [0, 100] %").default(85.0),
   }).refine((data) => data.comfortTempMinC < data.comfortTempMaxC, {
@@ -304,6 +308,10 @@ export const defaultShelterFormValues: ShelterFormValues = {
   designTargets: {
     comfortTempMinC: 18.0,
     comfortTempMaxC: 26.0,
+    targetIndoorTempC: 22.0,
+    comfortModel: "DesignTargets Operational Band",
+    assumptions: "Defined by project DesignTargets; occupant clothing and activity adjusted for site conditions.",
+    applicableConditions: "High-altitude unconditioned or passively heated cold-climate shelter.",
     maxAnnualHeatingDemandKwhM2: 110.0,
     targetComfortPercent: 80.0,
   },

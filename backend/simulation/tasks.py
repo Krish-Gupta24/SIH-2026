@@ -213,6 +213,9 @@ def run_simulation_task(
         }
 
         # Parse normalized simulation results
+        from simulation.results.metrics import parse_comfort_definition
+        comf_def = parse_comfort_definition(shelter_model)
+
         parser_meta = {
             "engine_name": "EnergyPlus",
             "engine_version": detected_version,
@@ -224,6 +227,13 @@ def run_simulation_task(
             "envelope_fallback_warnings": generator.fallback_warnings,
             "execution_duration_seconds": exec_output.duration_seconds,
             "is_unconditioned": True,
+            "comfort_definition": comf_def,
+            "comfort_min_c": comf_def.min_acceptable_temperature_c,
+            "comfort_max_c": comf_def.max_acceptable_temperature_c,
+            "target_temp_c": comf_def.target_indoor_temperature_c,
+            "comfort_model_name": comf_def.standard_or_model_name,
+            "comfort_assumptions": comf_def.assumptions,
+            "comfort_applicable_conditions": comf_def.applicable_conditions,
         }
         result_parser = EnergyPlusResultParser()
         sim_result = result_parser.parse(work_path, metadata=parser_meta)

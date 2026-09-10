@@ -120,6 +120,10 @@ export interface InternalLoadsModel {
 export interface DesignTargetsModel {
   comfortTempMinC: number;     // Lower comfort boundary (°C), default 18°C
   comfortTempMaxC: number;     // Upper comfort boundary (°C), default 26°C
+  targetIndoorTempC?: number;  // Target indoor operative temperature (°C), default 21°C
+  comfortModel?: string;       // Formal standard or model name (e.g. ASHRAE 55 Adaptive)
+  assumptions?: string;        // Comfort assumptions (clothing clo, metabolic rate, air speed)
+  applicableConditions?: string; // Applicable operational conditions
   maxAnnualHeatingDemandKwhM2: number; // Performance target limit (kWh/m²·a)
   targetComfortPercent: number; // Minimum acceptable hours in comfort band (%)
 }

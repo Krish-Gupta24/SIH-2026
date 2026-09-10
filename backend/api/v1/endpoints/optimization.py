@@ -21,8 +21,10 @@ class SweepRunRequest(BaseModel):
     parameters_to_sweep: Optional[List[str]] = None
     custom_parameter_options: Optional[Dict[str, List[Any]]] = None
     constraints: Optional[List[Dict[str, Any]]] = None
-    weather_dataset: str = "Leh Airport Station (3500m)"
-    max_candidates: int = Field(default=120, ge=2, le=500)
+    weather_dataset: Optional[str] = None
+    weather_file_path: Optional[str] = None
+    run_period_days: int = Field(default=3, ge=1, le=14)
+    max_candidates: int = Field(default=25, ge=2, le=100)
 
 
 @router.get("/parameters")
@@ -102,6 +104,8 @@ async def run_parameter_sweep(request: SweepRunRequest):
             custom_parameter_options=request.custom_parameter_options,
             constraints=active_constraints,
             weather_dataset=request.weather_dataset,
+            weather_file_path=request.weather_file_path,
+            run_period_days=request.run_period_days,
         )
 
         results = optimizer.run_optimization_sweep(
@@ -144,7 +148,7 @@ class RecommendationRequest(BaseModel):
 @router.post("/recommendation")
 async def generate_recommendation(request: RecommendationRequest):
     """Generate structured 7-section RECOMMENDED DESIGN report from optimization result."""
-    from backend.optimization.recommendation_engine import RecommendationEngine
+    from backend.optimization.recommendation_engine import RecommendationEngine, NoValidDesignError
 
     sweep = request.sweep_result
     if not sweep and request.run_id:
@@ -164,8 +168,16 @@ async def generate_recommendation(request: RecommendationRequest):
             baseline_comfort_pct=request.baseline_comfort_pct,
         )
         return {
+            "status": "SUCCESS",
             "report": report.to_dict(),
             "markdown": report.to_markdown(),
+        }
+    except NoValidDesignError as e:
+        return {
+            "status": "NO_VALID_DESIGN",
+            "message": "No valid design found under the specified constraints.",
+            "report": None,
+            "markdown": "## No valid design found under the specified constraints.",
         }
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Failed to generate recommendation report: {str(e)}")

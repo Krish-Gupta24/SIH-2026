@@ -148,7 +148,14 @@ class EnergyPlusResultParser(ResultParser):
         outdoor_temp_col = None
         direct_solar_col = None
         diffuse_solar_col = None
+        zone_windows_trans_solar_col = None
+        zone_windows_trans_energy_col = None
+        zone_windows_heat_gain_col = None
         window_trans_solar_cols: List[str] = []
+        window_heat_gain_cols: List[str] = []
+        glazing_absorbed_solar_cols: List[str] = []
+        opaque_absorbed_solar_cols: List[str] = []
+        surface_incident_solar_cols: List[str] = []
         
         wall_cols: Dict[str, List[str]] = {"north": [], "south": [], "east": [], "west": [], "other": []}
         roof_cols: List[str] = []
@@ -170,13 +177,34 @@ class EnergyPlusResultParser(ResultParser):
             elif "site outdoor air drybulb temperature" in h_lower:
                 outdoor_temp_col = h
 
-            # Solar radiation
+            # Solar radiation concepts:
+            # 1. Incident solar radiation
             elif "site direct solar radiation" in h_lower:
                 direct_solar_col = h
             elif "site diffuse solar radiation" in h_lower:
                 diffuse_solar_col = h
+            elif "surface outside face incident solar radiation rate per area" in h_lower:
+                surface_incident_solar_cols.append(h)
+
+            # 2. Transmitted solar radiation
+            elif "zone windows total transmitted solar radiation rate" in h_lower:
+                zone_windows_trans_solar_col = h
+            elif "zone windows total transmitted solar radiation energy" in h_lower:
+                zone_windows_trans_energy_col = h
             elif "surface window transmitted solar radiation rate" in h_lower or "window transmitted solar" in h_lower:
                 window_trans_solar_cols.append(h)
+
+            # 3. Absorbed solar gains
+            elif "surface window total glazing layers absorbed solar radiation rate" in h_lower:
+                glazing_absorbed_solar_cols.append(h)
+            elif "surface outside face solar radiation heat gain rate" in h_lower:
+                opaque_absorbed_solar_cols.append(h)
+
+            # 4. Solar heat gain through windows
+            elif "zone windows total heat gain rate" in h_lower:
+                zone_windows_heat_gain_col = h
+            elif "surface window heat gain rate" in h_lower:
+                window_heat_gain_cols.append(h)
 
             # Infiltration
             elif "zone infiltration sensible heat loss energy" in h_lower or "zone infiltration total heat loss energy" in h_lower:
@@ -212,7 +240,7 @@ class EnergyPlusResultParser(ResultParser):
                 else:
                     wall_cols["other"].append(h)
 
-        # Extract time-series data
+        # Extract time-series data without injecting fake zero fallbacks
         timestamps: List[str] = []
         indoor_temps: List[float] = []
         outdoor_temps: List[float] = []
@@ -221,6 +249,9 @@ class EnergyPlusResultParser(ResultParser):
         global_solars: List[float] = []
         solar_gains_total: List[float] = []
         solar_gains_by_win: Dict[str, List[float]] = {c.split(":")[0].strip(): [] for c in window_trans_solar_cols}
+        window_heat_gains_total: List[float] = []
+        glazing_absorbed_solars: List[float] = []
+        opaque_absorbed_solars: List[float] = []
 
         wall_total: List[float] = []
         walls_by_orient: Dict[str, List[float]] = {"north": [], "south": [], "east": [], "west": []}
@@ -237,65 +268,101 @@ class EnergyPlusResultParser(ResultParser):
             dt = r.get("Date/Time", "").strip()
             timestamps.append(dt)
 
-            # Temperatures
-            t_in = self._clean_float(r.get(indoor_temp_col)) if indoor_temp_col else 0.0
-            t_out = self._clean_float(r.get(outdoor_temp_col)) if outdoor_temp_col else 0.0
-            indoor_temps.append(round(t_in, 2))
-            outdoor_temps.append(round(t_out, 2))
+            # Temperatures: Only populate if verified column exists
+            if indoor_temp_col:
+                indoor_temps.append(round(self._clean_float(r.get(indoor_temp_col)), 2))
+            if outdoor_temp_col:
+                outdoor_temps.append(round(self._clean_float(r.get(outdoor_temp_col)), 2))
 
-            # Solar radiation
-            sol_dir = self._clean_float(r.get(direct_solar_col)) if direct_solar_col else 0.0
-            sol_diff = self._clean_float(r.get(diffuse_solar_col)) if diffuse_solar_col else 0.0
-            direct_solars.append(round(sol_dir, 2))
-            diffuse_solars.append(round(sol_diff, 2))
-            global_solars.append(round(sol_dir + sol_diff, 2))
+            # Incident Solar Radiation
+            if direct_solar_col:
+                direct_solars.append(round(self._clean_float(r.get(direct_solar_col)), 2))
+            if diffuse_solar_col:
+                diffuse_solars.append(round(self._clean_float(r.get(diffuse_solar_col)), 2))
+            if direct_solar_col or diffuse_solar_col:
+                s_dir = self._clean_float(r.get(direct_solar_col)) if direct_solar_col else 0.0
+                s_diff = self._clean_float(r.get(diffuse_solar_col)) if diffuse_solar_col else 0.0
+                global_solars.append(round(s_dir + s_diff, 2))
 
-            # Solar gains
-            step_solar_gain = 0.0
-            for w_col in window_trans_solar_cols:
-                w_val = self._clean_float(r.get(w_col))
-                step_solar_gain += w_val
-                w_name = w_col.split(":")[0].strip()
-                solar_gains_by_win[w_name].append(round(w_val, 2))
-            solar_gains_total.append(round(step_solar_gain, 2))
+            # Transmitted Solar Gains
+            if zone_windows_trans_solar_col:
+                step_trans = self._clean_float(r.get(zone_windows_trans_solar_col))
+                solar_gains_total.append(round(step_trans, 2))
+            elif window_trans_solar_cols:
+                step_solar_gain = 0.0
+                for w_col in window_trans_solar_cols:
+                    w_val = self._clean_float(r.get(w_col))
+                    step_solar_gain += w_val
+                    w_name = w_col.split(":")[0].strip()
+                    solar_gains_by_win[w_name].append(round(w_val, 2))
+                solar_gains_total.append(round(step_solar_gain, 2))
+            else:
+                solar_gains_total.append(0.0)
+
+            # Window Total Heat Gain (Transmitted solar + Conduction)
+            if zone_windows_heat_gain_col:
+                window_heat_gains_total.append(round(self._clean_float(r.get(zone_windows_heat_gain_col)), 2))
+            elif window_heat_gain_cols:
+                w_heat_step = sum(self._clean_float(r.get(c)) for c in window_heat_gain_cols)
+                window_heat_gains_total.append(round(w_heat_step, 2))
+
+            # Absorbed Solar Gains
+            if glazing_absorbed_solar_cols:
+                glaz_abs = sum(self._clean_float(r.get(c)) for c in glazing_absorbed_solar_cols)
+                glazing_absorbed_solars.append(round(glaz_abs, 2))
+            if opaque_absorbed_solar_cols:
+                opq_abs = sum(self._clean_float(r.get(c)) for c in opaque_absorbed_solar_cols)
+                opaque_absorbed_solars.append(round(opq_abs, 2))
 
             # Envelope conduction
-            n_val = sum(self._clean_float(r.get(c)) for c in wall_cols["north"])
-            s_val = sum(self._clean_float(r.get(c)) for c in wall_cols["south"])
-            e_val = sum(self._clean_float(r.get(c)) for c in wall_cols["east"])
-            w_val = sum(self._clean_float(r.get(c)) for c in wall_cols["west"])
-            other_val = sum(self._clean_float(r.get(c)) for c in wall_cols["other"])
-            w_tot = n_val + s_val + e_val + w_val + other_val
+            has_wall_cols = any(wall_cols.values())
+            if has_wall_cols:
+                n_val = sum(self._clean_float(r.get(c)) for c in wall_cols["north"])
+                s_val = sum(self._clean_float(r.get(c)) for c in wall_cols["south"])
+                e_val = sum(self._clean_float(r.get(c)) for c in wall_cols["east"])
+                w_val = sum(self._clean_float(r.get(c)) for c in wall_cols["west"])
+                other_val = sum(self._clean_float(r.get(c)) for c in wall_cols["other"])
+                w_tot = n_val + s_val + e_val + w_val + other_val
 
-            walls_by_orient["north"].append(round(n_val, 2))
-            walls_by_orient["south"].append(round(s_val, 2))
-            walls_by_orient["east"].append(round(e_val, 2))
-            walls_by_orient["west"].append(round(w_val, 2))
-            wall_total.append(round(w_tot, 2))
+                walls_by_orient["north"].append(round(n_val, 2))
+                walls_by_orient["south"].append(round(s_val, 2))
+                walls_by_orient["east"].append(round(e_val, 2))
+                walls_by_orient["west"].append(round(w_val, 2))
+                wall_total.append(round(w_tot, 2))
 
             # Roof & Floor
-            r_tot = sum(self._clean_float(r.get(c)) for c in roof_cols)
-            roof_total.append(round(r_tot, 2))
+            if roof_cols:
+                r_tot = sum(self._clean_float(r.get(c)) for c in roof_cols)
+                roof_total.append(round(r_tot, 2))
 
-            f_tot = sum(self._clean_float(r.get(c)) for c in floor_cols)
-            floor_total.append(round(f_tot, 2))
+            if floor_cols:
+                f_tot = sum(self._clean_float(r.get(c)) for c in floor_cols)
+                floor_total.append(round(f_tot, 2))
 
             # Window & Door conduction
-            win_tot = sum(self._clean_float(r.get(c)) for c in window_cond_cols)
-            window_total.append(round(win_tot, 2))
+            if window_cond_cols:
+                win_tot = sum(self._clean_float(r.get(c)) for c in window_cond_cols)
+                window_total.append(round(win_tot, 2))
+            else:
+                window_total.append(0.0)
 
-            door_tot = sum(self._clean_float(r.get(c)) for c in door_cond_cols)
-            door_total.append(round(door_tot, 2))
+            if door_cond_cols:
+                door_tot = sum(self._clean_float(r.get(c)) for c in door_cond_cols)
+                door_total.append(round(door_tot, 2))
+            else:
+                door_total.append(0.0)
 
             # Infiltration heat transfer (Watts)
-            step_infil_w = 0.0
             if infil_loss_energy_cols or infil_gain_energy_cols:
                 loss_j = sum(self._clean_float(r.get(c)) for c in infil_loss_energy_cols)
                 gain_j = sum(self._clean_float(r.get(c)) for c in infil_gain_energy_cols)
                 step_infil_w = (gain_j - loss_j) / timestep_seconds
+                infil_total.append(round(step_infil_w, 2))
             elif infil_rate_cols:
                 step_infil_w = -sum(self._clean_float(r.get(c)) for c in infil_rate_cols)
-            infil_total.append(round(step_infil_w, 2))
+                infil_total.append(round(step_infil_w, 2))
+            else:
+                infil_total.append(0.0)
 
         # Compute structured metrics using MetricCalculator
         energy_metrics = self.calculator.calculate_energy_metrics(
@@ -310,13 +377,27 @@ class EnergyPlusResultParser(ResultParser):
             is_unconditioned=meta_input.get("is_unconditioned", True),
         )
 
+        # Resolve comfort definition
+        comf_def = meta_input.get("comfort_definition")
+        if comf_def is None and "shelter_model" in meta_input:
+            from simulation.results.metrics import parse_comfort_definition
+            comf_def = parse_comfort_definition(meta_input["shelter_model"])
+
         comfort_metrics = self.calculator.calculate_comfort_metrics(
             indoor_temps=indoor_temps,
             outdoor_temps=outdoor_temps,
             timestep_hours=timestep_hours,
             comfort_temperature_min_c=meta_input.get("comfort_min_c", 18.0),
             comfort_temperature_max_c=meta_input.get("comfort_max_c", 26.0),
+            target_indoor_temperature_c=meta_input.get("target_temp_c"),
+            comfort_definition=comf_def,
+            standard_or_model_name=meta_input.get("comfort_model_name"),
+            assumptions=meta_input.get("comfort_assumptions"),
+            applicable_conditions=meta_input.get("comfort_applicable_conditions"),
         )
+
+        # Integrated useful solar gain (kWh)
+        useful_solar_kwh = self.calculator.integrate_power_to_energy_kwh(solar_gains_total, timestep_hours)
 
         # Assemble engine metadata
         simulation_period = {
@@ -354,6 +435,11 @@ class EnergyPlusResultParser(ResultParser):
             global_horizontal_irradiance=global_solars,
             solar_gains_total=solar_gains_total,
             solar_gains_by_window=solar_gains_by_win,
+            window_heat_gains_total=window_heat_gains_total,
+            absorbed_solar_glazing=glazing_absorbed_solars,
+            absorbed_solar_surfaces=opaque_absorbed_solars,
+            useful_solar_gain_total_kwh=useful_solar_kwh,
+            status="AVAILABLE" if (solar_gains_total or global_solars) else "UNAVAILABLE",
         )
 
         return SimulationResult(
@@ -395,6 +481,15 @@ class EnergyPlusResultParser(ResultParser):
             completed_successfully=completed_successfully,
             notes=notes,
         )
+        comf_def = meta_input.get("comfort_definition")
+        min_c = meta_input.get("comfort_min_c", 18.0)
+        max_c = meta_input.get("comfort_max_c", 26.0)
+        tgt_c = meta_input.get("target_temp_c")
+        if comf_def:
+            min_c = comf_def.min_acceptable_temperature_c
+            max_c = comf_def.max_acceptable_temperature_c
+            tgt_c = comf_def.target_indoor_temperature_c
+
         return SimulationResult(
             metadata=meta,
             timestamps=[],
@@ -411,5 +506,14 @@ class EnergyPlusResultParser(ResultParser):
             envelope=EnvelopeHeatTransfer(),
             solar=SolarPerformance(),
             energy=EnergyMetrics(),
-            comfort=ComfortMetrics(is_valid=False, validity_reason=notes),
+            comfort=ComfortMetrics(
+                is_valid=False,
+                validity_reason=notes,
+                status="UNAVAILABLE",
+                comfort_temperature_min_c=min_c,
+                comfort_temperature_max_c=max_c,
+                target_indoor_temperature_c=tgt_c,
+                target_range_str=f"{min_c:.1f}°C – {max_c:.1f}°C",
+                comfort_definition=comf_def,
+            ),
         )

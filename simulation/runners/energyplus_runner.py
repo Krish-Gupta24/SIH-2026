@@ -28,6 +28,18 @@ class SimulationExecutionOutput:
     err_file_path: str
     csv_file_path: str
 
+    @property
+    def success(self) -> bool:
+        """Return True if simulation exited with returncode 0."""
+        return self.exit_code == 0
+
+    @property
+    def error_message(self) -> str:
+        """Return stderr or exit code diagnostic."""
+        if self.success:
+            return ""
+        return self.stderr or f"Process terminated with exit code {self.exit_code}"
+
 
 from backend.core.binary_allowlist import BinaryAllowlist, SecurityException
 
@@ -172,4 +184,20 @@ class EnergyPlusRunner:
             stderr_log_path=str(stderr_log.resolve()),
             err_file_path=str(err_file.resolve()),
             csv_file_path=str(csv_file.resolve()),
+        )
+
+    def run_simulation(
+        self,
+        idf_path: Any,
+        weather_path: Any,
+        output_dir: Any,
+        run_period_days: Optional[int] = None,
+        timeout_seconds: int = 600,
+    ) -> SimulationExecutionOutput:
+        """Run simulation convenience method matching standard test interface."""
+        return self.run(
+            idf_path=str(idf_path),
+            epw_path=str(weather_path),
+            work_dir=str(output_dir),
+            timeout_seconds=timeout_seconds,
         )

@@ -32,6 +32,7 @@ import {
   OPTIMIZATION_OBJECTIVES,
   DEFAULT_OPTIMIZATION_CONSTRAINTS,
   runClientParameterSweep,
+  runBackendEnergyPlusSweep,
 } from "./optimization-engine";
 import {
   generateClientRecommendationReport,
@@ -78,14 +79,14 @@ export function OptimizationView() {
     message: string;
   } | null>(null);
 
-  // Calculate rough candidate budget based on selections
+  // Calculate rough candidate budget based on selections (Default demo: 20-50 candidates)
   const candidateBudget = useMemo(() => {
     const active = AVAILABLE_SWEPT_PARAMETERS.filter((p) =>
       selectedParameters.includes(p.id)
     );
     if (active.length === 0) return 0;
     const count = active.reduce((acc, p) => acc * p.options.length, 1);
-    return Math.min(count, 100);
+    return Math.min(count, 25);
   }, [selectedParameters]);
 
   // Initial auto-sweep on component mount if project exists
@@ -96,7 +97,7 @@ export function OptimizationView() {
         selectedParameters,
         selectedObjective,
         constraints,
-        100
+        25
       );
       setSweepResult(initialSweep);
     }
@@ -127,37 +128,44 @@ export function OptimizationView() {
     );
   };
 
-  // Execute parameter sweep
-  const handleRunSweep = () => {
+  // Execute parameter sweep via EnergyPlus backend
+  const handleRunSweep = async () => {
     if (!activeProject) return;
 
     setIsExecuting(true);
     setNotification(null);
 
-    // Short timeout allows React to render the loading state smoothly
-    setTimeout(() => {
-      try {
-        const result = runClientParameterSweep(
-          activeProject,
-          selectedParameters,
-          selectedObjective,
-          constraints,
-          100
-        );
-        setSweepResult(result);
-        setNotification({
-          type: "success",
-          message: `Sweep completed: ${result.validCount} candidates evaluated in ${result.executionDurationSec}s (${result.feasibleCount} feasible). Recommendation report generated.`,
-        });
-      } catch (err: any) {
-        setNotification({
-          type: "info",
-          message: `Optimization completed with warnings: ${err?.message || "Execution finished"}`,
-        });
-      } finally {
-        setIsExecuting(false);
-      }
-    }, 250);
+    try {
+      const result = await runBackendEnergyPlusSweep(
+        activeProject,
+        selectedParameters,
+        selectedObjective,
+        constraints,
+        25,
+        3
+      );
+      setSweepResult(result);
+      setNotification({
+        type: "success",
+        message: `EnergyPlus physical sweep completed: ${result.validCount} candidates physically simulated with ${result.engineVersion || "EnergyPlus"} in ${result.executionDurationSec}s (${result.feasibleCount} feasible).`,
+      });
+    } catch (backendErr: any) {
+      console.warn("Backend EnergyPlus sweep unavailable, running client RC preview:", backendErr);
+      const fallbackResult = runClientParameterSweep(
+        activeProject,
+        selectedParameters,
+        selectedObjective,
+        constraints,
+        25
+      );
+      setSweepResult(fallbackResult);
+      setNotification({
+        type: "info",
+        message: `Client RC approximation evaluated (${fallbackResult.validCount} candidates). Backend EnergyPlus simulation unavailable.`,
+      });
+    } finally {
+      setIsExecuting(false);
+    }
   };
 
   // Apply candidate parameters to active ShelterModel

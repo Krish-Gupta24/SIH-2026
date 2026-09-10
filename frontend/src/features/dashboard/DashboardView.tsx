@@ -31,6 +31,22 @@ export function DashboardView() {
     (s) => s.status === "running" || s.status === "queued" || s.status === "preparing"
   ).length;
 
+  const simulationJobs = simulations;
+
+  const completedWithSummary = simulationJobs.filter(
+    (j) => j.status === "completed" && j.results?.summary
+  );
+
+  const avgDamping =
+    completedWithSummary.length > 0
+      ? Math.round(
+          completedWithSummary.reduce(
+            (acc, j) => acc + (j.results?.summary?.diurnalSwingDampingPct ?? 0),
+            0
+          ) / completedWithSummary.length
+        )
+      : null;
+
   return (
     <div className="space-y-8 max-w-7xl mx-auto">
       {/* Welcome Banner */}
@@ -72,8 +88,8 @@ export function DashboardView() {
         </div>
       </div>
 
-      {/* Primary KPI Cards */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      {/* 4 Primary Top-Level Metric Cards */}
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <Card className="border-slate-800 bg-slate-900/60">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
@@ -95,8 +111,10 @@ export function DashboardView() {
             <TrendingDown className="h-4 w-4 text-emerald-400" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-emerald-400">0.24 W/m²-K</div>
-            <p className="mt-1 text-xs text-slate-500">ECBC Cold Zone compliant (≤ 0.30)</p>
+            <div className="text-xl font-bold text-slate-300">
+              {completedWithSummary.length > 0 ? "Metric unavailable from this simulation" : "Pending simulation"}
+            </div>
+            <p className="mt-1 text-xs text-slate-500">ECBC Cold Zone requirement (≤ 0.30)</p>
           </CardContent>
         </Card>
 
@@ -108,7 +126,9 @@ export function DashboardView() {
             <Activity className="h-4 w-4 text-amber-400" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-white">78% Buffer</div>
+            <div className="text-2xl font-bold text-white">
+              {avgDamping !== null ? `${avgDamping}% Buffer` : "Pending simulation"}
+            </div>
             <p className="mt-1 text-xs text-slate-500">Thermal mass stabilized night temp</p>
           </CardContent>
         </Card>
@@ -169,8 +189,10 @@ export function DashboardView() {
                     </div>
                     <div>
                       <div className="text-slate-500">Overall U</div>
-                      <div className="font-mono font-bold text-blue-400">
-                        0.24
+                      <div className="font-mono text-[10px] text-slate-400 truncate">
+                        {completedWithSummary.find((j) => j.projectId === p.id)
+                          ? "Metric unavailable"
+                          : "Pending simulation"}
                       </div>
                     </div>
                   </div>

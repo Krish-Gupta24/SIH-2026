@@ -240,6 +240,24 @@ INITIAL_TEST_MATERIALS: List[Material] = [
         notes="High-durability thermal mass for internal partitions and Trombe walls.",
         cost_per_m3=85.0,
     ),
+    # 14. Mineral Wool Insulation Board
+    Material(
+        id="mat-mineral-wool",
+        name="Mineral Wool Insulation Board",
+        category="Insulation",
+        density=60.0,                  # kg/m³
+        thermal_conductivity=0.038,    # W/(m·K)
+        specific_heat=840.0,           # J/(kg·K)
+        thermal_absorptance=0.90,
+        solar_absorptance=0.60,
+        visible_absorptance=0.60,
+        roughness="MediumRough",
+        source="ASHRAE Handbook Fundamentals 2021",
+        provenance="Chapter 26, Table 4, Entry: Mineral Fiber Board",
+        status=MaterialStatus.VERIFIED,
+        notes="Non-combustible stone wool / mineral fiber thermal insulation for roof assemblies.",
+        cost_per_m3=95.0,
+    ),
 ]
 
 
@@ -248,7 +266,12 @@ class MaterialDatabase:
 
     # Normalized aliases for convenience and legacy test compatibility
     ALIASES = {
+        "mineral_wool": "mat-mineral-wool",
+        "mineralwool": "mat-mineral-wool",
+        "mat_mineral_wool": "mat-mineral-wool",
+        "mat-mineral-wool": "mat-mineral-wool",
         "eps_insulation": "mat-eps-insulation",
+
         "eps": "mat-eps-insulation",
         "xps_insulation": "mat-xps-insulation",
         "xps": "mat-xps-insulation",

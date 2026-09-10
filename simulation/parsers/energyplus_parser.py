@@ -173,3 +173,36 @@ class EnergyPlusOutputParser:
             },
             "hourly_timeseries": hourly_records,
         }
+
+    @classmethod
+    def parse_outputs(
+        cls,
+        output_dir: Any,
+        shelter_model: Optional[Dict[str, Any]] = None,
+        weather_dataset: Optional[str] = None,
+    ) -> Any:
+        """Parse outputs into a normalized SimulationResult object."""
+        from simulation.results.parser import EnergyPlusResultParser
+        from simulation.results.metrics import parse_comfort_definition
+
+        metadata: Dict[str, Any] = {
+            "engine_name": "EnergyPlus",
+            "weather_dataset": weather_dataset or "Unknown",
+        }
+        if shelter_model:
+            comf_def = parse_comfort_definition(shelter_model)
+            metadata["comfort_definition"] = comf_def
+            metadata["comfort_min_c"] = comf_def.min_acceptable_temperature_c
+            metadata["comfort_max_c"] = comf_def.max_acceptable_temperature_c
+            metadata["target_temp_c"] = comf_def.target_indoor_temperature_c
+            metadata["comfort_model_name"] = comf_def.standard_or_model_name
+            metadata["comfort_assumptions"] = comf_def.assumptions
+            metadata["model_version"] = shelter_model.get("version", "1.0.0")
+
+        parser = EnergyPlusResultParser()
+        return parser.parse(output_source=output_dir, metadata=metadata)
+
+
+
+# Backward compatibility alias
+EnergyPlusParser = EnergyPlusOutputParser

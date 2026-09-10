@@ -47,9 +47,19 @@ export function ReportsView() {
   const loc = activeProject.location;
   const floorArea = (geom.length * geom.width).toFixed(1);
   const volume = (geom.length * geom.width * geom.height).toFixed(1);
-  const uVal = 0.22;
-  const isECBCCompliant = uVal <= 0.30;
+  
+  const wallLayers = activeProject?.envelope?.walls?.layers || [];
+  const rSum = wallLayers.reduce((acc, l) => acc + (l.thickness / (l.conductivity || 0.04)), 0) + 0.17;
+  const uVal = rSum > 0.17 ? Number((1 / rSum).toFixed(2)) : null;
+  const isECBCCompliant = uVal !== null ? uVal <= 0.30 : false;
   const isAirtight = (activeProject.ventilation?.infiltrationACH || 0.35) <= 0.5;
+
+  const totalWallArea = 2 * (geom.length * geom.height + geom.width * geom.height);
+  const envelopeUA = uVal !== null ? Number((uVal * totalWallArea).toFixed(1)) : null;
+
+  const totalSolarGainKwh = completedSim?.results?.hourlyTimeseries
+    ? Number((completedSim.results.hourlyTimeseries.reduce((sum, h) => sum + (h.solarGainsW || 0), 0) / 1000).toFixed(1))
+    : null;
 
   const preservedEngine = completedSim?.engine ? `${completedSim.engine} (v${completedSim.engineVersion})` : "EnergyPlus v24.1.0 / RC Solver";
   const preservedWeather = activeWeather?.name || "Leh Airport Station (3500m) IND_JK_Leh.420270_ISHRAE.epw";
@@ -93,13 +103,25 @@ export function ReportsView() {
           "12_ventilation": activeProject.ventilation,
           "13_internal_loads": activeProject.internalLoads,
           "14_simulation_settings": activeProject.simulationSettings,
-          "15_indoor_temperature": completedSim?.results?.summary || { indoorMinC: 17.2, indoorMaxC: 22.4, indoorMeanC: 19.8 },
-          "16_solar_gains": { totalSolarGainKwh: 58.0, peakDaytimeSolarW: 1450 },
-          "17_heat_flow": { totalEnvelopeUA: 28.5, peakConductionW: 850 },
-          "18_comfort": { comfortHoursPct: 88.0, standard: "ASHRAE 55 Adaptive Model" },
-          "19_comparison": { baselineModel: "Uninsulated Outpost", heatingReductionPct: 74.5 },
-          "20_optimization": { algorithm: "Deterministic Cartesian Parameter Sweep", objective: "Maximize Comfort" },
-          "21_recommended_design": { winner: "150mm EPS + 20% South WWR", nonUniversalNotice: "Conditionally optimal within evaluated candidate space." },
+          "15_indoor_temperature": completedSim?.results?.summary
+            ? {
+                indoorMinC: completedSim.results.summary.indoorMinC,
+                indoorMaxC: completedSim.results.summary.indoorMaxC,
+                indoorMeanC: completedSim.results.summary.indoorMeanC,
+              }
+            : { status: "UNAVAILABLE", reason: "Metric unavailable from this simulation" },
+          "16_solar_gains": totalSolarGainKwh !== null
+            ? { totalSolarGainKwh }
+            : { status: "UNAVAILABLE", reason: "Metric unavailable from this simulation" },
+          "17_heat_flow": envelopeUA !== null
+            ? { totalEnvelopeUA: envelopeUA }
+            : { status: "UNAVAILABLE", reason: "Metric unavailable from this simulation" },
+          "18_comfort": completedSim?.results?.summary?.comfortHoursPct !== undefined
+            ? { comfortHoursPct: completedSim.results.summary.comfortHoursPct, standard: "ASHRAE 55 Adaptive Model" }
+            : { status: "UNAVAILABLE", reason: "Metric unavailable from this simulation" },
+          "19_comparison": { status: "UNAVAILABLE", reason: "Metric unavailable from this simulation" },
+          "20_optimization": { status: "UNAVAILABLE", reason: "Metric unavailable from this simulation" },
+          "21_recommended_design": { status: "UNAVAILABLE", reason: "Metric unavailable from this simulation" },
           "22_assumptions": [preservedAssumptions],
           "23_sources": ["ASHRAE Handbook of Fundamentals", "ISHRAE Leh EPW", "ISO 7730", "NBC 2016"],
           "24_validation_notes": { sanityAudit: "PASSED", controlledSensitivityTests: "7/7 PASSED" },
@@ -143,23 +165,23 @@ export function ReportsView() {
         ["4", "Geometry", "Floor Area (m²)", floorArea],
         ["4", "Geometry", "Volume (m³)", volume],
         ["5", "Orientation", "Azimuth (°)", geom.orientation],
-        ["6", "Walls", "Envelope U-Value (W/m²K)", uVal],
+        ["6", "Walls", "Envelope U-Value (W/m²K)", uVal !== null ? uVal : "Metric unavailable from this simulation"],
         ["7", "Roof", "Pitch (°)", geom.roofAngle || 15.0],
-        ["8", "Floor", "Perimeter Insulation", "Yes (100mm XPS)"],
-        ["9", "Windows", "Glazing Type", "Double Low-E Argon"],
-        ["10", "Doors", "Air Tightness", "Class 4 Gasketed Double Seal"],
-        ["11", "Thermal Mass", "Damping Ratio (%)", "78.5%"],
+        ["8", "Floor", "Perimeter Insulation", activeProject.envelope?.floor?.name || "Standard Floor"],
+        ["9", "Windows", "Glazing Type", activeProject.windows?.[0]?.glazingType || "Double Glazed"],
+        ["10", "Doors", "Air Tightness", activeProject.doors?.[0]?.construction || "Standard Air-Lock"],
+        ["11", "Thermal Mass", "Damping Ratio (%)", completedSim?.results?.summary?.diurnalSwingDampingPct !== undefined ? `${completedSim.results.summary.diurnalSwingDampingPct}%` : "Metric unavailable from this simulation"],
         ["12", "Ventilation", "Infiltration (ACH)", activeProject.ventilation?.infiltrationACH || 0.35],
         ["13", "Internal Loads", "Sensible Heat (W)", "450 W continuous"],
         ["14", "Simulation Settings", "Engine", preservedEngine],
-        ["15", "Indoor Temperature", "Night Min (°C)", completedSim?.results?.summary?.indoorMinC || 17.2],
-        ["15", "Indoor Temperature", "Mean (°C)", completedSim?.results?.summary?.indoorMeanC || 19.8],
-        ["16", "Solar Gains", "Useful Aperture (kWh)", "58.0"],
-        ["17", "Heat Flow", "Total Envelope UA (W/K)", "28.5"],
-        ["18", "Comfort", "Comfort Band % (18-24°C)", completedSim?.results?.summary?.comfortHoursPct || 88.0],
-        ["19", "Comparison", "Heating Reduction (%)", "74.5% vs uninsulated"],
-        ["20", "Optimization", "Evaluated Candidates", "100 factorial combinations"],
-        ["21", "Recommended Design", "Winner", "150mm EPS + 20% South WWR (Non-Universal Local Optimum)"],
+        ["15", "Indoor Temperature", "Night Min (°C)", completedSim?.results?.summary?.indoorMinC !== undefined ? completedSim.results.summary.indoorMinC : "Metric unavailable from this simulation"],
+        ["15", "Indoor Temperature", "Mean (°C)", completedSim?.results?.summary?.indoorMeanC !== undefined ? completedSim.results.summary.indoorMeanC : "Metric unavailable from this simulation"],
+        ["16", "Solar Gains", "Useful Aperture (kWh)", totalSolarGainKwh !== null ? totalSolarGainKwh : "Metric unavailable from this simulation"],
+        ["17", "Heat Flow", "Total Envelope UA (W/K)", envelopeUA !== null ? envelopeUA : "Metric unavailable from this simulation"],
+        ["18", "Comfort", "Comfort Band % (18-24°C)", completedSim?.results?.summary?.comfortHoursPct !== undefined ? completedSim.results.summary.comfortHoursPct : "Metric unavailable from this simulation"],
+        ["19", "Comparison", "Heating Reduction (%)", "Metric unavailable from this simulation"],
+        ["20", "Optimization", "Evaluated Candidates", "Metric unavailable from this simulation"],
+        ["21", "Recommended Design", "Winner", "Metric unavailable from this simulation"],
         ["22", "Assumptions", "Core Simplification", preservedAssumptions],
         ["23", "Sources", "Primary Standards", "ASHRAE 55, ISHRAE EPW, ISO 7730, NBC 2016"],
         ["24", "Validation Notes", "Audit Status", "PASSED (7/7 Controlled Tests Verified)"],
@@ -369,50 +391,58 @@ export function ReportsView() {
             {/* 6. Walls */}
             <div className="rounded-lg border border-slate-800 bg-slate-950/60 p-3 print:bg-slate-50 space-y-1">
               <span className="text-[10px] font-bold text-emerald-400 print:text-emerald-700 uppercase">6. Walls</span>
-              <div className="font-bold text-white print:text-black font-mono">U = {uVal} W/m²·K (R = 4.55)</div>
-              <div className="text-[11px] text-slate-400 print:text-slate-600">150mm EPS + Rammed Earth core</div>
+              <div className="font-bold text-white print:text-black font-mono">
+                {uVal !== null ? `U = ${uVal} W/m²·K` : <span className="text-slate-500 italic text-xs">Metric unavailable from this simulation</span>}
+              </div>
+              <div className="text-[11px] text-slate-400 print:text-slate-600">
+                {activeProject.envelope?.walls?.name || "Wall Assembly"}
+              </div>
             </div>
 
             {/* 7. Roof */}
             <div className="rounded-lg border border-slate-800 bg-slate-950/60 p-3 print:bg-slate-50 space-y-1">
               <span className="text-[10px] font-bold text-indigo-400 print:text-indigo-700 uppercase">7. Roof</span>
-              <div className="font-bold text-white print:text-black font-mono">U = 0.18 W/m²·K | Pitch: {geom.roofAngle || 15}°</div>
-              <div className="text-[11px] text-slate-400 print:text-slate-600">0.45m snow-shedding overhang</div>
+              <div className="font-bold text-white print:text-black font-mono">Pitch: {geom.roofAngle || 15}°</div>
+              <div className="text-[11px] text-slate-400 print:text-slate-600">{activeProject.envelope?.roof?.name || "Roof Assembly"}</div>
             </div>
 
             {/* 8. Floor */}
             <div className="rounded-lg border border-slate-800 bg-slate-950/60 p-3 print:bg-slate-50 space-y-1">
               <span className="text-[10px] font-bold text-emerald-400 print:text-emerald-700 uppercase">8. Floor</span>
-              <div className="font-bold text-white print:text-black font-mono">U = 0.28 W/m²·K</div>
-              <div className="text-[11px] text-slate-400 print:text-slate-600">Perimeter slab on grade + XPS</div>
+              <div className="font-bold text-white print:text-black font-mono">{activeProject.envelope?.floor?.name || "Standard Floor"}</div>
+              <div className="text-[11px] text-slate-400 print:text-slate-600">Perimeter slab on grade</div>
             </div>
 
             {/* 9. Windows */}
             <div className="rounded-lg border border-slate-800 bg-slate-950/60 p-3 print:bg-slate-50 space-y-1">
               <span className="text-[10px] font-bold text-amber-400 print:text-amber-700 uppercase">9. Windows</span>
-              <div className="font-bold text-white print:text-black">2.8 m² (20% South WWR)</div>
-              <div className="text-[11px] text-slate-400 print:text-slate-600">Double Low-E (U=1.4, SHGC=0.62)</div>
+              <div className="font-bold text-white print:text-black">{activeProject.windows?.length || 0} Apertures</div>
+              <div className="text-[11px] text-slate-400 print:text-slate-600">{activeProject.windows?.[0]?.glazingType || "Double Glazed"}</div>
             </div>
 
             {/* 10. Doors */}
             <div className="rounded-lg border border-slate-800 bg-slate-950/60 p-3 print:bg-slate-50 space-y-1">
               <span className="text-[10px] font-bold text-teal-400 print:text-teal-700 uppercase">10. Doors</span>
-              <div className="font-bold text-white print:text-black font-mono">U = 1.20 W/m²·K</div>
-              <div className="text-[11px] text-slate-400 print:text-slate-600">Air-lock double gasket seal</div>
+              <div className="font-bold text-white print:text-black font-mono">{activeProject.doors?.[0]?.construction || "Standard Air-Lock"}</div>
+              <div className="text-[11px] text-slate-400 print:text-slate-600">Air-lock gasket seal</div>
             </div>
 
             {/* 11. Thermal Mass */}
             <div className="rounded-lg border border-slate-800 bg-slate-950/60 p-3 print:bg-slate-50 space-y-1">
               <span className="text-[10px] font-bold text-rose-400 print:text-rose-700 uppercase">11. Thermal Mass</span>
-              <div className="font-bold text-white print:text-black">High-Mass Concrete Slab / PCM</div>
-              <div className="text-[11px] text-slate-400 print:text-slate-600">78.5% Diurnal Damping Ratio</div>
+              <div className="font-bold text-white print:text-black">{activeProject.thermalMass?.material || "High-Mass Construction"}</div>
+              <div className="text-[11px] text-slate-400 print:text-slate-600">
+                {completedSim?.results?.summary?.diurnalSwingDampingPct !== undefined
+                  ? `${completedSim.results.summary.diurnalSwingDampingPct}% Diurnal Damping Ratio`
+                  : <span className="text-slate-500 italic">Metric unavailable from this simulation</span>}
+              </div>
             </div>
 
             {/* 12. Ventilation */}
             <div className="rounded-lg border border-slate-800 bg-slate-950/60 p-3 print:bg-slate-50 space-y-1">
               <span className="text-[10px] font-bold text-cyan-400 print:text-cyan-700 uppercase">12. Ventilation</span>
               <div className="font-bold text-white print:text-black font-mono">{activeProject.ventilation?.infiltrationACH || 0.35} ACH</div>
-              <div className="text-[11px] text-slate-400 print:text-slate-600">Airtight shell + HRV (80% eff)</div>
+              <div className="text-[11px] text-slate-400 print:text-slate-600">Infiltration rate</div>
             </div>
 
             {/* 13. Internal Loads */}
@@ -432,50 +462,73 @@ export function ReportsView() {
             {/* 15. Indoor Temperature */}
             <div className="rounded-lg border border-slate-800 bg-slate-950/60 p-3 print:bg-slate-50 space-y-1">
               <span className="text-[10px] font-bold text-blue-400 print:text-blue-700 uppercase">15. Indoor Temperature</span>
-              <div className="font-bold text-blue-400 print:text-blue-700 font-mono">Min: {completedSim?.results?.summary?.indoorMinC || 17.2}°C</div>
-              <div className="text-[11px] text-slate-400 print:text-slate-600">Mean: {completedSim?.results?.summary?.indoorMeanC || 19.8}°C | Max: 22.4°C</div>
+              {completedSim?.results?.summary?.indoorMinC !== undefined ? (
+                <>
+                  <div className="font-bold text-blue-400 print:text-blue-700 font-mono">Min: {completedSim.results.summary.indoorMinC}°C</div>
+                  <div className="text-[11px] text-slate-400 print:text-slate-600">
+                    Mean: {completedSim.results.summary.indoorMeanC}°C | Max: {completedSim.results.summary.indoorMaxC}°C
+                  </div>
+                </>
+              ) : (
+                <div className="text-[11px] text-slate-500 italic">Metric unavailable from this simulation</div>
+              )}
             </div>
 
             {/* 16. Solar Gains */}
             <div className="rounded-lg border border-slate-800 bg-slate-950/60 p-3 print:bg-slate-50 space-y-1">
               <span className="text-[10px] font-bold text-amber-400 print:text-amber-700 uppercase">16. Solar Gains</span>
-              <div className="font-bold text-white print:text-black font-mono">58.0 kWh Total Harvest</div>
-              <div className="text-[11px] text-slate-400 print:text-slate-600">Peak Aperture: 1,450 W</div>
+              {totalSolarGainKwh !== null ? (
+                <>
+                  <div className="font-bold text-white print:text-black font-mono">{totalSolarGainKwh} kWh Total Harvest</div>
+                  <div className="text-[11px] text-slate-400 print:text-slate-600">Calculated from solar aperture timeseries</div>
+                </>
+              ) : (
+                <div className="text-[11px] text-slate-500 italic">Metric unavailable from this simulation</div>
+              )}
             </div>
 
             {/* 17. Heat Flow */}
             <div className="rounded-lg border border-slate-800 bg-slate-950/60 p-3 print:bg-slate-50 space-y-1">
               <span className="text-[10px] font-bold text-rose-400 print:text-rose-700 uppercase">17. Heat Flow</span>
-              <div className="font-bold text-rose-400 print:text-rose-700 font-mono">Total UA: 28.5 W/K</div>
-              <div className="text-[11px] text-slate-400 print:text-slate-600">Peak loss: 850W wall/roof/win + 220W infil</div>
+              {envelopeUA !== null ? (
+                <>
+                  <div className="font-bold text-rose-400 print:text-rose-700 font-mono">Total UA: {envelopeUA} W/K</div>
+                  <div className="text-[11px] text-slate-400 print:text-slate-600">Calculated from envelope assembly and area</div>
+                </>
+              ) : (
+                <div className="text-[11px] text-slate-500 italic">Metric unavailable from this simulation</div>
+              )}
             </div>
 
             {/* 18. Comfort */}
             <div className="rounded-lg border border-slate-800 bg-slate-950/60 p-3 print:bg-slate-50 space-y-1">
               <span className="text-[10px] font-bold text-emerald-400 print:text-emerald-700 uppercase">18. Comfort</span>
-              <div className="font-bold text-emerald-400 print:text-emerald-700 font-mono">{completedSim?.results?.summary?.comfortHoursPct || 88}% in Band</div>
-              <div className="text-[11px] text-slate-400 print:text-slate-600">ASHRAE 55 Adaptive Standard (18-24°C)</div>
+              {completedSim?.results?.summary?.comfortHoursPct !== undefined ? (
+                <>
+                  <div className="font-bold text-emerald-400 print:text-emerald-700 font-mono">{completedSim.results.summary.comfortHoursPct}% in Band</div>
+                  <div className="text-[11px] text-slate-400 print:text-slate-600">ASHRAE 55 Adaptive Standard (18-24°C)</div>
+                </>
+              ) : (
+                <div className="text-[11px] text-slate-500 italic">Metric unavailable from this simulation</div>
+              )}
             </div>
 
             {/* 19. Comparison */}
             <div className="rounded-lg border border-slate-800 bg-slate-950/60 p-3 print:bg-slate-50 space-y-1">
               <span className="text-[10px] font-bold text-purple-400 print:text-purple-700 uppercase">19. Comparison</span>
-              <div className="font-bold text-emerald-400 print:text-emerald-700 font-mono">–74.5% Heating Demand</div>
-              <div className="text-[11px] text-slate-400 print:text-slate-600">vs Uninsulated Baseline (+13°C lift)</div>
+              <div className="text-[11px] text-slate-500 italic">Metric unavailable from this simulation</div>
             </div>
 
             {/* 20. Optimization */}
             <div className="rounded-lg border border-slate-800 bg-slate-950/60 p-3 print:bg-slate-50 space-y-1">
               <span className="text-[10px] font-bold text-purple-400 print:text-purple-700 uppercase">20. Optimization</span>
-              <div className="font-bold text-white print:text-black">Deterministic Cartesian Sweep</div>
-              <div className="text-[11px] text-slate-400 print:text-slate-600">100 evaluated candidates | Pareto ranked</div>
+              <div className="text-[11px] text-slate-500 italic">Metric unavailable from this simulation</div>
             </div>
 
             {/* 21. Recommended Design */}
             <div className="rounded-lg border border-slate-800 bg-slate-950/60 p-3 print:bg-slate-50 space-y-1">
               <span className="text-[10px] font-bold text-amber-400 print:text-amber-700 uppercase">21. Recommended Design</span>
-              <div className="font-bold text-amber-300 print:text-amber-800">150mm EPS + 20% South WWR</div>
-              <div className="text-[10px] text-slate-400 print:text-slate-600">Non-universal local optimum notice declared</div>
+              <div className="text-[11px] text-slate-500 italic">Metric unavailable from this simulation</div>
             </div>
 
             {/* 22. Assumptions */}

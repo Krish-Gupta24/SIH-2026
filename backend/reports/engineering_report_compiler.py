@@ -311,72 +311,184 @@ class EngineeringReportCompiler:
             "start_day": int(sim_settings.get("startDay", 15)),
         }
 
+        # Simulation outcomes extraction
+        res_summary = (simulation_result or {}).get("summary") or {}
+        comf_data = (simulation_result or {}).get("comfort") or {}
+        therm_data = (simulation_result or {}).get("thermal_performance") or {}
+        solar_data = (simulation_result or {}).get("solar") or {}
+        energy_data = (simulation_result or {}).get("energy") or {}
+        sim_id = shelter_model.get("id", "shelter")
+        engine_status = (simulation_result or {}).get("status", "UNAVAILABLE")
+
         # 15. Indoor Temperature
-        in_min = float(res_summary.get("indoorMinC", opt_best.get("metrics", {}).get("indoor_min_c", 17.2)))
-        in_max = float(res_summary.get("indoorMaxC", opt_best.get("metrics", {}).get("indoor_max_c", 22.4)))
-        in_mean = float(res_summary.get("indoorMeanC", opt_best.get("metrics", {}).get("indoor_mean_c", 19.8)))
-        s15_indoor_temp = {
-            "indoor_min_c": in_min,
-            "indoor_max_c": in_max,
-            "indoor_mean_c": in_mean,
-            "diurnal_swing_c": round(in_max - in_min, 2),
-            "freeze_safety_margin_c": round(in_min - 0.0, 2),
-        }
+        in_min_val = res_summary.get("indoorMinC")
+        if in_min_val is None:
+            in_min_val = therm_data.get("indoor_temperature", {}).get("min_c") or comf_data.get("indoor_min_c")
+        in_max_val = res_summary.get("indoorMaxC")
+        if in_max_val is None:
+            in_max_val = therm_data.get("indoor_temperature", {}).get("max_c") or comf_data.get("indoor_max_c")
+        in_mean_val = res_summary.get("indoorMeanC")
+        if in_mean_val is None:
+            in_mean_val = therm_data.get("indoor_temperature", {}).get("mean_c") or comf_data.get("indoor_mean_c")
+
+        if in_min_val is not None and in_max_val is not None and in_mean_val is not None:
+            s15_indoor_temp = {
+                "status": "AVAILABLE",
+                "indoor_min_c": round(float(in_min_val), 2),
+                "indoor_max_c": round(float(in_max_val), 2),
+                "indoor_mean_c": round(float(in_mean_val), 2),
+                "diurnal_swing_c": round(float(in_max_val) - float(in_min_val), 2),
+                "freeze_safety_margin_c": round(float(in_min_val) - 0.0, 2),
+            }
+        else:
+            s15_indoor_temp = {
+                "status": "UNAVAILABLE",
+                "display_value": "Metric unavailable from this simulation",
+                "reason": "Indoor temperature metrics were not produced by the simulation run",
+                "missing_variable": "Zone Mean Air Temperature",
+                "simulation_id": sim_id,
+                "engine_status": engine_status,
+            }
 
         # 16. Solar Gains
-        s16_solar_gains = {
-            "total_seasonal_solar_gain_kwh": 58.0,
-            "peak_daytime_solar_gain_w": 1450.0,
-            "useful_solar_aperture_fraction_pct": 92.5,
-        }
+        sol_tot_kwh = (
+            solar_data.get("useful_solar_gain_total_kwh")
+            or energy_data.get("total_solar_gains_kwh")
+            or res_summary.get("totalSolarGainKwh")
+        )
+        if sol_tot_kwh is not None:
+            peak_solar_w = max(solar_data.get("solar_gains_total", [0.0])) if solar_data.get("solar_gains_total") else None
+            s16_solar_gains = {
+                "status": "AVAILABLE",
+                "total_useful_solar_gain_kwh": round(float(sol_tot_kwh), 2),
+                "peak_daytime_solar_gain_w": round(float(peak_solar_w), 1) if peak_solar_w is not None else "N/A",
+                "useful_aperture_fraction": "Direct passive solar gain through fenestration aperture",
+            }
+        else:
+            s16_solar_gains = {
+                "status": "UNAVAILABLE",
+                "display_value": "Metric unavailable from this simulation",
+                "reason": "Solar gain metrics were not produced or shelter has no active window glazing",
+                "missing_variable": "Zone Windows Total Transmitted Solar Radiation Rate",
+                "simulation_id": sim_id,
+                "engine_status": engine_status,
+            }
 
         # 17. Heat Flow
-        ua_val = float(res_summary.get("totalHeatLossUA", opt_best.get("metrics", {}).get("total_heat_loss_rate_ua", 28.5)))
-        s17_heat_flow = {
-            "total_envelope_ua_w_k": ua_val,
-            "wall_conduction_w": 420.0,
-            "roof_conduction_w": 180.0,
-            "floor_conduction_w": 120.0,
-            "window_conduction_w": 130.0,
-            "infiltration_ventilation_w": 220.0,
-        }
+        env_losses = energy_data.get("envelope_losses_kwh", {})
+        ua_val = res_summary.get("totalHeatLossUA") or opt_best.get("metrics", {}).get("total_heat_loss_rate_ua")
+        if env_losses or ua_val is not None:
+            s17_heat_flow = {
+                "status": "AVAILABLE",
+                "total_envelope_ua_w_k": round(float(ua_val), 2) if ua_val is not None else "Calculated dynamically",
+                "envelope_losses_breakdown_kwh": env_losses if env_losses else "Calculated dynamically",
+            }
+        else:
+            s17_heat_flow = {
+                "status": "UNAVAILABLE",
+                "display_value": "Metric unavailable from this simulation",
+                "reason": "Envelope heat flow metrics unavailable from this simulation",
+                "missing_variable": "Surface Inside Face Conduction Heat Transfer Rate",
+                "simulation_id": sim_id,
+                "engine_status": engine_status,
+            }
 
         # 18. Comfort
-        comfort_val = float(res_summary.get("comfortHoursPct", opt_best.get("metrics", {}).get("comfort_hours_pct", 88.0)))
-        s18_comfort = {
-            "hours_in_comfort_band_pct": comfort_val,
-            "standard_applied": "ASHRAE Standard 55 / ISO 7730 Adaptive Comfort Model for High Altitude",
-            "operative_comfort_band": "18.0°C to 24.0°C",
-        }
+        comfort_val = res_summary.get("comfortHoursPct") or comf_data.get("percent_time_comfortable")
+        comf_def = comf_data.get("comfort_definition") or {}
+        if not comf_def:
+            from simulation.results.metrics import parse_comfort_definition
+            comf_def = parse_comfort_definition(shelter_model).to_dict()
+
+        if comfort_val is not None:
+            s18_comfort = {
+                "status": "AVAILABLE",
+                "target_range": comf_def.get("target_range_str") or f"{comf_data.get('comfort_temperature_min_c', 18.0)}°C – {comf_data.get('comfort_temperature_max_c', 26.0)}°C",
+                "target_indoor_temperature_c": comf_def.get("target_indoor_temperature_c"),
+                "actual_temperature": {
+                    "min_c": in_min_val,
+                    "max_c": in_max_val,
+                    "mean_c": in_mean_val,
+                },
+                "hours_inside_target": comf_data.get("hours_inside_target", comf_data.get("hours_in_comfort_band")),
+                "hours_below_target": comf_data.get("hours_below_target", comf_data.get("hours_below_comfort")),
+                "hours_above_target": comf_data.get("hours_above_target", comf_data.get("hours_above_comfort")),
+                "hours_in_comfort_band_pct": round(float(comfort_val), 1),
+                "standard_applied": comf_def.get("standard_or_model_name", "DesignTargets Operational Band"),
+                "assumptions": comf_def.get("assumptions", "Defined by project DesignTargets; occupant clothing and activity adjusted for site conditions."),
+                "applicable_conditions": comf_def.get("applicable_conditions", "High-altitude unconditioned or passively heated cold-climate shelter."),
+                "universal_comfort_notice": "Thermal comfort criteria are conditionally defined by project design targets and local acclimatization; no universal comfort is claimed.",
+            }
+        else:
+            s18_comfort = {
+                "status": "UNAVAILABLE",
+                "display_value": "Metric unavailable from this simulation",
+                "reason": "Thermal comfort evaluation unavailable from this simulation run",
+                "missing_variable": "Comfort Evaluation",
+                "simulation_id": sim_id,
+                "engine_status": engine_status,
+            }
 
         # 19. Comparison
-        s19_comparison = {
-            "baseline_model": "Uninsulated Corrugated Steel Outpost (Single Glazed)",
-            "baseline_heating_demand_kwh_m2": 165.0,
-            "optimized_heating_demand_kwh_m2": 42.0,
-            "heating_energy_savings_pct": 74.5,
-            "indoor_min_temp_gain_c": +13.0,
-        }
+        comparison_input = kwargs.get("comparison_result")
+        if comparison_input and isinstance(comparison_input, dict):
+            s19_comparison = {
+                "status": "AVAILABLE",
+                "baseline_model": comparison_input.get("baseline_name", "Baseline Model"),
+                "winner_model": comparison_input.get("winner_name", "Winner"),
+                "winner_statement": comparison_input.get("winner_statement", ""),
+            }
+        else:
+            s19_comparison = {
+                "status": "UNAVAILABLE",
+                "display_value": "Metric unavailable from this simulation",
+                "reason": "Multi-design comparison has not been evaluated for this shelter",
+                "missing_variable": "Comparison Assessment",
+                "simulation_id": sim_id,
+                "engine_status": "N/A",
+            }
 
         # 20. Optimization
-        s20_optimization = {
-            "algorithm": opt_meta.get("algorithm", "Deterministic Cartesian Factorial Parameter Sweep (Zero-ML)"),
-            "target_objective": opt_meta.get("objective", "maximize_comfort"),
-            "evaluated_candidates": int(opt_meta.get("valid_count", 100)),
-            "feasible_candidates": int(opt_meta.get("feasible_count", 84)),
-            "parameters_swept": opt_meta.get("parameters_swept", ["orientation", "insulation_thickness", "wall_construction", "glazing_type"]),
-        }
+        if optimization_result and opt_meta:
+            s20_optimization = {
+                "status": "AVAILABLE",
+                "algorithm": opt_meta.get("algorithm", "Deterministic Cartesian Factorial Parameter Sweep"),
+                "target_objective": opt_meta.get("objective", "maximize_comfort"),
+                "evaluated_candidates": int(opt_meta.get("valid_count", 0)),
+                "feasible_candidates": int(opt_meta.get("feasible_count", 0)),
+                "parameters_swept": opt_meta.get("parameters_swept", []),
+            }
+        else:
+            s20_optimization = {
+                "status": "UNAVAILABLE",
+                "display_value": "Metric unavailable from this simulation",
+                "reason": "Parameter sweep optimization has not been executed for this shelter",
+                "missing_variable": "Optimization Sweep",
+                "simulation_id": sim_id,
+                "engine_status": "N/A",
+            }
 
         # 21. Recommended Design
-        s21_recommended_design = {
-            "winner_candidate_id": opt_best.get("candidate_id", "CAND-001"),
-            "specification_summary": "150mm EPS + 20% South WWR Double Low-E Argon + High-Mass Slab",
-            "reason_for_selection": "Optimal balance at the knee of the insulation diminishing returns curve (68% heating reduction) without transport weight penalties.",
-            "non_universal_optimality_notice": (
-                "Best according to active objective under boundary constraints within evaluated candidate space. "
-                "NOT universally optimal. Field microclimate, thermal bridging, and installation workmanship will cause variance."
-            ),
-        }
+        if optimization_result and opt_best:
+            s21_recommended_design = {
+                "status": "AVAILABLE",
+                "winner_candidate_id": opt_best.get("candidate_id", "CAND-001"),
+                "specification_summary": opt_best.get("summary", "Recommended Parametric Design"),
+                "reason_for_selection": opt_best.get("reason", "Highest objective score within evaluated candidate space."),
+                "non_universal_optimality_notice": (
+                    "Best according to active objective under boundary constraints within evaluated candidate space. "
+                    "NOT universally optimal."
+                ),
+            }
+        else:
+            s21_recommended_design = {
+                "status": "UNAVAILABLE",
+                "display_value": "Metric unavailable from this simulation",
+                "reason": "No optimization sweep executed to generate recommended design",
+                "missing_variable": "Recommended Design Report",
+                "simulation_id": sim_id,
+                "engine_status": "N/A",
+            }
 
         # 22. Assumptions
         s22_assumptions = {
