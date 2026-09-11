@@ -105,17 +105,17 @@ export function ResultsView() {
   const unit: UnitSystem = settings.unitSystem || "SI";
 
   // Extract arrays for chart consumption
-  const timestamps = hourlyTimeseries.map((t) => t.timestamp);
-  const indoorTemp = hourlyTimeseries.map((t) => t.indoorTempC);
-  const outdoorTemp = hourlyTimeseries.map((t) => t.outdoorTempC);
-  const solarRadiation = hourlyTimeseries.map((t) => t.solarRadiationWm2);
-  const solarGains = hourlyTimeseries.map((t) => t.solarGainsW);
-  const wallHeatTransfer = hourlyTimeseries.map((t) => t.wallHeatTransferW);
-  const roofHeatTransfer = hourlyTimeseries.map((t) => t.roofHeatTransferW);
-  const floorHeatTransfer = hourlyTimeseries.map((t) => t.floorHeatTransferW);
-  const windowHeatTransfer = hourlyTimeseries.map((t) => t.windowHeatTransferW);
-  const doorHeatTransfer = hourlyTimeseries.map((t) => t.doorHeatTransferW);
-  const infiltrationHeatTransfer = hourlyTimeseries.map((t) => t.infiltrationHeatTransferW);
+  const timestamps: string[] = hourlyTimeseries.map((t) => t.timestamp || String(t.hour));
+  const indoorTemp: number[] = hourlyTimeseries.map((t) => t.indoorTempC ?? 20);
+  const outdoorTemp: number[] = hourlyTimeseries.map((t) => t.outdoorTempC ?? -15);
+  const solarRadiation: number[] = hourlyTimeseries.map((t) => t.solarRadiationWm2 ?? 0);
+  const solarGains: number[] = hourlyTimeseries.map((t) => t.solarGainsW ?? 0);
+  const wallHeatTransfer: number[] = hourlyTimeseries.map((t) => t.wallHeatTransferW ?? 0);
+  const roofHeatTransfer: number[] = hourlyTimeseries.map((t) => t.roofHeatTransferW ?? 0);
+  const floorHeatTransfer: number[] = hourlyTimeseries.map((t) => t.floorHeatTransferW ?? 0);
+  const windowHeatTransfer: number[] = hourlyTimeseries.map((t) => t.windowHeatTransferW ?? 0);
+  const doorHeatTransfer: number[] = hourlyTimeseries.map((t) => t.doorHeatTransferW ?? 0);
+  const infiltrationHeatTransfer: number[] = hourlyTimeseries.map((t) => t.infiltrationHeatTransferW ?? 0);
 
   // Derive comfort metrics from verified summary or null
   const rawUnderheating = (summary as any)?.underheatingDegreeHoursCh ?? (activeJob.results as any)?.comfort?.underheating_degree_hours_c_h;

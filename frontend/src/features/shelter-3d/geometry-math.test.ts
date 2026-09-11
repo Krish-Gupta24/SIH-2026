@@ -1,5 +1,9 @@
 import { describe, it, expect } from "vitest";
-import { deriveShelter3DGeometry } from "./geometry-math";
+import {
+  deriveShelter3DGeometry,
+  findNextAvailableOpeningPosition,
+  clampOpeningPlacement,
+} from "./geometry-math";
 import { ShelterModel } from "@/types/shelter";
 
 describe("Shelter 3D Geometry Math Unit Tests", () => {
@@ -153,4 +157,23 @@ describe("Shelter 3D Geometry Math Unit Tests", () => {
     expect(rep.doors[0].dimensions[0]).toBeCloseTo(1.0, 1);
     expect(rep.doors[0].dimensions[1]).toBeCloseTo(2.1, 1);
   });
+
+  it("finds clean, non-overlapping positions for sequential openings", () => {
+    const wallLength = 6.0;
+
+    // First window placed on empty wall
+    const pos1 = findNextAvailableOpeningPosition(wallLength, [], 1.6);
+    expect(pos1).toBeGreaterThanOrEqual(0.35);
+    expect(pos1 + 1.6).toBeLessThanOrEqual(wallLength - 0.35);
+
+    // Second window placed on wall with existing window at pos1
+    const pos2 = findNextAvailableOpeningPosition(wallLength, [{ positionX: 1.0, width: 1.6 }], 1.6);
+    // Should not overlap [1.0, 2.6]
+    expect(pos2 >= 2.6 + 0.35 || pos2 + 1.6 <= 1.0).toBe(true);
+
+    // Clamping keeps apertures strictly inside wall boundaries
+    const clamped = clampOpeningPlacement(wallLength, 3.0, 10.0, 2.0, 1.0, 1.2, false);
+    expect(clamped.positionX + clamped.width).toBeLessThanOrEqual(wallLength);
+  });
 });
+
