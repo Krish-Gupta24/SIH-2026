@@ -73,15 +73,15 @@ export function ComparisonCharts({ jobs }: ComparisonChartsProps) {
       <div className="rounded-[2rem] border border-border bg-card p-7 shadow-[0_20px_55px_rgba(0,0,0,.04)] flex flex-col justify-between">
         <div>
           <div className="flex items-center justify-between">
-            <span className="micro-label text-muted-foreground">Comparative Trajectories</span>
-            <div className="h-8 w-8 rounded-xl bg-sky-500/10 flex items-center justify-center text-sky-500">
-              <Thermometer className="h-4 w-4" />
+            <span className="micro-label">Comparative Trajectories</span>
+            <div className="size-8 rounded-xl bg-secondary flex items-center justify-center text-foreground">
+              <Thermometer className="size-4" />
             </div>
           </div>
-          <h3 className="font-medium tracking-tight text-xl mt-2 text-foreground">
+          <h3 className="font-editorial text-xl sm:text-2xl font-medium tracking-tight mt-2 text-foreground">
             Diurnal Living Zone Profiles
           </h3>
-          <p className="text-xs text-muted-foreground mt-1">
+          <p className="text-xs text-[#536772] mt-1">
             Hour-by-hour temperature curves comparing passive thermal retention across candidates under sub-zero conditions.
           </p>
         </div>
@@ -164,15 +164,15 @@ export function ComparisonCharts({ jobs }: ComparisonChartsProps) {
       <div className="rounded-[2rem] border border-border bg-card p-7 shadow-[0_20px_55px_rgba(0,0,0,.04)] flex flex-col justify-between">
         <div>
           <div className="flex items-center justify-between">
-            <span className="micro-label text-muted-foreground">Performance Trade-offs</span>
-            <div className="h-8 w-8 rounded-xl bg-amber-500/10 flex items-center justify-center text-amber-500">
-              <Zap className="h-4 w-4" />
+            <span className="micro-label">Performance Trade-offs</span>
+            <div className="size-8 rounded-xl bg-secondary flex items-center justify-center text-foreground">
+              <Zap className="size-4" />
             </div>
           </div>
-          <h3 className="font-medium tracking-tight text-xl mt-2 text-foreground">
+          <h3 className="font-editorial text-xl sm:text-2xl font-medium tracking-tight mt-2 text-foreground">
             Heating Demand & Comfort Hours
           </h3>
-          <p className="text-xs text-muted-foreground mt-1">
+          <p className="text-xs text-[#536772] mt-1">
             Evaluating heating load reductions (kWh/m²·a) vs total comfort band coverage (%) across cases.
           </p>
         </div>

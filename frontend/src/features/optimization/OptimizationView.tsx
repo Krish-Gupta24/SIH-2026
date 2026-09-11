@@ -25,6 +25,7 @@ import {
   PageIntro,
   Status,
 } from "@/components/v0/platform-components";
+import { WorkflowFooter } from "@/components/layout/WorkflowFooter";
 import { useShelterStore } from "@/lib/store/use-shelter-store";
 import {
   SweptParameterId,
@@ -271,19 +272,19 @@ export function OptimizationView() {
       {/* Notification Banner */}
       {notification && (
         <div
-          className={`flex items-center justify-between p-3.5 rounded-xl border text-xs font-semibold ${
+          className={`flex items-center justify-between p-4 rounded-2xl border text-xs font-semibold shadow-sm ${
             notification.type === "success"
-              ? "bg-emerald-950/40 border-emerald-500/40 text-emerald-300"
-              : "bg-blue-950/40 border-blue-500/40 text-blue-300"
+              ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-700 dark:text-emerald-300"
+              : "bg-sky-500/10 border-sky-500/30 text-sky-700 dark:text-sky-300"
           }`}
         >
-          <div className="flex items-center gap-2">
-            <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-400" />
+          <div className="flex items-center gap-2.5">
+            <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
             <span>{notification.message}</span>
           </div>
           <button
             onClick={() => setNotification(null)}
-            className="text-slate-400 hover:text-white text-xs px-2"
+            className="text-muted-foreground hover:text-foreground text-xs px-2 transition-colors"
           >
             ✕
           </button>
@@ -327,11 +328,11 @@ export function OptimizationView() {
 
       {/* 5. Provenance & Engineering Audit Metadata */}
       {sweepResult && (
-        <div className="rounded-2xl border border-border bg-card p-5 text-xs text-muted-foreground shadow-sm">
+        <div className="rounded-[2rem] border border-border bg-card p-6 text-xs text-muted-foreground shadow-[0_20px_55px_rgba(0,0,0,.04)]">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
             <div className="flex flex-wrap items-center gap-4">
-              <span className="flex items-center gap-1.5 font-medium text-foreground">
-                <Database className="h-3.5 w-3.5 text-purple-500" />
+              <span className="flex items-center gap-1.5 font-semibold text-foreground">
+                <Database className="h-3.5 w-3.5 text-purple-600 dark:text-purple-400" />
                 <span>Run ID: {sweepResult.runId}</span>
               </span>
               <span className="flex items-center gap-1.5">
@@ -339,24 +340,27 @@ export function OptimizationView() {
                 <span>Duration: {sweepResult.executionDurationSec}s</span>
               </span>
               <span>
-                Algorithm: {sweepResult.algorithm}
+                Algorithm: <strong className="text-foreground">{sweepResult.algorithm}</strong>
               </span>
               <span>
-                Weather: {sweepResult.weatherDataset}
+                Weather: <strong className="text-foreground">{sweepResult.weatherDataset}</strong>
               </span>
             </div>
-            <div className="flex items-center gap-2">
-              <span className="text-emerald-500 font-semibold">
+            <div className="flex items-center gap-2 font-medium">
+              <span className="text-emerald-600 dark:text-emerald-400 font-semibold">
                 {sweepResult.feasibleCount}/{sweepResult.validCount} Feasible
               </span>
               <span>·</span>
-              <span className="text-purple-500 font-semibold">
+              <span className="text-purple-600 dark:text-purple-400 font-semibold">
                 {sweepResult.paretoCandidates.length} Non-Dominated (Pareto)
               </span>
             </div>
           </div>
         </div>
       )}
+
+      {/* Connected Linear Workflow Footer */}
+      <WorkflowFooter customNextLabel="Compare Design Alternatives" customNextHref="/comparison" />
     </div>
   );
 }

@@ -5,12 +5,17 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
   ArrowLeft,
+  ArrowRight,
+  CheckCircle2,
   ChevronDown,
+  ChevronRight,
   Menu,
+  Sparkles,
   X,
 } from "lucide-react";
 import { useShelterStore } from "@/lib/store/use-shelter-store";
 import { BrandMark, Status } from "@/components/v0/platform-components";
+import { WORKFLOW_PIPELINE } from "@/components/layout/WorkflowFooter";
 
 interface NavItem {
   id: string;
@@ -24,18 +29,6 @@ const GLOBAL_NAV: NavItem[] = [
   { id: "settings", label: "Settings", href: "/settings" },
 ];
 
-const WORKFLOW_TABS: NavItem[] = [
-  { id: "overview", label: "Overview", href: "/dashboard" },
-  { id: "designer", label: "Designer", href: "/designer" },
-  { id: "3d", label: "3D CAD", href: "/designer/3d" },
-  { id: "weather", label: "Climate", href: "/weather" },
-  { id: "simulation", label: "Simulate", href: "/simulations" },
-  { id: "results", label: "Results", href: "/results" },
-  { id: "compare", label: "Compare", href: "/comparison" },
-  { id: "optimize", label: "Optimize", href: "/optimization" },
-  { id: "reports", label: "Report", href: "/reports" },
-];
-
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
@@ -46,6 +39,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     projects,
     activeProjectId,
     setActiveProject,
+    simulations,
+    comparisonJobIds,
     settings,
     updateSettings,
   } = useShelterStore();
@@ -53,7 +48,55 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const activeProject = projects.find((p) => p.id === activeProjectId) || projects[0];
 
   // Determine if this is a project-specific workflow view
-  const isProjectView = WORKFLOW_TABS.some((tab) => pathname === tab.href || pathname.startsWith(tab.href + "/"));
+  const isProjectView = WORKFLOW_PIPELINE.some(
+    (tab) => pathname === tab.href || (tab.href !== "/" && pathname.startsWith(tab.href))
+  );
+
+  // Determine current active step in pipeline
+  const currentStepIndex = WORKFLOW_PIPELINE.findIndex((step) => {
+    if (step.href === "/dashboard") {
+      return pathname === "/dashboard" || pathname === "/";
+    }
+    return pathname === step.href || pathname.startsWith(step.href);
+  });
+
+  const nextRecommendedStep =
+    currentStepIndex !== -1 && currentStepIndex < WORKFLOW_PIPELINE.length - 1
+      ? WORKFLOW_PIPELINE[currentStepIndex + 1]
+      : null;
+
+  // Compute step completions for progress metrics
+  const completedRuns = simulations.filter(
+    (s) => s.projectId === activeProject?.id && s.status === "completed"
+  );
+
+  const getStepStatus = (stepId: string) => {
+    switch (stepId) {
+      case "overview":
+        return !!activeProject;
+      case "climate":
+        return !!activeProject?.location?.weatherSource;
+      case "designer":
+        return !!activeProject?.geometry && !!activeProject?.envelope;
+      case "3d":
+        return !!activeProject?.geometry;
+      case "simulate":
+        return completedRuns.length > 0;
+      case "results":
+        return completedRuns.length > 0;
+      case "optimize":
+        return completedRuns.length > 0;
+      case "compare":
+        return comparisonJobIds.length >= 2 || completedRuns.length >= 2;
+      case "report":
+        return completedRuns.length > 0;
+      default:
+        return false;
+    }
+  };
+
+  const completedCount = WORKFLOW_PIPELINE.filter((step) => getStepStatus(step.id)).length;
+  const progressPercent = Math.round((completedCount / WORKFLOW_PIPELINE.length) * 100);
 
   return (
     <div className="min-h-screen bg-background text-foreground antialiased selection:bg-secondary selection:text-foreground">
@@ -65,8 +108,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <BrandMark />
           </Link>
 
-          {/* Desktop Global Navigation Pills */}
-          <nav className="workspace-global-nav hidden items-center gap-2 md:flex" aria-label="Global navigation">
+          {/* Global Utility Navigation */}
+          <nav
+            aria-label="Global application navigation"
+            className="hidden items-center gap-1 rounded-full border border-border bg-secondary/50 p-1 md:flex"
+          >
             {GLOBAL_NAV.map((item) => {
               const isActive = pathname === item.href || (item.href !== "/" && pathname.startsWith(item.href));
               return (
@@ -144,119 +190,159 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
             {activeProject && (
               <>
-                <p className="micro-label mb-2 mt-4">Project Workflow</p>
-                {WORKFLOW_TABS.map((item) => (
+                <p className="micro-label mb-2 mt-4">Connected Engineering Pipeline</p>
+                {WORKFLOW_PIPELINE.map((item) => (
                   <Link
                     key={item.id}
                     href={item.href}
                     onClick={() => setMobileOpen(false)}
-                    className="block border-b border-border py-2 text-xs font-medium text-muted-foreground hover:text-foreground"
+                    className="flex items-center justify-between border-b border-border py-2 text-xs font-medium text-muted-foreground hover:text-foreground"
                   >
-                    {item.label}
+                    <span>{item.stepNumber}. {item.label}</span>
+                    {getStepStatus(item.id) && <CheckCircle2 className="size-3 text-emerald-500" />}
                   </Link>
                 ))}
               </>
             )}
           </nav>
         )}
-      </header>
 
-      {/* Project Bar (Visible on project workflow routes) */}
-      {isProjectView && activeProject && (
-        <div className="project-bar border-b border-border bg-background">
-          <div className="mx-auto max-w-[1500px] px-5 sm:px-8 lg:px-12">
-            <div className="flex flex-col gap-4 py-4 sm:flex-row sm:items-center sm:justify-between">
-              {/* Active Project Identification */}
-              <div className="flex min-w-0 items-center gap-4">
-                <Link
-                  href="/projects"
-                  className="flex size-9 shrink-0 items-center justify-center rounded-full border border-border transition-colors hover:bg-secondary"
-                  aria-label="Back to projects"
-                >
-                  <ArrowLeft className="size-4" />
-                </Link>
-
-                <div className="relative min-w-0">
-                  <button
-                    onClick={() => setProjectPickerOpen(!projectPickerOpen)}
-                    className="group flex items-center gap-2 text-left"
+        {/* Project Bar with Connected Flow Pipeline (Visible on project workflow routes) */}
+        {isProjectView && activeProject && (
+          <div className="project-bar border-t border-border bg-background/95">
+            <div className="mx-auto max-w-[1500px] px-5 sm:px-8 lg:px-12">
+              <div className="flex flex-col gap-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+                {/* Active Project Identification */}
+                <div className="flex min-w-0 items-center gap-4">
+                  <Link
+                    href="/projects"
+                    className="flex size-9 shrink-0 items-center justify-center rounded-full border border-border transition-colors hover:bg-secondary"
+                    aria-label="Back to projects"
                   >
-                    <span className="truncate text-sm font-semibold group-hover:text-[#6E818F]">
-                      {activeProject.project.name}
-                    </span>
-                    <ChevronDown className="size-3 text-muted-foreground transition-transform group-hover:translate-y-0.5" />
-                  </button>
+                    <ArrowLeft className="size-4" />
+                  </Link>
 
-                  <p className="mt-0.5 text-[10px] uppercase tracking-[0.08em] text-muted-foreground">
-                    {activeProject.location.region} · {activeProject.location.elevation.toLocaleString()} m · v{activeProject.project.version}
-                  </p>
+                  <div className="relative min-w-0">
+                    <button
+                      onClick={() => setProjectPickerOpen(!projectPickerOpen)}
+                      className="group flex items-center gap-2 text-left"
+                    >
+                      <span className="truncate text-sm font-semibold group-hover:text-[#6E818F]">
+                        {activeProject.project.name}
+                      </span>
+                      <ChevronDown className="size-3 text-muted-foreground transition-transform group-hover:translate-y-0.5" />
+                    </button>
 
-                  {/* Project Picker Dropdown */}
-                  {projectPickerOpen && (
-                    <div className="absolute left-0 top-full z-50 mt-2 w-72 rounded-2xl border border-border bg-card p-2 shadow-2xl animate-in zoom-in-95">
-                      <p className="micro-label px-3 py-2">Switch Project</p>
-                      {projects.map((p) => (
-                        <button
-                          key={p.id}
-                          onClick={() => {
-                            setActiveProject(p.id);
-                            setProjectPickerOpen(false);
-                          }}
-                          className={`flex w-full flex-col rounded-xl px-3 py-2 text-left text-xs transition-colors ${
-                            p.id === activeProject.id
-                              ? "bg-secondary font-semibold"
-                              : "hover:bg-black/5"
-                          }`}
-                        >
-                          <span>{p.project.name}</span>
-                          <span className="text-[10px] text-muted-foreground">{p.location.region}</span>
-                        </button>
-                      ))}
-                      <div className="mt-1 border-t border-border pt-1">
-                        <Link
-                          href="/projects"
-                          onClick={() => setProjectPickerOpen(false)}
-                          className="block rounded-lg px-3 py-2 text-xs font-semibold text-muted-foreground hover:bg-black/5"
-                        >
-                          Manage all projects →
-                        </Link>
+                    <p className="mt-0.5 text-[10px] uppercase tracking-[0.08em] text-muted-foreground">
+                      {activeProject.location.region} · {activeProject.location.elevation.toLocaleString()} m · v{activeProject.project.version}
+                    </p>
+
+                    {/* Project Picker Dropdown */}
+                    {projectPickerOpen && (
+                      <div className="absolute left-0 top-full z-50 mt-2 w-72 rounded-2xl border border-border bg-card p-2 shadow-2xl animate-in zoom-in-95">
+                        <p className="micro-label px-3 py-2">Switch Project</p>
+                        {projects.map((p) => (
+                          <button
+                            key={p.id}
+                            onClick={() => {
+                              setActiveProject(p.id);
+                              setProjectPickerOpen(false);
+                            }}
+                            className={`flex w-full flex-col rounded-xl px-3 py-2 text-left text-xs transition-colors ${
+                              p.id === activeProject.id
+                                ? "bg-secondary font-semibold"
+                                : "hover:bg-black/5"
+                            }`}
+                          >
+                            <span>{p.project.name}</span>
+                            <span className="text-[10px] text-muted-foreground">{p.location.region}</span>
+                          </button>
+                        ))}
+                        <div className="mt-1 border-t border-border pt-1">
+                          <Link
+                            href="/projects"
+                            onClick={() => setProjectPickerOpen(false)}
+                            className="block rounded-lg px-3 py-2 text-xs font-semibold text-muted-foreground hover:bg-black/5"
+                          >
+                            Manage all projects →
+                          </Link>
+                        </div>
                       </div>
-                    </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Status and Next Recommended Step CTA */}
+                <div className="flex flex-wrap items-center gap-3">
+                  <div className="hidden items-center gap-2 sm:flex">
+                    <Status strong>{completedCount} of {WORKFLOW_PIPELINE.length} stages validated</Status>
+                  </div>
+
+                  {nextRecommendedStep && (
+                    <Link
+                      href={nextRecommendedStep.href}
+                      className="group inline-flex items-center gap-2 rounded-full bg-black px-4 py-1.5 text-xs font-semibold text-white shadow-sm transition-colors hover:bg-[#6E818F]"
+                    >
+                      <Sparkles className="size-3 text-[#CBDCE6]" />
+                      <span>Next: {nextRecommendedStep.label}</span>
+                      <ArrowRight className="size-3 transition-transform group-hover:translate-x-0.5" />
+                    </Link>
                   )}
                 </div>
               </div>
 
-              {/* Status and Actions */}
-              <div className="flex items-center gap-3">
-                <Status strong>Canonical model ready</Status>
-              </div>
-            </div>
+              {/* Connected Chevron Workflow Stepper */}
+              <nav
+                className="workflow-tabs flex items-center gap-1.5 overflow-x-auto rounded-t-2xl bg-secondary/45 px-3 py-2"
+                aria-label="Connected engineering workflow"
+              >
+                {WORKFLOW_PIPELINE.map((item, idx) => {
+                  const isActive =
+                    item.href === "/dashboard"
+                      ? pathname === "/dashboard" || pathname === "/"
+                      : pathname === item.href || pathname.startsWith(item.href);
+                  const isDone = getStepStatus(item.id);
 
-            {/* Workflow Navigation Tabs */}
-            <nav
-              className="workflow-tabs flex gap-1 overflow-x-auto rounded-t-2xl bg-secondary/45 px-2 pt-2"
-              aria-label="Project workflow"
-            >
-              {WORKFLOW_TABS.map((item) => {
-                const isActive = pathname === item.href;
-                return (
-                  <Link
-                    key={item.id}
-                    href={item.href}
-                    className={`shrink-0 rounded-t-xl border-b-2 px-3 pb-3 pt-2 text-[11px] font-semibold transition-colors ${
-                      isActive
-                        ? "border-foreground bg-background text-foreground"
-                        : "border-transparent text-muted-foreground hover:bg-background/70 hover:text-foreground"
-                    }`}
-                  >
-                    {item.label}
-                  </Link>
-                );
-              })}
-            </nav>
+                  return (
+                    <React.Fragment key={item.id}>
+                      <Link
+                        href={item.href}
+                        className={`group relative flex shrink-0 items-center gap-2 rounded-full px-3.5 py-1.5 text-[11px] font-semibold transition-colors ${
+                          isActive
+                            ? "bg-black text-white shadow-sm"
+                            : isDone
+                            ? "bg-white/85 text-black border border-black/10 hover:bg-white"
+                            : "text-[#6E818F] hover:bg-white/50 hover:text-black"
+                        }`}
+                      >
+                        {/* Step Number / Checkmark Badge */}
+                        <span
+                          className={`flex size-4 items-center justify-center rounded-full text-[9px] font-bold ${
+                            isActive
+                              ? "bg-white text-black"
+                              : isDone
+                              ? "bg-[#CBDCE6] text-black"
+                              : "bg-black/5 text-[#6E818F]"
+                          }`}
+                        >
+                          {isDone ? "✓" : item.stepNumber}
+                        </span>
+
+                        <span>{item.label}</span>
+                      </Link>
+
+                      {/* Connected Flow Arrow between tabs */}
+                      {idx < WORKFLOW_PIPELINE.length - 1 && (
+                        <ChevronRight className="size-3 shrink-0 text-[#6E818F]/40" />
+                      )}
+                    </React.Fragment>
+                  );
+                })}
+              </nav>
+            </div>
           </div>
-        </div>
-      )}
+        )}
+      </header>
 
       {/* Main Page Workspace Content */}
       <main className="workspace-content mx-auto max-w-[1500px] px-5 py-8 sm:px-8 sm:py-10 lg:px-12">

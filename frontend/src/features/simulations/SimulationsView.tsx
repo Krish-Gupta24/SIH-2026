@@ -17,6 +17,7 @@ import {
   Sparkles,
   Flame,
   Calendar,
+  ArrowRight,
 } from "lucide-react";
 import { useShelterStore, SimulationJobItem } from "@/lib/store/use-shelter-store";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
@@ -30,6 +31,7 @@ import {
   PageIntro,
   Status,
 } from "@/components/v0/platform-components";
+import { WorkflowFooter } from "@/components/layout/WorkflowFooter";
 
 export function SimulationsView() {
   const searchParams = useSearchParams();
@@ -37,6 +39,7 @@ export function SimulationsView() {
 
   const {
     projects,
+    activeProjectId,
     simulations,
     addSimulationJob,
     updateSimulationJob,
@@ -65,7 +68,7 @@ export function SimulationsView() {
 
   const targetProject = newWithId
     ? projects.find((p) => p.id === newWithId || p.project?.id === newWithId)
-    : projects[0] || null;
+    : projects.find((p) => p.id === activeProjectId) || projects[0] || null;
 
   const handleQueueSimulation = async (projToSim = targetProject || projects[0], allowTestData = false) => {
     if (!projToSim) return;
@@ -224,35 +227,39 @@ export function SimulationsView() {
     switch (status) {
       case "completed":
         return (
-          <Badge variant="success" className="gap-1 text-[10px]">
-            <CheckCircle2 className="h-3 w-3" />
+          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 px-2.5 py-0.5 text-[10px] font-bold text-emerald-700 dark:text-emerald-300 border border-emerald-500/30">
+            <CheckCircle2 className="size-3 text-emerald-600" />
             Completed
-          </Badge>
+          </span>
         );
       case "running":
         return (
-          <Badge variant="warning" className="gap-1 text-[10px] animate-pulse">
-            <RotateCw className="h-3 w-3 animate-spin" />
+          <span className="inline-flex items-center gap-1 rounded-full bg-sky-500/15 px-2.5 py-0.5 text-[10px] font-bold text-sky-700 dark:text-sky-300 border border-sky-500/30 animate-pulse">
+            <RotateCw className="size-3 animate-spin text-sky-600" />
             Running
-          </Badge>
+          </span>
         );
       case "queued":
       case "preparing":
         return (
-          <Badge variant="outline" className="gap-1 text-[10px]">
-            <Clock className="h-3 w-3 text-blue-400" />
+          <span className="inline-flex items-center gap-1 rounded-full bg-secondary text-muted-foreground border border-border px-2.5 py-0.5 text-[10px] font-semibold">
+            <Clock className="size-3" />
             Queued
-          </Badge>
+          </span>
         );
       case "failed":
         return (
-          <Badge variant="destructive" className="gap-1 text-[10px]">
-            <AlertCircle className="h-3 w-3" />
+          <span className="inline-flex items-center gap-1 rounded-full bg-rose-600 px-2.5 py-0.5 text-[10px] font-bold text-white shadow-sm animate-pulse">
+            <AlertCircle className="size-3" />
             Failed
-          </Badge>
+          </span>
         );
       default:
-        return <Badge variant="outline">{status}</Badge>;
+        return (
+          <span className="inline-flex items-center gap-1 rounded-full bg-secondary text-muted-foreground border border-border px-2.5 py-0.5 text-[10px] font-semibold">
+            {status}
+          </span>
+        );
     }
   };
 
@@ -294,6 +301,40 @@ export function SimulationsView() {
           )
         )}
       </div>
+
+      {/* Latest Completed Run Milestone Banner */}
+      {(() => {
+        const latestRun = simulations.find(
+          (s) => s.projectId === targetProject?.id && s.status === "completed" && s.results
+        ) || simulations.find((s) => s.status === "completed" && s.results);
+
+        if (!latestRun) return null;
+
+        return (
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6 rounded-[2rem] border border-border bg-card p-6 sm:p-8 shadow-[0_20px_55px_rgba(0,0,0,.04)]">
+            <div className="space-y-1.5">
+              <div className="flex items-center gap-2">
+                <Status strong>Simulation Validated · Run {latestRun.id}</Status>
+                <span className="text-[10px] text-[#6E818F]">EnergyPlus 24.1</span>
+              </div>
+              <h3 className="font-editorial text-2xl font-medium tracking-tight text-foreground">
+                Thermal Performance Ready for Analysis
+              </h3>
+              <p className="text-xs text-[#536772]">
+                Achieves <strong className="text-foreground">{latestRun.results?.summary.comfortHoursPct}%</strong> comfort hours with <strong className="text-foreground">{latestRun.results?.summary.heatingDemandKwhM2} kWh/m²</strong> heating demand under Leh Ladakh winter conditions.
+              </p>
+            </div>
+            <Link
+              href={`/results?jobId=${latestRun.id}`}
+              className="group inline-flex items-center gap-2.5 rounded-full bg-black px-6 py-2.5 text-xs font-semibold text-white shadow-sm transition-colors hover:bg-[#6E818F] shrink-0"
+            >
+              <Sparkles className="size-3.5 text-[#CBDCE6]" />
+              <span>View Results Analytics</span>
+              <ArrowRight className="size-3.5 transition-transform group-hover:translate-x-0.5" />
+            </Link>
+          </div>
+        );
+      })()}
 
       {/* Quick Simulation Dispatch Card for Targeted Project */}
       {targetProject && (
@@ -457,21 +498,28 @@ export function SimulationsView() {
               </div>
 
               {queueError && (
-                <div className="mt-3 rounded-2xl border border-destructive/30 bg-destructive/10 p-3 text-xs text-destructive flex items-center gap-2">
-                  <AlertCircle className="h-4 w-4 shrink-0" />
-                  <span>{queueError}</span>
+                <div className="mt-3 rounded-2xl border-2 border-rose-500/60 bg-rose-50 dark:bg-rose-950/40 p-4 text-xs text-rose-900 dark:text-rose-100 flex items-start gap-3 shadow-md">
+                  <AlertCircle className="h-5 w-5 text-rose-600 dark:text-rose-400 shrink-0 mt-0.5" />
+                  <div className="space-y-1">
+                    <p className="font-bold text-sm text-rose-700 dark:text-rose-300">Simulation Queue Error</p>
+                    <p className="leading-relaxed font-mono text-[11px] text-rose-800 dark:text-rose-300 bg-white/70 dark:bg-black/40 p-2.5 rounded-xl border border-rose-300 dark:border-rose-900">
+                      {queueError}
+                    </p>
+                  </div>
                 </div>
               )}
 
               {lastQueuedJobId && (
-                <div className="mt-3 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-3 text-xs text-emerald-600 dark:text-emerald-400 flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <CheckCircle2 className="h-4 w-4 shrink-0" />
-                    <span>Simulation job <strong className="font-mono">{lastQueuedJobId}</strong> dispatched successfully!</span>
+                <div className="mt-3 rounded-2xl border-2 border-emerald-500/60 bg-emerald-50 dark:bg-emerald-950/40 p-4 text-xs text-emerald-950 dark:text-emerald-100 flex items-center justify-between shadow-md">
+                  <div className="flex items-center gap-2.5">
+                    <CheckCircle2 className="h-5 w-5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                    <span>
+                      Simulation job <strong className="font-mono text-foreground font-bold px-2 py-0.5 rounded-lg bg-white dark:bg-black/50 border border-emerald-500/30">{lastQueuedJobId}</strong> dispatched successfully!
+                    </span>
                   </div>
                   <Link href={`/results?jobId=${lastQueuedJobId}`}>
-                    <ActionButton tone="secondary" className="min-h-7 px-3 text-[11px]">
-                      <Eye className="h-3 w-3" />
+                    <ActionButton tone="primary" className="rounded-full px-4 py-1.5 text-xs font-bold shadow-sm">
+                      <Eye className="size-3.5" />
                       View Results
                     </ActionButton>
                   </Link>
@@ -673,6 +721,9 @@ export function SimulationsView() {
           </div>
         </div>
       )}
+
+      {/* Connected Linear Workflow Footer */}
+      <WorkflowFooter customNextLabel="Analyze Thermal Results" customNextHref="/results" />
     </div>
   );
 }

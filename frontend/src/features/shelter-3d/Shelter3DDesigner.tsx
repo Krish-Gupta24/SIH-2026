@@ -8,7 +8,21 @@ import { ShelterCanvas } from "./components/ShelterCanvas";
 import { PropertyInspector } from "./components/PropertyInspector";
 import { MaterialWorkbenchDialog } from "./components/MaterialWorkbenchDialog";
 
-const stages = ["Location", "Orientation", "Form", "Dimensions", "Walls", "Roof", "Floor", "Openings", "Shading", "Thermal mass", "Ventilation", "Internal gains", "Targets"];
+const stages = [
+  "Project",
+  "Location",
+  "Geometry",
+  "Orientation",
+  "Walls",
+  "Roof",
+  "Floor",
+  "Windows",
+  "Doors",
+  "Shading",
+  "Thermal mass",
+  "Ventilation",
+  "Targets",
+];
 const views: { id: CameraPreset; label: string }[] = [{ id: "iso", label: "3D" }, { id: "top", label: "Plan" }, { id: "south", label: "South" }, { id: "north", label: "North" }, { id: "east", label: "East" }, { id: "west", label: "West" }];
 const modes: { id: VisualizationMode; label: string; icon: typeof Box }[] = [{ id: "model", label: "Model", icon: Box }, { id: "thermal", label: "Thermal", icon: Eye }, { id: "solar", label: "Solar", icon: Sun }, { id: "heat-flow", label: "Heat flow", icon: Wind }];
 
@@ -17,8 +31,8 @@ interface Props { model: ShelterModel; step: number; onStepChange: (step: number
 export function Shelter3DDesigner({ model, step, onStepChange, onUpdate, onSimulate }: Props) {
   const [selected, setSelected] = useState<SelectedElement>({ type: "shelter" });
   const [preset, setPreset] = useState<CameraPreset>("iso");
-  const [leftOpen, setLeftOpen] = useState(false);
-  const [rightOpen, setRightOpen] = useState(false);
+  const [leftOpen, setLeftOpen] = useState(true);
+  const [rightOpen, setRightOpen] = useState(true);
   const [saved, setSaved] = useState(false);
   const [materialsOpen, setMaterialsOpen] = useState(false);
   const [settings, setSettings] = useState<ViewerSettings>({ showGrid: true, showDimensions: true, showCompass: true, showSunShadows: true, wireframe: false, transparentWalls: false, revealLayers: false, visualization: "model" });
@@ -34,6 +48,15 @@ export function Shelter3DDesigner({ model, step, onStepChange, onUpdate, onSimul
   const windowArea = model.windows.reduce((sum, window) => sum + window.width * window.height, 0);
   const readiness = useMemo(() => [model.location.weatherSource, model.envelope.roof.layers.length, model.envelope.floor.layers.length, model.designTargets.comfortTempMinC].filter(Boolean).length, [model]);
 
+  // Handle stage change with auto-focusing elements in 3D
+  const handleStageSelect = (idx: number) => {
+    onStepChange(idx);
+    if (idx === 4) setSelected({ type: "wall", orientation: "south" });
+    else if (idx === 5) setSelected({ type: "roof" });
+    else if (idx === 6) setSelected({ type: "floor" });
+    else setSelected(null);
+  };
+
   return <div className="cad-shell">
     <header className="cad-toolbar">
       <div className="cad-model-identity"><span className="cad-model-icon"><Box /></span><div><strong>{model.project.name}</strong><span>{model.geometry.length.toFixed(1)} × {model.geometry.width.toFixed(1)} × {model.geometry.height.toFixed(1)} m · {model.geometry.roofType}</span></div></div>
@@ -44,7 +67,7 @@ export function Shelter3DDesigner({ model, step, onStepChange, onUpdate, onSimul
     <div className="cad-workspace">
       <aside className="cad-stage-panel" data-open={leftOpen}>
         <div className="cad-panel-heading"><span>Design sequence</span><button aria-label="Toggle workflow panel" onClick={() => setLeftOpen(!leftOpen)}><PanelLeft /></button></div>
-        <ol>{stages.map((label, index) => <li key={label}><button data-active={index === step} data-complete={index < step} onClick={() => onStepChange(index)}><span>{index < step ? <Check /> : String(index + 1).padStart(2, "0")}</span><strong>{label}</strong></button></li>)}</ol>
+        <ol>{stages.map((label, index) => <li key={label}><button data-active={index === step} data-complete={index < step} onClick={() => handleStageSelect(index)}><span>{index < step ? <Check /> : String(index + 1).padStart(2, "0")}</span><strong>{label}</strong></button></li>)}</ol>
         <div className="cad-stage-progress"><span style={{ width: `${((step + 1) / stages.length) * 100}%` }} /></div>
       </aside>
 
@@ -56,10 +79,10 @@ export function Shelter3DDesigner({ model, step, onStepChange, onUpdate, onSimul
         <button className="cad-inspector-toggle" aria-label="Toggle properties panel" onClick={() => setRightOpen(!rightOpen)}><PanelRight /></button>
       </main>
 
-      <aside className="cad-property-panel" data-open={rightOpen}><PropertyInspector model={model} selected={selected} onSelect={setSelected} onUpdate={update} /></aside>
+      <aside className="cad-property-panel" data-open={rightOpen}><PropertyInspector model={model} selected={selected} currentStep={step} onSelect={setSelected} onUpdate={update} onSimulate={onSimulate} /></aside>
     </div>
 
-    <footer className="cad-statusbar"><div><span className="cad-status-dot" />Canonical model synchronized</div><div>{readiness}/4 simulation checks complete</div><div className="cad-step-nav"><button disabled={step === 0} onClick={() => onStepChange(step - 1)}><ChevronLeft /> Previous</button><span>Stage {step + 1} of {stages.length}</span><button disabled={step === stages.length - 1} onClick={() => onStepChange(step + 1)}>Next <ChevronRight /></button></div></footer>
+    <footer className="cad-statusbar"><div><span className="cad-status-dot" />Canonical model synchronized</div><div>{readiness}/4 simulation checks complete</div><div className="cad-step-nav"><button disabled={step === 0} onClick={() => handleStageSelect(step - 1)}><ChevronLeft /> Previous</button><span>Stage {step + 1} of {stages.length}</span><button disabled={step === stages.length - 1} onClick={() => handleStageSelect(step + 1)}>Next <ChevronRight /></button></div></footer>
     <MaterialWorkbenchDialog open={materialsOpen} model={model} onOpenChange={setMaterialsOpen} onUpdate={update} />
   </div>;
 }

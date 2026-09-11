@@ -1,3 +1,5 @@
+import { Suspense } from "react";
+import { AppShell } from "@/components/layout/AppShell";
 import { ShelterDesignerWizard } from "@/features/shelter-editor";
 
 export const metadata = {
@@ -7,8 +9,11 @@ export const metadata = {
 
 export default function DesignerPage() {
   return (
-    <main className="min-h-screen bg-slate-50/50 dark:bg-slate-900/50">
-      <ShelterDesignerWizard />
-    </main>
+    <AppShell>
+      <Suspense fallback={<div className="p-8 text-center text-xs text-muted-foreground">Loading 2D Engineering Wizard...</div>}>
+        <ShelterDesignerWizard />
+      </Suspense>
+    </AppShell>
   );
 }
+

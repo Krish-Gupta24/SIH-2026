@@ -229,7 +229,7 @@ export function SideBySideTable({ jobs }: SideBySideTableProps) {
               {candidates.map((cand) => (
                 <TableHead key={cand.id} className="text-left border-l border-border">
                   <div className="space-y-0.5">
-                    <span className="text-[10px] uppercase tracking-wider text-sky-500 font-bold">
+                    <span className="micro-label">
                       [Design Candidate]
                     </span>
                     <div className="text-xs font-bold text-foreground truncate max-w-[200px]">
@@ -250,10 +250,10 @@ export function SideBySideTable({ jobs }: SideBySideTableProps) {
             {categories.map((cat) => (
               <React.Fragment key={cat}>
                 {/* Category Header Row */}
-                <TableRow className="bg-secondary/20 border-t border-border">
+                <TableRow className="bg-secondary/30 border-t border-border">
                   <TableCell
                     colSpan={jobs.length + 1}
-                    className="py-2.5 text-[11px] font-bold uppercase tracking-wider text-sky-500 font-sans"
+                    className="py-2.5 text-[11px] font-bold uppercase tracking-wider text-foreground font-sans"
                   >
                     {cat}
                   </TableCell>
@@ -300,7 +300,7 @@ export function SideBySideTable({ jobs }: SideBySideTableProps) {
                           return (
                             <TableCell key={cand.id} className="border-l border-border">
                               <span className="font-bold text-foreground">
-                                {candVal.toFixed(metric.formatDecimals ?? 1)} ${metric.unit}
+                                {candVal.toFixed(metric.formatDecimals ?? 1)} {metric.unit}
                               </span>
                             </TableCell>
                           );
@@ -322,19 +322,21 @@ export function SideBySideTable({ jobs }: SideBySideTableProps) {
 
                               {/* Difference Badge */}
                               <div
-                                className={`flex items-center gap-0.5 text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
-                                  diff.isImprovement
-                                    ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30"
-                                    : "bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/30"
+                                className={`flex items-center gap-0.5 text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                                  diff.deltaPercentage === 0
+                                    ? "bg-secondary text-muted-foreground border border-border"
+                                    : diff.isImprovement
+                                    ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30"
+                                    : "bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30"
                                 }`}
                                 title={`${diff.deltaAbsolute > 0 ? "+" : ""}${diff.deltaAbsolute} ${metric.unit}`}
                               >
                                 {diff.deltaPercentage > 0 ? (
-                                  <ArrowUp className="h-2.5 w-2.5" />
+                                  <ArrowUp className="size-2.5" />
                                 ) : diff.deltaPercentage < 0 ? (
-                                  <ArrowDown className="h-2.5 w-2.5" />
+                                  <ArrowDown className="size-2.5" />
                                 ) : (
-                                  <Minus className="h-2.5 w-2.5" />
+                                  <Minus className="size-2.5" />
                                 )}
                                 <span>
                                   {diff.deltaPercentage > 0 ? `+${diff.deltaPercentage}` : diff.deltaPercentage}%

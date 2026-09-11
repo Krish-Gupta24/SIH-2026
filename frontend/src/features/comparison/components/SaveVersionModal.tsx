@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Copy, Sparkles, Layers, Tag, FileText, CheckCircle2 } from "lucide-react";
+import { Copy, Sparkles } from "lucide-react";
 import {
   Dialog,
   DialogHeader,
@@ -9,8 +9,6 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { ShelterModel } from "@/types/shelter";
 
 interface SaveVersionModalProps {
@@ -48,32 +46,36 @@ export function SaveVersionModal({
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <form onSubmit={handleSave} className="space-y-4">
+    <Dialog
+      open={isOpen}
+      onOpenChange={(open) => !open && onClose()}
+      contentClassName="sm:max-w-lg rounded-[2rem] border border-border bg-card p-7 shadow-2xl text-foreground"
+    >
+      <form onSubmit={handleSave} className="space-y-5">
         <DialogHeader>
-          <div className="flex items-center gap-2">
-            <div className="h-8 w-8 rounded-lg bg-sky-500/10 flex items-center justify-center text-sky-400">
-              <Copy className="h-4 w-4" />
+          <div className="flex items-center gap-3">
+            <div className="flex size-10 items-center justify-center rounded-2xl bg-secondary text-foreground shrink-0">
+              <Copy className="size-4" />
             </div>
             <div>
-              <DialogTitle className="text-base font-bold text-white">
-                Save / Clone as New Design Version
+              <DialogTitle className="font-editorial text-xl font-medium tracking-tight text-foreground">
+                Save / Clone Design Version
               </DialogTitle>
-              <DialogDescription className="text-xs text-slate-400">
+              <DialogDescription className="text-xs text-[#536772] mt-0.5">
                 Create an immutable version snapshot of an existing shelter design to compare performance trade-offs.
               </DialogDescription>
             </div>
           </div>
         </DialogHeader>
 
-        <div className="space-y-3 text-xs">
+        <div className="space-y-3.5 text-xs">
           {/* Source Project Selector */}
           <div className="space-y-1">
-            <label className="font-semibold text-slate-300">Base Shelter Design to Clone:</label>
+            <label className="micro-label block">Base Shelter Design to Clone:</label>
             <select
               value={selectedSourceId}
               onChange={(e) => setSelectedSourceId(e.target.value)}
-              className="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-xs font-semibold text-white focus:outline-none focus:ring-1 focus:ring-sky-500"
+              className="w-full rounded-xl border border-border bg-secondary/30 px-3.5 py-2 text-xs font-semibold text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
             >
               {projects.map((p) => (
                 <option key={p.id} value={p.id}>
@@ -85,45 +87,48 @@ export function SaveVersionModal({
 
           {/* New Version Name */}
           <div className="space-y-1">
-            <label className="font-semibold text-slate-300">New Version Name / Identifier:</label>
-            <Input
+            <label className="micro-label block">New Version Name / Identifier:</label>
+            <input
               value={versionName}
               onChange={(e) => setVersionName(e.target.value)}
               placeholder="e.g. v2.1 - Triple Glazing & Aerogel Roof"
               required
-              className="text-xs border-slate-700 bg-slate-900 text-white placeholder:text-slate-500"
+              className="w-full rounded-xl border border-border bg-secondary/30 px-3.5 py-2 text-xs text-foreground placeholder:text-[#6E818F] focus:outline-none focus:ring-1 focus:ring-ring"
             />
-            <span className="text-[10px] text-slate-500">
+            <span className="text-[10px] text-[#6E818F]">
               Specifies the parametric modification or retrofit hypothesis.
             </span>
           </div>
 
           {/* Optional Engineering Description */}
           <div className="space-y-1">
-            <label className="font-semibold text-slate-300">Design Description & Hypothesis:</label>
+            <label className="micro-label block">Design Description & Hypothesis:</label>
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               rows={3}
               placeholder="e.g. Increased insulation thickness to 150mm EPS, reduced infiltration from 1.2 to 0.35 ACH with airtight seals."
-              className="w-full rounded-lg border border-slate-700 bg-slate-900 p-2 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:ring-1 focus:ring-sky-500 resize-none"
+              className="w-full rounded-xl border border-border bg-secondary/30 p-3 text-xs text-foreground placeholder:text-[#6E818F] focus:outline-none focus:ring-1 focus:ring-ring resize-none"
             />
           </div>
         </div>
 
-        <DialogFooter className="gap-2 pt-2 border-t border-slate-800">
-          <Button type="button" variant="outline" size="sm" onClick={onClose} className="text-xs">
-            Cancel
-          </Button>
-          <Button
-            type="submit"
-            size="sm"
-            disabled={!versionName.trim()}
-            className="text-xs bg-sky-600 hover:bg-sky-500 text-white font-bold gap-1.5"
+        <DialogFooter className="gap-2 pt-3 border-t border-border flex sm:justify-end">
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-full border border-black/20 bg-white px-5 py-2 text-xs font-semibold text-black transition-colors hover:bg-[#CBDCE6]"
           >
-            <Sparkles className="h-3.5 w-3.5" />
+            Cancel
+          </button>
+          <button
+            type="submit"
+            disabled={!versionName.trim()}
+            className="inline-flex items-center gap-2 rounded-full bg-black px-6 py-2 text-xs font-semibold text-white shadow-sm transition-colors hover:bg-[#6E818F] disabled:cursor-not-allowed disabled:opacity-45"
+          >
+            <Sparkles className="size-3.5 text-[#CBDCE6]" />
             <span>Save Version & Queue Simulation</span>
-          </Button>
+          </button>
         </DialogFooter>
       </form>
     </Dialog>

@@ -24,6 +24,7 @@ import {
   PageIntro,
   Status,
 } from "@/components/v0/platform-components";
+import { WorkflowFooter } from "@/components/layout/WorkflowFooter";
 import { ComparisonObjectiveId } from "./types";
 import {
   evaluateObjectiveWinner,
@@ -221,6 +222,9 @@ export function ComparisonView() {
         activeProjectId={activeProjectId || undefined}
         onSaveVersion={handleSaveVersion}
       />
+
+      {/* Connected Linear Workflow Footer */}
+      <WorkflowFooter customNextLabel="Generate Certified Report" customNextHref="/reports" />
     </div>
   );
 }

@@ -38,6 +38,7 @@ import {
   PageIntro,
   Status,
 } from "@/components/v0/platform-components";
+import { WorkflowFooter } from "@/components/layout/WorkflowFooter";
 
 export function WeatherView() {
   const { weatherDatasets, activeWeatherId, setActiveWeather, addWeatherDataset } = useShelterStore();
@@ -671,16 +672,16 @@ export function WeatherView() {
             </div>
 
             {modalError && (
-              <div className="rounded-xl bg-destructive/10 border border-destructive/20 p-3 text-xs text-destructive flex items-center gap-2">
-                <AlertCircle className="h-4 w-4 shrink-0" />
-                <span>{modalError}</span>
+              <div className="rounded-2xl border-2 border-rose-500/60 bg-rose-50 dark:bg-rose-950/40 p-3.5 text-xs text-rose-900 dark:text-rose-100 flex items-start gap-2.5 shadow-sm">
+                <AlertCircle className="h-4 w-4 text-rose-600 dark:text-rose-400 shrink-0 mt-0.5" />
+                <span className="leading-relaxed font-medium">{modalError}</span>
               </div>
             )}
 
             {modalSuccess && (
-              <div className="rounded-xl bg-emerald-500/10 border border-emerald-500/20 p-3 text-xs text-emerald-600 dark:text-emerald-400 flex items-center gap-2">
-                <CheckCircle2 className="h-4 w-4 shrink-0" />
-                <span>{modalSuccess}</span>
+              <div className="rounded-2xl border-2 border-emerald-500/60 bg-emerald-50 dark:bg-emerald-950/40 p-3.5 text-xs text-emerald-950 dark:text-emerald-100 flex items-start gap-2.5 shadow-sm">
+                <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
+                <span className="leading-relaxed font-medium">{modalSuccess}</span>
               </div>
             )}
 
@@ -780,16 +781,16 @@ export function WeatherView() {
             </div>
 
             {modalError && (
-              <div className="rounded-xl bg-destructive/10 border border-destructive/20 p-3 text-xs text-destructive flex items-center gap-2">
-                <AlertCircle className="h-4 w-4 shrink-0" />
-                <span>{modalError}</span>
+              <div className="rounded-2xl border-2 border-rose-500/60 bg-rose-50 dark:bg-rose-950/40 p-3.5 text-xs text-rose-900 dark:text-rose-100 flex items-start gap-2.5 shadow-sm">
+                <AlertCircle className="h-4 w-4 text-rose-600 dark:text-rose-400 shrink-0 mt-0.5" />
+                <span className="leading-relaxed font-medium">{modalError}</span>
               </div>
             )}
 
             {modalSuccess && (
-              <div className="rounded-xl bg-emerald-500/10 border border-emerald-500/20 p-3 text-xs text-emerald-600 dark:text-emerald-400 flex items-center gap-2">
-                <CheckCircle2 className="h-4 w-4 shrink-0" />
-                <span>{modalSuccess}</span>
+              <div className="rounded-2xl border-2 border-emerald-500/60 bg-emerald-50 dark:bg-emerald-950/40 p-3.5 text-xs text-emerald-950 dark:text-emerald-100 flex items-start gap-2.5 shadow-sm">
+                <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
+                <span className="leading-relaxed font-medium">{modalSuccess}</span>
               </div>
             )}
 
@@ -894,16 +895,16 @@ export function WeatherView() {
             </div>
 
             {modalError && (
-              <div className="rounded-xl bg-destructive/10 border border-destructive/20 p-3 text-xs text-destructive flex items-center gap-2">
-                <AlertCircle className="h-4 w-4 shrink-0" />
-                <span>{modalError}</span>
+              <div className="rounded-2xl border-2 border-rose-500/60 bg-rose-50 dark:bg-rose-950/40 p-3.5 text-xs text-rose-900 dark:text-rose-100 flex items-start gap-2.5 shadow-sm">
+                <AlertCircle className="h-4 w-4 text-rose-600 dark:text-rose-400 shrink-0 mt-0.5" />
+                <span className="leading-relaxed font-medium">{modalError}</span>
               </div>
             )}
 
             {modalSuccess && (
-              <div className="rounded-xl bg-emerald-500/10 border border-emerald-500/20 p-3 text-xs text-emerald-600 dark:text-emerald-400 flex items-center gap-2">
-                <CheckCircle2 className="h-4 w-4 shrink-0" />
-                <span>{modalSuccess}</span>
+              <div className="rounded-2xl border-2 border-emerald-500/60 bg-emerald-50 dark:bg-emerald-950/40 p-3.5 text-xs text-emerald-950 dark:text-emerald-100 flex items-start gap-2.5 shadow-sm">
+                <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
+                <span className="leading-relaxed font-medium">{modalSuccess}</span>
               </div>
             )}
 
@@ -1042,16 +1043,16 @@ export function WeatherView() {
             </div>
 
             {modalError && (
-              <div className="rounded-xl bg-destructive/10 border border-destructive/20 p-3 text-xs text-destructive flex items-center gap-2">
-                <AlertCircle className="h-4 w-4 shrink-0" />
-                <span>{modalError}</span>
+              <div className="rounded-2xl border-2 border-rose-500/60 bg-rose-50 dark:bg-rose-950/40 p-3.5 text-xs text-rose-900 dark:text-rose-100 flex items-start gap-2.5 shadow-sm">
+                <AlertCircle className="h-4 w-4 text-rose-600 dark:text-rose-400 shrink-0 mt-0.5" />
+                <span className="leading-relaxed font-medium">{modalError}</span>
               </div>
             )}
 
             {modalSuccess && (
-              <div className="rounded-xl bg-emerald-500/10 border border-emerald-500/20 p-3 text-xs text-emerald-600 dark:text-emerald-400 flex items-center gap-2">
-                <CheckCircle2 className="h-4 w-4 shrink-0" />
-                <span>{modalSuccess}</span>
+              <div className="rounded-2xl border-2 border-emerald-500/60 bg-emerald-50 dark:bg-emerald-950/40 p-3.5 text-xs text-emerald-950 dark:text-emerald-100 flex items-start gap-2.5 shadow-sm">
+                <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
+                <span className="leading-relaxed font-medium">{modalSuccess}</span>
               </div>
             )}
 
@@ -1071,6 +1072,9 @@ export function WeatherView() {
           </div>
         </div>
       )}
+
+      {/* Connected Linear Workflow Footer */}
+      <WorkflowFooter customNextLabel="Proceed to 2D Designer" customNextHref="/designer" />
     </div>
   );
 }

@@ -14,6 +14,8 @@ import {
   ArrowRight,
   ShieldCheck,
   Zap,
+  AlertTriangle,
+  CheckCircle2,
 } from "lucide-react";
 import { useShelterStore } from "@/lib/store/use-shelter-store";
 import { Button } from "@/components/ui/button";
@@ -28,6 +30,7 @@ import {
   PageIntro,
   Status,
 } from "@/components/v0/platform-components";
+import { WorkflowFooter } from "@/components/layout/WorkflowFooter";
 
 // Specialized Result Components
 import { DataSourceBanner } from "./components/DataSourceBanner";
@@ -225,7 +228,18 @@ export function ResultsView() {
       <div className="workspace-feature-grid grid gap-6 lg:grid-cols-[1.15fr_.85fr]">
         <div className="workspace-dark-panel rounded-[2rem] bg-[#000000] p-8 text-white sm:p-10 shadow-xl flex flex-col justify-between">
           <div>
-            <p className="micro-label text-white/45">Immediate judgment</p>
+            <div className="flex items-center justify-between gap-3">
+              <p className="micro-label text-white/45">Immediate judgment</p>
+              {summary.comfortHoursPct >= 80 ? (
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/20 px-3 py-1 text-[11px] font-bold text-emerald-400 border border-emerald-500/40">
+                  <CheckCircle2 className="size-3" /> Comfort Target Achieved
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-rose-500/20 px-3 py-1 text-[11px] font-bold text-rose-300 border border-rose-500/40 animate-pulse">
+                  <AlertTriangle className="size-3" /> Comfort Target Deficit
+                </span>
+              )}
+            </div>
             <h2 className="font-editorial mt-5 text-4xl sm:text-5xl font-medium tracking-tight">
               {summary.comfortHoursPct >= 80
                 ? "The envelope holds through the design period."
@@ -416,6 +430,9 @@ export function ResultsView() {
           />
         </TabsContent>
       </Tabs>
+
+      {/* Connected Linear Workflow Footer */}
+      <WorkflowFooter customNextLabel="Run Envelope Optimization" customNextHref="/optimization" />
     </div>
   );
 }

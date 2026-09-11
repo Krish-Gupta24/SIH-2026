@@ -9,10 +9,9 @@ import {
   TableHead,
   TableCell,
 } from "@/components/ui/table";
-import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Download, CheckCircle2, AlertTriangle, Layers, ArrowUpDown } from "lucide-react";
+import { Download, Layers } from "lucide-react";
 import { CandidateResult } from "../types";
 
 interface CandidateRankingsTableProps {
@@ -71,89 +70,93 @@ export function CandidateRankingsTable({
   };
 
   return (
-    <Card className="border-slate-800 bg-slate-900/70 p-6 backdrop-blur-sm space-y-4">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-2 border-b border-slate-800/80">
-        <div>
-          <h3 className="text-sm font-bold text-white flex items-center gap-2">
-            <Layers className="h-4 w-4 text-purple-400" />
-            <span>Complete Candidate Design Space Rankings</span>
-          </h3>
-          <p className="text-[11px] text-slate-400">
-            All evaluated parameter combinations ranked by objective score with constraint compliance audits.
-          </p>
+    <div className="rounded-[2rem] border border-border bg-card p-7 shadow-[0_20px_55px_rgba(0,0,0,.04)] space-y-5">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-3 border-b border-border">
+        <div className="flex items-center gap-3">
+          <div className="h-10 w-10 rounded-2xl bg-purple-500/10 flex items-center justify-center text-purple-600 dark:text-purple-400 border border-purple-500/20">
+            <Layers className="h-4 w-4" />
+          </div>
+          <div>
+            <h3 className="text-base font-semibold text-foreground tracking-tight">
+              Design Space Candidate Rankings
+            </h3>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              All evaluated parameter combinations ranked by objective score with full physical constraint audits.
+            </p>
+          </div>
         </div>
 
         <Button
           variant="outline"
           size="sm"
           onClick={handleExportCsv}
-          className="h-8 gap-1.5 text-xs border-slate-700 bg-slate-800 hover:bg-slate-700 text-white font-semibold"
+          className="rounded-full h-9 gap-2 text-xs border-border bg-card hover:bg-secondary text-foreground font-semibold px-4 shadow-sm"
         >
           <Download className="h-3.5 w-3.5" />
           <span>Export Rankings CSV</span>
         </Button>
       </div>
 
-      <div className="overflow-x-auto rounded-xl border border-slate-800">
+      <div className="overflow-x-auto rounded-2xl border border-border">
         <Table>
-          <TableHeader className="bg-slate-950/80">
-            <TableRow className="border-slate-800 text-xs">
-              <TableHead className="w-16 font-bold text-slate-400">Rank</TableHead>
-              <TableHead className="w-24 font-bold text-slate-400">Candidate</TableHead>
-              <TableHead className="font-bold text-purple-400">Objective Score</TableHead>
-              <TableHead className="font-bold text-slate-300">Parameters</TableHead>
-              <TableHead className="font-bold text-rose-400">Heating Demand</TableHead>
-              <TableHead className="font-bold text-emerald-400">Comfort %</TableHead>
-              <TableHead className="font-bold text-blue-400">Night Min</TableHead>
-              <TableHead className="font-bold text-slate-400">Constraints</TableHead>
-              <TableHead className="w-24 text-right font-bold text-slate-400">Action</TableHead>
+          <TableHeader className="bg-secondary/60">
+            <TableRow className="border-b border-border text-xs">
+              <TableHead className="w-16 font-semibold text-muted-foreground">Rank</TableHead>
+              <TableHead className="w-24 font-semibold text-muted-foreground">Candidate</TableHead>
+              <TableHead className="font-semibold text-purple-600 dark:text-purple-400">Objective Score</TableHead>
+              <TableHead className="font-semibold text-foreground">Parameters</TableHead>
+              <TableHead className="font-semibold text-rose-600 dark:text-rose-400">Heating Demand</TableHead>
+              <TableHead className="font-semibold text-emerald-600 dark:text-emerald-400">Comfort %</TableHead>
+              <TableHead className="font-semibold text-sky-600 dark:text-sky-400">Night Min</TableHead>
+              <TableHead className="font-semibold text-muted-foreground">Constraints</TableHead>
+              <TableHead className="w-24 text-right font-semibold text-muted-foreground">Action</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {paginated.map((c) => (
               <TableRow
                 key={c.id}
-                className={`border-slate-800/60 hover:bg-slate-800/40 text-xs font-mono transition-colors ${
-                  c.rank === 1 ? "bg-purple-950/20" : ""
+                className={`border-b border-border hover:bg-secondary/40 text-xs font-mono transition-colors ${
+                  c.rank === 1 ? "bg-purple-500/10 font-semibold" : ""
                 }`}
               >
                 <TableCell className="font-bold">
                   {c.rank === 1 ? (
-                    <span className="flex items-center gap-1 text-purple-400 font-bold">
+                    <span className="flex items-center gap-1 text-purple-600 dark:text-purple-400 font-bold">
                       ★ #1
                     </span>
                   ) : (
-                    <span className="text-slate-400">#{c.rank}</span>
+                    <span className="text-muted-foreground">#{c.rank}</span>
                   )}
                 </TableCell>
-                <TableCell className="font-semibold text-slate-200">
+                <TableCell className="font-semibold text-foreground">
                   <div className="flex items-center gap-1.5">
                     <span>{c.id}</span>
                     {c.isPareto && (
-                      <span className="h-1.5 w-1.5 rounded-full bg-purple-400" title="Pareto Optimal" />
+                      <span className="h-1.5 w-1.5 rounded-full bg-purple-500" title="Pareto Optimal" />
                     )}
                   </div>
                 </TableCell>
-                <TableCell className="font-bold text-purple-300">
+                <TableCell className="font-bold text-purple-600 dark:text-purple-400">
                   {c.objectiveScore.toFixed(1)}
                 </TableCell>
-                <TableCell className="text-slate-300 font-sans text-[11px] max-w-xs truncate">
+                <TableCell className="text-muted-foreground font-sans text-[11px] max-w-xs truncate">
                   {Object.entries(c.parameters)
                     .map(([k, v]) => `${k.slice(0, 5)}:${v}`)
                     .join(" · ")}
                 </TableCell>
-                <TableCell className="text-rose-400 font-semibold">
-                  {c.metrics.heatingDemandKwhM2} <span className="text-[10px] text-slate-500">kWh/m²</span>
+                <TableCell className="text-rose-600 dark:text-rose-400 font-semibold">
+                  {c.metrics.heatingDemandKwhM2} <span className="text-[10px] text-muted-foreground">kWh/m²</span>
                 </TableCell>
-                <TableCell className="text-emerald-400 font-semibold">
+                <TableCell className="text-emerald-600 dark:text-emerald-400 font-semibold">
                   {c.metrics.comfortHoursPct}%
                 </TableCell>
-                <TableCell className="text-blue-400 font-semibold">
+                <TableCell className="text-sky-600 dark:text-sky-400 font-semibold">
                   {c.metrics.indoorMinC}°C
                 </TableCell>
                 <TableCell>
                   {c.isFeasible ? (
-                    <Badge variant="outline" className="text-[9px] py-0 font-mono text-emerald-400 border-emerald-800/50 bg-emerald-950/40">
+                    <Badge variant="outline" className="text-[9px] py-0 font-mono text-emerald-600 dark:text-emerald-400 border-emerald-500/30 bg-emerald-500/10">
                       Passed
                     </Badge>
                   ) : (
@@ -167,7 +170,7 @@ export function CandidateRankingsTable({
                     variant="ghost"
                     size="sm"
                     onClick={() => onApplyCandidate(c)}
-                    className="h-6 px-2 text-[11px] font-bold text-purple-400 hover:text-white hover:bg-purple-600"
+                    className="h-7 px-3 text-[11px] font-semibold text-purple-600 dark:text-purple-400 hover:bg-purple-500/10 rounded-full"
                   >
                     Apply
                   </Button>
@@ -180,7 +183,7 @@ export function CandidateRankingsTable({
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-between pt-2 text-xs text-slate-400">
+        <div className="flex items-center justify-between pt-2 text-xs text-muted-foreground">
           <span>
             Showing {(page - 1) * rowsPerPage + 1}–{Math.min(page * rowsPerPage, candidates.length)} of{" "}
             {candidates.length} candidate designs
@@ -191,11 +194,11 @@ export function CandidateRankingsTable({
               size="sm"
               disabled={page === 1}
               onClick={() => setPage((p) => Math.max(1, p - 1))}
-              className="h-7 px-2.5 text-xs"
+              className="h-7 px-2.5 text-xs rounded-lg"
             >
               Prev
             </Button>
-            <span className="px-2 text-slate-300">
+            <span className="px-2 text-foreground font-medium">
               {page} / {totalPages}
             </span>
             <Button
@@ -203,13 +206,13 @@ export function CandidateRankingsTable({
               size="sm"
               disabled={page === totalPages}
               onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-              className="h-7 px-2.5 text-xs"
+              className="h-7 px-2.5 text-xs rounded-lg"
             >
               Next
             </Button>
           </div>
         </div>
       )}
-    </Card>
+    </div>
   );
 }

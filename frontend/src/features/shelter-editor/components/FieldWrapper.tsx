@@ -52,11 +52,16 @@ export function FieldWrapper({
 
       <div className="relative">{children}</div>
 
-      {error && <p className="text-[11px] font-medium text-rose-500">{error}</p>}
+      {error && (
+        <div className="flex items-center gap-1.5 rounded-lg border border-rose-500/30 bg-rose-500/10 px-2.5 py-1 text-[11px] font-bold text-rose-700 dark:text-rose-300">
+          <AlertTriangle className="size-3 shrink-0 text-rose-600 dark:text-rose-400" />
+          <span>{error}</span>
+        </div>
+      )}
 
       {warning && !error && (
-        <div className="flex items-center gap-1 text-[11px] text-amber-600 dark:text-amber-400">
-          <AlertTriangle className="h-3 w-3 flex-shrink-0" />
+        <div className="flex items-center gap-1.5 rounded-lg border border-amber-500/30 bg-amber-500/10 px-2.5 py-1 text-[11px] font-bold text-amber-800 dark:text-amber-300">
+          <AlertTriangle className="size-3 shrink-0 text-amber-600" />
           <span>{warning}</span>
         </div>
       )}

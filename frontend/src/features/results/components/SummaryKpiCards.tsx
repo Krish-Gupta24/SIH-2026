@@ -8,14 +8,9 @@ import {
   TrendingDown,
   Flame,
   Layers,
-  Wind,
-  Clock,
   Sparkles,
-  ArrowUpRight,
-  ArrowDownRight,
+  Clock,
 } from "lucide-react";
-import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { UnitSystem } from "@/types/simulation";
 import {
   convertTemperature,
@@ -73,17 +68,15 @@ export function SummaryKpiCards({ summary, unit }: SummaryKpiCardsProps) {
       {/* 1. Min Indoor Nighttime Temp */}
       <div className="rounded-2xl border border-border bg-card p-5 shadow-sm hover:border-[#6E818F] transition-colors relative overflow-hidden flex flex-col justify-between">
         <div className="flex items-center justify-between">
-          <span className="micro-label text-muted-foreground">
-            Min Indoor Temp
-          </span>
-          <div className="h-7 w-7 rounded-lg bg-sky-500/10 flex items-center justify-center text-sky-500">
-            <ThermometerSnowflake className="h-4 w-4" />
+          <span className="micro-label">Min Indoor Temp</span>
+          <div className="size-7 rounded-xl bg-secondary flex items-center justify-center text-foreground">
+            <ThermometerSnowflake className="size-3.5" />
           </div>
         </div>
         <div className="mt-3 flex items-baseline gap-1.5">
           {indoorMin !== null ? (
             <>
-              <span className="text-3xl font-medium tracking-tight">
+              <span className="font-editorial text-3xl sm:text-4xl font-medium tracking-tight text-foreground">
                 {formatNumber(indoorMin, 1)}
               </span>
               <span className="text-xs font-semibold text-muted-foreground">{tUnit}</span>
@@ -98,7 +91,7 @@ export function SummaryKpiCards({ summary, unit }: SummaryKpiCardsProps) {
             {outdoorMin !== null ? `${formatNumber(outdoorMin, 1)}${tUnit}` : "—"}
           </span>
           {indoorMin !== null && outdoorMin !== null && (
-            <span className="text-emerald-500 font-semibold ml-auto">
+            <span className="text-foreground font-semibold ml-auto">
               +{formatNumber(indoorMin - outdoorMin, 1)}Δ
             </span>
           )}
@@ -108,17 +101,15 @@ export function SummaryKpiCards({ summary, unit }: SummaryKpiCardsProps) {
       {/* 2. Diurnal Buffer / Max Indoor Temp */}
       <div className="rounded-2xl border border-border bg-card p-5 shadow-sm hover:border-[#6E818F] transition-colors relative overflow-hidden flex flex-col justify-between">
         <div className="flex items-center justify-between">
-          <span className="micro-label text-muted-foreground">
-            Peak Indoor Temp
-          </span>
-          <div className="h-7 w-7 rounded-lg bg-amber-500/10 flex items-center justify-center text-amber-500">
-            <Sun className="h-4 w-4" />
+          <span className="micro-label">Peak Indoor Temp</span>
+          <div className="size-7 rounded-xl bg-secondary flex items-center justify-center text-foreground">
+            <Sun className="size-3.5" />
           </div>
         </div>
         <div className="mt-3 flex items-baseline gap-1.5">
           {indoorMax !== null ? (
             <>
-              <span className="text-3xl font-medium tracking-tight">
+              <span className="font-editorial text-3xl sm:text-4xl font-medium tracking-tight text-foreground">
                 {formatNumber(indoorMax, 1)}
               </span>
               <span className="text-xs font-semibold text-muted-foreground">{tUnit}</span>
@@ -141,17 +132,15 @@ export function SummaryKpiCards({ summary, unit }: SummaryKpiCardsProps) {
       {/* 3. Hours in Target Comfort Band */}
       <div className="rounded-2xl border border-border bg-card p-5 shadow-sm hover:border-[#6E818F] transition-colors relative overflow-hidden flex flex-col justify-between">
         <div className="flex items-center justify-between">
-          <span className="micro-label text-muted-foreground">
-            Comfort Band Time
-          </span>
-          <div className="h-7 w-7 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-500">
-            <ShieldCheck className="h-4 w-4" />
+          <span className="micro-label">Comfort Band Time</span>
+          <div className="size-7 rounded-xl bg-secondary flex items-center justify-center text-foreground">
+            <ShieldCheck className="size-3.5" />
           </div>
         </div>
         <div className="mt-3 flex items-baseline gap-1.5">
           {typeof summary.comfortHoursPct === "number" ? (
             <>
-              <span className="text-3xl font-medium tracking-tight">
+              <span className="font-editorial text-3xl sm:text-4xl font-medium tracking-tight text-foreground">
                 {formatNumber(summary.comfortHoursPct, 1)}
               </span>
               <span className="text-xs font-semibold text-muted-foreground">%</span>
@@ -163,12 +152,9 @@ export function SummaryKpiCards({ summary, unit }: SummaryKpiCardsProps) {
         <div className="mt-2 flex items-center justify-between text-xs">
           <span className="text-muted-foreground">18°C–24°C Band</span>
           {typeof summary.comfortHoursPct === "number" && (
-            <Badge
-              variant={summary.comfortHoursPct >= 75 ? "outline" : "secondary"}
-              className="text-[10px] py-0 px-2 font-medium"
-            >
+            <span className="rounded-full bg-[#CBDCE6] text-black px-2 py-0.5 text-[9px] font-bold">
               {summary.comfortHoursPct >= 75 ? "Target Met" : "Moderate"}
-            </Badge>
+            </span>
           )}
         </div>
       </div>
@@ -176,17 +162,15 @@ export function SummaryKpiCards({ summary, unit }: SummaryKpiCardsProps) {
       {/* 4. Diurnal Swing Damping */}
       <div className="rounded-2xl border border-border bg-card p-5 shadow-sm hover:border-[#6E818F] transition-colors relative overflow-hidden flex flex-col justify-between">
         <div className="flex items-center justify-between">
-          <span className="micro-label text-muted-foreground">
-            Thermal Damping
-          </span>
-          <div className="h-7 w-7 rounded-lg bg-indigo-500/10 flex items-center justify-center text-indigo-500">
-            <TrendingDown className="h-4 w-4" />
+          <span className="micro-label">Thermal Damping</span>
+          <div className="size-7 rounded-xl bg-secondary flex items-center justify-center text-foreground">
+            <TrendingDown className="size-3.5" />
           </div>
         </div>
         <div className="mt-3 flex items-baseline gap-1.5">
           {typeof summary.diurnalSwingDampingPct === "number" ? (
             <>
-              <span className="text-3xl font-medium tracking-tight">
+              <span className="font-editorial text-3xl sm:text-4xl font-medium tracking-tight text-foreground">
                 {formatNumber(summary.diurnalSwingDampingPct, 1)}
               </span>
               <span className="text-xs font-semibold text-muted-foreground">%</span>
@@ -197,24 +181,22 @@ export function SummaryKpiCards({ summary, unit }: SummaryKpiCardsProps) {
         </div>
         <div className="mt-2 flex items-center justify-between text-xs text-muted-foreground">
           <span>Mass buffering</span>
-          <span className="text-emerald-500 font-medium">Optimal</span>
+          <span className="text-foreground font-semibold">Optimal</span>
         </div>
       </div>
 
       {/* 5. Heating Demand Index */}
       <div className="rounded-2xl border border-border bg-card p-5 shadow-sm hover:border-[#6E818F] transition-colors relative overflow-hidden flex flex-col justify-between">
         <div className="flex items-center justify-between">
-          <span className="micro-label text-muted-foreground">
-            Heating Demand
-          </span>
-          <div className="h-7 w-7 rounded-lg bg-rose-500/10 flex items-center justify-center text-rose-500">
-            <Flame className="h-4 w-4" />
+          <span className="micro-label">Heating Demand</span>
+          <div className="size-7 rounded-xl bg-secondary flex items-center justify-center text-foreground">
+            <Flame className="size-3.5" />
           </div>
         </div>
         <div className="mt-3 flex items-baseline gap-1.5">
           {heatingDemand !== null ? (
             <>
-              <span className="text-3xl font-medium tracking-tight">
+              <span className="font-editorial text-3xl sm:text-4xl font-medium tracking-tight text-foreground">
                 {formatNumber(heatingDemand, 1)}
               </span>
               <span className="text-xs font-semibold text-muted-foreground">{edUnit}</span>
@@ -231,17 +213,15 @@ export function SummaryKpiCards({ summary, unit }: SummaryKpiCardsProps) {
       {/* 6. Peak Envelope Loss Rate */}
       <div className="rounded-2xl border border-border bg-card p-5 shadow-sm hover:border-[#6E818F] transition-colors relative overflow-hidden flex flex-col justify-between">
         <div className="flex items-center justify-between">
-          <span className="micro-label text-muted-foreground">
-            Peak Conduction Loss
-          </span>
-          <div className="h-7 w-7 rounded-lg bg-red-500/10 flex items-center justify-center text-red-500">
-            <Layers className="h-4 w-4" />
+          <span className="micro-label">Peak Conduction Loss</span>
+          <div className="size-7 rounded-xl bg-secondary flex items-center justify-center text-foreground">
+            <Layers className="size-3.5" />
           </div>
         </div>
         <div className="mt-3 flex items-baseline gap-1.5">
           {hasPeakLoss ? (
             <>
-              <span className="text-3xl font-medium tracking-tight">
+              <span className="font-editorial text-3xl sm:text-4xl font-medium tracking-tight text-foreground">
                 {formatNumber(peakLoss!, 0)}
               </span>
               <span className="text-xs font-semibold text-muted-foreground">{pUnit}</span>
@@ -260,17 +240,15 @@ export function SummaryKpiCards({ summary, unit }: SummaryKpiCardsProps) {
       {/* 7. Total Solar Passive Gains */}
       <div className="rounded-2xl border border-border bg-card p-5 shadow-sm hover:border-[#6E818F] transition-colors relative overflow-hidden flex flex-col justify-between">
         <div className="flex items-center justify-between">
-          <span className="micro-label text-muted-foreground">
-            Total Solar Gain
-          </span>
-          <div className="h-7 w-7 rounded-lg bg-yellow-500/10 flex items-center justify-center text-yellow-500">
-            <Sparkles className="h-4 w-4" />
+          <span className="micro-label">Total Solar Gain</span>
+          <div className="size-7 rounded-xl bg-secondary flex items-center justify-center text-foreground">
+            <Sparkles className="size-3.5" />
           </div>
         </div>
         <div className="mt-3 flex items-baseline gap-1.5">
           {hasSolarGain ? (
             <>
-              <span className="text-3xl font-medium tracking-tight">
+              <span className="font-editorial text-3xl sm:text-4xl font-medium tracking-tight text-foreground">
                 {formatNumber(solarGain!, 1)}
               </span>
               <span className="text-xs font-semibold text-muted-foreground">{eUnit}</span>
@@ -289,17 +267,15 @@ export function SummaryKpiCards({ summary, unit }: SummaryKpiCardsProps) {
       {/* 8. Underheating Degree-Hours */}
       <div className="rounded-2xl border border-border bg-card p-5 shadow-sm hover:border-[#6E818F] transition-colors relative overflow-hidden flex flex-col justify-between">
         <div className="flex items-center justify-between">
-          <span className="micro-label text-muted-foreground">
-            Underheating Deficit
-          </span>
-          <div className="h-7 w-7 rounded-lg bg-cyan-500/10 flex items-center justify-center text-cyan-500">
-            <Clock className="h-4 w-4" />
+          <span className="micro-label">Underheating Deficit</span>
+          <div className="size-7 rounded-xl bg-secondary flex items-center justify-center text-foreground">
+            <Clock className="size-3.5" />
           </div>
         </div>
         <div className="mt-3 flex items-baseline gap-1.5">
           {hasUnderheating ? (
             <>
-              <span className="text-3xl font-medium tracking-tight">
+              <span className="font-editorial text-3xl sm:text-4xl font-medium tracking-tight text-foreground">
                 {formatNumber(underheatingVal!, 1)}
               </span>
               <span className="text-xs font-semibold text-muted-foreground">{tUnit}·h</span>

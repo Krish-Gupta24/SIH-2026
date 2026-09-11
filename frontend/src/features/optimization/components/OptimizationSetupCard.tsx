@@ -12,7 +12,6 @@ import {
   Layers,
   Settings2,
 } from "lucide-react";
-import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -51,23 +50,24 @@ export function OptimizationSetupCard({
   const activeObjective = OPTIMIZATION_OBJECTIVES.find((o) => o.id === selectedObjective);
 
   return (
-    <Card className="border-slate-800 bg-slate-900/80 p-6 backdrop-blur-md space-y-5">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-3 border-b border-slate-800/80">
-        <div className="flex items-center gap-2.5">
-          <div className="h-9 w-9 rounded-xl bg-purple-500/10 flex items-center justify-center text-purple-400 border border-purple-500/30">
+    <div className="rounded-[2rem] border border-border bg-card p-7 shadow-[0_20px_55px_rgba(0,0,0,.04)] space-y-6">
+      {/* Header Row */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b border-border">
+        <div className="flex items-center gap-3">
+          <div className="h-10 w-10 rounded-2xl bg-purple-500/10 flex items-center justify-center text-purple-600 dark:text-purple-400 border border-purple-500/20">
             <Sliders className="h-4 w-4" />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <span className="text-xs font-bold uppercase tracking-wider text-white">
-                Parametric Optimization Setup (Zero-ML)
-              </span>
-              <Badge variant="outline" className="text-[10px] bg-purple-950/50 text-purple-400 border-purple-800/50">
+              <h2 className="text-base font-semibold text-foreground tracking-tight">
+                Parametric Optimization Setup
+              </h2>
+              <span className="rounded-full border border-purple-500/20 bg-purple-500/10 px-2.5 py-0.5 text-[10px] font-semibold text-purple-600 dark:text-purple-400 font-mono">
                 Cartesian Sweep
-              </Badge>
+              </span>
             </div>
-            <p className="text-[11px] text-slate-400">
-              Select variables to sweep, choose an engineering objective, and enforce boundary constraints.
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Select design variables to sweep, establish optimization objectives, and enforce boundary constraints.
             </p>
           </div>
         </div>
@@ -76,12 +76,12 @@ export function OptimizationSetupCard({
         <Button
           onClick={onRunSweep}
           disabled={isExecuting || selectedParameters.length === 0}
-          className="gap-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold text-xs shadow-md shadow-purple-900/30"
+          className="rounded-full px-6 py-2.5 gap-2 bg-foreground text-background hover:bg-foreground/90 font-semibold text-xs shadow-md transition-all active:scale-[0.98]"
         >
           {isExecuting ? (
             <>
-              <Sparkles className="h-3.5 w-3.5 animate-spin text-purple-200" />
-              <span>Running Sweep...</span>
+              <Sparkles className="h-3.5 w-3.5 animate-spin text-purple-400" />
+              <span>Evaluating Sweep...</span>
             </>
           ) : (
             <>
@@ -96,12 +96,12 @@ export function OptimizationSetupCard({
         {/* 1. Parameters Selection (Left 2 cols) */}
         <div className="lg:col-span-2 space-y-3">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
-              <Layers className="h-3.5 w-3.5 text-sky-400" />
-              <span>Design Variables to Sweep ({selectedParameters.length} of 9 selected):</span>
+            <span className="text-xs font-semibold text-foreground uppercase tracking-wider flex items-center gap-1.5">
+              <Layers className="h-3.5 w-3.5 text-sky-500" />
+              <span>Design Variables to Sweep ({selectedParameters.length} of {AVAILABLE_SWEPT_PARAMETERS.length} selected):</span>
             </span>
-            <span className="text-[11px] text-slate-500 font-mono">
-              Est. Candidates: ~{candidateBudget}
+            <span className="text-[11px] text-muted-foreground font-mono">
+              Est. Combinations: ~{candidateBudget}
             </span>
           </div>
 
@@ -113,23 +113,23 @@ export function OptimizationSetupCard({
                   key={param.id}
                   type="button"
                   onClick={() => onToggleParameter(param.id)}
-                  className={`flex flex-col text-left p-3 rounded-lg border transition-all ${
+                  className={`flex flex-col text-left p-3.5 rounded-2xl border transition-all ${
                     isSelected
-                      ? "bg-purple-500/10 border-purple-500/50 shadow-sm"
-                      : "bg-slate-950/60 border-slate-800/80 hover:bg-slate-800/40 opacity-70"
+                      ? "bg-purple-500/10 border-purple-500/40 text-foreground shadow-sm"
+                      : "bg-secondary/40 border-border text-muted-foreground hover:bg-secondary/80 hover:text-foreground"
                   }`}
                 >
                   <div className="flex items-center justify-between w-full mb-1">
-                    <span className="text-xs font-bold text-slate-200 truncate pr-1">
+                    <span className="text-xs font-semibold text-foreground truncate pr-1">
                       {param.label}
                     </span>
                     {isSelected ? (
-                      <CheckSquare className="h-3.5 w-3.5 text-purple-400 shrink-0" />
+                      <CheckSquare className="h-3.5 w-3.5 text-purple-600 dark:text-purple-400 shrink-0" />
                     ) : (
-                      <Square className="h-3.5 w-3.5 text-slate-600 shrink-0" />
+                      <Square className="h-3.5 w-3.5 text-muted-foreground/50 shrink-0" />
                     )}
                   </div>
-                  <span className="text-[10px] text-slate-400 truncate">
+                  <span className="text-[10px] text-muted-foreground truncate">
                     {param.options.length} discrete steps: {param.options[0]?.label}..
                   </span>
                 </button>
@@ -141,16 +141,16 @@ export function OptimizationSetupCard({
         {/* 2. Objectives & Constraints (Right col) */}
         <div className="space-y-4">
           {/* Objective Selector */}
-          <div className="rounded-xl border border-slate-800 bg-slate-950/60 p-4 space-y-2">
-            <div className="flex items-center gap-1.5 text-xs font-bold text-slate-300 uppercase tracking-wider">
-              <Target className="h-3.5 w-3.5 text-amber-400" />
+          <div className="rounded-2xl border border-border bg-secondary/30 p-4 space-y-2">
+            <div className="flex items-center gap-1.5 text-xs font-semibold text-foreground uppercase tracking-wider">
+              <Target className="h-3.5 w-3.5 text-amber-500" />
               <span>Optimization Objective</span>
             </div>
 
             <select
               value={selectedObjective}
               onChange={(e) => onSelectObjective(e.target.value as OptimizationObjectiveId)}
-              className="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-xs font-semibold text-white focus:outline-none focus:ring-1 focus:ring-purple-500 shadow-sm"
+              className="w-full rounded-xl border border-border bg-card px-3 py-2 text-xs font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-purple-500 shadow-sm cursor-pointer"
             >
               {OPTIMIZATION_OBJECTIVES.map((obj) => (
                 <option key={obj.id} value={obj.id}>
@@ -159,35 +159,35 @@ export function OptimizationSetupCard({
               ))}
             </select>
 
-            <p className="text-[11px] text-slate-400 pt-1">
+            <p className="text-[11px] text-muted-foreground pt-1 leading-relaxed">
               {activeObjective?.description}
             </p>
           </div>
 
           {/* Hard Constraints Checklist */}
-          <div className="rounded-xl border border-slate-800 bg-slate-950/60 p-4 space-y-2.5">
-            <div className="flex items-center gap-1.5 text-xs font-bold text-slate-300 uppercase tracking-wider">
-              <ShieldCheck className="h-3.5 w-3.5 text-emerald-400" />
+          <div className="rounded-2xl border border-border bg-secondary/30 p-4 space-y-2.5">
+            <div className="flex items-center gap-1.5 text-xs font-semibold text-foreground uppercase tracking-wider">
+              <ShieldCheck className="h-3.5 w-3.5 text-emerald-500" />
               <span>Boundary Constraints</span>
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               {constraints.map((c) => (
                 <div
                   key={c.id}
                   onClick={() => onToggleConstraint(c.id)}
-                  className="flex items-start gap-2 text-xs text-slate-300 cursor-pointer p-1.5 rounded hover:bg-slate-900/60 transition-colors"
+                  className="flex items-start gap-2.5 text-xs text-foreground cursor-pointer p-2 rounded-xl hover:bg-secondary/70 transition-colors"
                 >
                   {c.enabled ? (
-                    <CheckSquare className="h-3.5 w-3.5 text-emerald-400 mt-0.5 shrink-0" />
+                    <CheckSquare className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400 mt-0.5 shrink-0" />
                   ) : (
-                    <Square className="h-3.5 w-3.5 text-slate-600 mt-0.5 shrink-0" />
+                    <Square className="h-3.5 w-3.5 text-muted-foreground/50 mt-0.5 shrink-0" />
                   )}
                   <div>
-                    <div className="font-semibold text-white">
+                    <div className="font-semibold text-foreground">
                       {c.name} ({c.operator} {c.threshold}{c.unit})
                     </div>
-                    <div className="text-[10px] text-slate-500">{c.description}</div>
+                    <div className="text-[10px] text-muted-foreground">{c.description}</div>
                   </div>
                 </div>
               ))}
@@ -195,6 +195,6 @@ export function OptimizationSetupCard({
           </div>
         </div>
       </div>
-    </Card>
+    </div>
   );
 }

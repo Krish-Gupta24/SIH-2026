@@ -20,6 +20,7 @@ import {
   ShelterScene,
   Status,
 } from "@/components/v0/platform-components";
+import { WorkflowFooter } from "@/components/layout/WorkflowFooter";
 
 export function DashboardView() {
   const router = useRouter();
@@ -227,6 +228,9 @@ export function DashboardView() {
           </span>
         </Link>
       </div>
+
+      {/* Connected Pipeline Footer */}
+      <WorkflowFooter customNextLabel="Review Climate & Site" customNextHref="/weather" />
     </div>
   );
 }

@@ -11,6 +11,8 @@ import {
 import { useDesignerDraft } from "./use-designer-draft";
 import { useShelterStore, SimulationJobItem } from "@/lib/store/use-shelter-store";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
+import { WorkflowFooter } from "@/components/layout/WorkflowFooter";
 
 // Step Components
 import { Step1Project } from "./steps/Step1Project";
@@ -69,20 +71,90 @@ export const WIZARD_STEPS = [
   { id: 13, name: "Simulation", description: "Engine & Execution", icon: Cpu },
 ];
 
+import { modelToFormValues, formValuesToModel, step2dTo3d } from "@/lib/store/shelter-model-adapter";
+
 export function ShelterDesignerWizard() {
-  const { addSimulationJob } = useShelterStore();
-  const [currentStep, setCurrentStep] = useState<number>(1);
+  const {
+    projects,
+    activeProjectId,
+    activeWizardStep,
+    setActiveWizardStep,
+    updateProject,
+    addSimulationJob,
+  } = useShelterStore();
+  const activeModel = projects.find((p) => p.id === activeProjectId) || projects[0];
+
+  const searchParams = useSearchParams();
+  const stepParam = searchParams.get("step");
+
+  const [currentStep, setCurrentStep] = useState<number>(() => {
+    if (stepParam !== null) {
+      const parsed = parseInt(stepParam, 10);
+      if (!isNaN(parsed) && parsed >= 1 && parsed <= 13) return parsed;
+    }
+    return activeWizardStep || 1;
+  });
+
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [submittedJobId, setSubmittedJobId] = useState<string | null>(null);
   const [submissionError, setSubmissionError] = useState<string | null>(null);
   const [confirmTestDataModal, setConfirmTestDataModal] = useState<boolean>(false);
   const [pendingValues, setPendingValues] = useState<ShelterFormValues | null>(null);
 
+  // Sync step if store or query param changes
+  React.useEffect(() => {
+    if (stepParam !== null) {
+      const parsed = parseInt(stepParam, 10);
+      if (!isNaN(parsed) && parsed >= 1 && parsed <= 13) {
+        setCurrentStep(parsed);
+        setActiveWizardStep(parsed);
+        return;
+      }
+    }
+    if (activeWizardStep && activeWizardStep !== currentStep) {
+      setCurrentStep(activeWizardStep);
+    }
+  }, [stepParam, activeWizardStep, setActiveWizardStep]);
+
+  const handleStepSelect = (stepNumber: number) => {
+    const validStep = Math.min(Math.max(1, stepNumber), 13);
+    setCurrentStep(validStep);
+    setActiveWizardStep(validStep);
+  };
+
   const form = useForm<ShelterFormValues, any, ShelterFormValues>({
     resolver: zodResolver(shelterFormSchema) as any,
-    defaultValues: defaultShelterFormValues,
+    defaultValues: activeModel ? modelToFormValues(activeModel) : defaultShelterFormValues,
     mode: "onChange",
   });
+
+  const isEditingIn2D = React.useRef(false);
+
+  // Keep form updated whenever activeModel changes in store (e.g. from 3D CAD or storage hydration)
+  React.useEffect(() => {
+    if (activeModel && !isEditingIn2D.current) {
+      form.reset(modelToFormValues(activeModel));
+    }
+  }, [activeModel?.id, activeModel?.project?.updatedAt, form]);
+
+  // Real-time bidirectional synchronization: push form edits directly to useShelterStore
+  React.useEffect(() => {
+    const subscription = form.watch((values) => {
+      if (activeModel && values.geometry?.length) {
+        try {
+          isEditingIn2D.current = true;
+          const patch = formValuesToModel(values as ShelterFormValues, activeModel);
+          updateProject(activeModel.id, patch);
+          setTimeout(() => {
+            isEditingIn2D.current = false;
+          }, 80);
+        } catch {
+          // Ignore transient incomplete form states
+        }
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, [form, activeModel?.id, updateProject]);
 
   const {
     advancedMode,
@@ -116,12 +188,12 @@ export function ShelterDesignerWizard() {
     // Validate current step before advancing
     const isValid = await form.trigger();
     if (isValid || advancedMode) {
-      setCurrentStep((prev) => Math.min(prev + 1, 13));
+      handleStepSelect(Math.min(currentStep + 1, 13));
     }
   };
 
   const handlePrevious = () => {
-    setCurrentStep((prev) => Math.max(prev - 1, 1));
+    handleStepSelect(Math.max(currentStep - 1, 1));
   };
 
   const handleFinalSubmit = async (values: ShelterFormValues, allowTestDataOverride = false) => {
@@ -245,7 +317,7 @@ export function ShelterDesignerWizard() {
   };
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8 space-y-8">
+    <div className="space-y-8">
       {/* Wizard Header Bar with Global Controls */}
       <div className="flex flex-col justify-between gap-4 border-b border-border pb-6 sm:flex-row sm:items-center">
         <div>
@@ -261,8 +333,24 @@ export function ShelterDesignerWizard() {
           </p>
         </div>
 
-        {/* Global Toolbar: Drafts, Advanced Toggle, Reset */}
+        {/* Global Toolbar: Drafts, Advanced Toggle, Reset, View Switcher */}
         <div className="flex flex-wrap items-center gap-2">
+          {/* View Switcher: 2D Wizard vs 3D CAD */}
+          <div className="flex items-center gap-1 rounded-full border border-border bg-secondary/40 p-0.5">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-foreground px-3 py-1 text-xs font-semibold text-background shadow-sm">
+              <Sliders className="size-3.5" />
+              <span>2D Wizard</span>
+            </span>
+            <Link
+              href={`/designer/3d?stage=${step2dTo3d(currentStep)}`}
+              onClick={() => setActiveWizardStep(currentStep)}
+              className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold text-muted-foreground transition hover:text-foreground"
+            >
+              <Box className="size-3.5" />
+              <span>3D CAD Studio</span>
+            </Link>
+          </div>
+
           <button
             type="button"
             onClick={toggleAdvancedMode}
@@ -333,7 +421,7 @@ export function ShelterDesignerWizard() {
               <button
                 key={step.id}
                 type="button"
-                onClick={() => setCurrentStep(step.id)}
+                onClick={() => handleStepSelect(step.id)}
                 className={`group flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-semibold transition ${
                   isCurrent
                     ? "bg-foreground text-background shadow-sm"
@@ -381,35 +469,40 @@ export function ShelterDesignerWizard() {
 
             {/* Submission Error Banner */}
             {submissionError && (
-              <div className="mt-6 flex items-center gap-2 rounded-lg border border-rose-300 bg-rose-50 p-3.5 text-xs text-rose-800 dark:border-rose-900 dark:bg-rose-950/40 dark:text-rose-300">
-                <AlertCircle className="h-4 w-4 flex-shrink-0" />
-                <span>{submissionError}</span>
+              <div className="mt-6 flex items-start gap-3 rounded-2xl border-2 border-rose-500/60 bg-rose-50 dark:bg-rose-950/40 p-4 text-xs text-rose-900 dark:text-rose-200 shadow-md">
+                <AlertCircle className="h-5 w-5 text-rose-600 dark:text-rose-400 flex-shrink-0 mt-0.5" />
+                <div className="space-y-1">
+                  <p className="font-bold text-sm text-rose-700 dark:text-rose-300">Simulation Launch Failed</p>
+                  <p className="leading-relaxed font-mono text-[11px] text-rose-800 dark:text-rose-300 bg-white/60 dark:bg-black/40 p-2 rounded-xl border border-rose-300 dark:border-rose-900">
+                    {submissionError}
+                  </p>
+                </div>
               </div>
             )}
 
             {/* Job Dispatched Confirmation Banner */}
             {submittedJobId && (
-              <div className="mt-6 rounded-lg border border-emerald-300 bg-emerald-50 p-4 text-xs text-emerald-900 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-300">
-                <div className="flex items-center gap-2 font-bold">
-                  <CheckCircle2 className="h-4 w-4 text-emerald-600" />
-                  Simulation Successfully Executed via EnergyPlus Engine!
+              <div className="mt-6 rounded-2xl border-2 border-emerald-500/60 bg-emerald-50 dark:bg-emerald-950/40 p-5 text-xs text-emerald-950 dark:text-emerald-100 shadow-md">
+                <div className="flex items-center gap-2.5 font-bold text-sm text-emerald-800 dark:text-emerald-300">
+                  <CheckCircle2 className="h-5 w-5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                  <span>Simulation Successfully Dispatched to EnergyPlus Engine!</span>
                 </div>
-                <p className="mt-1 text-slate-600 dark:text-slate-300">
-                  Job ID: <code className="rounded bg-white/80 px-1.5 py-0.5 font-mono text-[11px]">{submittedJobId}</code>
+                <p className="mt-2 text-slate-700 dark:text-slate-300">
+                  Job ID: <code className="rounded-lg bg-white/90 dark:bg-black/50 px-2 py-0.5 font-mono text-xs font-bold text-foreground border border-emerald-500/30">{submittedJobId}</code>
                 </p>
-                <p className="mt-1 text-slate-600 dark:text-slate-400">
-                  Physical thermal balance equations solved and validated across the building envelope.
+                <p className="mt-1 text-slate-600 dark:text-slate-400 leading-relaxed">
+                  Physical thermal balance equations solved across walls, roof, ground slab, and apertures.
                 </p>
-                <div className="mt-3 flex flex-wrap items-center gap-2">
+                <div className="mt-4 flex flex-wrap items-center gap-2.5">
                   <Link
                     href="/simulations"
-                    className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-1.5 font-bold text-white hover:bg-emerald-700 shadow-sm"
+                    className="inline-flex items-center gap-1.5 rounded-full bg-black px-4 py-2 text-xs font-bold text-white shadow-sm transition hover:bg-[#6E818F]"
                   >
                     View in Simulations Dashboard &rarr;
                   </Link>
                   <Link
                     href="/results"
-                    className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-600 px-3 py-1.5 font-semibold text-emerald-700 hover:bg-emerald-100 dark:text-emerald-300 dark:hover:bg-emerald-950/60"
+                    className="inline-flex items-center gap-1.5 rounded-full border border-emerald-600/40 bg-white px-4 py-2 text-xs font-bold text-emerald-800 shadow-sm transition hover:bg-[#CBDCE6]"
                   >
                     Analyze Thermal Results
                   </Link>
@@ -572,6 +665,9 @@ export function ShelterDesignerWizard() {
           </div>
         </div>
       )}
+
+      {/* Connected Linear Workflow Footer */}
+      <WorkflowFooter customNextLabel="Inspect in 3D CAD" customNextHref="/designer/3d" />
     </div>
   );
 }
