@@ -174,7 +174,7 @@ export const defaultShelterFormValues: ShelterFormValues = {
     elevation: 3500.0,
     region: "Leh Ladakh, India",
     climateZone: "Cold / Extreme Alpine",
-    weatherSource: "test_weather.epw",
+    weatherSource: "IND_JK_Leh.427053_TMYx.epw",
     designTempWinter: -20.0,
     designTempSummer: 28.0,
   },

@@ -82,10 +82,20 @@ class EnergyPlusRunner:
 
         # Standard Windows paths
         std_paths = [
+            r"C:\EnergyPlusV26-1-0\energyplus.exe",
             r"C:\EnergyPlusV24-1-0\energyplus.exe",
             r"C:\EnergyPlusV23-2-0\energyplus.exe",
+            r"C:\Program Files\EnergyPlusV26-1-0\energyplus.exe",
             r"C:\Program Files\EnergyPlusV24-1-0\energyplus.exe",
         ]
+        # Dynamic discovery on C: root
+        try:
+            for ep_dir in Path("C:/").glob("EnergyPlus*/energyplus.exe"):
+                if ep_dir.is_file():
+                    std_paths.insert(0, str(ep_dir))
+        except Exception:
+            pass
+
         for sp in std_paths:
             if Path(sp).is_file() and BinaryAllowlist.is_binary_name_allowed(sp):
                 candidates.append(sp)

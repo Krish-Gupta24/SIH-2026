@@ -16,7 +16,7 @@ const REGION_PRESETS = [
     elevation: 3500.0,
     region: "Leh Ladakh, India",
     climateZone: "Cold / Extreme Alpine",
-    weatherSource: "IND_JK_Leh.420270_ISHRAE.epw",
+    weatherSource: "IND_JK_Leh.427053_TMYx.epw",
     designWinter: -20.0,
     designSummer: 28.0,
   },
