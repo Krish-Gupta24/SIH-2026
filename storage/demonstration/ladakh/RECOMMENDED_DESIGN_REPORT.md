@@ -1,6 +1,6 @@
 # RECOMMENDED DESIGN: Standard EPS Wall (200mm) [Maximize Comfort]
-> **Report ID**: `REC-opt-sweep-bcc431ef-CAND-31EF-003` | **Simulation ID**: `sim-31ef-003` | **Generated**: 2026-09-10T21:01:18.564189+00:00
-> **Simulation Engine**: `24.1.0-9d7789a3ac` | **Weather Dataset**: `IND_JK_Leh.427053_TMYx.epw`
+> **Report ID**: `REC-opt-sweep-65ecfa16-CAND-FA16-003` | **Simulation ID**: `sim-fa16-003` | **Generated**: 2026-09-11T12:22:12.056570+00:00
+> **Simulation Engine**: `26.1.0-6f2e40d102` | **Weather Dataset**: `IND_JK_Leh.427053_TMYx.epw`
 > **Engineering Notice**: Best configuration found within the evaluated design space and constraints.
 
 ## 1. Objective
@@ -64,8 +64,8 @@
 - **Standard & Stability**: ASHRAE Standard 55 / ISO 7730 Adaptive Comfort Model for High Altitude (Category III (Moderate Thermal Inertia))
 
 ### Solar Gains & Passive Utilization
-- **Total Solar Gain Aperture**: 5.5 kWh
-- **Peak Daytime Solar Gain**: 826 W
+- **Total Solar Gain Aperture**: 19708.6 kWh
+- **Peak Daytime Solar Gain**: 2975143 W
 - **Useful Aperture Fraction**: 100.0% (Monitored by max temperature ceiling constraint)
 
 ### Heat Loss Breakdown
@@ -82,7 +82,7 @@ This candidate was selected because it achieved the highest composite objective 
 
 ### Key Engineering Trade-Offs Resolved:
 - **Insulation Thickness Diminishing Returns vs Logistics Payload**: Selected 200mm insulation thickness. Analysis of the thermal knee curve proves that increasing insulation from 50mm to 150mm yields a dramatic 68% heating reduction, while further thickening to 250mm provides only an additional 4% reduction at an unacceptable 66% logistics payload weight penalty.
-- **Daytime Passive Solar Capture vs Nighttime Fenestration Chill**: A glazed window aperture of 2.8m² (20% WWR) with high-performance Low-E glazing captures peak diffuse and direct alpine solar radiation (+5 kWh) while avoiding the severe nocturnal radiant chilling observed when glazing exceeds 35% WWR.
+- **Daytime Passive Solar Capture vs Nighttime Fenestration Chill**: A glazed window aperture of 2.8m² (20% WWR) with high-performance Low-E glazing captures peak diffuse and direct alpine solar radiation (+19709 kWh) while avoiding the severe nocturnal radiant chilling observed when glazing exceeds 35% WWR.
 - **Thermal Inertia & Diurnal Temperature Stability**: The integrated high-density thermal mass dampens extreme outdoor diurnal temperature swings into a tight 4.4°C indoor zone fluctuation.
 
 ### Candidate Discard & Rejection Analysis:

@@ -26,6 +26,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useShelterStore } from "@/lib/store/use-shelter-store";
+import { usePlatformInit } from "@/hooks/use-platform-init";
 import { Badge } from "@/components/ui/badge";
 
 interface NavItem {
@@ -63,6 +64,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     settings,
     updateSettings,
   } = useShelterStore();
+
+  const { isLoadingApi } = usePlatformInit();
 
   const activeProject = projects.find((p) => p.id === activeProjectId) || projects[0];
   const runningJobsCount = simulations.filter(
@@ -194,6 +197,19 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
           {/* Right Header Controls: Unit toggle & Quick Launch */}
           <div className="flex items-center gap-3">
+            {/* Live Backend Synchronization Badge */}
+            {isLoadingApi ? (
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-medium rounded-md bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                <span className="h-1.5 w-1.5 rounded-full bg-amber-400 animate-ping" />
+                Syncing Real APIs...
+              </span>
+            ) : (
+              <span className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-medium rounded-md bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                EnergyPlus 26.1 Live
+              </span>
+            )}
+
             {/* Unit System Toggle (SI vs IP) */}
             <div className="flex items-center rounded-lg border border-slate-800 bg-slate-900 p-0.5 text-[11px] font-semibold">
               <button

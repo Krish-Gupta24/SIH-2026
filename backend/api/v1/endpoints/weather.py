@@ -119,6 +119,7 @@ CATALOG_REGIONAL_SOURCES: List[Dict[str, Any]] = [
 @router.get("", summary="List all available weather sources and validated climate datasets")
 @router.get("/", summary="List all available weather sources and validated climate datasets", include_in_schema=False)
 @router.get("/sources", summary="List all available weather sources and validated climate datasets")
+@router.get("/datasets", summary="List all available weather sources and validated climate datasets")
 async def list_weather_sources() -> List[Dict[str, Any]]:
     """Scan and return all validated EPW weather files and registered meteorological sources."""
     sources: List[Dict[str, Any]] = list(CATALOG_REGIONAL_SOURCES)

@@ -129,7 +129,7 @@ class TestSolarOutputAudit(unittest.TestCase):
 
         # 2. transmitted solar radiation where supported
         self.assertTrue(concepts["transmitted solar radiation where supported"]["all_produced"])
-        self.assertIn("zone_windows_total_transmitted_solar_rate", concepts["transmitted solar radiation where supported"]["produced_metrics"])
+        self.assertIn("surface_window_transmitted_solar_rate", concepts["transmitted solar radiation where supported"]["produced_metrics"])
 
         # 3. absorbed solar gains where supported
         self.assertTrue(concepts["absorbed solar gains where supported"]["all_produced"])
@@ -142,7 +142,7 @@ class TestSolarOutputAudit(unittest.TestCase):
 
         # 5. total useful solar gain
         self.assertTrue(concepts["total useful solar gain"]["all_produced"])
-        self.assertIn("zone_windows_total_transmitted_solar_energy", concepts["total useful solar gain"]["produced_metrics"])
+        self.assertIn("surface_window_transmitted_solar_energy", concepts["total useful solar gain"]["produced_metrics"])
 
     def test_correct_units_enforced(self):
         """Verify strict SI unit conventions for all solar metrics."""

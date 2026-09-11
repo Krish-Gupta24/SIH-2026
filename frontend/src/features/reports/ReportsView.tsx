@@ -48,8 +48,8 @@ export function ReportsView() {
   const floorArea = (geom.length * geom.width).toFixed(1);
   const volume = (geom.length * geom.width * geom.height).toFixed(1);
   
-  const wallLayers = activeProject?.envelope?.walls?.layers || [];
-  const rSum = wallLayers.reduce((acc, l) => acc + (l.thickness / (l.conductivity || 0.04)), 0) + 0.17;
+  const wallLayers = (activeProject?.envelope?.walls?.south?.layers || activeProject?.envelope?.walls?.north?.layers || []) as any[];
+  const rSum = wallLayers.reduce((acc: number, l: any) => acc + (l.thickness / (l.conductivity || 0.04)), 0) + 0.17;
   const uVal = rSum > 0.17 ? Number((1 / rSum).toFixed(2)) : null;
   const isECBCCompliant = uVal !== null ? uVal <= 0.30 : false;
   const isAirtight = (activeProject.ventilation?.infiltrationACH || 0.35) <= 0.5;
@@ -395,7 +395,7 @@ export function ReportsView() {
                 {uVal !== null ? `U = ${uVal} W/m²·K` : <span className="text-slate-500 italic text-xs">Metric unavailable from this simulation</span>}
               </div>
               <div className="text-[11px] text-slate-400 print:text-slate-600">
-                {activeProject.envelope?.walls?.name || "Wall Assembly"}
+                {activeProject.envelope?.walls?.south?.name || activeProject.envelope?.walls?.north?.name || "Wall Assembly"}
               </div>
             </div>
 
@@ -430,7 +430,7 @@ export function ReportsView() {
             {/* 11. Thermal Mass */}
             <div className="rounded-lg border border-slate-800 bg-slate-950/60 p-3 print:bg-slate-50 space-y-1">
               <span className="text-[10px] font-bold text-rose-400 print:text-rose-700 uppercase">11. Thermal Mass</span>
-              <div className="font-bold text-white print:text-black">{activeProject.thermalMass?.material || "High-Mass Construction"}</div>
+              <div className="font-bold text-white print:text-black">{(activeProject.thermalMass as any)?.[0]?.name || "High-Mass Construction"}</div>
               <div className="text-[11px] text-slate-400 print:text-slate-600">
                 {completedSim?.results?.summary?.diurnalSwingDampingPct !== undefined
                   ? `${completedSim.results.summary.diurnalSwingDampingPct}% Diurnal Damping Ratio`

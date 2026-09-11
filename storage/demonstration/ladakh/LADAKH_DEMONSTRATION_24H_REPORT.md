@@ -1,7 +1,7 @@
 # Scientifically Traceable Ladakh Demonstration Report (24-Hour Winter Design Day)
-> **Simulation Engine**: `EnergyPlus 24.1.0-9d7789a3ac`
+> **Simulation Engine**: `EnergyPlus 26.1.0-6f2e40d102`
 > **Weather Dataset**: `Climate.OneBuilding / WMO 427053 (Leh, Ladakh; 34.14°N, 77.55°E, 3256m ASL)`
-> **Execution Time**: 0.61 seconds | **Engine Exit Code**: 0 (Normal Completion)
+> **Execution Time**: 0.76 seconds | **Engine Exit Code**: 0 (Normal Completion)
 
 ## 1. Traceability & Boundary Assumptions
 - **DATA SOURCE**: Authentic WMO Station 427053 TMYx Dataset (`IND_JK_Leh.427053_TMYx.epw`). No synthetic substitution.
@@ -25,7 +25,7 @@
 - **Minimum Indoor Temperature ($T_{min}$)**: **-2.4°C** (Pre-dawn cold retention)
 - **Maximum Indoor Temperature ($T_{max}$)**: **0.2°C** (Daytime passive solar peak)
 - **Average Indoor Temperature ($T_{mean}$)**: **-1.4°C**
-- **Useful Passive Solar Harvest**: **3.3 kWh**
+- **Useful Passive Solar Harvest**: **11753.5 kWh**
 - **Hours in 18°C–24°C Comfort Envelope**: **0 hours** (0.0%)
 
 ## 4. Verification Compliance

@@ -94,6 +94,11 @@ def create_application() -> FastAPI:
         summary="Direct endpoint for queuing asynchronous simulations",
     )
 
+    @app.on_event("startup")
+    async def on_startup():
+        from backend.services.seeder import seed_application_data
+        seed_application_data()
+
     return app
 
 

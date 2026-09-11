@@ -1,0 +1,202 @@
+{
+  "id": "shelter-ladakh-01",
+  "name": "Ladakh High-Altitude Outpost Shelter",
+  "description": "Cold-climate high-altitude insulated shelter designed for extreme temperature swings in Leh, Ladakh.",
+  "tags": [
+    "High-Altitude",
+    "Extreme-Cold",
+    "Passive-Solar",
+    "Rammed-Earth"
+  ],
+  "version": "1.0.0",
+  "project": {
+    "id": "shelter-ladakh-01",
+    "name": "Ladakh High-Altitude Outpost Shelter",
+    "description": "Cold-climate high-altitude insulated shelter designed for extreme temperature swings in Leh, Ladakh.",
+    "tags": [
+      "High-Altitude",
+      "Extreme-Cold",
+      "Passive-Solar",
+      "Rammed-Earth"
+    ],
+    "version": "1.0.0"
+  },
+  "location": {
+    "latitude": 34.1526,
+    "longitude": 77.5771,
+    "elevation": 3500,
+    "region": "Leh Ladakh, India",
+    "climateZone": "Cold / Extreme Alpine",
+    "weatherSource": "IND_JK_Leh.427053_TMYx.epw",
+    "designTempWinter": -20,
+    "designTempSummer": 28
+  },
+  "geometry": {
+    "shape": "Rectangle",
+    "length": 6,
+    "width": 4,
+    "height": 3,
+    "orientation": 0,
+    "roofType": "Flat",
+    "roofAngle": 14,
+    "floorElevation": 0.3,
+    "floorArea": 24,
+    "volume": 72
+  },
+  "envelope": {
+    "walls": {
+      "north": {
+        "id": "const-north-insulated-rammed-earth",
+        "name": "North Insulated Rammed Earth Wall",
+        "layers": [
+          {
+            "materialId": "mat-eps-insulation",
+            "thickness": 0.15
+          },
+          {
+            "materialId": "mat-rammed-earth",
+            "thickness": 0.3
+          }
+        ]
+      },
+      "south": {
+        "id": "const-south-insulated-rammed-earth",
+        "name": "South Passive Solar Absorbing Wall",
+        "layers": [
+          {
+            "materialId": "mat-eps-insulation",
+            "thickness": 0.15
+          },
+          {
+            "materialId": "mat-rammed-earth",
+            "thickness": 0.3
+          }
+        ]
+      },
+      "east": {
+        "id": "const-east-insulated-rammed-earth",
+        "name": "East Thermal Barrier Wall",
+        "layers": [
+          {
+            "materialId": "mat-eps-insulation",
+            "thickness": 0.15
+          },
+          {
+            "materialId": "mat-rammed-earth",
+            "thickness": 0.3
+          }
+        ]
+      },
+      "west": {
+        "id": "const-west-insulated-rammed-earth",
+        "name": "West Windbreak Insulated Wall",
+        "layers": [
+          {
+            "materialId": "mat-eps-insulation",
+            "thickness": 0.15
+          },
+          {
+            "materialId": "mat-rammed-earth",
+            "thickness": 0.3
+          }
+        ]
+      }
+    },
+    "roof": {
+      "id": "const-insulated-deck-roof",
+      "name": "Insulated High-Snow Load Roof Assembly",
+      "layers": [
+        {
+          "materialId": "mat-roof-decking",
+          "thickness": 0.02
+        },
+        {
+          "materialId": "mat-eps-insulation",
+          "thickness": 0.2
+        },
+        {
+          "materialId": "mat-roof-cgi-sheet",
+          "thickness": 0.005
+        }
+      ]
+    },
+    "floor": {
+      "id": "const-perimeter-insulated-slab",
+      "name": "Perimeter-Insulated Ground Contact Slab",
+      "layers": [
+        {
+          "materialId": "mat-concrete-slab",
+          "thickness": 0.15
+        },
+        {
+          "materialId": "mat-eps-insulation",
+          "thickness": 0.1
+        }
+      ]
+    }
+  },
+  "windows": [
+    {
+      "id": "win-south-01",
+      "wall": "south",
+      "width": 1.5,
+      "height": 1.2,
+      "sillHeight": 0.9,
+      "positionX": 1,
+      "glazingType": "Double_LowE_Argon",
+      "frameType": "UPVC_Insulated",
+      "shadingOverhang": 0.3
+    },
+    {
+      "id": "win-south-02",
+      "wall": "south",
+      "width": 1.5,
+      "height": 1.2,
+      "sillHeight": 0.9,
+      "positionX": 3.5,
+      "glazingType": "Double_LowE_Argon",
+      "frameType": "UPVC_Insulated",
+      "shadingOverhang": 0.3
+    }
+  ],
+  "doors": [
+    {
+      "id": "door-east-01",
+      "wall": "east",
+      "width": 0.9,
+      "height": 2.1,
+      "positionX": 1.5,
+      "type": "Insulated Air-Lock Vestibule Door"
+    }
+  ],
+  "thermalMass": {
+    "internalFloors": 0,
+    "interiorPartitions": 18,
+    "massMaterial": "Rammed Earth Stabilized Block",
+    "effectiveThickness": 0.2
+  },
+  "ventilation": {
+    "infiltrationACH": 0.35,
+    "mechanicalVentilation": false,
+    "heatRecoveryEfficiency": 0
+  },
+  "occupancy": {
+    "peopleCount": 4,
+    "activityLevel": "Moderate",
+    "heatGainWattsPerPerson": 115,
+    "schedule": "24/7 Outpost Presence"
+  },
+  "designTargets": {
+    "comfortTempMinC": 18,
+    "comfortTempMaxC": 24,
+    "targetIndoorTempC": 21,
+    "targetComfortPercent": 85,
+    "maxAnnualHeatingDemandKwhM2": 95
+  },
+  "simulationSettings": {
+    "engine": "EnergyPlus",
+    "timestepsPerHour": 4,
+    "runPeriodDays": 3,
+    "detailedComponentOutputs": true
+  }
+}

@@ -10,7 +10,7 @@
     "elevation": 3500.0,
     "region": "Ladakh",
     "climate_zone": "Cold",
-    "weather_source": "test_weather.epw"
+    "weather_source": "IND_JK_Leh.427053_TMYx.epw"
   },
   "geometry": {
     "shape": "Rectangle",

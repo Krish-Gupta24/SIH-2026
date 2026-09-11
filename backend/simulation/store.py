@@ -55,9 +55,9 @@ class SimulationJobRecord:
     simulation_period: Optional[Dict[str, Any]] = None
     allow_test_data: bool = False
 
-    def to_public_dict(self) -> Dict[str, Any]:
+    def to_public_dict(self, include_results: bool = False) -> Dict[str, Any]:
         """Convert record to public-facing dictionary, strictly redacting internal filesystem paths."""
-        return {
+        data = {
             "simulation_id": self.id,
             "status": self.status.value,
             "project_id": self.project_id,
@@ -77,6 +77,9 @@ class SimulationJobRecord:
             "error_message": sanitize_message(self.error_message),
             "has_results": self.normalized_results is not None,
         }
+        if include_results and self.normalized_results:
+            data["results"] = self.normalized_results
+        return data
 
 
 class SimulationJobStore:
@@ -183,9 +186,12 @@ class SimulationJobStore:
         """Verify if system has available capacity to spawn another concurrent simulation."""
         return self.get_active_simulation_count() < max_concurrent
 
-    def list_jobs(self) -> List[SimulationJobRecord]:
+    def list_jobs(self, limit: Optional[int] = None) -> List[SimulationJobRecord]:
         """List all tracked simulation records."""
-        return list(self._jobs.values())
+        jobs = list(self._jobs.values())
+        if limit:
+            return jobs[:limit]
+        return jobs
 
     def clear(self):
         """Clear all records (used in tests)."""

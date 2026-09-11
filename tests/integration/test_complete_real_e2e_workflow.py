@@ -484,7 +484,7 @@ class TestCompleteRealE2EWorkflow:
         assert sweep_res["metadata"]["valid_count"] == 4
         assert sweep_res["best_candidate"] is not None
         assert sweep_res["best_candidate"]["status"] == "COMPLETED"
-        assert sweep_res["best_candidate"]["engine_version"].startswith("24.1.0")
+        assert sweep_res["best_candidate"]["engine_version"].startswith(("24.1", "26.1"))
 
         # =========================================================================
         # STEP 32: GENERATE RECOMMENDATION REPORT (7 SECTIONS) & FORMAL REPORT
