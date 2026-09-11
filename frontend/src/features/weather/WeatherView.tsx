@@ -430,179 +430,230 @@ export function WeatherView() {
       {/* Selected Station Meteorological Details */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left Column: Metadata */}
-        <Card className="border-slate-800 bg-slate-900/60">
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-base font-bold text-white flex items-center gap-2">
-                <Compass className="h-4 w-4 text-blue-400" />
-                Station Specifications
-              </CardTitle>
-              {activeStation.isTestData ? (
-                <Badge variant="warning" className="text-[10px]">
-                  Test Fixture Only
-                </Badge>
-              ) : (
-                <Badge variant="success" className="text-[10px]">
-                  Validated Climate Record
-                </Badge>
-              )}
+        <div className="rounded-[2rem] border border-border bg-card p-7 shadow-[0_20px_55px_rgba(0,0,0,.04)] space-y-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Compass className="h-4 w-4 text-foreground" />
+              <h3 className="text-sm font-semibold tracking-tight">Station Specifications</h3>
             </div>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2 text-xs">
-              <div className="flex justify-between py-1.5 border-b border-slate-800">
-                <span className="text-slate-400">Coordinates:</span>
-                <span className="font-mono font-semibold text-white">
-                  {activeStation.latitude.toFixed(4)}°N, {activeStation.longitude.toFixed(4)}°E
-                </span>
-              </div>
-              <div className="flex justify-between py-1.5 border-b border-slate-800">
-                <span className="text-slate-400">Station Elevation:</span>
-                <span className="font-mono font-semibold text-emerald-400">
-                  {activeStation.elevationM} meters MSL
-                </span>
-              </div>
-              <div className="flex justify-between py-1.5 border-b border-slate-800">
-                <span className="text-slate-400">Provenance Status:</span>
-                <span className="font-bold text-white">
-                  {activeStation.provenanceStatus || (activeStation.isTestData ? "TEST_DATA" : "REAL_DATA")}
-                </span>
-              </div>
-              <div className="flex justify-between py-1.5 border-b border-slate-800">
-                <span className="text-slate-400">Dataset File:</span>
-                <span className="font-mono text-slate-300 line-clamp-1">
-                  {activeStation.epwFileName || "Internal EPW"}
-                </span>
-              </div>
-              <div className="flex justify-between py-1.5 border-b border-slate-800">
-                <span className="text-slate-400">Extreme Winter Dry-Bulb:</span>
-                <span className="font-mono font-bold text-blue-400">
-                  {activeStation.designWinterMinC} °C
-                </span>
-              </div>
-              <div className="flex justify-between py-1.5 border-b border-slate-800">
-                <span className="text-slate-400">Design Summer Dry-Bulb:</span>
-                <span className="font-mono font-bold text-amber-400">
-                  {activeStation.designSummerMaxC} °C
-                </span>
-              </div>
-              <div className="flex justify-between py-1.5">
-                <span className="text-slate-400">Annual Heating Degree Days (HDD18):</span>
-                <span className="font-mono font-bold text-white">{activeStation.annualHDD18}</span>
-              </div>
-            </div>
+            {activeStation.isTestData ? (
+              <Badge variant="outline" className="text-[10px] text-amber-500 border-amber-500/30">
+                Test Fixture
+              </Badge>
+            ) : (
+              <Badge variant="outline" className="text-[10px] text-emerald-500 border-emerald-500/30">
+                Validated Record
+              </Badge>
+            )}
+          </div>
 
-            <div className="rounded-xl border border-blue-500/20 bg-blue-500/5 p-3 text-xs text-slate-300">
-              <span className="font-bold text-blue-400">Weather Policy Integrity:</span>
-              <p className="mt-1 text-[11px] text-slate-400 leading-relaxed">
-                All physical building simulations execute strictly against validated meteorological datasets. Silent substitution of synthetic test weather is blocked by platform policy.
-              </p>
+          <div className="space-y-3 text-xs">
+            <div className="flex justify-between py-2 border-b border-border/50">
+              <span className="text-muted-foreground">Coordinates:</span>
+              <span className="font-mono font-medium text-foreground">
+                {activeStation.latitude.toFixed(4)}°N, {activeStation.longitude.toFixed(4)}°E
+              </span>
             </div>
-          </CardContent>
-        </Card>
+            <div className="flex justify-between py-2 border-b border-border/50">
+              <span className="text-muted-foreground">Station Elevation:</span>
+              <span className="font-mono font-medium text-foreground">
+                {activeStation.elevationM.toLocaleString()} meters MSL
+              </span>
+            </div>
+            <div className="flex justify-between py-2 border-b border-border/50">
+              <span className="text-muted-foreground">Provenance Status:</span>
+              <span className="font-semibold text-foreground">
+                {activeStation.provenanceStatus || (activeStation.isTestData ? "TEST_DATA" : "REAL_DATA")}
+              </span>
+            </div>
+            <div className="flex justify-between py-2 border-b border-border/50">
+              <span className="text-muted-foreground">Dataset File:</span>
+              <span className="font-mono text-muted-foreground line-clamp-1 max-w-[180px]">
+                {activeStation.epwFileName || "Internal EPW"}
+              </span>
+            </div>
+            <div className="flex justify-between py-2 border-b border-border/50">
+              <span className="text-muted-foreground">Extreme Winter Min:</span>
+              <span className="font-mono font-bold text-sky-500">
+                {activeStation.designWinterMinC} °C
+              </span>
+            </div>
+            <div className="flex justify-between py-2 border-b border-border/50">
+              <span className="text-muted-foreground">Design Summer Max:</span>
+              <span className="font-mono font-bold text-amber-500">
+                {activeStation.designSummerMaxC} °C
+              </span>
+            </div>
+            <div className="flex justify-between py-2">
+              <span className="text-muted-foreground">Annual Heating Degree Days:</span>
+              <span className="font-mono font-bold text-foreground">{activeStation.annualHDD18} HDD18</span>
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-[#CBDCE6] bg-[#CBDCE6]/15 dark:border-border dark:bg-secondary/40 p-4 text-xs">
+            <span className="font-semibold text-foreground flex items-center gap-1.5">
+              <ShieldCheck className="size-4 text-sky-600 dark:text-sky-400" />
+              Weather Provenance Policy
+            </span>
+            <p className="mt-1.5 text-[11px] text-muted-foreground leading-relaxed">
+              All physical building simulations execute strictly against validated meteorological datasets. Silent substitution of synthetic test weather is blocked by platform policy.
+            </p>
+          </div>
+        </div>
 
         {/* Right Column: 24-Hour Design Day Diurnal Temperature & Solar Irradiance Charts */}
         <div className="lg:col-span-2 space-y-6">
-          <Card className="border-slate-800 bg-slate-900/60 p-5">
-            <div className="flex items-center justify-between mb-4">
+          {/* 1. Diurnal Temperature Curve */}
+          <div className="rounded-[2rem] border border-border bg-card p-7 shadow-[0_20px_55px_rgba(0,0,0,.04)]">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-6">
               <div>
-                <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                  <ThermometerSnowflake className="h-4 w-4 text-blue-400" />
+                <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                  <ThermometerSnowflake className="h-4 w-4 text-sky-500" />
                   Extreme Winter Design Day Dry-Bulb Profile (°C)
                 </h3>
-                <p className="text-[11px] text-slate-400">
+                <p className="text-[11px] text-muted-foreground mt-0.5">
                   24-hour diurnal ambient temperature variation for {activeStation.name}
                 </p>
               </div>
-              <Badge variant="cold" className="font-mono">
-                Min {activeStation.designWinterMinC}°C
-              </Badge>
+              <div className="flex items-center gap-2">
+                <span className="inline-flex items-center gap-1 rounded-full bg-sky-500/10 px-3 py-1 font-mono text-xs font-semibold text-sky-600 dark:text-sky-400 border border-sky-500/20">
+                  Min {activeStation.designWinterMinC}°C
+                </span>
+              </div>
             </div>
 
-            <div className="h-60 w-full">
+            <div className="h-64 w-full">
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={hourlyData} margin={{ top: 10, right: 20, left: -10, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#334155" opacity={0.5} />
-                  <XAxis dataKey="hour" stroke="#64748b" fontSize={11} />
-                  <YAxis stroke="#64748b" fontSize={11} domain={["auto", "auto"]} unit="°C" />
+                <AreaChart data={hourlyData} margin={{ top: 10, right: 15, left: -15, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="weatherTempGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#0284c7" stopOpacity={0.28} />
+                      <stop offset="95%" stopColor="#0284c7" stopOpacity={0.01} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="currentColor" strokeOpacity={0.06} />
+                  <XAxis dataKey="hour" stroke="currentColor" strokeOpacity={0.4} fontSize={11} tickLine={false} />
+                  <YAxis stroke="currentColor" strokeOpacity={0.4} fontSize={11} domain={["auto", "auto"]} unit="°C" tickLine={false} />
                   <Tooltip
-                    contentStyle={{ backgroundColor: "#0f172a", borderColor: "#334155", borderRadius: "8px" }}
-                    labelStyle={{ color: "#94a3b8" }}
+                    content={({ active, payload, label }) => {
+                      if (!active || !payload || !payload.length) return null;
+                      const d = payload[0]?.payload;
+                      return (
+                        <div className="rounded-2xl border border-border bg-card/95 p-3.5 shadow-2xl backdrop-blur-md text-xs space-y-1.5 min-w-[170px]">
+                          <div className="flex items-center justify-between border-b border-border/60 pb-1 font-semibold">
+                            <span>{label}</span>
+                            <span className="text-[10px] uppercase tracking-wider text-muted-foreground">Alpine Met</span>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className="flex items-center gap-1.5 text-sky-500 font-medium">
+                              <span className="size-2 rounded-full bg-sky-500 animate-pulse" />
+                              Dry-Bulb Temp:
+                            </span>
+                            <span className="font-mono font-bold text-sky-600 dark:text-sky-400">{d.temperatureC} °C</span>
+                          </div>
+                        </div>
+                      );
+                    }}
                   />
-                  <Line
+                  <Area
                     type="monotone"
                     dataKey="temperatureC"
                     name="Dry-Bulb Temp (°C)"
-                    stroke="#38bdf8"
+                    stroke="#0284c7"
                     strokeWidth={2.5}
-                    dot={false}
+                    fill="url(#weatherTempGradient)"
+                    activeDot={{ r: 5, fill: "#0284c7", stroke: "#fff", strokeWidth: 2 }}
                   />
-                </LineChart>
+                </AreaChart>
               </ResponsiveContainer>
             </div>
-          </Card>
+          </div>
 
-          <Card className="border-slate-800 bg-slate-900/60 p-5">
-            <div className="flex items-center justify-between mb-4">
+          {/* 2. Direct Solar Radiation Curve */}
+          <div className="rounded-[2rem] border border-border bg-card p-7 shadow-[0_20px_55px_rgba(0,0,0,.04)]">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-6">
               <div>
-                <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                  <Sun className="h-4 w-4 text-amber-400" />
+                <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                  <Sun className="h-4 w-4 text-amber-500" />
                   Direct Normal Solar Radiation (W/m²)
                 </h3>
-                <p className="text-[11px] text-slate-400">
+                <p className="text-[11px] text-muted-foreground mt-0.5">
                   Clear-sky high-altitude winter solar radiation curve
                 </p>
               </div>
-              <Badge variant="warning" className="font-mono">
+              <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-3 py-1 font-mono text-xs font-semibold text-amber-600 dark:text-amber-400 border border-amber-500/20">
                 Peak 820 W/m²
-              </Badge>
+              </span>
             </div>
 
-            <div className="h-44 w-full">
+            <div className="h-48 w-full">
               <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={hourlyData} margin={{ top: 10, right: 20, left: -10, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#334155" opacity={0.5} />
-                  <XAxis dataKey="hour" stroke="#64748b" fontSize={11} />
-                  <YAxis stroke="#64748b" fontSize={11} unit=" W/m²" />
+                <AreaChart data={hourlyData} margin={{ top: 10, right: 15, left: -15, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="weatherSolarGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.35} />
+                      <stop offset="95%" stopColor="#f59e0b" stopOpacity={0.02} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="currentColor" strokeOpacity={0.06} />
+                  <XAxis dataKey="hour" stroke="currentColor" strokeOpacity={0.4} fontSize={11} tickLine={false} />
+                  <YAxis stroke="currentColor" strokeOpacity={0.4} fontSize={11} unit=" W/m²" tickLine={false} />
                   <Tooltip
-                    contentStyle={{ backgroundColor: "#0f172a", borderColor: "#334155", borderRadius: "8px" }}
-                    labelStyle={{ color: "#94a3b8" }}
+                    content={({ active, payload, label }) => {
+                      if (!active || !payload || !payload.length) return null;
+                      const d = payload[0]?.payload;
+                      return (
+                        <div className="rounded-2xl border border-border bg-card/95 p-3.5 shadow-2xl backdrop-blur-md text-xs space-y-1.5 min-w-[170px]">
+                          <div className="flex items-center justify-between border-b border-border/60 pb-1 font-semibold">
+                            <span>{label}</span>
+                            <span className="text-[10px] uppercase tracking-wider text-muted-foreground">Radiation</span>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className="flex items-center gap-1.5 text-amber-500 font-medium">
+                              <span className="size-2 rounded-full bg-amber-500" />
+                              Solar Flux:
+                            </span>
+                            <span className="font-mono font-bold text-amber-600 dark:text-amber-400">{d.solarRadiationWm2} W/m²</span>
+                          </div>
+                        </div>
+                      );
+                    }}
                   />
                   <Area
                     type="monotone"
                     dataKey="solarRadiationWm2"
                     name="Direct Solar (W/m²)"
                     stroke="#f59e0b"
-                    fill="#f59e0b"
-                    fillOpacity={0.15}
-                    strokeWidth={2}
+                    fill="url(#weatherSolarGradient)"
+                    strokeWidth={2.5}
+                    activeDot={{ r: 5, fill: "#f59e0b", stroke: "#fff", strokeWidth: 2 }}
                   />
                 </AreaChart>
               </ResponsiveContainer>
             </div>
-          </Card>
+          </div>
         </div>
       </div>
 
       {/* MODAL 1: Upload EPW File */}
       {activeModal === "epw" && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-md rounded-xl border border-slate-800 bg-slate-900 p-6 shadow-2xl space-y-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-md rounded-[2rem] border border-border bg-card p-7 shadow-2xl space-y-5 text-foreground">
             <div className="flex items-center justify-between">
-              <h3 className="text-base font-bold text-white flex items-center gap-2">
-                <Upload className="h-4 w-4 text-blue-400" />
+              <h3 className="text-base font-semibold flex items-center gap-2">
+                <Upload className="h-4 w-4 text-[#6E818F]" />
                 Upload EnergyPlus Weather (.epw)
               </h3>
-              <button onClick={() => setActiveModal(null)} className="text-slate-400 hover:text-white">
-                <X className="h-4 w-4" />
+              <button onClick={() => setActiveModal(null)} className="text-muted-foreground hover:text-foreground">
+                <X className="h-5 w-5" />
               </button>
             </div>
 
-            <p className="text-xs text-slate-400">
+            <p className="text-xs text-muted-foreground">
               Select an authentic EnergyPlus `.epw` file. The platform will validate header integrity, geographic coordinates, and physical variable bounds.
             </p>
 
-            <div className="border-2 border-dashed border-slate-700 rounded-lg p-6 text-center hover:border-blue-500 transition">
+            <div className="border-2 border-dashed border-border rounded-2xl p-6 text-center hover:border-[#6E818F] transition bg-secondary/30">
               <input
                 type="file"
                 accept=".epw"
@@ -611,42 +662,40 @@ export function WeatherView() {
                 id="epw-file-input"
               />
               <label htmlFor="epw-file-input" className="cursor-pointer space-y-2 block">
-                <Upload className="h-8 w-8 text-slate-400 mx-auto" />
-                <span className="text-xs font-semibold text-slate-300 block">
+                <Upload className="h-8 w-8 text-muted-foreground mx-auto" />
+                <span className="text-xs font-semibold text-foreground block">
                   {epwFile ? epwFile.name : "Click to browse or drop .epw file"}
                 </span>
-                <span className="text-[10px] text-slate-500 block">EnergyPlus Weather format (35 columns)</span>
+                <span className="text-[10px] text-muted-foreground block">EnergyPlus Weather format (35 columns)</span>
               </label>
             </div>
 
             {modalError && (
-              <div className="rounded-lg bg-red-500/10 border border-red-500/20 p-2.5 text-xs text-red-400 flex items-center gap-2">
+              <div className="rounded-xl bg-destructive/10 border border-destructive/20 p-3 text-xs text-destructive flex items-center gap-2">
                 <AlertCircle className="h-4 w-4 shrink-0" />
                 <span>{modalError}</span>
               </div>
             )}
 
             {modalSuccess && (
-              <div className="rounded-lg bg-emerald-500/10 border border-emerald-500/20 p-2.5 text-xs text-emerald-400 flex items-center gap-2">
+              <div className="rounded-xl bg-emerald-500/10 border border-emerald-500/20 p-3 text-xs text-emerald-600 dark:text-emerald-400 flex items-center gap-2">
                 <CheckCircle2 className="h-4 w-4 shrink-0" />
                 <span>{modalSuccess}</span>
               </div>
             )}
 
-            <div className="flex justify-end gap-2 pt-2 border-t border-slate-800">
-              <Button variant="outline" size="sm" onClick={() => setActiveModal(null)} disabled={isLoading}>
+            <div className="flex justify-end gap-2 pt-2 border-t border-border">
+              <ActionButton tone="quiet" onClick={() => setActiveModal(null)} disabled={isLoading}>
                 Cancel
-              </Button>
-              <Button
-                variant="default"
-                size="sm"
+              </ActionButton>
+              <ActionButton
+                tone="primary"
                 onClick={handleUploadEpw}
                 disabled={!epwFile || isLoading}
-                className="bg-blue-600 hover:bg-blue-500 text-white font-bold gap-1.5"
               >
                 {isLoading && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
                 Validate & Register
-              </Button>
+              </ActionButton>
             </div>
           </div>
         </div>
@@ -654,66 +703,66 @@ export function WeatherView() {
 
       {/* MODAL 2: Upload CSV File */}
       {activeModal === "csv" && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-md rounded-xl border border-slate-800 bg-slate-900 p-6 shadow-2xl space-y-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-md rounded-[2rem] border border-border bg-card p-7 shadow-2xl space-y-5 text-foreground">
             <div className="flex items-center justify-between">
-              <h3 className="text-base font-bold text-white flex items-center gap-2">
-                <FileSpreadsheet className="h-4 w-4 text-emerald-400" />
+              <h3 className="text-base font-semibold flex items-center gap-2">
+                <FileSpreadsheet className="h-4 w-4 text-[#6E818F]" />
                 Upload Station Logger CSV
               </h3>
-              <button onClick={() => setActiveModal(null)} className="text-slate-400 hover:text-white">
-                <X className="h-4 w-4" />
+              <button onClick={() => setActiveModal(null)} className="text-muted-foreground hover:text-foreground">
+                <X className="h-5 w-5" />
               </button>
             </div>
 
-            <p className="text-xs text-slate-400">
+            <p className="text-xs text-muted-foreground">
               Upload hourly tabular CSV meteorological records. The system will convert variables into standard EPW format with barometric altitude corrections.
             </p>
 
             <div className="space-y-3 text-xs">
               <div>
-                <label className="block text-slate-300 font-semibold mb-1">Site / Outpost Name</label>
+                <label className="block text-foreground font-semibold mb-1">Site / Outpost Name</label>
                 <input
                   type="text"
                   value={csvMeta.location_name}
                   onChange={(e) => setCsvMeta({ ...csvMeta, location_name: e.target.value })}
-                  className="w-full rounded border border-slate-700 bg-slate-950 px-3 py-1.5 text-white text-xs"
+                  className="w-full rounded-xl border border-border bg-secondary/50 px-3 py-2 text-foreground text-xs focus:outline-none focus:ring-1 focus:ring-[#6E818F]"
                 />
               </div>
 
               <div className="grid grid-cols-3 gap-2">
                 <div>
-                  <label className="block text-slate-400 mb-1">Latitude (°N)</label>
+                  <label className="block text-muted-foreground mb-1">Latitude (°N)</label>
                   <input
                     type="number"
                     step="0.01"
                     value={csvMeta.latitude}
                     onChange={(e) => setCsvMeta({ ...csvMeta, latitude: parseFloat(e.target.value) || 0 })}
-                    className="w-full rounded border border-slate-700 bg-slate-950 px-2 py-1.5 text-white text-xs"
+                    className="w-full rounded-xl border border-border bg-secondary/50 px-2 py-2 text-foreground text-xs"
                   />
                 </div>
                 <div>
-                  <label className="block text-slate-400 mb-1">Longitude (°E)</label>
+                  <label className="block text-muted-foreground mb-1">Longitude (°E)</label>
                   <input
                     type="number"
                     step="0.01"
                     value={csvMeta.longitude}
                     onChange={(e) => setCsvMeta({ ...csvMeta, longitude: parseFloat(e.target.value) || 0 })}
-                    className="w-full rounded border border-slate-700 bg-slate-950 px-2 py-1.5 text-white text-xs"
+                    className="w-full rounded-xl border border-border bg-secondary/50 px-2 py-2 text-foreground text-xs"
                   />
                 </div>
                 <div>
-                  <label className="block text-slate-400 mb-1">Elevation (m)</label>
+                  <label className="block text-muted-foreground mb-1">Elevation (m)</label>
                   <input
                     type="number"
                     value={csvMeta.elevation_m}
                     onChange={(e) => setCsvMeta({ ...csvMeta, elevation_m: parseFloat(e.target.value) || 0 })}
-                    className="w-full rounded border border-slate-700 bg-slate-950 px-2 py-1.5 text-white text-xs"
+                    className="w-full rounded-xl border border-border bg-secondary/50 px-2 py-2 text-foreground text-xs"
                   />
                 </div>
               </div>
 
-              <div className="border border-slate-700 rounded-lg p-3 text-center">
+              <div className="border border-border rounded-xl p-3 text-center bg-secondary/20">
                 <input
                   type="file"
                   accept=".csv"
@@ -722,8 +771,8 @@ export function WeatherView() {
                   id="csv-file-input"
                 />
                 <label htmlFor="csv-file-input" className="cursor-pointer space-y-1 block">
-                  <FileSpreadsheet className="h-6 w-6 text-slate-400 mx-auto" />
-                  <span className="text-xs font-semibold text-slate-300 block">
+                  <FileSpreadsheet className="h-6 w-6 text-muted-foreground mx-auto" />
+                  <span className="text-xs font-semibold text-foreground block">
                     {csvFile ? csvFile.name : "Select hourly .csv file"}
                   </span>
                 </label>
@@ -731,149 +780,145 @@ export function WeatherView() {
             </div>
 
             {modalError && (
-              <div className="rounded-lg bg-red-500/10 border border-red-500/20 p-2.5 text-xs text-red-400 flex items-center gap-2">
+              <div className="rounded-xl bg-destructive/10 border border-destructive/20 p-3 text-xs text-destructive flex items-center gap-2">
                 <AlertCircle className="h-4 w-4 shrink-0" />
                 <span>{modalError}</span>
               </div>
             )}
 
             {modalSuccess && (
-              <div className="rounded-lg bg-emerald-500/10 border border-emerald-500/20 p-2.5 text-xs text-emerald-400 flex items-center gap-2">
+              <div className="rounded-xl bg-emerald-500/10 border border-emerald-500/20 p-3 text-xs text-emerald-600 dark:text-emerald-400 flex items-center gap-2">
                 <CheckCircle2 className="h-4 w-4 shrink-0" />
                 <span>{modalSuccess}</span>
               </div>
             )}
 
-            <div className="flex justify-end gap-2 pt-2 border-t border-slate-800">
-              <Button variant="outline" size="sm" onClick={() => setActiveModal(null)} disabled={isLoading}>
+            <div className="flex justify-end gap-2 pt-2 border-t border-border">
+              <ActionButton tone="quiet" onClick={() => setActiveModal(null)} disabled={isLoading}>
                 Cancel
-              </Button>
-              <Button
-                variant="default"
-                size="sm"
+              </ActionButton>
+              <ActionButton
+                tone="primary"
                 onClick={handleUploadCsv}
                 disabled={!csvFile || isLoading}
-                className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold gap-1.5"
               >
                 {isLoading && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
                 Convert & Register
-              </Button>
+              </ActionButton>
             </div>
           </div>
         </div>
       )}
 
-      {/* MODAL 3: Query NASA POWER API */}
+      {/* MODAL 3: NASA POWER Query */}
       {activeModal === "nasa" && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-md rounded-xl border border-slate-800 bg-slate-900 p-6 shadow-2xl space-y-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-md rounded-[2rem] border border-border bg-card p-7 shadow-2xl space-y-5 text-foreground">
             <div className="flex items-center justify-between">
-              <h3 className="text-base font-bold text-white flex items-center gap-2">
-                <Compass className="h-4 w-4 text-blue-400" />
-                Query NASA POWER Satellite Weather
+              <h3 className="text-base font-semibold flex items-center gap-2">
+                <Compass className="h-4 w-4 text-[#6E818F]" />
+                NASA POWER Satellite Climate Sync
               </h3>
-              <button onClick={() => setActiveModal(null)} className="text-slate-400 hover:text-white">
-                <X className="h-4 w-4" />
+              <button onClick={() => setActiveModal(null)} className="text-muted-foreground hover:text-foreground">
+                <X className="h-5 w-5" />
               </button>
             </div>
 
-            <p className="text-xs text-slate-400">
-              Directly query the public, keyless NASA POWER hourly solar and meteorological API for any high-altitude outpost.
+            <p className="text-xs text-muted-foreground">
+              Retrieve authentic solar and meteorological time series from NASA Langley Research Center for coordinates beyond ground met station coverage.
             </p>
 
             <div className="space-y-3 text-xs">
               <div>
-                <label className="block text-slate-300 font-semibold mb-1">Site Designation</label>
+                <label className="block text-foreground font-semibold mb-1">Target Location Name</label>
                 <input
                   type="text"
                   value={nasaForm.location_name}
                   onChange={(e) => setNasaForm({ ...nasaForm, location_name: e.target.value })}
-                  className="w-full rounded border border-slate-700 bg-slate-950 px-3 py-1.5 text-white text-xs"
+                  className="w-full rounded-xl border border-border bg-secondary/50 px-3 py-2 text-foreground text-xs"
                 />
               </div>
 
               <div className="grid grid-cols-3 gap-2">
                 <div>
-                  <label className="block text-slate-400 mb-1">Latitude (°N)</label>
+                  <label className="block text-muted-foreground mb-1">Latitude (°N)</label>
                   <input
                     type="number"
-                    step="0.0001"
+                    step="0.01"
                     value={nasaForm.latitude}
                     onChange={(e) => setNasaForm({ ...nasaForm, latitude: parseFloat(e.target.value) || 0 })}
-                    className="w-full rounded border border-slate-700 bg-slate-950 px-2 py-1.5 text-white text-xs"
+                    className="w-full rounded-xl border border-border bg-secondary/50 px-2 py-2 text-foreground text-xs"
                   />
                 </div>
                 <div>
-                  <label className="block text-slate-400 mb-1">Longitude (°E)</label>
+                  <label className="block text-muted-foreground mb-1">Longitude (°E)</label>
                   <input
                     type="number"
-                    step="0.0001"
+                    step="0.01"
                     value={nasaForm.longitude}
                     onChange={(e) => setNasaForm({ ...nasaForm, longitude: parseFloat(e.target.value) || 0 })}
-                    className="w-full rounded border border-slate-700 bg-slate-950 px-2 py-1.5 text-white text-xs"
+                    className="w-full rounded-xl border border-border bg-secondary/50 px-2 py-2 text-foreground text-xs"
                   />
                 </div>
                 <div>
-                  <label className="block text-slate-400 mb-1">Elevation (m)</label>
+                  <label className="block text-muted-foreground mb-1">Elevation (m)</label>
                   <input
                     type="number"
                     value={nasaForm.elevation_m}
                     onChange={(e) => setNasaForm({ ...nasaForm, elevation_m: parseFloat(e.target.value) || 0 })}
-                    className="w-full rounded border border-slate-700 bg-slate-950 px-2 py-1.5 text-white text-xs"
+                    className="w-full rounded-xl border border-border bg-secondary/50 px-2 py-2 text-foreground text-xs"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="block text-slate-400 mb-1">Start Date (YYYYMMDD)</label>
+                  <label className="block text-muted-foreground mb-1">Start Date (YYYYMMDD)</label>
                   <input
                     type="text"
                     value={nasaForm.start_date}
                     onChange={(e) => setNasaForm({ ...nasaForm, start_date: e.target.value })}
-                    className="w-full rounded border border-slate-700 bg-slate-950 px-2 py-1.5 text-white text-xs font-mono"
+                    className="w-full rounded-xl border border-border bg-secondary/50 px-2 py-2 text-foreground text-xs font-mono"
                   />
                 </div>
                 <div>
-                  <label className="block text-slate-400 mb-1">End Date (YYYYMMDD)</label>
+                  <label className="block text-muted-foreground mb-1">End Date (YYYYMMDD)</label>
                   <input
                     type="text"
                     value={nasaForm.end_date}
                     onChange={(e) => setNasaForm({ ...nasaForm, end_date: e.target.value })}
-                    className="w-full rounded border border-slate-700 bg-slate-950 px-2 py-1.5 text-white text-xs font-mono"
+                    className="w-full rounded-xl border border-border bg-secondary/50 px-2 py-2 text-foreground text-xs font-mono"
                   />
                 </div>
               </div>
             </div>
 
             {modalError && (
-              <div className="rounded-lg bg-red-500/10 border border-red-500/20 p-2.5 text-xs text-red-400 flex items-center gap-2">
+              <div className="rounded-xl bg-destructive/10 border border-destructive/20 p-3 text-xs text-destructive flex items-center gap-2">
                 <AlertCircle className="h-4 w-4 shrink-0" />
                 <span>{modalError}</span>
               </div>
             )}
 
             {modalSuccess && (
-              <div className="rounded-lg bg-emerald-500/10 border border-emerald-500/20 p-2.5 text-xs text-emerald-400 flex items-center gap-2">
+              <div className="rounded-xl bg-emerald-500/10 border border-emerald-500/20 p-3 text-xs text-emerald-600 dark:text-emerald-400 flex items-center gap-2">
                 <CheckCircle2 className="h-4 w-4 shrink-0" />
                 <span>{modalSuccess}</span>
               </div>
             )}
 
-            <div className="flex justify-end gap-2 pt-2 border-t border-slate-800">
-              <Button variant="outline" size="sm" onClick={() => setActiveModal(null)} disabled={isLoading}>
+            <div className="flex justify-end gap-2 pt-2 border-t border-border">
+              <ActionButton tone="quiet" onClick={() => setActiveModal(null)} disabled={isLoading}>
                 Cancel
-              </Button>
-              <Button
-                variant="default"
-                size="sm"
+              </ActionButton>
+              <ActionButton
+                tone="primary"
                 onClick={handleQueryNasa}
                 disabled={isLoading}
-                className="bg-blue-600 hover:bg-blue-500 text-white font-bold gap-1.5"
               >
                 {isLoading && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
-                Retrieve Satellite Climate
-              </Button>
+                Query & Generate EPW
+              </ActionButton>
             </div>
           </div>
         </div>
@@ -881,131 +926,147 @@ export function WeatherView() {
 
       {/* MODAL 4: User-Defined Parametric Design Weather */}
       {activeModal === "manual" && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-md rounded-xl border border-slate-800 bg-slate-900 p-6 shadow-2xl space-y-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-lg rounded-[2rem] border border-border bg-card p-7 shadow-2xl space-y-5 text-foreground max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between">
-              <h3 className="text-base font-bold text-white flex items-center gap-2">
-                <Sliders className="h-4 w-4 text-purple-400" />
-                Generate Engineering Design Day
+              <h3 className="text-base font-semibold flex items-center gap-2">
+                <Sliders className="h-4 w-4 text-[#6E818F]" />
+                Physics-Consistent Design Day Generator
               </h3>
-              <button onClick={() => setActiveModal(null)} className="text-slate-400 hover:text-white">
-                <X className="h-4 w-4" />
+              <button onClick={() => setActiveModal(null)} className="text-muted-foreground hover:text-foreground">
+                <X className="h-5 w-5" />
               </button>
             </div>
 
-            <p className="text-xs text-slate-400">
-              Create a physics-consistent parametric stress test weather dataset tagged as <span className="text-purple-400 font-bold">USER_DEFINED</span>.
+            <p className="text-xs text-muted-foreground">
+              Create a physics-consistent parametric stress test weather dataset tagged as <span className="font-semibold text-foreground">USER_DEFINED</span> based on ASHRAE diurnal equations.
             </p>
 
             <div className="space-y-3 text-xs">
               <div>
-                <label className="block text-slate-300 font-semibold mb-1">Study Description</label>
+                <label className="block text-foreground font-semibold mb-1">Outpost Scenario Name</label>
                 <input
                   type="text"
                   value={manualForm.location_name}
                   onChange={(e) => setManualForm({ ...manualForm, location_name: e.target.value })}
-                  className="w-full rounded border border-slate-700 bg-slate-950 px-3 py-1.5 text-white text-xs"
+                  className="w-full rounded-xl border border-border bg-secondary/50 px-3 py-2 text-foreground text-xs"
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-3 gap-2">
                 <div>
-                  <label className="block text-slate-400 mb-1">Winter Design Min (°C)</label>
+                  <label className="block text-muted-foreground mb-1">Latitude (°N)</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={manualForm.latitude}
+                    onChange={(e) => setManualForm({ ...manualForm, latitude: parseFloat(e.target.value) || 0 })}
+                    className="w-full rounded-xl border border-border bg-secondary/50 px-2 py-2 text-foreground text-xs"
+                  />
+                </div>
+                <div>
+                  <label className="block text-muted-foreground mb-1">Longitude (°E)</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={manualForm.longitude}
+                    onChange={(e) => setManualForm({ ...manualForm, longitude: parseFloat(e.target.value) || 0 })}
+                    className="w-full rounded-xl border border-border bg-secondary/50 px-2 py-2 text-foreground text-xs"
+                  />
+                </div>
+                <div>
+                  <label className="block text-muted-foreground mb-1">Altitude (m)</label>
+                  <input
+                    type="number"
+                    value={manualForm.elevation_m}
+                    onChange={(e) => setManualForm({ ...manualForm, elevation_m: parseFloat(e.target.value) || 0 })}
+                    className="w-full rounded-xl border border-border bg-secondary/50 px-2 py-2 text-foreground text-xs"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-2">
+                <div>
+                  <label className="block text-muted-foreground mb-1">Winter Min (°C)</label>
                   <input
                     type="number"
                     step="0.5"
                     value={manualForm.design_winter_min_c}
                     onChange={(e) => setManualForm({ ...manualForm, design_winter_min_c: parseFloat(e.target.value) || 0 })}
-                    className="w-full rounded border border-slate-700 bg-slate-950 px-2 py-1.5 text-white text-xs"
+                    className="w-full rounded-xl border border-border bg-secondary/50 px-2 py-2 text-foreground text-xs font-mono"
                   />
                 </div>
                 <div>
-                  <label className="block text-slate-400 mb-1">Summer Design Max (°C)</label>
+                  <label className="block text-muted-foreground mb-1">Summer Max (°C)</label>
                   <input
                     type="number"
                     step="0.5"
                     value={manualForm.design_summer_max_c}
                     onChange={(e) => setManualForm({ ...manualForm, design_summer_max_c: parseFloat(e.target.value) || 0 })}
-                    className="w-full rounded border border-slate-700 bg-slate-950 px-2 py-1.5 text-white text-xs"
+                    className="w-full rounded-xl border border-border bg-secondary/50 px-2 py-2 text-foreground text-xs font-mono"
                   />
                 </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="block text-slate-400 mb-1">Diurnal Range (°C)</label>
+                  <label className="block text-muted-foreground mb-1">Diurnal Swing (°C)</label>
                   <input
                     type="number"
                     step="0.5"
                     value={manualForm.diurnal_range_c}
                     onChange={(e) => setManualForm({ ...manualForm, diurnal_range_c: parseFloat(e.target.value) || 0 })}
-                    className="w-full rounded border border-slate-700 bg-slate-950 px-2 py-1.5 text-white text-xs"
-                  />
-                </div>
-                <div>
-                  <label className="block text-slate-400 mb-1">Peak Solar DNI (W/m²)</label>
-                  <input
-                    type="number"
-                    value={manualForm.peak_solar_dni_wm2}
-                    onChange={(e) => setManualForm({ ...manualForm, peak_solar_dni_wm2: parseFloat(e.target.value) || 0 })}
-                    className="w-full rounded border border-slate-700 bg-slate-950 px-2 py-1.5 text-white text-xs"
+                    className="w-full rounded-xl border border-border bg-secondary/50 px-2 py-2 text-foreground text-xs font-mono"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="block text-slate-400 mb-1">Wind Speed (m/s)</label>
+                  <label className="block text-muted-foreground mb-1">Peak DNI (W/m²)</label>
                   <input
                     type="number"
-                    step="0.1"
-                    value={manualForm.wind_speed_ms}
-                    onChange={(e) => setManualForm({ ...manualForm, wind_speed_ms: parseFloat(e.target.value) || 0 })}
-                    className="w-full rounded border border-slate-700 bg-slate-950 px-2 py-1.5 text-white text-xs"
+                    value={manualForm.peak_solar_dni_wm2}
+                    onChange={(e) => setManualForm({ ...manualForm, peak_solar_dni_wm2: parseFloat(e.target.value) || 0 })}
+                    className="w-full rounded-xl border border-border bg-secondary/50 px-2 py-2 text-foreground text-xs font-mono"
                   />
                 </div>
                 <div>
-                  <label className="block text-slate-400 mb-1">Duration (Days)</label>
+                  <label className="block text-muted-foreground mb-1">Wind Speed (m/s)</label>
                   <input
                     type="number"
-                    min="1"
-                    max="30"
-                    value={manualForm.num_days}
-                    onChange={(e) => setManualForm({ ...manualForm, num_days: parseInt(e.target.value) || 1 })}
-                    className="w-full rounded border border-slate-700 bg-slate-950 px-2 py-1.5 text-white text-xs"
+                    step="0.5"
+                    value={manualForm.wind_speed_ms}
+                    onChange={(e) => setManualForm({ ...manualForm, wind_speed_ms: parseFloat(e.target.value) || 0 })}
+                    className="w-full rounded-xl border border-border bg-secondary/50 px-2 py-2 text-foreground text-xs font-mono"
                   />
                 </div>
               </div>
             </div>
 
             {modalError && (
-              <div className="rounded-lg bg-red-500/10 border border-red-500/20 p-2.5 text-xs text-red-400 flex items-center gap-2">
+              <div className="rounded-xl bg-destructive/10 border border-destructive/20 p-3 text-xs text-destructive flex items-center gap-2">
                 <AlertCircle className="h-4 w-4 shrink-0" />
                 <span>{modalError}</span>
               </div>
             )}
 
             {modalSuccess && (
-              <div className="rounded-lg bg-emerald-500/10 border border-emerald-500/20 p-2.5 text-xs text-emerald-400 flex items-center gap-2">
+              <div className="rounded-xl bg-emerald-500/10 border border-emerald-500/20 p-3 text-xs text-emerald-600 dark:text-emerald-400 flex items-center gap-2">
                 <CheckCircle2 className="h-4 w-4 shrink-0" />
                 <span>{modalSuccess}</span>
               </div>
             )}
 
-            <div className="flex justify-end gap-2 pt-2 border-t border-slate-800">
-              <Button variant="outline" size="sm" onClick={() => setActiveModal(null)} disabled={isLoading}>
+            <div className="flex justify-end gap-2 pt-2 border-t border-border">
+              <ActionButton tone="quiet" onClick={() => setActiveModal(null)} disabled={isLoading}>
                 Cancel
-              </Button>
-              <Button
-                variant="default"
-                size="sm"
+              </ActionButton>
+              <ActionButton
+                tone="primary"
                 onClick={handleGenerateManual}
                 disabled={isLoading}
-                className="bg-purple-600 hover:bg-purple-500 text-white font-bold gap-1.5"
               >
                 {isLoading && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
-                Generate Dataset
-              </Button>
+                Generate & Select
+              </ActionButton>
             </div>
           </div>
         </div>

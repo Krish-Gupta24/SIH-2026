@@ -74,20 +74,25 @@ export function ResultsView() {
 
   if (!activeJob || !activeJob.results) {
     return (
-      <div className="max-w-4xl mx-auto text-center py-20 space-y-4">
-        <LineChartIcon className="h-12 w-12 text-slate-600 mx-auto" />
-        <h2 className="text-xl font-bold text-white">No Simulation Results Available</h2>
-        <p className="text-sm text-slate-400 max-w-md mx-auto">
-          Run an EnergyPlus simulation from the 3D Designer or Simulations dashboard to view normalized thermal outputs and multi-source analytics.
-        </p>
-        <div className="flex items-center justify-center gap-3 pt-2">
-          <Button asChild>
-            <Link href="/designer/3d">Launch 3D Designer</Link>
-          </Button>
-          <Button variant="outline" asChild>
-            <Link href="/simulations">Go to Simulations</Link>
-          </Button>
-        </div>
+      <div className="max-w-4xl mx-auto py-16">
+        <EmptyState
+          title="No simulation results available"
+          description="Run an EnergyPlus simulation from the 3D Designer or Simulations dashboard to view normalized thermal outputs and multi-source analytics."
+          action={
+            <div className="flex items-center justify-center gap-3">
+              <Link href="/designer/3d">
+                <ActionButton tone="primary" className="rounded-full text-xs font-semibold">
+                  Launch 3D Designer
+                </ActionButton>
+              </Link>
+              <Link href="/simulations">
+                <ActionButton tone="secondary" className="rounded-full text-xs font-semibold">
+                  Go to Simulations
+                </ActionButton>
+              </Link>
+            </div>
+          }
+        />
       </div>
     );
   }
@@ -314,27 +319,27 @@ export function ResultsView() {
       />
 
       {/* 5. Tabbed Analytics Experience */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList className="bg-slate-900 border border-slate-800 p-1 w-full justify-start overflow-x-auto">
-          <TabsTrigger value="overview" className="gap-2 text-xs font-semibold">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+        <TabsList className="bg-card/80 border border-border p-1.5 rounded-full w-full justify-start overflow-x-auto gap-1 backdrop-blur-sm shadow-sm h-auto">
+          <TabsTrigger value="overview" className="gap-2 text-xs font-semibold rounded-full px-4 py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
             <Thermometer className="h-3.5 w-3.5" />
-            <span>Diurnal Temperature Curves</span>
+            <span>Diurnal Curves</span>
           </TabsTrigger>
-          <TabsTrigger value="envelope" className="gap-2 text-xs font-semibold">
+          <TabsTrigger value="envelope" className="gap-2 text-xs font-semibold rounded-full px-4 py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
             <Layers className="h-3.5 w-3.5" />
-            <span>Envelope Heat Balance</span>
+            <span>Envelope Balance</span>
           </TabsTrigger>
-          <TabsTrigger value="solar" className="gap-2 text-xs font-semibold">
+          <TabsTrigger value="solar" className="gap-2 text-xs font-semibold rounded-full px-4 py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
             <Sun className="h-3.5 w-3.5" />
-            <span>Solar Irradiance & Glazing</span>
+            <span>Solar & Glazing</span>
           </TabsTrigger>
-          <TabsTrigger value="comfort" className="gap-2 text-xs font-semibold">
+          <TabsTrigger value="comfort" className="gap-2 text-xs font-semibold rounded-full px-4 py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
             <ShieldCheck className="h-3.5 w-3.5" />
-            <span>Comfort & Energy Metrics</span>
+            <span>Comfort & Energy</span>
           </TabsTrigger>
-          <TabsTrigger value="table" className="gap-2 text-xs font-semibold">
+          <TabsTrigger value="table" className="gap-2 text-xs font-semibold rounded-full px-4 py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
             <TableIcon className="h-3.5 w-3.5" />
-            <span>Engineering Table & Export</span>
+            <span>Engineering Table</span>
           </TabsTrigger>
         </TabsList>
 

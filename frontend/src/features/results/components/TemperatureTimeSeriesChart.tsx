@@ -96,83 +96,85 @@ export function TemperatureTimeSeriesChart({
   const maxVal = Math.ceil(Math.max(...allValues, comfortMax) + 3);
 
   return (
-    <Card className="border-slate-800 bg-slate-900/70 p-6 backdrop-blur-sm">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
+    <div className="rounded-[2rem] border border-border bg-card p-7 shadow-[0_20px_55px_rgba(0,0,0,.04)] space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <CardTitle className="text-base font-bold text-white flex items-center gap-2">
-            <Thermometer className="h-5 w-5 text-blue-400" />
+          <h3 className="text-base font-semibold text-foreground flex items-center gap-2">
+            <Thermometer className="h-4 w-4 text-sky-500" />
             <span>Diurnal Thermal Performance & Multi-Source Temperature Curves</span>
-          </CardTitle>
-          <p className="text-xs text-slate-400 mt-1">
-            Comparative temperature time series tracking living zone warmth against extreme freezing ambient conditions.
+          </h3>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            Comparative temperature time series tracking living zone warmth against extreme sub-zero ambient conditions.
           </p>
         </div>
 
         {/* Legend Indicators */}
-        <div className="flex flex-wrap items-center gap-3 text-[11px]">
-          <span className="flex items-center gap-1.5">
-            <span className="h-2 w-5 rounded bg-emerald-500/20 border border-emerald-500/50" />
-            <span className="text-slate-400 font-medium">Comfort Band ({comfortMin}–{comfortMax}{tUnit})</span>
+        <div className="flex flex-wrap items-center gap-2.5 text-[11px]">
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2.5 py-1 text-emerald-600 dark:text-emerald-400 font-medium">
+            <span className="size-2 rounded-full bg-emerald-500" />
+            Comfort ({comfortMin}–{comfortMax}{tUnit})
           </span>
-          <span className="flex items-center gap-1.5">
-            <span className="h-0.5 w-4 bg-sky-400" />
-            <span className="text-sky-300 font-semibold">Simulated Indoor</span>
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-sky-500/20 bg-sky-500/10 px-2.5 py-1 text-sky-600 dark:text-sky-400 font-semibold">
+            <span className="size-2 rounded-full bg-sky-500" />
+            Simulated
           </span>
-          <span className="flex items-center gap-1.5">
-            <span className="h-0.5 w-4 bg-slate-400 border-t border-dashed border-slate-400" />
-            <span className="text-slate-400">Ambient</span>
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-secondary/50 px-2.5 py-1 text-muted-foreground font-medium">
+            <span className="h-0.5 w-3 bg-muted-foreground" />
+            Ambient
           </span>
           {visibility.measured && (
-            <span className="flex items-center gap-1.5">
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
-              <span className="text-emerald-300 font-semibold">Measured Telemetry</span>
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2.5 py-1 text-emerald-600 dark:text-emerald-400 font-semibold">
+              <span className="size-1.5 rounded-full bg-emerald-500" />
+              Measured Telemetry
             </span>
           )}
           {visibility.reference && (
-            <span className="flex items-center gap-1.5">
-              <span className="h-0.5 w-4 bg-purple-400 border-t border-dashed border-purple-400" />
-              <span className="text-purple-300 font-semibold">Tent Baseline</span>
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-purple-500/20 bg-purple-500/10 px-2.5 py-1 text-purple-600 dark:text-purple-400 font-semibold">
+              <span className="h-0.5 w-3 bg-purple-400 border-t border-dashed" />
+              Tent Baseline
             </span>
           )}
         </div>
       </div>
 
-      <div className="h-88 w-full" style={{ height: "360px" }}>
+      <div className="h-96 w-full">
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={chartData} margin={{ top: 15, right: 30, left: 10, bottom: 5 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#334155" opacity={0.4} />
+          <LineChart data={chartData} margin={{ top: 15, right: 20, left: -10, bottom: 5 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke="currentColor" strokeOpacity={0.06} />
             <XAxis
               dataKey="timeLabel"
-              stroke="#64748b"
+              stroke="currentColor"
+              strokeOpacity={0.4}
               fontSize={11}
               interval={Math.ceil(chartData.length / 12)}
-              tickLine={{ stroke: "#475569" }}
+              tickLine={false}
             />
             <YAxis
-              stroke="#64748b"
+              stroke="currentColor"
+              strokeOpacity={0.4}
               fontSize={11}
               unit={` ${tUnit}`}
               domain={[minVal, maxVal]}
-              tickLine={{ stroke: "#475569" }}
+              tickLine={false}
             />
             <Tooltip
               content={({ active, payload, label }) => {
                 if (!active || !payload || !payload.length) return null;
                 const d = payload[0]?.payload;
                 return (
-                  <div className="rounded-xl border border-slate-700 bg-slate-950/95 p-3.5 shadow-2xl backdrop-blur-md text-xs space-y-2 min-w-[220px]">
-                    <div className="border-b border-slate-800 pb-1.5 font-bold text-white flex items-center justify-between">
+                  <div className="rounded-2xl border border-border bg-card/95 p-4 shadow-2xl backdrop-blur-md text-xs space-y-2 min-w-[220px]">
+                    <div className="border-b border-border/60 pb-1.5 font-bold text-foreground flex items-center justify-between">
                       <span>{d.timeLabel}</span>
-                      <span className="text-[10px] text-slate-400 font-mono">{d.timestamp}</span>
+                      <span className="text-[10px] text-muted-foreground font-mono">{d.timestamp}</span>
                     </div>
 
                     {visibility.simulated && (
                       <div className="flex items-center justify-between">
-                        <span className="flex items-center gap-1.5 text-sky-400 font-semibold">
-                          <span className="h-2 w-2 rounded-full bg-sky-400" />
+                        <span className="flex items-center gap-1.5 text-sky-500 font-semibold">
+                          <span className="size-2 rounded-full bg-sky-500" />
                           Simulated Indoor:
                         </span>
-                        <span className="font-mono font-bold text-sky-300">
+                        <span className="font-mono font-bold text-sky-600 dark:text-sky-400">
                           {d.simulatedIndoor} {tUnit}
                         </span>
                       </div>
@@ -180,41 +182,41 @@ export function TemperatureTimeSeriesChart({
 
                     {visibility.measured && (
                       <div className="flex items-center justify-between">
-                        <span className="flex items-center gap-1.5 text-emerald-400 font-semibold">
-                          <span className="h-2 w-2 rounded-full bg-emerald-400" />
+                        <span className="flex items-center gap-1.5 text-emerald-500 font-semibold">
+                          <span className="size-2 rounded-full bg-emerald-500" />
                           Field Measured:
                         </span>
-                        <span className="font-mono font-bold text-emerald-300">
+                        <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">
                           {d.measuredIndoor} {tUnit}
                         </span>
                       </div>
                     )}
 
-                    <div className="flex items-center justify-between text-slate-400">
+                    <div className="flex items-center justify-between text-muted-foreground">
                       <span className="flex items-center gap-1.5">
-                        <span className="h-2 w-2 rounded-full bg-slate-500" />
+                        <span className="size-2 rounded-full bg-muted-foreground/60" />
                         Outdoor Ambient:
                       </span>
-                      <span className="font-mono text-slate-300">
+                      <span className="font-mono font-medium text-foreground">
                         {d.outdoorAmbient} {tUnit}
                       </span>
                     </div>
 
                     {visibility.reference && (
-                      <div className="flex items-center justify-between text-purple-400">
+                      <div className="flex items-center justify-between text-purple-500">
                         <span className="flex items-center gap-1.5">
-                          <span className="h-2 w-2 rounded-full bg-purple-400" />
+                          <span className="size-2 rounded-full bg-purple-500" />
                           Tent Baseline:
                         </span>
-                        <span className="font-mono text-purple-300">
+                        <span className="font-mono font-bold text-purple-600 dark:text-purple-400">
                           {d.referenceTent} {tUnit}
                         </span>
                       </div>
                     )}
 
-                    <div className="border-t border-slate-800/80 pt-1.5 flex items-center justify-between text-[11px]">
-                      <span className="text-slate-400">Thermal Lift (Indoor - Ambient):</span>
-                      <span className="font-mono font-bold text-emerald-400">
+                    <div className="border-t border-border/60 pt-1.5 flex items-center justify-between text-[11px]">
+                      <span className="text-muted-foreground">Thermal Lift (ΔT):</span>
+                      <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">
                         +{(d.simulatedIndoor - d.outdoorAmbient).toFixed(1)} {tUnit}
                       </span>
                     </div>
@@ -304,6 +306,6 @@ export function TemperatureTimeSeriesChart({
           </LineChart>
         </ResponsiveContainer>
       </div>
-    </Card>
+    </div>
   );
 }

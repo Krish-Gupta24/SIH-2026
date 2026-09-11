@@ -97,23 +97,23 @@ export function EnvelopeHeatBalanceChart({
   });
 
   return (
-    <Card className="border-slate-800 bg-slate-900/70 p-6 backdrop-blur-sm">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
+    <div className="rounded-[2rem] border border-border bg-card p-7 shadow-[0_20px_55px_rgba(0,0,0,.04)] space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <CardTitle className="text-base font-bold text-white flex items-center gap-2">
-            <Layers className="h-5 w-5 text-indigo-400" />
+          <h3 className="text-base font-semibold text-foreground flex items-center gap-2">
+            <Layers className="h-4 w-4 text-indigo-500" />
             <span>Envelope Component Heat Balance (Conduction, Airflow & Solar)</span>
-          </CardTitle>
-          <p className="text-xs text-slate-400 mt-1">
+          </h3>
+          <p className="text-xs text-muted-foreground mt-0.5">
             Dynamic hourly breakdown of envelope transmission losses (–) through exterior assemblies vs transmitted solar gains (+).
           </p>
         </div>
 
         <div className="flex items-center gap-2 text-xs font-mono">
-          <span className="flex items-center gap-1 text-emerald-400 bg-emerald-500/10 px-2 py-1 rounded border border-emerald-500/20">
+          <span className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-full border border-emerald-500/20 font-semibold">
             <ArrowUp className="h-3 w-3" /> Gains (+)
           </span>
-          <span className="flex items-center gap-1 text-rose-400 bg-rose-500/10 px-2 py-1 rounded border border-rose-500/20">
+          <span className="inline-flex items-center gap-1 text-rose-600 dark:text-rose-400 bg-rose-500/10 px-2.5 py-1 rounded-full border border-rose-500/20 font-semibold">
             <ArrowDown className="h-3 w-3" /> Losses (–)
           </span>
         </div>
@@ -121,64 +121,68 @@ export function EnvelopeHeatBalanceChart({
 
       <div className="h-88 w-full" style={{ height: "350px" }}>
         <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={chartData} margin={{ top: 15, right: 30, left: 15, bottom: 5 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#334155" opacity={0.4} />
+          <BarChart data={chartData} margin={{ top: 15, right: 20, left: 10, bottom: 5 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke="currentColor" strokeOpacity={0.06} />
             <XAxis
               dataKey="timeLabel"
-              stroke="#64748b"
+              stroke="currentColor"
+              strokeOpacity={0.4}
               fontSize={11}
               interval={Math.ceil(chartData.length / 12)}
+              tickLine={false}
             />
             <YAxis
-              stroke="#64748b"
+              stroke="currentColor"
+              strokeOpacity={0.4}
               fontSize={11}
               unit={` ${pUnit}`}
+              tickLine={false}
             />
             <Tooltip
               content={({ active, payload }) => {
                 if (!active || !payload || !payload.length) return null;
                 const d = payload[0]?.payload;
                 return (
-                  <div className="rounded-xl border border-slate-700 bg-slate-950/95 p-3.5 shadow-2xl backdrop-blur-md text-xs space-y-1.5 min-w-[240px]">
-                    <div className="border-b border-slate-800 pb-1 font-bold text-white flex items-center justify-between">
+                  <div className="rounded-2xl border border-border bg-card/95 p-4 shadow-2xl backdrop-blur-md text-xs space-y-1.5 min-w-[240px]">
+                    <div className="border-b border-border/60 pb-1 font-bold text-foreground flex items-center justify-between">
                       <span>{d.timeLabel}</span>
-                      <span className={`font-mono font-bold ${d.netBalance >= 0 ? "text-emerald-400" : "text-rose-400"}`}>
+                      <span className={`font-mono font-bold ${d.netBalance >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"}`}>
                         Net: {d.netBalance > 0 ? `+${d.netBalance}` : d.netBalance} {pUnit}
                       </span>
                     </div>
 
-                    <div className="flex items-center justify-between text-yellow-400 font-semibold">
+                    <div className="flex items-center justify-between text-yellow-600 dark:text-yellow-400 font-semibold">
                       <span>Solar Aperture Gain (+):</span>
                       <span className="font-mono">+{d.solar} {pUnit}</span>
                     </div>
 
-                    <div className="flex items-center justify-between text-rose-400">
+                    <div className="flex items-center justify-between text-rose-500">
                       <span>Walls Conduction:</span>
                       <span className="font-mono">{d.walls} {pUnit}</span>
                     </div>
 
-                    <div className="flex items-center justify-between text-purple-400">
+                    <div className="flex items-center justify-between text-purple-500">
                       <span>Roof Conduction:</span>
                       <span className="font-mono">{d.roof} {pUnit}</span>
                     </div>
 
-                    <div className="flex items-center justify-between text-emerald-400">
+                    <div className="flex items-center justify-between text-emerald-600 dark:text-emerald-400">
                       <span>Floor Slab Heat Loss:</span>
                       <span className="font-mono">{d.floor} {pUnit}</span>
                     </div>
 
-                    <div className="flex items-center justify-between text-sky-400">
+                    <div className="flex items-center justify-between text-sky-500">
                       <span>Glazing Conduction:</span>
                       <span className="font-mono">{d.windows} {pUnit}</span>
                     </div>
 
-                    <div className="flex items-center justify-between text-amber-400">
+                    <div className="flex items-center justify-between text-amber-500">
                       <span>Doors Conduction:</span>
                       <span className="font-mono">{d.doors} {pUnit}</span>
                     </div>
 
-                    <div className="flex items-center justify-between text-cyan-400">
-                      <span>Infiltration Ventilation:</span>
+                    <div className="flex items-center justify-between text-cyan-500">
+                      <span>Infiltration Airflow:</span>
                       <span className="font-mono">{d.infiltration} {pUnit}</span>
                     </div>
                   </div>
@@ -186,21 +190,21 @@ export function EnvelopeHeatBalanceChart({
               }}
             />
             <Legend wrapperStyle={{ paddingTop: "12px", fontSize: "11px" }} />
-            <ReferenceLine y={0} stroke="#64748b" strokeWidth={1.5} />
+            <ReferenceLine y={0} stroke="currentColor" strokeOpacity={0.25} strokeWidth={1.5} />
 
             {/* Positive Solar Gain Bar */}
-            <Bar dataKey="solar" name={`Solar Gain (+${pUnit})`} fill="#facc15" stackId="gain" />
+            <Bar dataKey="solar" name={`Solar Gain (+${pUnit})`} fill="#eab308" stackId="gain" radius={[4, 4, 0, 0]} />
 
             {/* Negative Loss Bars stacked together */}
-            <Bar dataKey="walls" name={`Walls (${pUnit})`} fill="#f87171" stackId="loss" />
-            <Bar dataKey="roof" name={`Roof (${pUnit})`} fill="#c084fc" stackId="loss" />
-            <Bar dataKey="floor" name={`Floor Slab (${pUnit})`} fill="#34d399" stackId="loss" />
-            <Bar dataKey="windows" name={`Windows (${pUnit})`} fill="#38bdf8" stackId="loss" />
-            <Bar dataKey="doors" name={`Doors (${pUnit})`} fill="#fbbf24" stackId="loss" />
-            <Bar dataKey="infiltration" name={`Infiltration (${pUnit})`} fill="#22d3ee" stackId="loss" />
+            <Bar dataKey="walls" name={`Walls (${pUnit})`} fill="#f43f5e" stackId="loss" />
+            <Bar dataKey="roof" name={`Roof (${pUnit})`} fill="#a855f7" stackId="loss" />
+            <Bar dataKey="floor" name={`Floor Slab (${pUnit})`} fill="#10b981" stackId="loss" />
+            <Bar dataKey="windows" name={`Windows (${pUnit})`} fill="#0ea5e9" stackId="loss" />
+            <Bar dataKey="doors" name={`Doors (${pUnit})`} fill="#f59e0b" stackId="loss" />
+            <Bar dataKey="infiltration" name={`Infiltration (${pUnit})`} fill="#06b6d4" stackId="loss" radius={[0, 0, 4, 4]} />
           </BarChart>
         </ResponsiveContainer>
       </div>
-    </Card>
+    </div>
   );
 }

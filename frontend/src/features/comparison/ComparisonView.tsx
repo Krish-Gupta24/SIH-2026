@@ -82,20 +82,25 @@ export function ComparisonView() {
 
   if (completedJobs.length < 2) {
     return (
-      <div className="max-w-3xl mx-auto text-center py-20 space-y-4">
-        <GitCompare className="h-12 w-12 text-slate-600 mx-auto" />
-        <h2 className="text-xl font-bold text-white">Minimum 2 Simulation Runs Needed</h2>
-        <p className="text-sm text-slate-400 max-w-md mx-auto">
-          Multi-design comparison requires at least two simulation results to perform thermodynamic trade-off analysis.
-        </p>
-        <div className="flex items-center justify-center gap-3 pt-2">
-          <Button asChild>
-            <Link href="/designer/3d">Create Design in 3D</Link>
-          </Button>
-          <Button variant="outline" asChild>
-            <Link href="/simulations">Run Simulations</Link>
-          </Button>
-        </div>
+      <div className="max-w-3xl mx-auto py-16">
+        <EmptyState
+          title="Minimum 2 simulation runs needed"
+          description="Multi-design comparison requires at least two simulation results to perform thermodynamic trade-off analysis and compute delta percentages."
+          action={
+            <div className="flex items-center justify-center gap-3">
+              <Link href="/designer/3d">
+                <ActionButton tone="primary" className="rounded-full text-xs font-semibold">
+                  Create Design in 3D
+                </ActionButton>
+              </Link>
+              <Link href="/simulations">
+                <ActionButton tone="secondary" className="rounded-full text-xs font-semibold">
+                  Run Simulations
+                </ActionButton>
+              </Link>
+            </div>
+          }
+        />
       </div>
     );
   }

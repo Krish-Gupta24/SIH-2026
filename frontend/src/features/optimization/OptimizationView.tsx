@@ -327,35 +327,35 @@ export function OptimizationView() {
 
       {/* 5. Provenance & Engineering Audit Metadata */}
       {sweepResult && (
-        <Card className="border-slate-800 bg-slate-950/70 p-4 text-xs font-mono text-slate-400">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-[11px]">
+        <div className="rounded-2xl border border-border bg-card p-5 text-xs text-muted-foreground shadow-sm">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
             <div className="flex flex-wrap items-center gap-4">
-              <span className="flex items-center gap-1">
-                <Database className="h-3 w-3 text-purple-400" />
+              <span className="flex items-center gap-1.5 font-medium text-foreground">
+                <Database className="h-3.5 w-3.5 text-purple-500" />
                 <span>Run ID: {sweepResult.runId}</span>
               </span>
-              <span className="flex items-center gap-1">
-                <Clock className="h-3 w-3 text-slate-500" />
+              <span className="flex items-center gap-1.5">
+                <Clock className="h-3.5 w-3.5" />
                 <span>Duration: {sweepResult.executionDurationSec}s</span>
               </span>
-              <span className="text-slate-500">
+              <span>
                 Algorithm: {sweepResult.algorithm}
               </span>
-              <span className="text-slate-500">
+              <span>
                 Weather: {sweepResult.weatherDataset}
               </span>
             </div>
-            <div className="flex items-center gap-2 text-slate-400">
-              <span className="text-emerald-400 font-bold">
+            <div className="flex items-center gap-2">
+              <span className="text-emerald-500 font-semibold">
                 {sweepResult.feasibleCount}/{sweepResult.validCount} Feasible
               </span>
               <span>·</span>
-              <span className="text-purple-400 font-bold">
+              <span className="text-purple-500 font-semibold">
                 {sweepResult.paretoCandidates.length} Non-Dominated (Pareto)
               </span>
             </div>
           </div>
-        </Card>
+        </div>
       )}
     </div>
   );

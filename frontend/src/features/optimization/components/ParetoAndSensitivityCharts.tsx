@@ -15,8 +15,7 @@ import {
   Line,
   ReferenceLine,
 } from "recharts";
-import { Sparkles, TrendingDown, Target, Activity } from "lucide-react";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Target, TrendingDown } from "lucide-react";
 import { CandidateResult } from "../types";
 
 interface ParetoAndSensitivityChartsProps {
@@ -56,161 +55,203 @@ export function ParetoAndSensitivityCharts({
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
       {/* 1. Pareto Frontier Scatter Plot */}
-      <Card className="border-slate-800 bg-slate-900/70 p-6 backdrop-blur-sm space-y-4">
+      <div className="rounded-[2rem] border border-border bg-card p-7 shadow-[0_20px_55px_rgba(0,0,0,.04)] flex flex-col justify-between">
         <div>
-          <CardTitle className="text-base font-bold text-white flex items-center gap-2">
-            <Target className="h-5 w-5 text-purple-400" />
-            <span>Multi-Objective Pareto Frontier (Energy vs Comfort)</span>
-          </CardTitle>
-          <p className="text-xs text-slate-400 mt-1">
-            Visualizing non-dominated design solutions: lower heating demand (left) and higher comfort hours (top) define the Pareto boundary.
+          <div className="flex items-center justify-between">
+            <span className="micro-label text-muted-foreground">Frontier Analysis</span>
+            <div className="h-8 w-8 rounded-xl bg-purple-500/10 flex items-center justify-center text-purple-500">
+              <Target className="h-4 w-4" />
+            </div>
+          </div>
+          <h3 className="font-medium tracking-tight text-xl mt-2 text-foreground">
+            Multi-Objective Pareto Frontier
+          </h3>
+          <p className="text-xs text-muted-foreground mt-1">
+            Visualizing non-dominated design solutions: lower heating demand (left) and higher comfort coverage (top).
           </p>
         </div>
 
-        <div className="h-80 w-full" style={{ height: "320px" }}>
+        <div className="h-80 w-full mt-6" style={{ height: "320px" }}>
           <ResponsiveContainer width="100%" height="100%">
-            <ScatterChart margin={{ top: 20, right: 20, bottom: 20, left: 10 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#334155" opacity={0.4} />
+            <ScatterChart margin={{ top: 15, right: 15, bottom: 15, left: -10 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="currentColor" strokeOpacity={0.06} />
               <XAxis
                 type="number"
                 dataKey="heatingDemand"
                 name="Heating Demand"
-                unit=" kWh/m²"
-                stroke="#64748b"
-                fontSize={11}
+                unit=" kWh"
+                stroke="currentColor"
+                strokeOpacity={0.4}
+                fontSize={10}
+                tickLine={false}
               />
               <YAxis
                 type="number"
                 dataKey="comfortPct"
                 name="Comfort Hours"
-                unit=" %"
+                unit="%"
                 domain={[0, 100]}
-                stroke="#64748b"
-                fontSize={11}
+                stroke="currentColor"
+                strokeOpacity={0.4}
+                fontSize={10}
+                tickLine={false}
               />
-              <ZAxis range={[50, 120]} />
+              <ZAxis range={[60, 140]} />
               <Tooltip
                 content={({ active, payload }) => {
                   if (!active || !payload || !payload.length) return null;
                   const data = payload[0]?.payload;
                   return (
-                    <div className="rounded-lg border border-slate-700 bg-slate-950 p-3 text-xs space-y-1 shadow-xl">
-                      <div className="font-bold text-white flex items-center justify-between gap-3">
+                    <div className="rounded-2xl border border-border bg-card/95 backdrop-blur-md p-3.5 shadow-2xl text-xs space-y-1.5">
+                      <div className="font-semibold text-foreground flex items-center justify-between gap-3 border-b border-border/50 pb-1">
                         <span>Candidate {data.id}</span>
                         {data.isPareto && (
-                          <span className="text-[10px] text-emerald-400 font-mono bg-emerald-950/60 px-1 py-0.5 rounded border border-emerald-800/60">
+                          <span className="text-[10px] text-purple-600 dark:text-purple-400 font-semibold bg-purple-500/10 px-2 py-0.5 rounded-full border border-purple-500/30">
                             Pareto Optimal
                           </span>
                         )}
                       </div>
-                      <div className="text-rose-400">Heating: {data.heatingDemand} kWh/m²·a</div>
-                      <div className="text-emerald-400">Comfort: {data.comfortPct}%</div>
-                      <div className="text-sky-400">Night Min: {data.indoorMin}°C</div>
+                      <div className="flex justify-between gap-4">
+                        <span className="text-muted-foreground">Heating Demand:</span>
+                        <span className="font-medium text-foreground">{data.heatingDemand} kWh/m²</span>
+                      </div>
+                      <div className="flex justify-between gap-4">
+                        <span className="text-muted-foreground">Comfort Hours:</span>
+                        <span className="font-medium text-emerald-500">{data.comfortPct}%</span>
+                      </div>
+                      <div className="flex justify-between gap-4">
+                        <span className="text-muted-foreground">Night Minimum:</span>
+                        <span className="font-medium text-sky-500">{data.indoorMin}°C</span>
+                      </div>
                     </div>
                   );
                 }}
               />
-              <Legend wrapperStyle={{ paddingTop: "10px", fontSize: "11px" }} />
+              <Legend wrapperStyle={{ paddingTop: "14px", fontSize: "11px" }} />
 
               {/* Non-Pareto Candidates */}
               <Scatter
-                name="Evaluated Feasible Designs"
+                name="Feasible Evaluated Designs"
                 data={nonParetoPoints}
-                fill="#64748b"
-                opacity={0.6}
+                fill="#94a3b8"
+                opacity={0.5}
               />
 
               {/* Pareto Optimal Candidates */}
               <Scatter
                 name="Pareto Optimal Frontier"
                 data={paretoPoints}
-                fill="#a855f7"
+                fill="#8b5cf6"
                 stroke="#ffffff"
-                strokeWidth={1.5}
+                strokeWidth={2}
               />
             </ScatterChart>
           </ResponsiveContainer>
         </div>
-      </Card>
+      </div>
 
       {/* 2. Insulation Thickness Diminishing Returns Curve */}
-      <Card className="border-slate-800 bg-slate-900/70 p-6 backdrop-blur-sm space-y-4">
+      <div className="rounded-[2rem] border border-border bg-card p-7 shadow-[0_20px_55px_rgba(0,0,0,.04)] flex flex-col justify-between">
         <div>
-          <CardTitle className="text-base font-bold text-white flex items-center gap-2">
-            <TrendingDown className="h-5 w-5 text-indigo-400" />
-            <span>Insulation Diminishing Returns & Knee-Point Analysis</span>
-          </CardTitle>
-          <p className="text-xs text-slate-400 mt-1">
-            Demonstrates marginal heating reductions flattening beyond 150mm EPS, proving optimal high-altitude payload balance.
+          <div className="flex items-center justify-between">
+            <span className="micro-label text-muted-foreground">Parametric Sensitivity</span>
+            <div className="h-8 w-8 rounded-xl bg-indigo-500/10 flex items-center justify-center text-indigo-500">
+              <TrendingDown className="h-4 w-4" />
+            </div>
+          </div>
+          <h3 className="font-medium tracking-tight text-xl mt-2 text-foreground">
+            Insulation Diminishing Returns
+          </h3>
+          <p className="text-xs text-muted-foreground mt-1">
+            Demonstrating heating load flattening beyond 150mm EPS, identifying the economic knee point.
           </p>
         </div>
 
-        <div className="h-80 w-full" style={{ height: "320px" }}>
+        <div className="h-80 w-full mt-6" style={{ height: "320px" }}>
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={insulationSensitivityData} margin={{ top: 20, right: 20, bottom: 20, left: 10 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#334155" opacity={0.4} />
+            <LineChart data={insulationSensitivityData} margin={{ top: 15, right: 15, bottom: 15, left: -10 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="currentColor" strokeOpacity={0.06} />
               <XAxis
                 dataKey="thicknessMm"
-                stroke="#64748b"
-                fontSize={11}
+                stroke="currentColor"
+                strokeOpacity={0.4}
+                fontSize={10}
+                tickLine={false}
                 unit="mm"
               />
               <YAxis
                 yAxisId="left"
                 stroke="#f59e0b"
-                fontSize={11}
+                strokeOpacity={0.8}
+                fontSize={10}
+                tickLine={false}
                 unit=" kWh"
                 domain={[0, 180]}
               />
               <YAxis
                 yAxisId="right"
                 orientation="right"
-                stroke="#38bdf8"
-                fontSize={11}
+                stroke="#0284c7"
+                strokeOpacity={0.8}
+                fontSize={10}
+                tickLine={false}
                 unit="°C"
                 domain={[0, 25]}
               />
               <Tooltip
-                contentStyle={{
-                  backgroundColor: "#090d16",
-                  borderColor: "#334155",
-                  borderRadius: "8px",
-                  fontSize: "12px",
+                content={({ active, payload, label }) => {
+                  if (!active || !payload?.length) return null;
+                  return (
+                    <div className="rounded-2xl border border-border bg-card/95 backdrop-blur-md p-3.5 shadow-2xl text-xs space-y-1.5">
+                      <p className="font-semibold text-foreground border-b border-border/50 pb-1">Insulation: {label} mm EPS</p>
+                      {payload.map((entry: any, i: number) => (
+                        <div key={i} className="flex items-center justify-between gap-4">
+                          <span className="flex items-center gap-1.5 text-muted-foreground">
+                            <span className="h-2 w-2 rounded-full" style={{ backgroundColor: entry.color }} />
+                            {entry.name}:
+                          </span>
+                          <span className="font-medium text-foreground">{entry.value}</span>
+                        </div>
+                      ))}
+                    </div>
+                  );
                 }}
               />
-              <Legend wrapperStyle={{ paddingTop: "10px", fontSize: "11px" }} />
+              <Legend wrapperStyle={{ paddingTop: "14px", fontSize: "11px" }} />
 
               {/* 150mm Sweet spot marker */}
               <ReferenceLine
                 x={150}
                 yAxisId="left"
-                stroke="#a855f7"
+                stroke="#8b5cf6"
                 strokeDasharray="4 4"
-                label={{ value: "Optimal Knee (150mm)", fill: "#c084fc", fontSize: 10, position: "top" }}
+                label={{ value: "Sweet Spot (150mm)", fill: "#8b5cf6", fontSize: 10, position: "top" }}
               />
 
               <Line
                 yAxisId="left"
                 type="monotone"
                 dataKey="heatingDemand"
-                name="Heating Demand (kWh/m²·a)"
+                name="Heating Demand (kWh/m²)"
                 stroke="#f59e0b"
                 strokeWidth={2.5}
                 dot={{ r: 4, fill: "#f59e0b" }}
+                activeDot={{ r: 6, stroke: "#f59e0b", strokeWidth: 2, fill: "#fff" }}
               />
               <Line
                 yAxisId="right"
                 type="monotone"
                 dataKey="minTemp"
-                name="Night Min Temp (°C)"
-                stroke="#38bdf8"
+                name="Night Min (°C)"
+                stroke="#0284c7"
                 strokeWidth={2}
-                dot={{ r: 3, fill: "#38bdf8" }}
+                dot={{ r: 3, fill: "#0284c7" }}
+                activeDot={{ r: 6, stroke: "#0284c7", strokeWidth: 2, fill: "#fff" }}
               />
             </LineChart>
           </ResponsiveContainer>
         </div>
-      </Card>
+      </div>
     </div>
   );
 }

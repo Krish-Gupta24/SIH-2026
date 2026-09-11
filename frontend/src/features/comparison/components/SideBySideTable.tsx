@@ -165,78 +165,80 @@ export function SideBySideTable({ jobs }: SideBySideTableProps) {
   const categories = Array.from(new Set(METRIC_ROWS.map((r) => r.category)));
 
   return (
-    <Card className="border-slate-800 bg-slate-900/70 p-6 backdrop-blur-sm space-y-4">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 pb-2 border-b border-slate-800/80">
+    <div className="rounded-[2rem] border border-border bg-card p-7 shadow-[0_20px_55px_rgba(0,0,0,.04)] space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-3 border-b border-border">
         <div>
-          <h3 className="text-sm font-bold text-white flex items-center gap-2">
-            <Layers className="h-4 w-4 text-sky-400" />
-            <span>Side-by-Side Parametric Metric Comparison & Delta Percentages</span>
+          <div className="flex items-center gap-2">
+            <span className="micro-label text-muted-foreground">Parametric Synthesis</span>
+          </div>
+          <h3 className="font-medium tracking-tight text-xl mt-1 text-foreground">
+            Side-by-Side Parametric Metric Comparison & Delta Percentages
           </h3>
-          <p className="text-[11px] text-slate-400">
+          <p className="text-xs text-muted-foreground mt-0.5">
             Comparing candidate designs against the active baseline with explicit difference percentages.
           </p>
         </div>
 
-        <div className="flex items-center gap-2 text-xs font-mono text-slate-400">
-          <span className="flex items-center gap-1 text-emerald-400">
-            <ArrowUp className="h-3 w-3" /> Favorable Improvement
+        <div className="flex items-center gap-2 text-xs font-mono text-muted-foreground">
+          <span className="flex items-center gap-1 text-emerald-500 font-semibold">
+            <ArrowUp className="h-3 w-3" /> Favorable
           </span>
-          <span className="text-slate-600">·</span>
-          <span className="flex items-center gap-1 text-rose-400">
-            <ArrowDown className="h-3 w-3" /> Deficit / Higher Load
+          <span className="text-muted-foreground/40">·</span>
+          <span className="flex items-center gap-1 text-rose-500 font-semibold">
+            <ArrowDown className="h-3 w-3" /> Deficit
           </span>
         </div>
       </div>
 
       {!sameWeather && (
-        <div className="p-3 bg-amber-950/40 border border-amber-800/60 rounded-lg text-xs text-amber-300">
+        <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl text-xs text-amber-600 dark:text-amber-400">
           <strong>Weather Divergence Warning:</strong> Comparisons across different weather datasets ({Array.from(new Set(weatherNames)).join(", ")}). Direct thermal comparison is influenced by differing ambient solar and temperature profiles.
         </div>
       )}
       {!sameEngine && (
-        <div className="p-3 bg-rose-950/40 border border-rose-800/60 rounded-lg text-xs text-rose-300">
+        <div className="p-3 bg-rose-500/10 border border-rose-500/30 rounded-xl text-xs text-rose-600 dark:text-rose-400">
           <strong>Engine Equivalence Warning:</strong> Disparate simulation engines detected ({Array.from(new Set(engines)).join(", ")}). RC network approximations are NOT equivalent to full EnergyPlus physical simulations.
         </div>
       )}
 
-      <div className="overflow-x-auto rounded-xl border border-slate-800">
+      <div className="overflow-x-auto rounded-2xl border border-border">
         <Table>
-          <TableHeader className="bg-slate-950/80">
-            <TableRow className="border-slate-800">
-              <TableHead className="w-1/3 text-slate-400 font-bold text-xs">
+          <TableHeader className="bg-secondary/40">
+            <TableRow className="border-border">
+              <TableHead className="w-1/3 text-muted-foreground font-semibold text-xs">
                 Performance Metric
               </TableHead>
               {/* Baseline Column */}
-              <TableHead className="text-left bg-slate-900/80 border-l border-slate-800">
+              <TableHead className="text-left bg-secondary/70 border-l border-border">
                 <div className="space-y-0.5">
-                  <span className="text-[10px] uppercase tracking-wider text-slate-500 font-bold">
+                  <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold">
                     [Baseline Reference]
                   </span>
-                  <div className="text-xs font-bold text-white truncate max-w-[200px]">
+                  <div className="text-xs font-bold text-foreground truncate max-w-[200px]">
                     {baseline.projectName}
                   </div>
-                  <div className="flex flex-wrap gap-1 text-[9px] text-slate-400 font-mono mt-0.5">
-                    <span className="px-1 py-0.2 bg-slate-800 rounded">ID: {baseline.id.slice(0, 8)}</span>
-                    <span className="px-1 py-0.2 bg-slate-800 rounded">{baseline.engine || "EnergyPlus"}</span>
-                    <span className="px-1 py-0.2 bg-slate-800 rounded">{baseline.weatherDatasetName || "Leh EPW"}</span>
+                  <div className="flex flex-wrap gap-1 text-[9px] text-muted-foreground font-mono mt-0.5">
+                    <span className="px-1.5 py-0.5 bg-background/80 rounded border border-border">ID: {baseline.id.slice(0, 8)}</span>
+                    <span className="px-1.5 py-0.5 bg-background/80 rounded border border-border">{baseline.engine || "EnergyPlus"}</span>
+                    <span className="px-1.5 py-0.5 bg-background/80 rounded border border-border">{baseline.weatherDatasetName || "Leh EPW"}</span>
                   </div>
                 </div>
               </TableHead>
 
               {/* Candidate Columns */}
               {candidates.map((cand) => (
-                <TableHead key={cand.id} className="text-left border-l border-slate-800">
+                <TableHead key={cand.id} className="text-left border-l border-border">
                   <div className="space-y-0.5">
-                    <span className="text-[10px] uppercase tracking-wider text-sky-400 font-bold">
+                    <span className="text-[10px] uppercase tracking-wider text-sky-500 font-bold">
                       [Design Candidate]
                     </span>
-                    <div className="text-xs font-bold text-sky-200 truncate max-w-[200px]">
+                    <div className="text-xs font-bold text-foreground truncate max-w-[200px]">
                       {cand.projectName}
                     </div>
-                    <div className="flex flex-wrap gap-1 text-[9px] text-slate-400 font-mono mt-0.5">
-                      <span className="px-1 py-0.2 bg-slate-800 rounded">ID: {cand.id.slice(0, 8)}</span>
-                      <span className="px-1 py-0.2 bg-slate-800 rounded">{cand.engine || "EnergyPlus"}</span>
-                      <span className="px-1 py-0.2 bg-slate-800 rounded">{cand.weatherDatasetName || "Leh EPW"}</span>
+                    <div className="flex flex-wrap gap-1 text-[9px] text-muted-foreground font-mono mt-0.5">
+                      <span className="px-1.5 py-0.5 bg-background/80 rounded border border-border">ID: {cand.id.slice(0, 8)}</span>
+                      <span className="px-1.5 py-0.5 bg-background/80 rounded border border-border">{cand.engine || "EnergyPlus"}</span>
+                      <span className="px-1.5 py-0.5 bg-background/80 rounded border border-border">{cand.weatherDatasetName || "Leh EPW"}</span>
                     </div>
                   </div>
                 </TableHead>
@@ -248,10 +250,10 @@ export function SideBySideTable({ jobs }: SideBySideTableProps) {
             {categories.map((cat) => (
               <React.Fragment key={cat}>
                 {/* Category Header Row */}
-                <TableRow className="bg-slate-950/90 border-t-2 border-slate-800">
+                <TableRow className="bg-secondary/20 border-t border-border">
                   <TableCell
                     colSpan={jobs.length + 1}
-                    className="py-2 text-[11px] font-bold uppercase tracking-wider text-sky-400 font-sans"
+                    className="py-2.5 text-[11px] font-bold uppercase tracking-wider text-sky-500 font-sans"
                   >
                     {cat}
                   </TableCell>
@@ -264,19 +266,19 @@ export function SideBySideTable({ jobs }: SideBySideTableProps) {
                   return (
                     <TableRow
                       key={metric.id}
-                      className="border-slate-800/60 hover:bg-slate-800/30 text-xs font-mono"
+                      className="border-border hover:bg-muted/40 text-xs font-mono"
                     >
-                      <TableCell className="font-sans font-medium text-slate-300">
+                      <TableCell className="font-sans font-medium text-foreground">
                         {metric.label}
                       </TableCell>
 
                       {/* Baseline Value */}
-                      <TableCell className="bg-slate-900/40 border-l border-slate-800 font-bold text-white">
+                      <TableCell className="bg-secondary/40 border-l border-border font-bold text-foreground">
                         {baseVal !== null ? (
                           `${baseVal.toFixed(metric.formatDecimals ?? 1)} ${metric.unit}`
                         ) : (
-                          <span className="text-slate-500 italic text-[10px]">
-                            Metric unavailable from this simulation
+                          <span className="text-muted-foreground italic text-[10px]">
+                            Unavailable
                           </span>
                         )}
                       </TableCell>
@@ -286,9 +288,9 @@ export function SideBySideTable({ jobs }: SideBySideTableProps) {
                         const candVal = metric.getValue(cand);
                         if (candVal === null) {
                           return (
-                            <TableCell key={cand.id} className="border-l border-slate-800">
-                              <span className="text-slate-500 italic text-[10px]">
-                                Metric unavailable from this simulation
+                            <TableCell key={cand.id} className="border-l border-border">
+                              <span className="text-muted-foreground italic text-[10px]">
+                                Unavailable
                               </span>
                             </TableCell>
                           );
@@ -296,9 +298,9 @@ export function SideBySideTable({ jobs }: SideBySideTableProps) {
 
                         if (baseVal === null) {
                           return (
-                            <TableCell key={cand.id} className="border-l border-slate-800">
-                              <span className="font-bold text-slate-100">
-                                {candVal.toFixed(metric.formatDecimals ?? 1)} {metric.unit}
+                            <TableCell key={cand.id} className="border-l border-border">
+                              <span className="font-bold text-foreground">
+                                {candVal.toFixed(metric.formatDecimals ?? 1)} ${metric.unit}
                               </span>
                             </TableCell>
                           );
@@ -312,18 +314,18 @@ export function SideBySideTable({ jobs }: SideBySideTableProps) {
                         );
 
                         return (
-                          <TableCell key={cand.id} className="border-l border-slate-800">
+                          <TableCell key={cand.id} className="border-l border-border">
                             <div className="flex items-baseline justify-between gap-2">
-                              <span className="font-bold text-slate-100">
+                              <span className="font-bold text-foreground">
                                 {candVal.toFixed(metric.formatDecimals ?? 1)} {metric.unit}
                               </span>
 
                               {/* Difference Badge */}
                               <div
-                                className={`flex items-center gap-0.5 text-[10px] font-bold px-1.5 py-0.5 rounded ${
+                                className={`flex items-center gap-0.5 text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
                                   diff.isImprovement
-                                    ? "bg-emerald-950/70 text-emerald-400 border border-emerald-800/50"
-                                    : "bg-rose-950/70 text-rose-400 border border-rose-800/50"
+                                    ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30"
+                                    : "bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/30"
                                 }`}
                                 title={`${diff.deltaAbsolute > 0 ? "+" : ""}${diff.deltaAbsolute} ${metric.unit}`}
                               >
@@ -350,6 +352,6 @@ export function SideBySideTable({ jobs }: SideBySideTableProps) {
           </TableBody>
         </Table>
       </div>
-    </Card>
+    </div>
   );
 }

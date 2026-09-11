@@ -71,249 +71,249 @@ export function SummaryKpiCards({ summary, unit }: SummaryKpiCardsProps) {
   return (
     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
       {/* 1. Min Indoor Nighttime Temp */}
-      <Card className="border-slate-800 bg-slate-900/70 p-4 relative overflow-hidden backdrop-blur-sm">
+      <div className="rounded-2xl border border-border bg-card p-5 shadow-sm hover:border-[#6E818F] transition-colors relative overflow-hidden flex flex-col justify-between">
         <div className="flex items-center justify-between">
-          <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+          <span className="micro-label text-muted-foreground">
             Min Indoor Temp
           </span>
-          <div className="h-6 w-6 rounded-md bg-blue-500/10 flex items-center justify-center text-blue-400">
-            <ThermometerSnowflake className="h-3.5 w-3.5" />
+          <div className="h-7 w-7 rounded-lg bg-sky-500/10 flex items-center justify-center text-sky-500">
+            <ThermometerSnowflake className="h-4 w-4" />
           </div>
         </div>
-        <div className="mt-2 flex items-baseline gap-1.5">
+        <div className="mt-3 flex items-baseline gap-1.5">
           {indoorMin !== null ? (
             <>
-              <span className="text-2xl font-bold font-mono text-blue-400 tracking-tight">
+              <span className="text-3xl font-medium tracking-tight">
                 {formatNumber(indoorMin, 1)}
               </span>
-              <span className="text-xs font-semibold text-slate-400">{tUnit}</span>
+              <span className="text-xs font-semibold text-muted-foreground">{tUnit}</span>
             </>
           ) : (
-            <span className="text-xs text-slate-500 italic py-1">Metric unavailable from this simulation</span>
+            <span className="text-xs text-muted-foreground italic py-1">Unavailable</span>
           )}
         </div>
-        <div className="mt-1.5 flex items-center gap-1 text-[11px] text-slate-500 font-mono">
-          <span>Ambient Min:</span>
-          <span className="text-slate-400 font-semibold">
+        <div className="mt-2 flex items-center gap-1 text-xs text-muted-foreground">
+          <span>Amb Min:</span>
+          <span className="font-medium text-foreground">
             {outdoorMin !== null ? `${formatNumber(outdoorMin, 1)}${tUnit}` : "—"}
           </span>
           {indoorMin !== null && outdoorMin !== null && (
-            <span className="text-emerald-400 font-bold ml-auto">
+            <span className="text-emerald-500 font-semibold ml-auto">
               +{formatNumber(indoorMin - outdoorMin, 1)}Δ
             </span>
           )}
         </div>
-      </Card>
+      </div>
 
       {/* 2. Diurnal Buffer / Max Indoor Temp */}
-      <Card className="border-slate-800 bg-slate-900/70 p-4 relative overflow-hidden backdrop-blur-sm">
+      <div className="rounded-2xl border border-border bg-card p-5 shadow-sm hover:border-[#6E818F] transition-colors relative overflow-hidden flex flex-col justify-between">
         <div className="flex items-center justify-between">
-          <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+          <span className="micro-label text-muted-foreground">
             Peak Indoor Temp
           </span>
-          <div className="h-6 w-6 rounded-md bg-amber-500/10 flex items-center justify-center text-amber-400">
-            <Sun className="h-3.5 w-3.5" />
+          <div className="h-7 w-7 rounded-lg bg-amber-500/10 flex items-center justify-center text-amber-500">
+            <Sun className="h-4 w-4" />
           </div>
         </div>
-        <div className="mt-2 flex items-baseline gap-1.5">
+        <div className="mt-3 flex items-baseline gap-1.5">
           {indoorMax !== null ? (
             <>
-              <span className="text-2xl font-bold font-mono text-amber-400 tracking-tight">
+              <span className="text-3xl font-medium tracking-tight">
                 {formatNumber(indoorMax, 1)}
               </span>
-              <span className="text-xs font-semibold text-slate-400">{tUnit}</span>
+              <span className="text-xs font-semibold text-muted-foreground">{tUnit}</span>
             </>
           ) : (
-            <span className="text-xs text-slate-500 italic py-1">Metric unavailable from this simulation</span>
+            <span className="text-xs text-muted-foreground italic py-1">Unavailable</span>
           )}
         </div>
-        <div className="mt-1.5 flex items-center gap-1 text-[11px] text-slate-500 font-mono">
-          <span>Mean Zone:</span>
-          <span className="text-slate-400 font-semibold">
+        <div className="mt-2 flex items-center gap-1 text-xs text-muted-foreground">
+          <span>Mean:</span>
+          <span className="font-medium text-foreground">
             {indoorMean !== null ? `${formatNumber(indoorMean, 1)}${tUnit}` : "—"}
           </span>
-          <span className="text-slate-400 ml-auto">
-            Amb Max: {outdoorMax !== null ? `${formatNumber(outdoorMax, 1)}${tUnit}` : "—"}
+          <span className="ml-auto">
+            Amb: {outdoorMax !== null ? `${formatNumber(outdoorMax, 1)}${tUnit}` : "—"}
           </span>
         </div>
-      </Card>
+      </div>
 
       {/* 3. Hours in Target Comfort Band */}
-      <Card className="border-slate-800 bg-slate-900/70 p-4 relative overflow-hidden backdrop-blur-sm">
+      <div className="rounded-2xl border border-border bg-card p-5 shadow-sm hover:border-[#6E818F] transition-colors relative overflow-hidden flex flex-col justify-between">
         <div className="flex items-center justify-between">
-          <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+          <span className="micro-label text-muted-foreground">
             Comfort Band Time
           </span>
-          <div className="h-6 w-6 rounded-md bg-emerald-500/10 flex items-center justify-center text-emerald-400">
-            <ShieldCheck className="h-3.5 w-3.5" />
+          <div className="h-7 w-7 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-500">
+            <ShieldCheck className="h-4 w-4" />
           </div>
         </div>
-        <div className="mt-2 flex items-baseline gap-1.5">
+        <div className="mt-3 flex items-baseline gap-1.5">
           {typeof summary.comfortHoursPct === "number" ? (
             <>
-              <span className="text-2xl font-bold font-mono text-emerald-400 tracking-tight">
+              <span className="text-3xl font-medium tracking-tight">
                 {formatNumber(summary.comfortHoursPct, 1)}
               </span>
-              <span className="text-xs font-semibold text-slate-400">%</span>
+              <span className="text-xs font-semibold text-muted-foreground">%</span>
             </>
           ) : (
-            <span className="text-xs text-slate-500 italic py-1">Metric unavailable from this simulation</span>
+            <span className="text-xs text-muted-foreground italic py-1">Unavailable</span>
           )}
         </div>
-        <div className="mt-1.5 flex items-center justify-between text-[11px]">
-          <span className="text-slate-500">18°C–24°C Band</span>
+        <div className="mt-2 flex items-center justify-between text-xs">
+          <span className="text-muted-foreground">18°C–24°C Band</span>
           {typeof summary.comfortHoursPct === "number" && (
             <Badge
               variant={summary.comfortHoursPct >= 75 ? "outline" : "secondary"}
-              className="text-[9px] py-0 px-1 font-mono text-emerald-400 border-emerald-500/30"
+              className="text-[10px] py-0 px-2 font-medium"
             >
               {summary.comfortHoursPct >= 75 ? "Target Met" : "Moderate"}
             </Badge>
           )}
         </div>
-      </Card>
+      </div>
 
       {/* 4. Diurnal Swing Damping */}
-      <Card className="border-slate-800 bg-slate-900/70 p-4 relative overflow-hidden backdrop-blur-sm">
+      <div className="rounded-2xl border border-border bg-card p-5 shadow-sm hover:border-[#6E818F] transition-colors relative overflow-hidden flex flex-col justify-between">
         <div className="flex items-center justify-between">
-          <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+          <span className="micro-label text-muted-foreground">
             Thermal Damping
           </span>
-          <div className="h-6 w-6 rounded-md bg-indigo-500/10 flex items-center justify-center text-indigo-400">
-            <TrendingDown className="h-3.5 w-3.5" />
+          <div className="h-7 w-7 rounded-lg bg-indigo-500/10 flex items-center justify-center text-indigo-500">
+            <TrendingDown className="h-4 w-4" />
           </div>
         </div>
-        <div className="mt-2 flex items-baseline gap-1.5">
+        <div className="mt-3 flex items-baseline gap-1.5">
           {typeof summary.diurnalSwingDampingPct === "number" ? (
             <>
-              <span className="text-2xl font-bold font-mono text-indigo-400 tracking-tight">
+              <span className="text-3xl font-medium tracking-tight">
                 {formatNumber(summary.diurnalSwingDampingPct, 1)}
               </span>
-              <span className="text-xs font-semibold text-slate-400">%</span>
+              <span className="text-xs font-semibold text-muted-foreground">%</span>
             </>
           ) : (
-            <span className="text-xs text-slate-500 italic py-1">Metric unavailable from this simulation</span>
+            <span className="text-xs text-muted-foreground italic py-1">Unavailable</span>
           )}
         </div>
-        <div className="mt-1.5 flex items-center justify-between text-[11px] text-slate-500">
-          <span>Mass buffering efficiency</span>
-          <span className="text-indigo-400 font-mono font-semibold">Active</span>
+        <div className="mt-2 flex items-center justify-between text-xs text-muted-foreground">
+          <span>Mass buffering</span>
+          <span className="text-emerald-500 font-medium">Optimal</span>
         </div>
-      </Card>
+      </div>
 
       {/* 5. Heating Demand Index */}
-      <Card className="border-slate-800 bg-slate-900/70 p-4 relative overflow-hidden backdrop-blur-sm">
+      <div className="rounded-2xl border border-border bg-card p-5 shadow-sm hover:border-[#6E818F] transition-colors relative overflow-hidden flex flex-col justify-between">
         <div className="flex items-center justify-between">
-          <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+          <span className="micro-label text-muted-foreground">
             Heating Demand
           </span>
-          <div className="h-6 w-6 rounded-md bg-rose-500/10 flex items-center justify-center text-rose-400">
-            <Flame className="h-3.5 w-3.5" />
+          <div className="h-7 w-7 rounded-lg bg-rose-500/10 flex items-center justify-center text-rose-500">
+            <Flame className="h-4 w-4" />
           </div>
         </div>
-        <div className="mt-2 flex items-baseline gap-1.5">
+        <div className="mt-3 flex items-baseline gap-1.5">
           {heatingDemand !== null ? (
             <>
-              <span className="text-2xl font-bold font-mono text-rose-400 tracking-tight">
+              <span className="text-3xl font-medium tracking-tight">
                 {formatNumber(heatingDemand, 1)}
               </span>
-              <span className="text-xs font-semibold text-slate-400">{edUnit}</span>
+              <span className="text-xs font-semibold text-muted-foreground">{edUnit}</span>
             </>
           ) : (
-            <span className="text-xs text-slate-500 italic py-1">Metric unavailable from this simulation</span>
+            <span className="text-xs text-muted-foreground italic py-1">Unavailable</span>
           )}
         </div>
-        <div className="mt-1.5 text-[11px] text-slate-500">
-          Passive solar savings accounted
+        <div className="mt-2 text-xs text-muted-foreground">
+          Passive solar accounted
         </div>
-      </Card>
+      </div>
 
       {/* 6. Peak Envelope Loss Rate */}
-      <Card className="border-slate-800 bg-slate-900/70 p-4 relative overflow-hidden backdrop-blur-sm">
+      <div className="rounded-2xl border border-border bg-card p-5 shadow-sm hover:border-[#6E818F] transition-colors relative overflow-hidden flex flex-col justify-between">
         <div className="flex items-center justify-between">
-          <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+          <span className="micro-label text-muted-foreground">
             Peak Conduction Loss
           </span>
-          <div className="h-6 w-6 rounded-md bg-red-500/10 flex items-center justify-center text-red-400">
-            <Layers className="h-3.5 w-3.5" />
+          <div className="h-7 w-7 rounded-lg bg-red-500/10 flex items-center justify-center text-red-500">
+            <Layers className="h-4 w-4" />
           </div>
         </div>
-        <div className="mt-2 flex items-baseline gap-1.5">
+        <div className="mt-3 flex items-baseline gap-1.5">
           {hasPeakLoss ? (
             <>
-              <span className="text-2xl font-bold font-mono text-red-400 tracking-tight">
+              <span className="text-3xl font-medium tracking-tight">
                 {formatNumber(peakLoss!, 0)}
               </span>
-              <span className="text-xs font-semibold text-slate-400">{pUnit}</span>
+              <span className="text-xs font-semibold text-muted-foreground">{pUnit}</span>
             </>
           ) : (
-            <span className="text-xs text-slate-500 italic py-1">
-              Metric unavailable from this simulation
+            <span className="text-xs text-muted-foreground italic py-1">
+              Unavailable
             </span>
           )}
         </div>
-        <div className="mt-1.5 text-[11px] text-slate-500 font-mono">
-          Through walls, roof & glazing
+        <div className="mt-2 text-xs text-muted-foreground">
+          Walls, roof & glazing
         </div>
-      </Card>
+      </div>
 
       {/* 7. Total Solar Passive Gains */}
-      <Card className="border-slate-800 bg-slate-900/70 p-4 relative overflow-hidden backdrop-blur-sm">
+      <div className="rounded-2xl border border-border bg-card p-5 shadow-sm hover:border-[#6E818F] transition-colors relative overflow-hidden flex flex-col justify-between">
         <div className="flex items-center justify-between">
-          <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+          <span className="micro-label text-muted-foreground">
             Total Solar Gain
           </span>
-          <div className="h-6 w-6 rounded-md bg-yellow-500/10 flex items-center justify-center text-yellow-400">
-            <Sparkles className="h-3.5 w-3.5" />
+          <div className="h-7 w-7 rounded-lg bg-yellow-500/10 flex items-center justify-center text-yellow-500">
+            <Sparkles className="h-4 w-4" />
           </div>
         </div>
-        <div className="mt-2 flex items-baseline gap-1.5">
+        <div className="mt-3 flex items-baseline gap-1.5">
           {hasSolarGain ? (
             <>
-              <span className="text-2xl font-bold font-mono text-yellow-400 tracking-tight">
+              <span className="text-3xl font-medium tracking-tight">
                 {formatNumber(solarGain!, 1)}
               </span>
-              <span className="text-xs font-semibold text-slate-400">{eUnit}</span>
+              <span className="text-xs font-semibold text-muted-foreground">{eUnit}</span>
             </>
           ) : (
-            <span className="text-xs text-slate-500 italic py-1">
-              Metric unavailable from this simulation
+            <span className="text-xs text-muted-foreground italic py-1">
+              Unavailable
             </span>
           )}
         </div>
-        <div className="mt-1.5 text-[11px] text-slate-500">
-          Transmitted south aperture gain
+        <div className="mt-2 text-xs text-muted-foreground">
+          South aperture radiation
         </div>
-      </Card>
+      </div>
 
       {/* 8. Underheating Degree-Hours */}
-      <Card className="border-slate-800 bg-slate-900/70 p-4 relative overflow-hidden backdrop-blur-sm">
+      <div className="rounded-2xl border border-border bg-card p-5 shadow-sm hover:border-[#6E818F] transition-colors relative overflow-hidden flex flex-col justify-between">
         <div className="flex items-center justify-between">
-          <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-            Underheating Degree-Hrs
+          <span className="micro-label text-muted-foreground">
+            Underheating Deficit
           </span>
-          <div className="h-6 w-6 rounded-md bg-cyan-500/10 flex items-center justify-center text-cyan-400">
-            <Clock className="h-3.5 w-3.5" />
+          <div className="h-7 w-7 rounded-lg bg-cyan-500/10 flex items-center justify-center text-cyan-500">
+            <Clock className="h-4 w-4" />
           </div>
         </div>
-        <div className="mt-2 flex items-baseline gap-1.5">
+        <div className="mt-3 flex items-baseline gap-1.5">
           {hasUnderheating ? (
             <>
-              <span className="text-2xl font-bold font-mono text-cyan-400 tracking-tight">
+              <span className="text-3xl font-medium tracking-tight">
                 {formatNumber(underheatingVal!, 1)}
               </span>
-              <span className="text-xs font-semibold text-slate-400">{tUnit}·h</span>
+              <span className="text-xs font-semibold text-muted-foreground">{tUnit}·h</span>
             </>
           ) : (
-            <span className="text-xs text-slate-500 italic py-1">
-              Metric unavailable from this simulation
+            <span className="text-xs text-muted-foreground italic py-1">
+              Unavailable
             </span>
           )}
         </div>
-        <div className="mt-1.5 text-[11px] text-slate-500">
-          Deficit below 18°C base
+        <div className="mt-2 text-xs text-muted-foreground">
+          Base: 18.0°C Alpine standard
         </div>
-      </Card>
+      </div>
     </div>
   );
 }

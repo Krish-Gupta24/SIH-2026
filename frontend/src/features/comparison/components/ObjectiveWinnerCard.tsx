@@ -33,39 +33,36 @@ export function ObjectiveWinnerCard({
   onSelectObjective,
 }: ObjectiveWinnerCardProps) {
   return (
-    <Card className="border-sky-500/30 bg-gradient-to-br from-slate-900 via-slate-900/90 to-sky-950/40 p-6 shadow-xl relative overflow-hidden backdrop-blur-md">
-      {/* Glow highlight */}
-      <div className="absolute top-0 right-0 w-96 h-96 bg-sky-500/5 rounded-full blur-3xl pointer-events-none" />
-
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 pb-4 border-b border-slate-800/80">
+    <div className="rounded-[2rem] border border-border bg-card p-7 shadow-[0_20px_55px_rgba(0,0,0,.04)] space-y-6">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 pb-4 border-b border-border">
         <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-xl bg-gradient-to-tr from-amber-500 to-yellow-400 flex items-center justify-center text-slate-950 shadow-lg shadow-amber-500/20">
+          <div className="h-10 w-10 rounded-2xl bg-amber-500/10 flex items-center justify-center text-amber-500">
             <Award className="h-5 w-5" />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <span className="text-xs font-bold uppercase tracking-wider text-amber-400">
-                Multi-Objective Engineering Synthesis
+              <span className="micro-label text-foreground">
+                Engineering Synthesis
               </span>
-              <Badge variant="outline" className="text-[10px] bg-amber-950/60 text-amber-300 border-amber-800/50 py-0">
+              <Badge variant="outline" className="text-[10px] py-0 font-medium">
                 Decision Engine
               </Badge>
             </div>
-            <p className="text-xs text-slate-400 mt-0.5">
-              Definitive ranking derived from physical thermodynamic performance, not arbitrary preference.
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Definitive ranking derived from physical thermodynamic performance criteria.
             </p>
           </div>
         </div>
 
         {/* Objective Selector */}
         <div className="flex items-center gap-2">
-          <span className="text-xs text-slate-400 font-medium whitespace-nowrap">
-            Evaluation Objective:
+          <span className="text-xs text-muted-foreground font-medium whitespace-nowrap">
+            Objective:
           </span>
           <select
             value={selectedObjectiveId}
             onChange={(e) => onSelectObjective(e.target.value as ComparisonObjectiveId)}
-            className="rounded-lg border border-slate-700 bg-slate-950 px-3 py-1.5 text-xs font-semibold text-white focus:outline-none focus:ring-1 focus:ring-sky-500 shadow-sm"
+            className="rounded-full border border-border bg-card px-4 py-2 text-xs font-semibold text-foreground focus:outline-none focus:ring-1 focus:ring-ring shadow-sm cursor-pointer"
           >
             {COMPARISON_OBJECTIVES.map((obj) => (
               <option key={obj.id} value={obj.id}>
@@ -77,51 +74,51 @@ export function ObjectiveWinnerCard({
       </div>
 
       {/* Mandatory Structured Decision Statement */}
-      <div className="mt-5 space-y-4">
-        <div className="rounded-xl border border-sky-500/40 bg-slate-950/80 p-4 shadow-inner">
-          <div className="flex items-center gap-2 text-xs font-mono text-sky-400 uppercase tracking-wider mb-1">
-            <Target className="h-3.5 w-3.5" />
+      <div className="space-y-4">
+        <div className="rounded-2xl bg-black text-white p-6 sm:p-8 shadow-xl">
+          <div className="flex items-center gap-2 text-xs font-mono text-white/50 uppercase tracking-wider mb-2">
+            <Target className="h-4 w-4 text-emerald-400" />
             <span>Design Evaluation Determination</span>
           </div>
 
-          <h2 className="text-lg md:text-xl font-black text-white tracking-tight">
+          <h2 className="font-editorial text-2xl sm:text-3xl font-medium tracking-tight text-white leading-tight">
             &ldquo;{evaluation.statementText}&rdquo;
           </h2>
 
-          <div className="mt-3 flex flex-wrap items-center gap-3 pt-3 border-t border-slate-800/80 text-xs">
+          <div className="mt-5 flex flex-wrap items-center gap-4 pt-4 border-t border-white/10 text-xs text-white/70">
             <div className="flex items-center gap-1.5">
-              <span className="text-slate-400">Winning Candidate:</span>
-              <span className="font-bold text-sky-300">{evaluation.winnerName}</span>
+              <span className="text-white/40">Winning Candidate:</span>
+              <span className="font-semibold text-white">{evaluation.winnerName}</span>
             </div>
-            <span className="text-slate-600">·</span>
+            <span className="text-white/20">·</span>
             <div className="flex items-center gap-1.5">
-              <span className="text-slate-400">Score:</span>
-              <span className="font-mono font-bold text-emerald-400">{evaluation.score} pts</span>
+              <span className="text-white/40">Score:</span>
+              <span className="font-medium text-emerald-400">{evaluation.score} pts</span>
             </div>
-            <span className="text-slate-600">·</span>
-            <Badge variant="outline" className="text-[10px] bg-emerald-950/60 text-emerald-400 border-emerald-800/60">
+            <span className="text-white/20">·</span>
+            <span className="rounded-full bg-emerald-500/20 px-2.5 py-0.5 font-medium text-emerald-300 text-[10px] border border-emerald-500/30">
               {evaluation.marginOfVictory}
-            </Badge>
+            </span>
           </div>
         </div>
 
         {/* Multi-Criteria Rationale Points */}
-        <div className="rounded-lg border border-slate-800/80 bg-slate-900/50 p-4 space-y-2">
-          <div className="flex items-center gap-1.5 text-xs font-bold text-slate-300 uppercase tracking-wider">
-            <Info className="h-3.5 w-3.5 text-sky-400" />
+        <div className="rounded-2xl border border-border bg-secondary/30 p-5 space-y-2.5">
+          <div className="flex items-center gap-1.5 text-xs font-semibold text-foreground uppercase tracking-wider">
+            <Info className="h-3.5 w-3.5 text-sky-500" />
             <span>Mathematical & Engineering Rationale</span>
           </div>
 
-          <ul className="space-y-1.5 text-xs text-slate-300">
+          <ul className="space-y-2 text-xs text-muted-foreground">
             {evaluation.rationalePoints.map((point, i) => (
-              <li key={i} className="flex items-start gap-2">
-                <CheckCircle2 className="h-4 w-4 text-emerald-400 mt-0.5 shrink-0" />
-                <span>{point}</span>
+              <li key={i} className="flex items-start gap-2.5">
+                <CheckCircle2 className="h-4 w-4 text-emerald-500 mt-0.5 shrink-0" />
+                <span className="leading-relaxed">{point}</span>
               </li>
             ))}
           </ul>
         </div>
       </div>
-    </Card>
+    </div>
   );
 }

@@ -16,7 +16,6 @@ import {
   ReferenceLine,
 } from "recharts";
 import { Thermometer, Zap, Layers } from "lucide-react";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { SimulationJobItem } from "@/lib/store/use-shelter-store";
 
 interface ComparisonChartsProps {
@@ -24,10 +23,10 @@ interface ComparisonChartsProps {
 }
 
 const TRACE_COLORS = [
-  "#38bdf8", // Sky blue (Baseline)
+  "#0284c7", // Sky blue (Baseline)
   "#f59e0b", // Amber (Candidate 1)
   "#10b981", // Emerald (Candidate 2)
-  "#a855f7", // Purple (Candidate 3)
+  "#8b5cf6", // Purple (Candidate 3)
 ];
 
 export function ComparisonCharts({ jobs }: ComparisonChartsProps) {
@@ -59,7 +58,7 @@ export function ComparisonCharts({ jobs }: ComparisonChartsProps) {
   const summaryBarData = jobs.map((job) => {
     const s = job.results?.summary;
     return {
-      name: job.projectName.length > 22 ? `${job.projectName.slice(0, 20)}...` : job.projectName,
+      name: job.projectName.length > 20 ? `${job.projectName.slice(0, 18)}...` : job.projectName,
       fullName: job.projectName,
       heatingDemand: s?.heatingDemandKwhM2 || 0,
       peakLoss: (s as any)?.peakEnvelopeLossW || 1500,
@@ -71,49 +70,74 @@ export function ComparisonCharts({ jobs }: ComparisonChartsProps) {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
       {/* 1. Multi-Design Temperature Curve Overlay */}
-      <Card className="border-slate-800 bg-slate-900/70 p-6 backdrop-blur-sm space-y-4">
+      <div className="rounded-[2rem] border border-border bg-card p-7 shadow-[0_20px_55px_rgba(0,0,0,.04)] flex flex-col justify-between">
         <div>
-          <CardTitle className="text-base font-bold text-white flex items-center gap-2">
-            <Thermometer className="h-5 w-5 text-blue-400" />
-            <span>Comparative Diurnal Living Zone Temperature Profiles</span>
-          </CardTitle>
-          <p className="text-xs text-slate-400 mt-1">
-            Hour-by-hour temperature trajectories comparing passive thermal retention across designs under identical sub-zero alpine weather.
+          <div className="flex items-center justify-between">
+            <span className="micro-label text-muted-foreground">Comparative Trajectories</span>
+            <div className="h-8 w-8 rounded-xl bg-sky-500/10 flex items-center justify-center text-sky-500">
+              <Thermometer className="h-4 w-4" />
+            </div>
+          </div>
+          <h3 className="font-medium tracking-tight text-xl mt-2 text-foreground">
+            Diurnal Living Zone Profiles
+          </h3>
+          <p className="text-xs text-muted-foreground mt-1">
+            Hour-by-hour temperature curves comparing passive thermal retention across candidates under sub-zero conditions.
           </p>
         </div>
 
-        <div className="h-80 w-full" style={{ height: "340px" }}>
+        <div className="h-80 w-full mt-6" style={{ height: "340px" }}>
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={tempChartData} margin={{ top: 15, right: 20, left: 10, bottom: 5 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#334155" opacity={0.4} />
+            <LineChart data={tempChartData} margin={{ top: 15, right: 15, left: -10, bottom: 5 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="currentColor" strokeOpacity={0.06} />
               <XAxis
                 dataKey="timeLabel"
-                stroke="#64748b"
-                fontSize={11}
-                interval={Math.ceil(tempChartData.length / 10)}
+                stroke="currentColor"
+                strokeOpacity={0.4}
+                fontSize={10}
+                tickLine={false}
+                interval={Math.ceil(tempChartData.length / 8)}
               />
-              <YAxis stroke="#64748b" fontSize={11} unit=" °C" domain={[-22, 28]} />
+              <YAxis
+                stroke="currentColor"
+                strokeOpacity={0.4}
+                fontSize={10}
+                tickLine={false}
+                unit="°C"
+                domain={[-22, 28]}
+              />
               <Tooltip
-                contentStyle={{
-                  backgroundColor: "#090d16",
-                  borderColor: "#334155",
-                  borderRadius: "8px",
-                  fontSize: "12px",
+                content={({ active, payload, label }) => {
+                  if (!active || !payload?.length) return null;
+                  return (
+                    <div className="rounded-2xl border border-border bg-card/95 backdrop-blur-md p-3.5 shadow-2xl text-xs space-y-1.5">
+                      <p className="font-semibold text-foreground border-b border-border/50 pb-1">{label}</p>
+                      {payload.map((entry: any, i: number) => (
+                        <div key={i} className="flex items-center justify-between gap-4">
+                          <span className="flex items-center gap-1.5 text-muted-foreground">
+                            <span className="h-2 w-2 rounded-full" style={{ backgroundColor: entry.color }} />
+                            {entry.name}:
+                          </span>
+                          <span className="font-medium text-foreground">{typeof entry.value === "number" ? entry.value.toFixed(1) : entry.value}°C</span>
+                        </div>
+                      ))}
+                    </div>
+                  );
                 }}
               />
-              <Legend wrapperStyle={{ paddingTop: "10px", fontSize: "11px" }} />
+              <Legend wrapperStyle={{ paddingTop: "14px", fontSize: "11px" }} />
 
               {/* Comfort Band Area */}
-              <ReferenceArea y1={18} y2={24} fill="#10b981" fillOpacity={0.07} />
-              <ReferenceLine y={0} stroke="#ef4444" strokeDasharray="3 3" strokeOpacity={0.4} />
+              <ReferenceArea y1={18} y2={24} fill="#10b981" fillOpacity={0.08} label={{ value: "Comfort Band (18–24°C)", position: "insideTopRight", fill: "#10b981", fontSize: 10 }} />
+              <ReferenceLine y={0} stroke="#ef4444" strokeDasharray="3 3" strokeOpacity={0.5} label={{ value: "0°C Freeze Point", fill: "#ef4444", fontSize: 9 }} />
 
               {/* Outdoor Ambient Reference */}
               <Line
                 type="monotone"
                 dataKey="outdoor"
-                name="Outdoor Ambient (°C)"
-                stroke="#64748b"
-                strokeWidth={1.8}
+                name="Ambient Temp"
+                stroke="#94a3b8"
+                strokeWidth={1.5}
                 strokeDasharray="4 4"
                 dot={false}
               />
@@ -124,64 +148,84 @@ export function ComparisonCharts({ jobs }: ComparisonChartsProps) {
                   key={job.id}
                   type="monotone"
                   dataKey={job.id}
-                  name={`${job.projectName} (°C)`}
+                  name={job.projectName}
                   stroke={TRACE_COLORS[idx % TRACE_COLORS.length]}
                   strokeWidth={idx === 0 ? 2 : 2.5}
                   dot={{ r: 2 }}
+                  activeDot={{ r: 6, stroke: TRACE_COLORS[idx % TRACE_COLORS.length], strokeWidth: 2, fill: "#fff" }}
                 />
               ))}
             </LineChart>
           </ResponsiveContainer>
         </div>
-      </Card>
+      </div>
 
       {/* 2. Space Heating Energy & Comfort Comparison */}
-      <Card className="border-slate-800 bg-slate-900/70 p-6 backdrop-blur-sm space-y-4">
+      <div className="rounded-[2rem] border border-border bg-card p-7 shadow-[0_20px_55px_rgba(0,0,0,.04)] flex flex-col justify-between">
         <div>
-          <CardTitle className="text-base font-bold text-white flex items-center gap-2">
-            <Zap className="h-5 w-5 text-amber-400" />
-            <span>Auxiliary Heating Demand (kWh/m²·a) & Comfort Hours (%)</span>
-          </CardTitle>
-          <p className="text-xs text-slate-400 mt-1">
-            Evaluating energy reduction efficiency vs total winter comfort coverage across candidates.
+          <div className="flex items-center justify-between">
+            <span className="micro-label text-muted-foreground">Performance Trade-offs</span>
+            <div className="h-8 w-8 rounded-xl bg-amber-500/10 flex items-center justify-center text-amber-500">
+              <Zap className="h-4 w-4" />
+            </div>
+          </div>
+          <h3 className="font-medium tracking-tight text-xl mt-2 text-foreground">
+            Heating Demand & Comfort Hours
+          </h3>
+          <p className="text-xs text-muted-foreground mt-1">
+            Evaluating heating load reductions (kWh/m²·a) vs total comfort band coverage (%) across cases.
           </p>
         </div>
 
-        <div className="h-80 w-full" style={{ height: "340px" }}>
+        <div className="h-80 w-full mt-6" style={{ height: "340px" }}>
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={summaryBarData} margin={{ top: 15, right: 20, left: 10, bottom: 25 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#334155" opacity={0.4} />
-              <XAxis dataKey="name" stroke="#64748b" fontSize={11} interval={0} angle={-15} textAnchor="end" />
-              <YAxis yAxisId="left" stroke="#f59e0b" fontSize={11} unit=" kWh/m²" />
-              <YAxis yAxisId="right" orientation="right" stroke="#10b981" fontSize={11} unit=" %" domain={[0, 100]} />
+            <BarChart data={summaryBarData} margin={{ top: 15, right: 15, left: -10, bottom: 20 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="currentColor" strokeOpacity={0.06} />
+              <XAxis dataKey="name" stroke="currentColor" strokeOpacity={0.4} fontSize={10} tickLine={false} interval={0} angle={-10} textAnchor="end" />
+              <YAxis yAxisId="left" stroke="#f59e0b" strokeOpacity={0.8} fontSize={10} tickLine={false} unit=" kWh" />
+              <YAxis yAxisId="right" orientation="right" stroke="#10b981" strokeOpacity={0.8} fontSize={10} tickLine={false} unit=" %" domain={[0, 100]} />
               <Tooltip
-                contentStyle={{
-                  backgroundColor: "#090d16",
-                  borderColor: "#334155",
-                  borderRadius: "8px",
-                  fontSize: "12px",
+                content={({ active, payload, label }) => {
+                  if (!active || !payload?.length) return null;
+                  return (
+                    <div className="rounded-2xl border border-border bg-card/95 backdrop-blur-md p-3.5 shadow-2xl text-xs space-y-1.5">
+                      <p className="font-semibold text-foreground border-b border-border/50 pb-1">{label}</p>
+                      {payload.map((entry: any, i: number) => (
+                        <div key={i} className="flex items-center justify-between gap-4">
+                          <span className="flex items-center gap-1.5 text-muted-foreground">
+                            <span className="h-2 w-2 rounded-full" style={{ backgroundColor: entry.color }} />
+                            {entry.name}:
+                          </span>
+                          <span className="font-medium text-foreground">
+                            {typeof entry.value === "number" ? entry.value.toFixed(1) : entry.value}
+                            {entry.dataKey === "comfortPct" ? "%" : " kWh/m²"}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  );
                 }}
               />
-              <Legend wrapperStyle={{ paddingTop: "15px", fontSize: "11px" }} />
+              <Legend wrapperStyle={{ paddingTop: "14px", fontSize: "11px" }} />
 
               <Bar
                 yAxisId="left"
                 dataKey="heatingDemand"
-                name="Heating Demand (kWh/m²·a)"
+                name="Heating Demand (kWh/m²)"
                 fill="#f59e0b"
-                radius={[4, 4, 0, 0]}
+                radius={[6, 6, 0, 0]}
               />
               <Bar
                 yAxisId="right"
                 dataKey="comfortPct"
-                name="Hours in Comfort Band (%)"
+                name="Comfort Band (%)"
                 fill="#10b981"
-                radius={[4, 4, 0, 0]}
+                radius={[6, 6, 0, 0]}
               />
             </BarChart>
           </ResponsiveContainer>
         </div>
-      </Card>
+      </div>
     </div>
   );
 }

@@ -364,12 +364,12 @@ export function SimulationsView() {
 
                 {/* Sub-inputs for Monthly */}
                 {periodPreset === "monthly" && (
-                  <div className="flex items-center gap-3 bg-slate-950/40 p-2.5 rounded-lg border border-slate-800 text-xs">
-                    <span className="text-slate-400 font-medium">Select Month:</span>
+                  <div className="flex items-center gap-3 bg-secondary/50 p-3 rounded-2xl border border-border text-xs">
+                    <span className="text-muted-foreground font-medium">Select Month:</span>
                     <select
                       value={selectedMonth}
                       onChange={(e) => setSelectedMonth(Number(e.target.value))}
-                      className="bg-slate-800 border border-slate-700 text-white rounded px-2.5 py-1 text-xs"
+                      className="bg-card border border-border text-foreground rounded-xl px-3 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-[#6E818F]"
                     >
                       {[
                         "January (31d)", "February (28d)", "March (31d)", "April (30d)",
@@ -384,16 +384,16 @@ export function SimulationsView() {
 
                 {/* Sub-inputs for Custom */}
                 {periodPreset === "custom" && (
-                  <div className="flex flex-wrap items-center gap-4 bg-slate-950/40 p-2.5 rounded-lg border border-slate-800 text-xs">
+                  <div className="flex flex-wrap items-center gap-4 bg-secondary/50 p-3 rounded-2xl border border-border text-xs">
                     <div className="flex items-center gap-2">
-                      <span className="text-slate-400">Start (Month / Day):</span>
+                      <span className="text-muted-foreground">Start (Month / Day):</span>
                       <input
                         type="number"
                         min={1}
                         max={12}
                         value={startMonth}
                         onChange={(e) => setStartMonth(Number(e.target.value))}
-                        className="w-12 bg-slate-800 border border-slate-700 rounded px-1.5 py-0.5 text-center text-white text-xs"
+                        className="w-12 bg-card border border-border rounded-lg px-2 py-1 text-center text-foreground text-xs"
                       />
                       <span>/</span>
                       <input
@@ -402,18 +402,18 @@ export function SimulationsView() {
                         max={31}
                         value={startDay}
                         onChange={(e) => setStartDay(Number(e.target.value))}
-                        className="w-12 bg-slate-800 border border-slate-700 rounded px-1.5 py-0.5 text-center text-white text-xs"
+                        className="w-12 bg-card border border-border rounded-lg px-2 py-1 text-center text-foreground text-xs"
                       />
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className="text-slate-400">End (Month / Day):</span>
+                      <span className="text-muted-foreground">End (Month / Day):</span>
                       <input
                         type="number"
                         min={1}
                         max={12}
                         value={endMonth}
                         onChange={(e) => setEndMonth(Number(e.target.value))}
-                        className="w-12 bg-slate-800 border border-slate-700 rounded px-1.5 py-0.5 text-center text-white text-xs"
+                        className="w-12 bg-card border border-border rounded-lg px-2 py-1 text-center text-foreground text-xs"
                       />
                       <span>/</span>
                       <input
@@ -422,7 +422,7 @@ export function SimulationsView() {
                         max={31}
                         value={endDay}
                         onChange={(e) => setEndDay(Number(e.target.value))}
-                        className="w-12 bg-slate-800 border border-slate-700 rounded px-1.5 py-0.5 text-center text-white text-xs"
+                        className="w-12 bg-card border border-border rounded-lg px-2 py-1 text-center text-foreground text-xs"
                       />
                     </div>
                   </div>
@@ -430,8 +430,8 @@ export function SimulationsView() {
 
                 {/* Timestep selection */}
                 <div className="flex flex-wrap items-center gap-2 pt-1">
-                  <span className="text-xs font-semibold text-slate-300 flex items-center gap-1.5 mr-1">
-                    <Clock className="h-3.5 w-3.5 text-sky-400" />
+                  <span className="text-xs font-semibold text-foreground flex items-center gap-1.5 mr-1">
+                    <Clock className="h-3.5 w-3.5 text-[#6E818F]" />
                     Timestep:
                   </span>
                   {[
@@ -444,10 +444,10 @@ export function SimulationsView() {
                       key={ts.steps}
                       type="button"
                       onClick={() => setTimestep(ts.steps)}
-                      className={`px-2.5 py-1 rounded-md text-xs font-medium transition-all ${
+                      className={`px-3 py-1 rounded-full text-xs font-semibold transition-all ${
                         timestep === ts.steps
-                          ? "bg-sky-600 text-white shadow-sm ring-1 ring-sky-400"
-                          : "bg-slate-800/70 text-slate-400 hover:text-slate-200 hover:bg-slate-700/60"
+                          ? "bg-foreground text-background shadow-sm"
+                          : "border border-border bg-card text-muted-foreground hover:bg-secondary hover:text-foreground"
                       }`}
                     >
                       {ts.label}
@@ -457,23 +457,23 @@ export function SimulationsView() {
               </div>
 
               {queueError && (
-                <div className="mt-3 rounded-lg border border-red-500/30 bg-red-950/40 p-3 text-xs text-red-300 flex items-center gap-2">
-                  <AlertCircle className="h-4 w-4 text-red-400 shrink-0" />
+                <div className="mt-3 rounded-2xl border border-destructive/30 bg-destructive/10 p-3 text-xs text-destructive flex items-center gap-2">
+                  <AlertCircle className="h-4 w-4 shrink-0" />
                   <span>{queueError}</span>
                 </div>
               )}
 
               {lastQueuedJobId && (
-                <div className="mt-3 rounded-lg border border-emerald-500/30 bg-emerald-950/40 p-3 text-xs text-emerald-300 flex items-center justify-between">
+                <div className="mt-3 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-3 text-xs text-emerald-600 dark:text-emerald-400 flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
+                    <CheckCircle2 className="h-4 w-4 shrink-0" />
                     <span>Simulation job <strong className="font-mono">{lastQueuedJobId}</strong> dispatched successfully!</span>
                   </div>
                   <Link href={`/results?jobId=${lastQueuedJobId}`}>
-                    <Button size="sm" variant="outline" className="h-6 text-[11px] gap-1 text-emerald-300 border-emerald-500/40">
+                    <ActionButton tone="secondary" className="min-h-7 px-3 text-[11px]">
                       <Eye className="h-3 w-3" />
                       View Results
-                    </Button>
+                    </ActionButton>
                   </Link>
                 </div>
               )}
@@ -483,35 +483,35 @@ export function SimulationsView() {
 
       {/* Queue Stat Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-4">
-          <div className="text-[11px] font-semibold text-slate-400 uppercase">Active Celery Jobs</div>
-          <div className="text-2xl font-bold text-white mt-1">{activeRuns}</div>
-          <p className="text-[10px] text-slate-500 mt-0.5">Queued / Executing</p>
+        <div className="rounded-[2rem] border border-border bg-card p-6 shadow-[0_20px_55px_rgba(0,0,0,.04)]">
+          <div className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Active Queue</div>
+          <div className="text-3xl font-bold tracking-tight text-foreground mt-2">{activeRuns}</div>
+          <p className="text-[10px] text-muted-foreground mt-1">Executing in background</p>
         </div>
 
-        <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-4">
-          <div className="text-[11px] font-semibold text-slate-400 uppercase">Completed Runs</div>
-          <div className="text-2xl font-bold text-emerald-400 mt-1">{completedRuns}</div>
-          <p className="text-[10px] text-slate-500 mt-0.5">Parsed & stored</p>
+        <div className="rounded-[2rem] border border-border bg-card p-6 shadow-[0_20px_55px_rgba(0,0,0,.04)]">
+          <div className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Completed Runs</div>
+          <div className="text-3xl font-bold tracking-tight text-emerald-600 dark:text-emerald-400 mt-2">{completedRuns}</div>
+          <p className="text-[10px] text-muted-foreground mt-1">Validated thermal records</p>
         </div>
 
-        <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-4">
-          <div className="text-[11px] font-semibold text-slate-400 uppercase">Engine In Use</div>
-          <div className="text-sm font-bold text-white mt-1">EnergyPlus 24.1.0</div>
-          <p className="text-[10px] text-slate-500 mt-0.5">IDF Generated & verified</p>
+        <div className="rounded-[2rem] border border-border bg-card p-6 shadow-[0_20px_55px_rgba(0,0,0,.04)]">
+          <div className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Engine In Use</div>
+          <div className="text-base font-bold text-foreground mt-2">EnergyPlus 24.1.0</div>
+          <p className="text-[10px] text-muted-foreground mt-1">RC Solver & heat balance</p>
         </div>
 
-        <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-4">
-          <div className="text-[11px] font-semibold text-slate-400 uppercase">Selected for Comparison</div>
-          <div className="text-2xl font-bold text-blue-400 mt-1">{comparisonJobIds.length}</div>
-          <Link href="/comparison" className="text-[10px] text-blue-400 hover:underline mt-0.5 inline-block">
-            Go to Comparison &rarr;
+        <div className="rounded-[2rem] border border-border bg-card p-6 shadow-[0_20px_55px_rgba(0,0,0,.04)]">
+          <div className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Selected for Compare</div>
+          <div className="text-3xl font-bold tracking-tight text-sky-600 dark:text-sky-400 mt-2">{comparisonJobIds.length}</div>
+          <Link href="/comparison" className="text-[10px] text-sky-600 dark:text-sky-400 hover:underline mt-1 inline-block font-semibold">
+            Open Comparison &rarr;
           </Link>
         </div>
       </div>
 
       {/* Simulations Table */}
-      <Card className="border-slate-800 bg-slate-900/60">
+      <div className="rounded-[2rem] border border-border bg-card p-6 shadow-[0_20px_55px_rgba(0,0,0,.04)] overflow-hidden">
         <CardContent className="p-0">
           <Table>
             <TableHeader>
@@ -627,21 +627,21 @@ export function SimulationsView() {
             </TableBody>
           </Table>
         </CardContent>
-      </Card>
+      </div>
 
       {/* Weather Data Policy: Explicit Confirmation Modal for Test Datasets */}
       {confirmTestDataModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm animate-in fade-in">
-          <div className="w-full max-w-lg rounded-xl border border-amber-500/30 bg-slate-900 p-6 shadow-2xl space-y-4">
-            <div className="flex items-center gap-3 text-amber-400">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm animate-in fade-in">
+          <div className="w-full max-w-lg rounded-[2rem] border border-border bg-card p-7 shadow-2xl space-y-4 text-foreground">
+            <div className="flex items-center gap-3 text-amber-500">
               <AlertCircle className="h-6 w-6 shrink-0" />
-              <h3 className="text-lg font-bold text-white">Weather Data Policy Confirmation</h3>
+              <h3 className="text-base font-semibold text-foreground">Weather Data Policy Confirmation</h3>
             </div>
-            <div className="space-y-2 text-xs text-slate-300 leading-relaxed">
+            <div className="space-y-3 text-xs text-muted-foreground leading-relaxed">
               <p>
-                The selected weather dataset is classified as <span className="font-bold text-amber-400">TEST DATA</span> (synthetic Denver fixture).
+                The selected weather dataset is classified as <span className="font-semibold text-amber-600 dark:text-amber-400">TEST DATA</span> (synthetic Denver fixture).
               </p>
-              <p className="rounded-lg bg-amber-500/10 p-3 border border-amber-500/20 text-amber-200">
+              <p className="rounded-2xl bg-amber-500/10 p-4 border border-amber-500/20 text-amber-700 dark:text-amber-300">
                 Under platform engineering policy, production building simulations must NEVER silently use synthetic test weather.
                 Real high-altitude thermal sizing requires authentic climate data (EPW or NASA POWER).
               </p>
@@ -649,21 +649,18 @@ export function SimulationsView() {
                 Do you explicitly confirm that you want to execute a test simulation using this dataset?
               </p>
             </div>
-            <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-800">
-              <Button
-                variant="outline"
-                size="sm"
+            <div className="flex items-center justify-end gap-2 pt-3 border-t border-border">
+              <ActionButton
+                tone="quiet"
                 onClick={() => {
                   setConfirmTestDataModal(false);
                   setPendingSimProject(null);
                 }}
               >
                 Cancel
-              </Button>
-              <Button
-                variant="default"
-                size="sm"
-                className="bg-amber-600 hover:bg-amber-500 text-white font-bold"
+              </ActionButton>
+              <ActionButton
+                tone="primary"
                 onClick={() => {
                   if (pendingSimProject) {
                     handleQueueSimulation(pendingSimProject, true);
@@ -671,7 +668,7 @@ export function SimulationsView() {
                 }}
               >
                 Confirm & Run With Test Data
-              </Button>
+              </ActionButton>
             </div>
           </div>
         </div>
