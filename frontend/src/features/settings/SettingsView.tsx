@@ -1,24 +1,9 @@
 "use client";
 
 import React, { useState } from "react";
-import {
-  Settings,
-  Sliders,
-  Cpu,
-  Database,
-  Save,
-  RotateCcw,
-  CheckCircle2,
-  Server,
-  Download,
-  Upload,
-} from "lucide-react";
+import { Check, RotateCcw, Save } from "lucide-react";
 import { useShelterStore } from "@/lib/store/use-shelter-store";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Slider } from "@/components/ui/slider";
+import { ActionButton, PageIntro } from "@/components/v0/platform-components";
 
 export function SettingsView() {
   const { settings, updateSettings } = useShelterStore();
@@ -38,176 +23,101 @@ export function SettingsView() {
       autoSaveIntervalSec: autoSaveSec,
     });
     setSavedSuccess(true);
-    setTimeout(() => setSavedSuccess(false), 3000);
+    setTimeout(() => setSavedSuccess(false), 2500);
   };
 
   const handleResetDefaults = () => {
-    if (confirm("Reset all engineering preferences and caches to factory defaults?")) {
+    if (confirm("Reset all engineering preferences and local caches to factory defaults?")) {
       localStorage.removeItem("shelter_thermal_engineering_store_v1");
       window.location.reload();
     }
   };
 
   return (
-    <div className="space-y-8 max-w-4xl mx-auto">
-      {/* Header */}
-      <div className="flex items-center justify-between">
+    <div className="space-y-8 max-w-5xl mx-auto pb-12">
+      <PageIntro
+        eyebrow="Workspace preferences"
+        title="Settings"
+        description="Engineering preferences, calculation standards, and backend execution configurations."
+      />
+
+      <form onSubmit={handleSave} className="grid gap-12 py-6 lg:grid-cols-[.6fr_1.4fr]">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-white flex items-center gap-2.5">
-            <Settings className="h-6 w-6 text-slate-400" />
-            Engineering Settings & Environment
-          </h1>
-          <p className="text-xs text-slate-400 mt-1">
-            Configure unit standards, EnergyPlus runtime flags, and FastAPI / Celery worker connections.
+          <p className="micro-label">Configuration</p>
+          <p className="mt-3 text-sm leading-6 text-muted-foreground">
+            Preferences are persisted in the workspace store. New simulation dispatches inherit these defaults; stored historical evidence remains immutable.
           </p>
+
+          <div className="mt-8">
+            <button
+              type="button"
+              onClick={handleResetDefaults}
+              className="inline-flex items-center gap-1.5 text-xs font-semibold text-muted-foreground hover:text-red-500 transition-colors"
+            >
+              <RotateCcw className="size-3.5" />
+              Reset factory defaults
+            </button>
+          </div>
         </div>
 
-        {savedSuccess && (
-          <Badge variant="success" className="gap-1.5 py-1 px-3 text-xs">
-            <CheckCircle2 className="h-3.5 w-3.5" />
-            Preferences Saved
-          </Badge>
-        )}
-      </div>
-
-      <form onSubmit={handleSave} className="space-y-6">
-        {/* Unit Systems */}
-        <Card className="border-slate-800 bg-slate-900/60 p-6 space-y-4">
-          <div className="flex items-center gap-2">
-            <Sliders className="h-5 w-5 text-blue-400" />
-            <CardTitle className="text-base font-bold text-white">Engineering Unit System</CardTitle>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <label
-              className={`flex items-start gap-3 rounded-xl border p-4 cursor-pointer transition ${
-                unitSystem === "SI"
-                  ? "border-blue-500 bg-blue-950/20"
-                  : "border-slate-800 bg-slate-950/40 hover:border-slate-700"
-              }`}
+        <div className="workspace-panel flex flex-col gap-8 rounded-2xl border border-border bg-card p-7 sm:p-9 shadow-sm">
+          {/* Unit System */}
+          <label>
+            <span className="micro-label block mb-2">Unit System</span>
+            <select
+              value={unitSystem}
+              onChange={(e) => setUnitSystem(e.target.value as "SI" | "IP")}
+              className="h-12 w-full border-b border-border bg-transparent text-sm font-semibold outline-none cursor-pointer"
             >
-              <input
-                type="radio"
-                name="unitSystem"
-                value="SI"
-                checked={unitSystem === "SI"}
-                onChange={() => setUnitSystem("SI")}
-                className="mt-1"
-              />
-              <div className="text-xs space-y-1">
-                <div className="font-bold text-white">Metric SI (Recommended)</div>
-                <p className="text-slate-400">
-                  Temperature in °C • Conductivity in W/m-K • U-value in W/m²-K • Dimensions in meters. Standard for SIH 26051.
-                </p>
-              </div>
-            </label>
+              <option value="SI">SI · Metric (W/m²·K, °C, m, kg)</option>
+              <option value="IP">IP · Imperial (Btu/h·ft²·°F, °F, ft, lb)</option>
+            </select>
+          </label>
 
-            <label
-              className={`flex items-start gap-3 rounded-xl border p-4 cursor-pointer transition ${
-                unitSystem === "IP"
-                  ? "border-blue-500 bg-blue-950/20"
-                  : "border-slate-800 bg-slate-950/40 hover:border-slate-700"
-              }`}
-            >
-              <input
-                type="radio"
-                name="unitSystem"
-                value="IP"
-                checked={unitSystem === "IP"}
-                onChange={() => setUnitSystem("IP")}
-                className="mt-1"
-              />
-              <div className="text-xs space-y-1">
-                <div className="font-bold text-white">Imperial IP</div>
-                <p className="text-slate-400">
-                  Temperature in °F • U-value in Btu/h-ft²-°F • Dimensions in feet.
-                </p>
-              </div>
-            </label>
-          </div>
-        </Card>
+          {/* EnergyPlus Engine Version */}
+          <label>
+            <span className="micro-label block mb-2">EnergyPlus Engine Version</span>
+            <input
+              type="text"
+              value={energyPlusVersion}
+              onChange={(e) => setEnergyPlusVersion(e.target.value)}
+              className="h-12 w-full border-b border-border bg-transparent text-sm font-semibold outline-none"
+            />
+          </label>
 
-        {/* Engine & Computation Backend */}
-        <Card className="border-slate-800 bg-slate-900/60 p-6 space-y-4">
-          <div className="flex items-center gap-2">
-            <Cpu className="h-5 w-5 text-indigo-400" />
-            <CardTitle className="text-base font-bold text-white">EnergyPlus Engine & Worker Runtime</CardTitle>
-          </div>
+          {/* Autosave Interval */}
+          <label>
+            <span className="micro-label block mb-2">Autosave Interval · Seconds</span>
+            <input
+              type="number"
+              min="5"
+              max="3600"
+              value={autoSaveSec}
+              onChange={(e) => setAutoSaveSec(Number(e.target.value))}
+              className="h-12 w-full border-b border-border bg-transparent text-sm font-semibold outline-none"
+            />
+          </label>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="text-xs font-semibold text-slate-300">EnergyPlus Version</label>
-              <select
-                value={energyPlusVersion}
-                onChange={(e) => setEnergyPlusVersion(e.target.value)}
-                className="w-full mt-1.5 rounded-lg border border-slate-800 bg-slate-950 px-3 py-2 text-xs text-white"
-              >
-                <option value="24.1.0">EnergyPlus v24.1.0 (Latest Canonical)</option>
-                <option value="23.2.0">EnergyPlus v23.2.0 (LTS)</option>
-                <option value="rc-fast">Simplified High-Speed RC Model</option>
-              </select>
-            </div>
+          {/* Backend API Endpoint */}
+          <label>
+            <span className="micro-label block mb-2">Backend Physics Service URL</span>
+            <input
+              type="text"
+              value={apiUrl}
+              onChange={(e) => setApiUrl(e.target.value)}
+              className="h-12 w-full border-b border-border bg-transparent text-sm font-semibold outline-none font-mono"
+            />
+          </label>
 
-            <div>
-              <label className="text-xs font-semibold text-slate-300">FastAPI Server Endpoint</label>
-              <Input
-                value={apiUrl}
-                onChange={(e) => setApiUrl(e.target.value)}
-                className="mt-1.5 bg-slate-950 border-slate-800 font-mono text-xs"
-              />
-            </div>
-          </div>
-
-          <div className="rounded-xl border border-slate-800 bg-slate-950/60 p-3.5 flex items-center justify-between text-xs">
-            <div className="flex items-center gap-2">
-              <Server className="h-4 w-4 text-emerald-400" />
-              <span className="text-slate-300">Celery Worker / Redis Queue Broker</span>
-            </div>
-            <Badge variant="success" className="text-[10px]">
-              Ready (redis://localhost:6379/0)
-            </Badge>
-          </div>
-        </Card>
-
-        {/* Draft & Local Storage Persistence */}
-        <Card className="border-slate-800 bg-slate-900/60 p-6 space-y-4">
-          <div className="flex items-center gap-2">
-            <Database className="h-5 w-5 text-emerald-400" />
-            <CardTitle className="text-base font-bold text-white">Persistence & Auto-Save</CardTitle>
-          </div>
-
-          <Slider
-            label="Designer Draft Auto-Save Interval"
-            value={autoSaveSec}
-            onValueChange={setAutoSaveSec}
-            min={10}
-            max={120}
-            step={5}
-            unit="seconds"
-          />
-
-          <div className="pt-2 flex items-center justify-between border-t border-slate-800">
-            <span className="text-xs text-slate-400">
-              Clear all project drafts and restored models from browser storage:
+          <div className="flex items-center justify-between border-t border-border pt-6">
+            <span className="text-xs text-muted-foreground">
+              {savedSuccess ? "Preferences saved successfully!" : "Changes persist automatically."}
             </span>
-            <Button
-              type="button"
-              variant="destructive"
-              size="sm"
-              onClick={handleResetDefaults}
-              className="gap-1.5 text-xs font-bold"
-            >
-              <RotateCcw className="h-3.5 w-3.5" />
-              Reset All Defaults
-            </Button>
+            <ActionButton tone="primary" type="submit" className="rounded-full px-7">
+              {savedSuccess ? <Check className="size-4" /> : <Save className="size-4" />}
+              {savedSuccess ? "Saved" : "Save Preferences"}
+            </ActionButton>
           </div>
-        </Card>
-
-        <div className="flex items-center justify-end gap-3">
-          <Button type="submit" size="lg" className="font-bold gap-2 shadow-lg shadow-blue-600/25">
-            <Save className="h-4 w-4" />
-            Save Preferences
-          </Button>
         </div>
       </form>
     </div>

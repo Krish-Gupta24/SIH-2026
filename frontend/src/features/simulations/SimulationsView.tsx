@@ -23,6 +23,13 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table";
+import {
+  ActionButton,
+  DataPair,
+  EmptyState,
+  PageIntro,
+  Status,
+} from "@/components/v0/platform-components";
 
 export function SimulationsView() {
   const searchParams = useSearchParams();
@@ -250,53 +257,87 @@ export function SimulationsView() {
   };
 
   return (
-    <div className="space-y-8 max-w-7xl mx-auto">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-white flex items-center gap-2.5">
-            <Cpu className="h-6 w-6 text-indigo-400" />
-            Simulation Queue & Execution Log
-          </h1>
-          <p className="text-xs text-slate-400 mt-1">
-            Asynchronous EnergyPlus Celery worker jobs with isolated runs, real-time status, and normalized output parsing.
-          </p>
-        </div>
+    <div className="space-y-10 max-w-7xl mx-auto">
+      {/* V0 Page Intro */}
+      <PageIntro
+        eyebrow="Validated EnergyPlus 24.1 Dispatch"
+        title="Run thermal simulation"
+        description="Send the canonical model to the physics simulation engine with explicit period, timestep resolution, and authentic weather provenance."
+        action={
+          <Link href="/designer">
+            <ActionButton tone="secondary">
+              <Play className="size-3.5" />
+              Designer Wizard
+            </ActionButton>
+          </Link>
+        }
+      />
 
-        <Link href="/designer">
-          <Button className="gap-2 font-bold shadow-sm">
-            <Play className="h-4 w-4" />
-            Run New Simulation
-          </Button>
-        </Link>
+      {/* 4-Stage Progress Banner */}
+      <div className="grid grid-cols-4 gap-3">
+        {["Validate Model", "Prepare IDF", "Dispatch Engine", "Process Outputs"].map(
+          (stage, index) => (
+            <div key={stage} className="rounded-xl border border-border bg-card p-3">
+              <div
+                className={`h-1 rounded-full ${
+                  isQueueing && index < 3
+                    ? "bg-[#6E818F] animate-pulse"
+                    : index === 0
+                    ? "bg-foreground"
+                    : "bg-border"
+                }`}
+              />
+              <p className="mt-2 text-[9px] font-bold uppercase tracking-[0.08em] text-muted-foreground">
+                0{index + 1} · {stage}
+              </p>
+            </div>
+          )
+        )}
       </div>
 
-      {/* Quick Simulation Dispatch Banner for 3D Designer / Targeted Project */}
+      {/* Quick Simulation Dispatch Card for Targeted Project */}
       {targetProject && (
-        <div className="rounded-2xl border border-blue-500/40 bg-gradient-to-r from-blue-950/80 via-slate-900 to-indigo-950/60 p-5 shadow-lg">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div className="space-y-1">
-              <div className="flex items-center gap-2">
-                <Badge className="bg-blue-600/30 text-blue-300 border-blue-400/40 text-xs">
-                  Model Ready for Simulation
-                </Badge>
-                <span className="text-xs font-mono text-slate-400">{targetProject.id}</span>
+        <div className="rounded-[2rem] border border-border bg-card p-7 sm:p-9 shadow-[0_20px_55px_rgba(0,0,0,.04)]">
+          <div className="flex flex-col gap-6">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div>
+                <div className="flex items-center gap-2">
+                  <Status strong>Model ready</Status>
+                  <span className="font-mono text-xs text-muted-foreground">{targetProject.id}</span>
+                </div>
+                <h2 className="mt-3 text-2xl font-medium tracking-tight">
+                  {targetProject.project?.name || targetProject.id}
+                </h2>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Geometry: {targetProject.geometry?.length}m × {targetProject.geometry?.width}m × {targetProject.geometry?.height}m · Weather: {targetProject.location?.weatherSource || "IND_JK_Leh.420270_ISHRAE.epw"}
+                </p>
               </div>
-              <h2 className="text-lg font-black text-white">
-                Queue EnergyPlus 24.1 Run for: {targetProject.project?.name || targetProject.id}
-              </h2>
-              <p className="text-xs text-slate-400">
-                Dimensions: {targetProject.geometry?.length}m × {targetProject.geometry?.width}m × {targetProject.geometry?.height}m • 
-                Weather: {targetProject.location?.weatherSource || "IND_JK_Leh.420270_ISHRAE.epw"}
-              </p>
 
-              {/* Period & Timestep Configuration Controls */}
-              <div className="mt-4 pt-3 border-t border-slate-800/80 space-y-3">
+              <ActionButton
+                onClick={() => handleQueueSimulation(targetProject)}
+                disabled={isQueueing}
+                tone="primary"
+                className="rounded-full px-6 text-xs font-bold shrink-0"
+              >
+                {isQueueing ? (
+                  <>
+                    <RotateCw className="size-4 animate-spin" />
+                    Dispatching EnergyPlus…
+                  </>
+                ) : (
+                  <>
+                    <Play className="size-4" />
+                    Queue Simulation
+                  </>
+                )}
+              </ActionButton>
+            </div>
+
+            {/* Period & Timestep Configuration Controls */}
+            <div className="border-t border-border pt-5 space-y-4">
+              <div>
+                <span className="micro-label block mb-2">Simulation Period</span>
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="text-xs font-semibold text-slate-300 flex items-center gap-1.5 mr-1">
-                    <Calendar className="h-3.5 w-3.5 text-indigo-400" />
-                    Period:
-                  </span>
                   {[
                     { id: "quick", label: "24h (1 Day)" },
                     { id: "multi_3", label: "3 Days" },
@@ -309,16 +350,17 @@ export function SimulationsView() {
                       key={p.id}
                       type="button"
                       onClick={() => setPeriodPreset(p.id as any)}
-                      className={`px-2.5 py-1 rounded-md text-xs font-medium transition-all ${
+                      className={`rounded-full px-4 py-2 text-xs font-semibold transition-all ${
                         periodPreset === p.id
-                          ? "bg-indigo-600 text-white shadow-sm ring-1 ring-indigo-400"
-                          : "bg-slate-800/70 text-slate-400 hover:text-slate-200 hover:bg-slate-700/60"
+                          ? "bg-foreground text-background"
+                          : "border border-border bg-card text-muted-foreground hover:bg-secondary hover:text-foreground"
                       }`}
                     >
                       {p.label}
                     </button>
                   ))}
                 </div>
+              </div>
 
                 {/* Sub-inputs for Monthly */}
                 {periodPreset === "monthly" && (
@@ -413,51 +455,30 @@ export function SimulationsView() {
                   ))}
                 </div>
               </div>
-            </div>
 
-            <div className="flex items-center gap-3">
-              <Button
-                onClick={() => handleQueueSimulation(targetProject)}
-                disabled={isQueueing}
-                className="gap-2 font-bold bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white shadow-lg shadow-blue-600/30"
-              >
-                {isQueueing ? (
-                  <>
-                    <RotateCw className="h-4 w-4 animate-spin" />
-                    Queueing Job...
-                  </>
-                ) : (
-                  <>
-                    <Flame className="h-4 w-4 text-amber-300" />
-                    Queue Simulation
-                  </>
-                )}
-              </Button>
+              {queueError && (
+                <div className="mt-3 rounded-lg border border-red-500/30 bg-red-950/40 p-3 text-xs text-red-300 flex items-center gap-2">
+                  <AlertCircle className="h-4 w-4 text-red-400 shrink-0" />
+                  <span>{queueError}</span>
+                </div>
+              )}
+
+              {lastQueuedJobId && (
+                <div className="mt-3 rounded-lg border border-emerald-500/30 bg-emerald-950/40 p-3 text-xs text-emerald-300 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
+                    <span>Simulation job <strong className="font-mono">{lastQueuedJobId}</strong> dispatched successfully!</span>
+                  </div>
+                  <Link href={`/results?jobId=${lastQueuedJobId}`}>
+                    <Button size="sm" variant="outline" className="h-6 text-[11px] gap-1 text-emerald-300 border-emerald-500/40">
+                      <Eye className="h-3 w-3" />
+                      View Results
+                    </Button>
+                  </Link>
+                </div>
+              )}
             </div>
           </div>
-
-          {queueError && (
-            <div className="mt-3 rounded-lg border border-red-500/30 bg-red-950/40 p-3 text-xs text-red-300 flex items-center gap-2">
-              <AlertCircle className="h-4 w-4 text-red-400 shrink-0" />
-              <span>{queueError}</span>
-            </div>
-          )}
-
-          {lastQueuedJobId && (
-            <div className="mt-3 rounded-lg border border-emerald-500/30 bg-emerald-950/40 p-3 text-xs text-emerald-300 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
-                <span>Simulation job <strong className="font-mono">{lastQueuedJobId}</strong> dispatched successfully!</span>
-              </div>
-              <Link href={`/results?jobId=${lastQueuedJobId}`}>
-                <Button size="sm" variant="outline" className="h-6 text-[11px] gap-1 text-emerald-300 border-emerald-500/40">
-                  <Eye className="h-3 w-3" />
-                  View Results
-                </Button>
-              </Link>
-            </div>
-          )}
-        </div>
       )}
 
       {/* Queue Stat Cards */}

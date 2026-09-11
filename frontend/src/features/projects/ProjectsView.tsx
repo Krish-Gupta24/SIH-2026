@@ -2,220 +2,305 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
-  FolderKanban,
+  ArrowRight,
+  ChevronDown,
+  Copy,
   Plus,
   Search,
-  Wand2,
   Trash2,
-  ExternalLink,
-  Layers,
-  Compass,
-  Box,
-  Thermometer,
 } from "lucide-react";
 import { useShelterStore } from "@/lib/store/use-shelter-store";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import type { ShelterModel } from "@/types/shelter";
+import { ActionButton, DataPair, EmptyState, PageIntro } from "@/components/v0/platform-components";
 
 export function ProjectsView() {
-  const { projects, deleteProject, setActiveProject } = useShelterStore();
-  const [searchTerm, setSearchTerm] = useState("");
-  const [selectedZone, setSelectedZone] = useState<string>("all");
+  const router = useRouter();
+  const {
+    projects,
+    simulations,
+    activeProjectId,
+    setActiveProject,
+    addProject,
+    deleteProject,
+    saveProjectVersion,
+  } = useShelterStore();
 
-  const filteredProjects = projects.filter((p) => {
-    const matchesSearch =
-      (p.project?.name || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (p.project?.description && p.project.description.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      (p.project?.tags && p.project.tags.some((t: string) => t.toLowerCase().includes(searchTerm.toLowerCase())));
+  const [search, setSearch] = useState("");
+  const [sort, setSort] = useState<"name" | "region">("name");
 
-    const matchesZone =
-      selectedZone === "all" ||
-      (selectedZone === "cold" && p.location.climateZone.toLowerCase().includes("cold"));
+  const filteredProjects = [...projects]
+    .filter((project) =>
+      `${project.project.name} ${project.location.region} ${project.project.description || ""}`
+        .toLowerCase()
+        .includes(search.toLowerCase())
+    )
+    .sort((a, b) =>
+      sort === "name"
+        ? a.project.name.localeCompare(b.project.name)
+        : a.location.region.localeCompare(b.location.region)
+    );
 
-    return Boolean(matchesSearch && matchesZone);
-  });
+  const openProject = (id: string) => {
+    setActiveProject(id);
+    router.push("/dashboard");
+  };
+
+  const duplicateProject = (project: ShelterModel) => {
+    const created = saveProjectVersion(
+      project.id,
+      `Copy ${new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "short" })}`,
+      `Working copy of ${project.project.name}`
+    );
+    if (created) {
+      openProject(created.id);
+    }
+  };
+
+  const createProject = () => {
+    const base = projects.find((p) => p.id === activeProjectId) || projects[0];
+    const id = `shelter-${Date.now().toString().slice(-7)}`;
+    const newModel: ShelterModel = base
+      ? JSON.parse(JSON.stringify(base))
+      : {
+          schemaVersion: "1.0.0",
+          id,
+          project: {
+            id,
+            name: "New Alpine Shelter",
+            version: "0.1.0",
+            description: "High-altitude shelter model ready for engineering definition.",
+            createdAt: new Date().toISOString(),
+          },
+          location: {
+            name: "Leh Station",
+            region: "Ladakh",
+            latitude: 34.1526,
+            longitude: 77.5771,
+            elevation: 3500,
+            climateZone: "Extreme Cold Sub-Alpine",
+            weatherSource: "Leh Synthetic Hourly",
+            designTempWinter: -20.5,
+            designTempSummer: 28,
+            annualHeatingDegreeDays: 4850,
+          },
+          geometry: {
+            length: 8,
+            width: 5,
+            height: 3,
+            orientation: 180,
+            roofType: "Flat",
+            roofPitchDeg: 0,
+            groundClearanceM: 0,
+          },
+          envelope: {
+            walls: {
+              north: { id: "w-n", name: "Rammed Earth Wall", layers: [], uValue: 0.28, heatCapacity: 250 },
+              south: { id: "w-s", name: "Rammed Earth Wall", layers: [], uValue: 0.28, heatCapacity: 250 },
+              east: { id: "w-e", name: "Rammed Earth Wall", layers: [], uValue: 0.28, heatCapacity: 250 },
+              west: { id: "w-w", name: "Rammed Earth Wall", layers: [], uValue: 0.28, heatCapacity: 250 },
+            },
+            roof: { id: "r-1", name: "Cold Climate Insulated Roof", layers: [], uValue: 0.16, heatCapacity: 120 },
+            floor: { id: "f-1", name: "Insulated Ground Slab", layers: [], uValue: 0.2, heatCapacity: 200 },
+          },
+          windows: [],
+          doors: [],
+          thermalMass: [],
+          ventilation: {
+            infiltrationACH: 0.25,
+            mechanicalVentilationACH: 0.5,
+            heatRecoveryEfficiency: 0.75,
+          },
+          internalLoads: {
+            occupantsCount: 4,
+            activityLevelW: 120,
+            lightingPowerDensityWPerM2: 5,
+            equipmentPowerDensityWPerM2: 3,
+          },
+          designTargets: {
+            comfortTempMinC: 18,
+            comfortTempMaxC: 24,
+            targetComfortPercent: 85,
+            maxAnnualHeatingDemandKwhM2: 35,
+          },
+        };
+
+    newModel.id = id;
+    newModel.project.id = id;
+    newModel.project.name = "Untitled high-altitude shelter";
+    newModel.project.version = "0.1.0";
+    newModel.project.createdAt = new Date().toISOString();
+
+    addProject(newModel);
+    setActiveProject(id);
+    router.push("/designer");
+  };
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto">
-      {/* Header bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-white flex items-center gap-2.5">
-            <FolderKanban className="h-6 w-6 text-blue-400" />
-            Shelter Projects Repository
-          </h1>
-          <p className="text-xs text-slate-400 mt-1">
-            Parametric cold-climate shelter definitions with multi-layer envelope constructions and EnergyPlus mappings.
-          </p>
-        </div>
+    <div className="space-y-8">
+      <PageIntro
+        eyebrow="Engineering workspace"
+        title="Shelter projects"
+        description="Canonical models, climate context, and simulation history. Continue what needs attention or begin a controlled variant."
+        action={
+          <ActionButton onClick={createProject}>
+            <Plus className="size-4" />
+            New project
+          </ActionButton>
+        }
+      />
 
-        <div className="flex items-center gap-3">
-          <Link href="/projects/new">
-            <Button className="gap-1.5 font-bold shadow-sm">
-              <Plus className="h-4 w-4" />
-              New Shelter
-            </Button>
-          </Link>
-          <Link href="/designer">
-            <Button variant="outline" className="gap-1.5 font-semibold text-blue-400 border-blue-500/30">
-              <Wand2 className="h-4 w-4" />
-              13-Step Wizard
-            </Button>
-          </Link>
-        </div>
-      </div>
-
-      {/* Filters Bar */}
-      <div className="flex flex-col sm:flex-row items-center gap-3">
-        <div className="relative flex-1 w-full">
-          <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
-          <Input
-            placeholder="Search by shelter title, climate, or engineering tags..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-9 bg-slate-900 border-slate-800"
+      {/* Search & Sort bar */}
+      <div className="project-controls grid gap-3 md:grid-cols-[1fr_auto]">
+        <label className="flex min-h-12 items-center gap-3 rounded-2xl border border-border bg-card px-4 shadow-[0_10px_30px_rgba(0,0,0,.04)] transition-shadow focus-within:shadow-[0_14px_38px_rgba(0,0,0,.08)]">
+          <Search className="size-4 text-muted-foreground" />
+          <span className="sr-only">Search projects</span>
+          <input
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            placeholder="Search project, description, or region"
+            className="w-full bg-transparent py-3 text-sm outline-none placeholder:text-muted-foreground"
           />
-        </div>
-
-        <div className="flex items-center gap-2 w-full sm:w-auto">
-          <Button
-            variant={selectedZone === "all" ? "default" : "outline"}
-            size="sm"
-            onClick={() => setSelectedZone("all")}
+        </label>
+        <label className="flex min-h-12 items-center gap-3 rounded-2xl border border-border bg-card px-4 text-xs shadow-[0_10px_30px_rgba(0,0,0,.04)]">
+          <span className="text-muted-foreground">Sort by</span>
+          <select
+            value={sort}
+            onChange={(event) => setSort(event.target.value as "name" | "region")}
+            className="bg-transparent font-semibold outline-none cursor-pointer"
           >
-            All Climates
-          </Button>
-          <Button
-            variant={selectedZone === "cold" ? "default" : "outline"}
-            size="sm"
-            onClick={() => setSelectedZone("cold")}
-          >
-            Extreme Cold / Alpine
-          </Button>
-        </div>
+            <option value="name">Name</option>
+            <option value="region">Region</option>
+          </select>
+          <ChevronDown className="size-4 text-muted-foreground" />
+        </label>
       </div>
 
-      {/* Project Cards Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredProjects.map((p) => {
-          const windowCount = p.windows ? p.windows.length : 0;
-          const doorCount = p.doors ? p.doors.length : 0;
-          const ach = p.ventilation ? p.ventilation.infiltrationACH : 0.5;
+      {/* Projects Grid */}
+      {filteredProjects.length > 0 ? (
+        <div className="project-grid grid gap-6 lg:grid-cols-2">
+          {filteredProjects.map((project, index) => {
+            const run = simulations.find(
+              (item) =>
+                item.projectId === project.id &&
+                item.status === "completed" &&
+                item.results
+            );
+            const updated = project.project.updatedAt || project.project.createdAt;
+            const isActive = project.id === activeProjectId;
 
-          return (
-            <Card
-              key={p.id}
-              className="border-slate-800 bg-slate-900/60 hover:border-slate-700 transition flex flex-col justify-between"
-            >
-              <CardHeader className="pb-3">
-                <div className="flex items-start justify-between gap-2">
-                  <div>
-                    <CardTitle className="text-base font-bold text-white hover:text-blue-400 transition">
-                      <Link href={`/projects/${p.id}`}>{p.project?.name || p.id}</Link>
-                    </CardTitle>
-                    <div className="flex items-center gap-1.5 mt-1 text-[11px] text-slate-400">
-                      <Compass className="h-3 w-3 text-blue-400" />
-                      <span>{p.location.region}</span>
-                      <span>•</span>
-                      <span className="font-mono text-emerald-400">{p.location.elevation}m</span>
-                    </div>
-                  </div>
-                  <Badge variant="cold" className="text-[10px]">
-                    v{p.project?.version || "1.0"}
-                  </Badge>
-                </div>
-
-                <p className="text-xs text-slate-400 line-clamp-2 mt-2">
-                  {p.project?.description || "No description provided."}
-                </p>
-
-                {p.project?.tags && p.project.tags.length > 0 && (
-                  <div className="flex flex-wrap gap-1 mt-2.5">
-                    {p.project.tags.map((tag: string) => (
-                      <span
-                        key={tag}
-                        className="rounded bg-slate-800 px-1.5 py-0.5 text-[10px] font-medium text-slate-300"
-                      >
-                        {tag}
-                      </span>
-                    ))}
-                  </div>
-                )}
-              </CardHeader>
-
-              <CardContent className="pt-0 space-y-4">
-                {/* Physical Metrics */}
-                <div className="grid grid-cols-3 gap-2 rounded-lg bg-slate-950/70 p-2.5 text-center text-xs">
-                  <div>
-                    <div className="text-[10px] text-slate-500 font-semibold uppercase">Area</div>
-                    <div className="font-mono font-bold text-slate-200">
-                      {(p.geometry.length * p.geometry.width).toFixed(1)} m²
-                    </div>
-                  </div>
-                  <div>
-                    <div className="text-[10px] text-slate-500 font-semibold uppercase">Volume</div>
-                    <div className="font-mono font-bold text-slate-200">
-                      {(p.geometry.length * p.geometry.width * p.geometry.height).toFixed(1)} m³
-                    </div>
-                  </div>
-                  <div>
-                    <div className="text-[10px] text-slate-500 font-semibold uppercase">U-Value</div>
-                    <div className="font-mono font-bold text-blue-400">
-                      0.24
-                    </div>
-                  </div>
-                </div>
-
-                {/* Construction details summary */}
-                <div className="space-y-1.5 text-[11px] text-slate-400">
-                  <div className="flex justify-between">
-                    <span>Envelope Openings:</span>
-                    <span className="font-medium text-slate-200">
-                      {windowCount} Windows, {doorCount} Door
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Air Tightness:</span>
-                    <span className="font-medium text-slate-200">{ach} ACH</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>South Passive Glazing:</span>
-                    <span className="font-medium text-emerald-400">
-                      {windowCount > 0 ? "Integrated (Low-E)" : "None"}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Actions */}
-                <div className="flex items-center justify-between pt-3 border-t border-slate-800/80">
-                  <Link
-                    href={`/projects/${p.id}`}
-                    onClick={() => setActiveProject(p.id)}
-                    className="text-xs font-bold text-blue-400 hover:text-blue-300 flex items-center gap-1"
-                  >
-                    Inspect Layers
-                    <ExternalLink className="h-3 w-3" />
-                  </Link>
-
-                  <div className="flex items-center gap-1">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => deleteProject(p.id)}
-                      className="text-red-400 hover:text-red-300 hover:bg-red-950/40 p-1.5 h-7 w-7"
+            return (
+              <article
+                key={project.id}
+                className={`project-card group flex min-h-[320px] flex-col rounded-2xl border bg-card p-7 sm:p-9 shadow-[0_10px_30px_rgba(0,0,0,.03)] transition-all hover:-translate-y-1 hover:border-[#6E818F] hover:shadow-[0_18px_45px_rgba(0,0,0,.08)] ${
+                  isActive ? "border-foreground" : "border-border"
+                }`}
+              >
+                <div className="flex items-start justify-between">
+                  <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-muted-foreground">
+                    0{index + 1} · {project.location.region} {isActive ? "· Active" : ""}
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => duplicateProject(project)}
+                      className="flex size-9 items-center justify-center rounded-full border border-border opacity-70 transition-all hover:opacity-100 hover:bg-secondary"
+                      aria-label={`Duplicate ${project.project.name}`}
+                      title="Duplicate project"
                     >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </Button>
+                      <Copy className="size-3.5" />
+                    </button>
+                    {projects.length > 1 && (
+                      <button
+                        onClick={() => {
+                          if (confirm(`Delete project "${project.project.name}"?`)) {
+                            deleteProject(project.id);
+                          }
+                        }}
+                        className="flex size-9 items-center justify-center rounded-full border border-border text-red-500 opacity-50 transition-all hover:opacity-100 hover:bg-red-50"
+                        aria-label={`Delete ${project.project.name}`}
+                        title="Delete project"
+                      >
+                        <Trash2 className="size-3.5" />
+                      </button>
+                    )}
                   </div>
                 </div>
-              </CardContent>
-            </Card>
-          );
-        })}
-      </div>
+
+                <button
+                  onClick={() => openProject(project.id)}
+                  className="mt-8 block text-left"
+                >
+                  <h2 className="max-w-lg text-2xl font-medium tracking-[-0.04em] sm:text-3xl">
+                    {project.project.name}
+                  </h2>
+                  <p className="mt-3 max-w-xl text-sm leading-6 text-muted-foreground">
+                    {project.project.description || "Canonical shelter definition ready for thermal simulation."}
+                  </p>
+                </button>
+
+                <dl className="mt-auto grid grid-cols-3 border-t border-border pt-6">
+                  <DataPair
+                    label="Elevation"
+                    value={`${project.location.elevation.toLocaleString()} m`}
+                  />
+                  <DataPair
+                    label="Demand"
+                    value={
+                      run?.results
+                        ? `${run.results.summary.heatingDemandKwhM2} kWh/m²`
+                        : "Pending"
+                    }
+                  />
+                  <DataPair
+                    label="Updated"
+                    value={updated ? new Date(updated).toLocaleDateString() : "—"}
+                  />
+                </dl>
+
+                <div className="mt-6 flex items-center justify-between border-t border-border/50 pt-4">
+                  <button
+                    onClick={() => openProject(project.id)}
+                    className="flex items-center gap-2 text-xs font-semibold hover:text-[#6E818F]"
+                  >
+                    Open project
+                    <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" />
+                  </button>
+
+                  <div className="flex gap-2">
+                    <Link
+                      href="/designer"
+                      onClick={() => setActiveProject(project.id)}
+                      className="text-[11px] font-semibold text-muted-foreground hover:text-foreground"
+                    >
+                      Wizard
+                    </Link>
+                    <span className="text-border">·</span>
+                    <Link
+                      href="/designer/3d"
+                      onClick={() => setActiveProject(project.id)}
+                      className="text-[11px] font-semibold text-muted-foreground hover:text-foreground"
+                    >
+                      3D CAD
+                    </Link>
+                  </div>
+                </div>
+              </article>
+            );
+          })}
+        </div>
+      ) : (
+        <EmptyState
+          title="No projects match your search"
+          description="Try changing your search terms or create a new shelter definition."
+          action={
+            <ActionButton onClick={createProject}>
+              <Plus className="size-4" />
+              Create new project
+            </ActionButton>
+          }
+        />
+      )}
     </div>
   );
 }

@@ -6,9 +6,10 @@ interface DialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   children: React.ReactNode;
+  contentClassName?: string;
 }
 
-export function Dialog({ open, onOpenChange, children }: DialogProps) {
+export function Dialog({ open, onOpenChange, children, contentClassName }: DialogProps) {
   if (!open) return null;
 
   return (
@@ -19,12 +20,12 @@ export function Dialog({ open, onOpenChange, children }: DialogProps) {
         onClick={() => onOpenChange(false)}
       />
       {/* Content Container */}
-      <div className="relative z-50 w-full max-w-lg rounded-xl border border-slate-200 bg-white p-6 shadow-2xl animate-in zoom-in-95 dark:border-slate-800 dark:bg-slate-900 sm:rounded-2xl">
+      <div className={cn("relative z-50 w-full max-w-lg rounded-2xl border border-[#CBDCE6] bg-white p-6 shadow-2xl animate-in zoom-in-95 text-black", contentClassName)}>
         {children}
         <button
           type="button"
           onClick={() => onOpenChange(false)}
-          className="absolute right-4 top-4 rounded-md p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+          className="absolute right-4 top-4 rounded-md p-1 text-[#6E818F] hover:text-black transition-colors"
         >
           <X className="h-4 w-4" />
         </button>

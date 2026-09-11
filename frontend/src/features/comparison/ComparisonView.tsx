@@ -4,7 +4,7 @@ import React, { useState, useMemo } from "react";
 import Link from "next/link";
 import {
   GitCompare,
-  Plus,
+  Check,
   RotateCcw,
   Sparkles,
   Layers,
@@ -17,6 +17,13 @@ import {
 import { useShelterStore } from "@/lib/store/use-shelter-store";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import {
+  ActionButton,
+  DataPair,
+  EmptyState,
+  PageIntro,
+  Status,
+} from "@/components/v0/platform-components";
 import { ComparisonObjectiveId } from "./types";
 import {
   evaluateObjectiveWinner,
@@ -94,59 +101,48 @@ export function ComparisonView() {
   }
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto pb-12">
-      {/* 1. Top Header & Global Actions */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-bold tracking-tight text-white flex items-center gap-2.5">
-              <GitCompare className="h-6 w-6 text-sky-400" />
-              <span>Multi-Design Comparison & Decision Engine</span>
-            </h1>
-            <Badge variant="outline" className="text-sky-400 border-sky-800/60 bg-sky-950/40 text-xs">
-              {comparedJobs.length} Designs Active
-            </Badge>
+    <div className="space-y-8 max-w-7xl mx-auto pb-12">
+      {/* V0 Page Intro */}
+      <PageIntro
+        eyebrow="Stored completed runs"
+        title="Compare outcomes"
+        description="Select up to three cases. Values come directly from stored simulation outputs with delta analysis."
+        action={
+          <div className="flex flex-wrap items-center gap-3">
+            <ActionButton
+              tone="primary"
+              onClick={() => setIsSaveModalOpen(true)}
+              className="rounded-full text-xs font-bold"
+            >
+              <Copy className="size-3.5" />
+              Save New Version
+            </ActionButton>
+
+            <ActionButton
+              tone="quiet"
+              onClick={clearComparison}
+              className="rounded-full text-xs font-semibold"
+            >
+              <RotateCcw className="size-3.5" />
+              Reset
+            </ActionButton>
           </div>
-          <p className="text-xs text-slate-400 mt-1">
-            Side-by-side engineering evaluation, difference percentages ($\Delta\%$), and objective-constrained winner determination.
-          </p>
-        </div>
+        }
+      />
 
-        <div className="flex flex-wrap items-center gap-2.5">
-          <Button
-            size="sm"
-            onClick={() => setIsSaveModalOpen(true)}
-            className="gap-1.5 text-xs bg-sky-600 hover:bg-sky-500 text-white font-bold shadow-sm"
-          >
-            <Copy className="h-3.5 w-3.5" />
-            <span>Save New Version</span>
-          </Button>
-
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={clearComparison}
-            className="gap-1 text-xs border-slate-700 bg-slate-800 text-slate-300 hover:text-white"
-          >
-            <RotateCcw className="h-3 w-3" />
-            <span>Reset</span>
-          </Button>
-        </div>
-      </div>
-
-      {/* 2. Candidate Selection Bar */}
-      <div className="rounded-xl border border-slate-800 bg-slate-900/80 p-3.5 backdrop-blur-sm space-y-2">
-        <div className="flex items-center justify-between text-xs">
-          <span className="font-bold text-slate-300 uppercase tracking-wider text-[11px]">
-            Select Designs to Compare ({comparedJobs.length} of {completedJobs.length} selected):
+      {/* V0 Candidate Selection Cards Grid */}
+      <div>
+        <div className="mb-3 flex items-center justify-between text-xs">
+          <span className="micro-label">
+            Select Cases to Compare ({comparedJobs.length} of {completedJobs.length} active)
           </span>
-          <span className="text-[11px] text-slate-500 font-mono">
+          <span className="text-[11px] text-muted-foreground">
             First selected serves as Baseline reference
           </span>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
-          {completedJobs.map((job, idx) => {
+        <div className="comparison-grid grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {completedJobs.map((job) => {
             const isSelected = comparisonJobIds.includes(job.id);
             const isBaseline = comparedJobs[0]?.id === job.id;
 
@@ -154,23 +150,38 @@ export function ComparisonView() {
               <button
                 key={job.id}
                 onClick={() => toggleComparisonJobId(job.id)}
-                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs font-semibold transition-all ${
+                className={`comparison-card flex min-h-32 flex-col justify-between rounded-2xl border p-5 text-left transition-all ${
                   isSelected
-                    ? "bg-sky-500/15 border-sky-500/50 text-sky-200 shadow-sm"
-                    : "bg-slate-950/60 border-slate-800/80 text-slate-400 hover:text-slate-200 hover:bg-slate-800"
+                    ? "border-[#6E818F] bg-[#CBDCE6] shadow-[0_15px_35px_rgba(0,0,0,.08)] text-black"
+                    : "border-border bg-card hover:-translate-y-0.5 hover:border-[#6E818F]"
                 }`}
               >
-                {isSelected ? (
-                  <CheckSquare className="h-3.5 w-3.5 text-sky-400" />
-                ) : (
-                  <Square className="h-3.5 w-3.5 text-slate-600" />
-                )}
-                <span>{job.projectName}</span>
-                {isBaseline && (
-                  <Badge variant="outline" className="text-[9px] py-0 px-1 font-mono text-emerald-400 border-emerald-500/40 bg-emerald-950/40">
-                    Baseline
-                  </Badge>
-                )}
+                <div className="flex items-start justify-between w-full">
+                  <div>
+                    <span className="block text-sm font-semibold">{job.projectName}</span>
+                    <span className="mt-1 block text-[10px] text-muted-foreground">
+                      {job.id} · {job.weatherDatasetName}
+                    </span>
+                  </div>
+                  <span
+                    className={`flex size-5 shrink-0 items-center justify-center rounded border ${
+                      isSelected ? "border-black bg-black text-white" : "border-black/20 bg-card"
+                    }`}
+                  >
+                    {isSelected ? <Check className="size-3" /> : null}
+                  </span>
+                </div>
+
+                <div className="mt-4 flex items-center justify-between border-t border-black/10 pt-2 text-[10px]">
+                  <span>Demand: <strong>{job.results?.summary.heatingDemandKwhM2 ?? "—"} kWh/m²</strong></span>
+                  {isBaseline ? (
+                    <span className="rounded-full bg-black px-2 py-0.5 font-bold uppercase tracking-wider text-white text-[9px]">
+                      Baseline
+                    </span>
+                  ) : (
+                    <span>Comfort: <strong>{job.results?.summary.comfortHoursPct ?? "—"}%</strong></span>
+                  )}
+                </div>
               </button>
             );
           })}

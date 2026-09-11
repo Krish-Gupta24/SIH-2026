@@ -28,6 +28,12 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import {
+  ActionButton,
+  BrandMark,
+  DataPair,
+  PageIntro,
+} from "@/components/v0/platform-components";
 
 export function ReportsView() {
   const { projects, activeProjectId, simulations, weatherDatasets, activeWeatherId } = useShelterStore();
@@ -48,7 +54,8 @@ export function ReportsView() {
   const floorArea = (geom.length * geom.width).toFixed(1);
   const volume = (geom.length * geom.width * geom.height).toFixed(1);
   
-  const wallLayers = (activeProject?.envelope?.walls?.south?.layers || activeProject?.envelope?.walls?.north?.layers || []) as any[];
+  const wallAssembly = activeProject?.envelope?.walls?.south || activeProject?.envelope?.walls?.north;
+  const wallLayers = wallAssembly?.layers || [];
   const rSum = wallLayers.reduce((acc: number, l: any) => acc + (l.thickness / (l.conductivity || 0.04)), 0) + 0.17;
   const uVal = rSum > 0.17 ? Number((1 / rSum).toFixed(2)) : null;
   const isECBCCompliant = uVal !== null ? uVal <= 0.30 : false;
@@ -237,81 +244,64 @@ export function ReportsView() {
 
   return (
     <div className="space-y-8 max-w-6xl mx-auto print:p-0 print:m-0 pb-16">
-      {/* Top Action Bar (hidden when printing) */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 print:hidden">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-white flex items-center gap-2.5">
-            <FileCheck2 className="h-6 w-6 text-emerald-400" />
-            Comprehensive 24-Section Engineering Report
-          </h1>
-          <p className="text-xs text-slate-400 mt-1">
-            Complete building physics specification, simulation results, optimization provenance, and compliance audit.
-          </p>
-        </div>
+      {/* V0 Page Intro */}
+      <PageIntro
+        eyebrow="24-Section Engineering Record · SIH 2026 PS 26051"
+        title="Compliance & thermal assessment report"
+        description="Complete building physics specification, simulation results, optimization provenance, and standards verification."
+        action={
+          <div className="flex flex-wrap items-center gap-2.5 print:hidden">
+            <ActionButton
+              tone="primary"
+              onClick={handleExportPdf}
+              disabled={downloadingFormat === "pdf"}
+              className="rounded-full text-xs font-bold"
+            >
+              <Download className="size-3.5" />
+              <span>{downloadingFormat === "pdf" ? "Compiling..." : "Print / PDF (24 Sec)"}</span>
+            </ActionButton>
 
-        <div className="flex flex-wrap items-center gap-2.5">
-          <Button
-            onClick={handleExportPdf}
-            disabled={downloadingFormat === "pdf"}
-            className="gap-1.5 font-bold text-xs bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white shadow-md"
-          >
-            <Download className="h-3.5 w-3.5" />
-            <span>{downloadingFormat === "pdf" ? "Compiling..." : "Download PDF (24 Sec)"}</span>
-          </Button>
+            <ActionButton
+              tone="secondary"
+              onClick={handleExportJson}
+              className="rounded-full text-xs font-semibold"
+            >
+              <FileText className="size-3.5" />
+              <span>Export JSON</span>
+            </ActionButton>
 
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleExportCsv}
-            className="gap-1.5 text-xs border-slate-700 bg-slate-800 hover:bg-slate-700 text-slate-200"
-          >
-            <FileSpreadsheet className="h-3.5 w-3.5 text-sky-400" />
-            <span>Export CSV</span>
-          </Button>
+            <ActionButton
+              tone="secondary"
+              onClick={handleExportCsv}
+              className="rounded-full text-xs font-semibold"
+            >
+              <FileSpreadsheet className="size-3.5" />
+              <span>Export CSV</span>
+            </ActionButton>
+          </div>
+        }
+      />
 
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleExportJson}
-            className="gap-1.5 text-xs border-slate-700 bg-slate-800 hover:bg-slate-700 text-slate-200"
-          >
-            <FileText className="h-3.5 w-3.5 text-amber-400" />
-            <span>Export JSON</span>
-          </Button>
-
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handlePrint}
-            className="gap-1.5 text-xs border-slate-700 bg-slate-800 hover:bg-slate-700 text-slate-200"
-          >
-            <Printer className="h-3.5 w-3.5" />
-            <span>Print</span>
-          </Button>
-        </div>
-      </div>
-
-      {/* Main Printable Document Sheet */}
-      <div className="rounded-2xl border border-slate-800 bg-slate-900/90 p-8 shadow-2xl space-y-6 print:border-none print:bg-white print:text-black print:p-2 backdrop-blur-sm">
+      {/* Main Printable Document Sheet (Editorial Canvas) */}
+      <div className="report-canvas rounded-[2rem] border border-border bg-card p-8 sm:p-12 shadow-[0_28px_90px_rgba(0,0,0,.06)] space-y-8 text-foreground print:border-none print:bg-white print:text-black print:p-2 print:shadow-none print:rounded-none">
         {/* Document Header */}
-        <div className="flex flex-col sm:flex-row sm:items-start justify-between border-b border-slate-800 pb-6 print:border-slate-300 gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-start justify-between border-b-2 border-black pb-8 print:border-slate-300 gap-6">
           <div>
-            <div className="inline-flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-xs font-bold text-emerald-400 print:text-emerald-700">
-              <ShieldCheck className="h-3.5 w-3.5" />
-              <span>SIH 2026 Problem Statement 26051 Certified</span>
-            </div>
-            <h2 className="text-xl font-black text-white mt-2 print:text-black tracking-tight">
-              Comprehensive High-Altitude Shelter Thermal Assessment
+            <BrandMark />
+            <p className="mt-8 micro-label">Engineering record · Certified</p>
+            <h2 className="font-editorial text-3xl sm:text-4xl font-medium tracking-tight mt-3 text-foreground print:text-black">
+              {activeProject.project?.name || "High-Altitude Shelter"}
             </h2>
-            <p className="text-xs text-slate-400 print:text-slate-600 mt-1 font-mono">
-              Document Ref: ST-26051-{activeProject.id.toUpperCase()}-VERIFIED
+            <p className="text-xs text-muted-foreground print:text-slate-600 mt-2">
+              {activeProject.project?.description || "High-altitude shelter thermal design specification."}
             </p>
           </div>
 
-          <div className="text-right text-xs text-slate-400 print:text-slate-600 space-y-1 font-mono">
+          <div className="text-right text-xs leading-6 text-muted-foreground print:text-slate-600 font-mono">
+            <div>ID: {activeProject.id}</div>
+            <div>Schema: {activeProject.schemaVersion}</div>
             <div>Date: {new Date().toLocaleDateString()}</div>
-            <div>Location: {loc.region}</div>
-            <div>Elevation: {loc.elevation}m ASL</div>
+            <div>Location: {loc.region} ({loc.elevation}m)</div>
           </div>
         </div>
 
@@ -430,7 +420,7 @@ export function ReportsView() {
             {/* 11. Thermal Mass */}
             <div className="rounded-lg border border-slate-800 bg-slate-950/60 p-3 print:bg-slate-50 space-y-1">
               <span className="text-[10px] font-bold text-rose-400 print:text-rose-700 uppercase">11. Thermal Mass</span>
-              <div className="font-bold text-white print:text-black">{(activeProject.thermalMass as any)?.[0]?.name || "High-Mass Construction"}</div>
+              <div className="font-bold text-white print:text-black">{activeProject.thermalMass?.[0]?.name || activeProject.thermalMass?.[0]?.materialId || "High-Mass Construction"}</div>
               <div className="text-[11px] text-slate-400 print:text-slate-600">
                 {completedSim?.results?.summary?.diurnalSwingDampingPct !== undefined
                   ? `${completedSim.results.summary.diurnalSwingDampingPct}% Diurnal Damping Ratio`

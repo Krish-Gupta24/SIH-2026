@@ -1,14 +1,16 @@
-export type SelectedElementType = "wall" | "roof" | "floor" | "window" | "door";
+export type WallOrientation = "north" | "south" | "east" | "west";
+export type VisualizationMode = "model" | "thermal" | "solar" | "heat-flow";
+export type CameraPreset = "iso" | "top" | "south" | "north" | "east" | "west";
 
 export type SelectedElement =
-  | { type: "wall"; orientation: "north" | "south" | "east" | "west" }
+  | { type: "shelter" }
+  | { type: "wall"; orientation: WallOrientation }
   | { type: "roof" }
   | { type: "floor" }
   | { type: "window"; id: string }
   | { type: "door"; id: string }
+  | { type: "thermalMass"; id: string }
   | null;
-
-export type CameraPreset = "iso" | "top" | "south" | "north" | "east" | "west";
 
 export interface ViewerSettings {
   showGrid: boolean;
@@ -17,4 +19,6 @@ export interface ViewerSettings {
   showSunShadows: boolean;
   wireframe: boolean;
   transparentWalls: boolean;
+  revealLayers: boolean;
+  visualization: VisualizationMode;
 }

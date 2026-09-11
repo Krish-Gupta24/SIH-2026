@@ -2,260 +2,230 @@
 
 import React from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
-  ThermometerSnowflake,
-  FolderKanban,
+  ArrowRight,
+  Box,
+  CloudSun,
   Cpu,
   Layers,
-  CloudSun,
-  ArrowRight,
   Wand2,
-  TrendingDown,
-  ShieldCheck,
-  Zap,
-  Activity,
-  Compass,
-  Sparkles,
 } from "lucide-react";
 import { useShelterStore } from "@/lib/store/use-shelter-store";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import {
+  DataPair,
+  IndoorTemperatureChart,
+  NextStep,
+  PageIntro,
+  ShelterScene,
+  Status,
+} from "@/components/v0/platform-components";
 
 export function DashboardView() {
-  const { projects, simulations, weatherDatasets, setActiveProject } = useShelterStore();
+  const router = useRouter();
+  const {
+    projects,
+    activeProjectId,
+    weatherDatasets,
+    activeWeatherId,
+    simulations,
+  } = useShelterStore();
 
-  const totalShelters = projects.length;
-  const completedSims = simulations.filter((s) => s.status === "completed").length;
-  const activeJobs = simulations.filter(
-    (s) => s.status === "running" || s.status === "queued" || s.status === "preparing"
-  ).length;
+  const activeProject =
+    projects.find((p) => p.id === activeProjectId) || projects[0];
+  const activeWeather =
+    weatherDatasets.find((w) => w.id === activeWeatherId) || weatherDatasets[0];
 
-  const simulationJobs = simulations;
-
-  const completedWithSummary = simulationJobs.filter(
-    (j) => j.status === "completed" && j.results?.summary
+  const projectRuns = simulations.filter(
+    (s) => s.projectId === activeProject?.id
   );
+  const latestRun =
+    projectRuns.find((s) => s.status === "completed" && s.results) ||
+    simulations.find((s) => s.status === "completed" && s.results);
+  const summary = latestRun?.results?.summary;
 
-  const avgDamping =
-    completedWithSummary.length > 0
-      ? Math.round(
-          completedWithSummary.reduce(
-            (acc, j) => acc + (j.results?.summary?.diurnalSwingDampingPct ?? 0),
-            0
-          ) / completedWithSummary.length
-        )
-      : null;
+  if (!activeProject) {
+    return (
+      <div className="py-12 text-center">
+        <p className="text-muted-foreground">No active shelter project found.</p>
+        <Link href="/projects" className="mt-4 inline-block font-semibold underline">
+          Go to projects
+        </Link>
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-8 max-w-7xl mx-auto">
-      {/* Welcome Banner */}
-      <div className="relative overflow-hidden rounded-2xl border border-slate-800 bg-gradient-to-r from-blue-950/60 via-slate-900 to-indigo-950/40 p-6 sm:p-8">
-        <div className="relative z-10 flex flex-col md:flex-row md:items-center md:justify-between gap-6">
-          <div className="space-y-2 max-w-2xl">
-            <div className="inline-flex items-center gap-2 rounded-full border border-blue-500/20 bg-blue-500/10 px-3 py-1 text-xs font-semibold text-blue-400">
-              <ShieldCheck className="h-3.5 w-3.5" />
-              <span>Smart India Hackathon 2026 • Problem 26051</span>
+    <div className="space-y-10">
+      <PageIntro
+        eyebrow={`Project ${activeProject.project.version} · DRDO PS 26051`}
+        title="Engineering overview"
+        description="Canonical model readiness, climate context, latest thermal performance, and traceable validation sequence."
+      />
+
+      {/* Main Feature Grid: 3D Scene + Immediate Judgment */}
+      <div className="workspace-feature-grid grid gap-6 lg:grid-cols-[1.15fr_.85fr]">
+        <div className="relative min-h-[480px] overflow-hidden rounded-[2rem] bg-[#CBDCE6] shadow-[0_24px_70px_rgba(0,0,0,.08)]">
+          <ShelterScene project={activeProject} wireframe={false} />
+          <div className="absolute left-5 top-5 rounded-full bg-white/90 px-4 py-2 backdrop-blur">
+            <Status strong>Model ready</Status>
+          </div>
+          <div className="absolute bottom-5 right-5">
+            <Link
+              href="/designer/3d"
+              className="inline-flex items-center gap-2 rounded-full border border-black/20 bg-white/90 px-4 py-2 text-xs font-semibold text-black backdrop-blur hover:bg-white transition-colors"
+            >
+              <Box className="size-3.5" />
+              Open 3D CAD
+            </Link>
+          </div>
+        </div>
+
+        <div className="workspace-panel flex flex-col justify-between rounded-[2rem] border border-border bg-card p-7 sm:p-9 shadow-[0_20px_55px_rgba(0,0,0,.04)]">
+          <div>
+            <p className="micro-label">Immediate judgment</p>
+            <h2 className="mt-4 font-editorial text-3xl font-medium tracking-[-0.04em] sm:text-4xl">
+              {summary
+                ? summary.comfortHoursPct >= 80
+                  ? "Promising winter thermal response."
+                  : "Comfort target requires envelope tuning."
+                : "Ready for EnergyPlus validation."}
+            </h2>
+            <p className="mt-4 text-sm leading-6 text-[#536772]">
+              {summary
+                ? `Latest case achieves ${summary.comfortHoursPct}% comfort hours with ${summary.heatingDemandKwhM2} kWh/m² heating demand.`
+                : "Run a simulation against Ladakh winter design conditions to establish the first baseline."}
+            </p>
+
+            <dl className="mt-8 grid grid-cols-2 gap-6 border-t border-border pt-6">
+              <DataPair
+                label="Winter design"
+                value={`${activeProject.location.designTempWinter ?? -20.5} °C`}
+              />
+              <DataPair
+                label="Floor area"
+                value={`${(activeProject.geometry.length * activeProject.geometry.width).toFixed(1)} m²`}
+              />
+              <DataPair
+                label="Geometry"
+                value={`${activeProject.geometry.length} × ${activeProject.geometry.width} × ${activeProject.geometry.height} m`}
+              />
+              <DataPair
+                label="Weather"
+                value={activeWeather?.name || "Leh, Ladakh (WMO 427053)"}
+              />
+              <DataPair
+                label="Openings"
+                value={`${activeProject.windows.length} windows · ${activeProject.doors.length} doors`}
+              />
+              <DataPair
+                label="Infiltration"
+                value={`${activeProject.ventilation.infiltrationACH} ACH`}
+              />
+            </dl>
+          </div>
+
+          <div className="mt-8">
+            <NextStep
+              label={latestRun ? "Refine canonical model" : "Prepare first run"}
+              detail={
+                latestRun
+                  ? "Adjust envelope insulation and solar aperture in Designer"
+                  : "Confirm weather provenance and dispatch EnergyPlus"
+              }
+              onClick={() => router.push(latestRun ? "/designer" : "/simulations")}
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Latest Time-series response */}
+      {summary && latestRun && (
+        <div className="rounded-[2rem] border border-border bg-[#CBDCE6]/50 p-6 sm:p-9">
+          <div className="mb-6 flex items-end justify-between">
+            <div>
+              <p className="micro-label">Hourly response</p>
+              <h2 className="text-xl font-medium">Indoor temperature curve</h2>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white">
-              Area-Specific High-Altitude Shelter Thermal Platform
-            </h1>
-            <p className="text-sm text-slate-400">
-              Parametric envelope design, local rammed-earth & mass thermal inertia, sub-zero winter comfort simulation, and EnergyPlus integration engineered for Leh, Ladakh, Kargil, and Dras.
+            <span className="micro-label">Run {latestRun.id}</span>
+          </div>
+          <IndoorTemperatureChart run={latestRun} compact />
+        </div>
+      )}
+
+      {/* Quick Launch Cards */}
+      <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+        <Link
+          href="/designer"
+          className="group flex flex-col justify-between rounded-2xl border border-border bg-card p-6 shadow-[0_10px_30px_rgba(0,0,0,.03)] transition-all hover:-translate-y-1 hover:border-[#6E818F]"
+        >
+          <div>
+            <span className="flex size-10 items-center justify-center rounded-xl bg-secondary">
+              <Wand2 className="size-5 text-foreground" />
+            </span>
+            <h3 className="mt-4 text-base font-semibold">13-Step Designer</h3>
+            <p className="mt-1 text-xs leading-5 text-muted-foreground">
+              Guided sequence for geometry, walls, roof, mass, and targets.
             </p>
           </div>
+          <span className="mt-5 inline-flex items-center gap-1.5 text-xs font-semibold text-foreground">
+            Launch wizard <ArrowRight className="size-3.5 transition-transform group-hover:translate-x-1" />
+          </span>
+        </Link>
 
-          <div className="flex flex-wrap items-center gap-3">
-            <Link href="/demo">
-              <Button size="lg" className="gap-2 font-black bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-600 hover:from-emerald-500 hover:to-teal-500 text-white shadow-lg shadow-emerald-600/30">
-                <Sparkles className="h-4 w-4" />
-                SIH Judge Demo (20 Steps)
-              </Button>
-            </Link>
-            <Link href="/designer">
-              <Button size="lg" variant="outline" className="gap-2 font-bold border-blue-500/40 hover:bg-blue-500/10 text-white">
-                <Wand2 className="h-4 w-4 text-blue-400" />
-                13-Step Designer
-              </Button>
-            </Link>
-            <Link href="/simulations">
-              <Button variant="outline" size="lg" className="gap-2 font-semibold">
-                <Cpu className="h-4 w-4 text-blue-400" />
-                View Queue ({activeJobs})
-              </Button>
-            </Link>
+        <Link
+          href="/weather"
+          className="group flex flex-col justify-between rounded-2xl border border-border bg-card p-6 shadow-[0_10px_30px_rgba(0,0,0,.03)] transition-all hover:-translate-y-1 hover:border-[#6E818F]"
+        >
+          <div>
+            <span className="flex size-10 items-center justify-center rounded-xl bg-secondary">
+              <CloudSun className="size-5 text-foreground" />
+            </span>
+            <h3 className="mt-4 text-base font-semibold">Weather Intelligence</h3>
+            <p className="mt-1 text-xs leading-5 text-muted-foreground">
+              NASA POWER and authentic Leh EPW climate files with full provenance.
+            </p>
           </div>
-        </div>
-      </div>
+          <span className="mt-5 inline-flex items-center gap-1.5 text-xs font-semibold text-foreground">
+            View climate <ArrowRight className="size-3.5 transition-transform group-hover:translate-x-1" />
+          </span>
+        </Link>
 
-      {/* 4 Primary Top-Level Metric Cards */}
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <Card className="border-slate-800 bg-slate-900/60">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
-              Modeled Shelters
-            </CardTitle>
-            <FolderKanban className="h-4 w-4 text-blue-400" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-white">{totalShelters}</div>
-            <p className="mt-1 text-xs text-slate-500">Alpine & high-altitude models</p>
-          </CardContent>
-        </Card>
-
-        <Card className="border-slate-800 bg-slate-900/60">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
-              Avg. Envelope U-Value
-            </CardTitle>
-            <TrendingDown className="h-4 w-4 text-emerald-400" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-xl font-bold text-slate-300">
-              {completedWithSummary.length > 0 ? "Metric unavailable from this simulation" : "Pending simulation"}
-            </div>
-            <p className="mt-1 text-xs text-slate-500">ECBC Cold Zone requirement (≤ 0.30)</p>
-          </CardContent>
-        </Card>
-
-        <Card className="border-slate-800 bg-slate-900/60">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
-              Diurnal Damping Ratio
-            </CardTitle>
-            <Activity className="h-4 w-4 text-amber-400" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-white">
-              {avgDamping !== null ? `${avgDamping}% Buffer` : "Pending simulation"}
-            </div>
-            <p className="mt-1 text-xs text-slate-500">Thermal mass stabilized night temp</p>
-          </CardContent>
-        </Card>
-
-        <Card className="border-slate-800 bg-slate-900/60">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
-              Simulation Runs
-            </CardTitle>
-            <Cpu className="h-4 w-4 text-indigo-400" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-white">{completedSims} Done</div>
-            <p className="mt-1 text-xs text-slate-500">{activeJobs} active in Celery queue</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* 2-Column Layout: Active Projects & Regional Weather Stations */}
-      <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
-        {/* Projects Preview (2 cols) */}
-        <div className="lg:col-span-2 space-y-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <FolderKanban className="h-5 w-5 text-blue-400" />
-              <h2 className="text-base font-bold text-white">Configured Shelter Models</h2>
-            </div>
-            <Link href="/projects" className="text-xs font-semibold text-blue-400 hover:underline">
-              View all ({projects.length}) &rarr;
-            </Link>
+        <Link
+          href="/simulations"
+          className="group flex flex-col justify-between rounded-2xl border border-border bg-card p-6 shadow-[0_10px_30px_rgba(0,0,0,.03)] transition-all hover:-translate-y-1 hover:border-[#6E818F]"
+        >
+          <div>
+            <span className="flex size-10 items-center justify-center rounded-xl bg-secondary">
+              <Cpu className="size-5 text-foreground" />
+            </span>
+            <h3 className="mt-4 text-base font-semibold">EnergyPlus Simulation</h3>
+            <p className="mt-1 text-xs leading-5 text-muted-foreground">
+              Sub-hourly physics-based heat balance and comfort calculations.
+            </p>
           </div>
+          <span className="mt-5 inline-flex items-center gap-1.5 text-xs font-semibold text-foreground">
+            Dispatch run <ArrowRight className="size-3.5 transition-transform group-hover:translate-x-1" />
+          </span>
+        </Link>
 
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            {projects.map((p) => (
-              <Card
-                key={p.id}
-                className="border-slate-800 bg-slate-900/70 hover:border-slate-700 transition-all cursor-pointer"
-                onClick={() => setActiveProject(p.id)}
-              >
-                <CardHeader className="pb-3">
-                  <div className="flex items-start justify-between gap-2">
-                    <CardTitle className="text-sm font-bold text-white line-clamp-1">{p.project?.name || p.id}</CardTitle>
-                    <Badge variant="cold" className="text-[10px]">
-                      v{p.project?.version || "1.0"}
-                    </Badge>
-                  </div>
-                  <p className="text-xs text-slate-400 line-clamp-2 mt-1">{p.project?.description}</p>
-                </CardHeader>
-                <CardContent className="pt-0 space-y-3">
-                  <div className="grid grid-cols-3 gap-2 rounded-lg bg-slate-950/60 p-2.5 text-center text-[11px]">
-                    <div>
-                      <div className="text-slate-500">Floor Area</div>
-                      <div className="font-mono font-bold text-slate-200">{(p.geometry.length * p.geometry.width).toFixed(1)} m²</div>
-                    </div>
-                    <div>
-                      <div className="text-slate-500">Volume</div>
-                      <div className="font-mono font-bold text-slate-200">{(p.geometry.length * p.geometry.width * p.geometry.height).toFixed(1)} m³</div>
-                    </div>
-                    <div>
-                      <div className="text-slate-500">Overall U</div>
-                      <div className="font-mono text-[10px] text-slate-400 truncate">
-                        {completedWithSummary.find((j) => j.projectId === p.id)
-                          ? "Metric unavailable"
-                          : "Pending simulation"}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-between pt-1">
-                    <span className="text-[11px] text-slate-500 flex items-center gap-1">
-                      <Compass className="h-3 w-3 text-slate-400" />
-                      {p.location.region}
-                    </span>
-                    <Link
-                      href={`/projects/${p.id}`}
-                      className="text-xs font-bold text-blue-400 hover:text-blue-300 flex items-center gap-1"
-                    >
-                      Inspect
-                      <ArrowRight className="h-3 w-3" />
-                    </Link>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+        <Link
+          href="/materials"
+          className="group flex flex-col justify-between rounded-2xl border border-border bg-card p-6 shadow-[0_10px_30px_rgba(0,0,0,.03)] transition-all hover:-translate-y-1 hover:border-[#6E818F]"
+        >
+          <div>
+            <span className="flex size-10 items-center justify-center rounded-xl bg-secondary">
+              <Layers className="size-5 text-foreground" />
+            </span>
+            <h3 className="mt-4 text-base font-semibold">Material Library</h3>
+            <p className="mt-1 text-xs leading-5 text-muted-foreground">
+              Aerogel, rammed earth, and mass materials with verified properties.
+            </p>
           </div>
-        </div>
-
-        {/* High-Altitude Climate Snapshot (1 col) */}
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <CloudSun className="h-5 w-5 text-amber-400" />
-              <h2 className="text-base font-bold text-white">Target High-Altitude Climates</h2>
-            </div>
-            <Link href="/weather" className="text-xs font-semibold text-blue-400 hover:underline">
-              Manage &rarr;
-            </Link>
-          </div>
-
-          <div className="space-y-3">
-            {weatherDatasets.map((w) => (
-              <div
-                key={w.id}
-                className="rounded-xl border border-slate-800 bg-slate-900/60 p-4 space-y-2 hover:border-slate-700 transition"
-              >
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-white">{w.name}</span>
-                  <Badge variant="outline" className="text-[10px] font-mono">
-                    {w.elevationM} m
-                  </Badge>
-                </div>
-                <p className="text-[11px] text-slate-400">{w.climateZone}</p>
-
-                <div className="flex items-center justify-between pt-2 border-t border-slate-800/80 text-[11px]">
-                  <div>
-                    <span className="text-slate-500">Winter Min: </span>
-                    <span className="font-mono font-bold text-blue-400">{w.designWinterMinC}°C</span>
-                  </div>
-                  <div>
-                    <span className="text-slate-500">HDD18: </span>
-                    <span className="font-mono font-bold text-amber-400">{w.annualHDD18}</span>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
+          <span className="mt-5 inline-flex items-center gap-1.5 text-xs font-semibold text-foreground">
+            Explore library <ArrowRight className="size-3.5 transition-transform group-hover:translate-x-1" />
+          </span>
+        </Link>
       </div>
     </div>
   );

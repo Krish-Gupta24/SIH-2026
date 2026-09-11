@@ -19,6 +19,12 @@ import {
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  ActionButton,
+  DataPair,
+  PageIntro,
+  Status,
+} from "@/components/v0/platform-components";
 import { useShelterStore } from "@/lib/store/use-shelter-store";
 import {
   SweptParameterId,
@@ -237,51 +243,30 @@ export function OptimizationView() {
 
   return (
     <div className="space-y-8 max-w-7xl mx-auto pb-12">
-      {/* Top Header */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-bold tracking-tight text-white flex items-center gap-2.5">
-              <Sliders className="h-6 w-6 text-purple-400" />
-              Parametric Optimization Studio
-            </h1>
-            <Badge
-              variant="outline"
-              className="text-[11px] font-mono bg-purple-950/60 text-purple-300 border-purple-800/60"
-            >
-              Zero-ML Sweep
-            </Badge>
-          </div>
-          <p className="text-xs text-slate-400 mt-1">
-            Deterministic Cartesian exploration across 9 thermal design variables with physics-based constraints, Pareto front ranking, and engineering recommendation layer.
-          </p>
-        </div>
-
-        {/* Project Selector & Active Info */}
-        <div className="flex items-center gap-3">
-          {projects.length > 1 && (
-            <div className="flex items-center gap-2 bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5">
-              <FolderOpen className="h-3.5 w-3.5 text-slate-400" />
+      {/* V0 Page Intro */}
+      <PageIntro
+        eyebrow="Parametric Optimization Studio · Multi-Objective Design"
+        title="Transparent optimization & recommendations"
+        description="Deterministic Cartesian exploration across thermal design variables with physics constraints, Pareto frontier ranking, and engineering recommendations."
+        action={
+          projects.length > 1 ? (
+            <div className="flex items-center gap-2 rounded-full border border-border bg-card px-4 py-2 text-xs font-semibold">
+              <FolderOpen className="size-3.5 text-muted-foreground" />
               <select
                 value={activeProjectId || ""}
                 onChange={(e) => setActiveProject(e.target.value)}
-                className="bg-transparent text-xs text-white focus:outline-none cursor-pointer"
+                className="bg-transparent text-xs text-foreground focus:outline-none cursor-pointer"
               >
                 {projects.map((p) => (
-                  <option key={p.id} value={p.id} className="bg-slate-900 text-white">
+                  <option key={p.id} value={p.id}>
                     {p.project.name} (v{p.project.version})
                   </option>
                 ))}
               </select>
             </div>
-          )}
-
-          <Badge variant="outline" className="gap-1 text-xs py-1 px-2.5 border-slate-700 bg-slate-900/60 text-slate-300">
-            <Cpu className="h-3.5 w-3.5 text-purple-400" />
-            <span>RC Heat Balance Solver</span>
-          </Badge>
-        </div>
-      </div>
+          ) : undefined
+        }
+      />
 
       {/* Notification Banner */}
       {notification && (

@@ -4,24 +4,23 @@ import { useEffect, useRef } from "react";
 import { useShelterStore } from "@/lib/store/use-shelter-store";
 
 /**
- * Initializes frontend store with real data from backend REST APIs:
- * - Syncs canonical shelter projects from /api/v1/shelters
- * - Syncs verified physical materials from /api/v1/materials
- * - Syncs weather datasets catalog from /api/v1/weather/datasets
- * - Syncs active and completed simulation jobs from /api/v1/simulations
+ * Platform initialization hook.
+ * Prepares the frontend store with projects, materials, and weather configurations.
  */
 export function usePlatformInit() {
-  const { loadAllInitialData, isLoadingApi } = useShelterStore();
+  const store = useShelterStore();
   const hasInitialized = useRef(false);
 
   useEffect(() => {
     if (!hasInitialized.current) {
       hasInitialized.current = true;
-      loadAllInitialData().catch((err) => {
-        console.warn("Backend synchronization warning (operating in offline fallback mode):", err);
-      });
+      if (typeof (store as any).loadAllInitialData === "function") {
+        (store as any).loadAllInitialData().catch((err: unknown) => {
+          console.warn("Backend synchronization warning (operating in offline mode):", err);
+        });
+      }
     }
-  }, [loadAllInitialData]);
+  }, [store]);
 
-  return { isLoadingApi };
+  return { isLoadingApi: Boolean((store as any).isLoadingApi) };
 }

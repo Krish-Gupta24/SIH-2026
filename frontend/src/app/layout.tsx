@@ -1,9 +1,32 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
+import { Cormorant_Garamond, Inter } from "next/font/google";
 import "./globals.css";
 
+// Configured fonts: Inter (sans) & Cormorant Garamond (editorial serif)
+const geist = Inter({
+  subsets: ["latin"],
+  variable: "--font-geist",
+  display: "swap",
+});
+
+const editorial = Cormorant_Garamond({
+  subsets: ["latin"],
+  variable: "--font-editorial",
+  display: "swap",
+  weight: ["400", "500", "600"],
+  style: ["normal", "italic"],
+});
+
 export const metadata: Metadata = {
-  title: "Area-Specific Shelter Thermal Design & Simulation Platform",
-  description: "High-altitude and regional shelter thermal comfort analysis (SIH 2026)",
+  title: "ThermoShelter — Area-Specific Thermal Design",
+  description:
+    "Engineering-grade shelter design, climate intelligence, thermal simulation, comparison, and traceable recommendations for severe environments.",
+};
+
+export const viewport: Viewport = {
+  themeColor: "#000000",
+  width: "device-width",
+  initialScale: 1,
 };
 
 export default function RootLayout({
@@ -12,10 +35,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className="dark">
-      <body className="min-h-screen bg-background font-sans antialiased">
+    <html lang="en" className="bg-background">
+      <body className={`${geist.variable} ${editorial.variable}`}>
         {children}
       </body>
     </html>
   );
 }
+

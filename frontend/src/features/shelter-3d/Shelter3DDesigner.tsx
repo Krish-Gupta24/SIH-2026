@@ -1,358 +1,65 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
-import {
-  Box,
-  Eye,
-  Sliders,
-  Grid,
-  Ruler,
-  Compass,
-  Play,
-  RotateCcw,
-  CheckCircle2,
-  Maximize2,
-  FileCode,
-  Flame,
-  Layers,
-  Sparkles,
-  ArrowRight,
-  Shield,
-  HelpCircle,
-} from "lucide-react";
-import { useShelterStore } from "@/lib/store/use-shelter-store";
-import { ShelterModel, WindowModel, DoorModel } from "@/types/shelter";
-import { SelectedElement, CameraPreset, ViewerSettings } from "./types";
+import { useMemo, useRef, useState } from "react";
+import { ArrowRight, Box, Check, ChevronLeft, ChevronRight, Compass, Eye, Grid3X3, Layers3, PanelLeft, PanelRight, Redo2, Ruler, Save, Sun, Undo2, Wind } from "lucide-react";
+import type { ShelterModel } from "@/types/shelter";
+import type { CameraPreset, SelectedElement, ViewerSettings, VisualizationMode } from "./types";
 import { ShelterCanvas } from "./components/ShelterCanvas";
-import { ParametricSidebar } from "./components/ParametricSidebar";
 import { PropertyInspector } from "./components/PropertyInspector";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { MaterialWorkbenchDialog } from "./components/MaterialWorkbenchDialog";
 
-export function Shelter3DDesigner() {
-  const router = useRouter();
-  const { projects, activeProjectId, updateProject, setActiveProject } = useShelterStore();
+const stages = ["Location", "Orientation", "Form", "Dimensions", "Walls", "Roof", "Floor", "Openings", "Shading", "Thermal mass", "Ventilation", "Internal gains", "Targets"];
+const views: { id: CameraPreset; label: string }[] = [{ id: "iso", label: "3D" }, { id: "top", label: "Plan" }, { id: "south", label: "South" }, { id: "north", label: "North" }, { id: "east", label: "East" }, { id: "west", label: "West" }];
+const modes: { id: VisualizationMode; label: string; icon: typeof Box }[] = [{ id: "model", label: "Model", icon: Box }, { id: "thermal", label: "Thermal", icon: Eye }, { id: "solar", label: "Solar", icon: Sun }, { id: "heat-flow", label: "Heat flow", icon: Wind }];
 
-  // Active project selection or fallback to first project
-  const activeProject = useMemo(() => {
-    return projects.find((p) => p.id === activeProjectId) || projects[0];
-  }, [projects, activeProjectId]);
+interface Props { model: ShelterModel; step: number; onStepChange: (step: number) => void; onUpdate: (updates: Partial<ShelterModel>) => void; onSimulate: () => void; }
 
-  // Selected element in the 3D scene
-  const [selected, setSelected] = useState<SelectedElement>(null);
+export function Shelter3DDesigner({ model, step, onStepChange, onUpdate, onSimulate }: Props) {
+  const [selected, setSelected] = useState<SelectedElement>({ type: "shelter" });
+  const [preset, setPreset] = useState<CameraPreset>("iso");
+  const [leftOpen, setLeftOpen] = useState(false);
+  const [rightOpen, setRightOpen] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [materialsOpen, setMaterialsOpen] = useState(false);
+  const [settings, setSettings] = useState<ViewerSettings>({ showGrid: true, showDimensions: true, showCompass: true, showSunShadows: true, wireframe: false, transparentWalls: false, revealLayers: false, visualization: "model" });
+  const history = useRef<ShelterModel[]>([]);
+  const future = useRef<ShelterModel[]>([]);
+  const update = (patch: Partial<ShelterModel>) => { history.current.push(structuredClone(model)); future.current = []; onUpdate(patch); setSaved(false); };
+  const undo = () => { const previous = history.current.pop(); if (!previous) return; future.current.push(structuredClone(model)); onUpdate(previous); };
+  const redo = () => { const next = future.current.pop(); if (!next) return; history.current.push(structuredClone(model)); onUpdate(next); };
+  const setSetting = <K extends keyof ViewerSettings>(key: K, value: ViewerSettings[K]) => setSettings((current) => ({ ...current, [key]: value }));
+  const area = model.geometry.length * model.geometry.width;
+  const volume = area * model.geometry.height;
+  const wallArea = 2 * (model.geometry.length + model.geometry.width) * model.geometry.height;
+  const windowArea = model.windows.reduce((sum, window) => sum + window.width * window.height, 0);
+  const readiness = useMemo(() => [model.location.weatherSource, model.envelope.roof.layers.length, model.envelope.floor.layers.length, model.designTargets.comfortTempMinC].filter(Boolean).length, [model]);
 
-  // Camera preset
-  const [activePreset, setActivePreset] = useState<CameraPreset>("iso");
+  return <div className="cad-shell">
+    <header className="cad-toolbar">
+      <div className="cad-model-identity"><span className="cad-model-icon"><Box /></span><div><strong>{model.project.name}</strong><span>{model.geometry.length.toFixed(1)} × {model.geometry.width.toFixed(1)} × {model.geometry.height.toFixed(1)} m · {model.geometry.roofType}</span></div></div>
+      <div className="cad-view-switcher" aria-label="Camera views">{views.map((view) => <button key={view.id} data-active={preset === view.id} onClick={() => setPreset(view.id)}>{view.label}</button>)}</div>
+      <div className="cad-toolbar-actions"><button aria-label="Undo" disabled={!history.current.length} onClick={undo}><Undo2 /></button><button aria-label="Redo" disabled={!future.current.length} onClick={redo}><Redo2 /></button><button data-active={settings.showGrid} aria-label="Toggle grid" onClick={() => setSetting("showGrid", !settings.showGrid)}><Grid3X3 /></button><button data-active={settings.showDimensions} aria-label="Toggle dimensions" onClick={() => setSetting("showDimensions", !settings.showDimensions)}><Ruler /></button><button data-active={settings.showCompass} aria-label="Toggle compass" onClick={() => setSetting("showCompass", !settings.showCompass)}><Compass /></button><button className="cad-save" onClick={() => { setSaved(true); window.setTimeout(() => setSaved(false), 1800); }}>{saved ? <Check /> : <Save />}{saved ? "Saved" : "Save"}</button><button className="cad-simulate" onClick={onSimulate}>Simulate <ArrowRight /></button></div>
+    </header>
 
-  // Visualizer settings
-  const [settings, setSettings] = useState<ViewerSettings>({
-    showGrid: true,
-    showDimensions: true,
-    showCompass: true,
-    showSunShadows: true,
-    wireframe: false,
-    transparentWalls: false,
-  });
+    <div className="cad-workspace">
+      <aside className="cad-stage-panel" data-open={leftOpen}>
+        <div className="cad-panel-heading"><span>Design sequence</span><button aria-label="Toggle workflow panel" onClick={() => setLeftOpen(!leftOpen)}><PanelLeft /></button></div>
+        <ol>{stages.map((label, index) => <li key={label}><button data-active={index === step} data-complete={index < step} onClick={() => onStepChange(index)}><span>{index < step ? <Check /> : String(index + 1).padStart(2, "0")}</span><strong>{label}</strong></button></li>)}</ol>
+        <div className="cad-stage-progress"><span style={{ width: `${((step + 1) / stages.length) * 100}%` }} /></div>
+      </aside>
 
-  // Sidebar visibility on compact screens
-  const [showSidebar, setShowSidebar] = useState(true);
-  const [showInspector, setShowInspector] = useState(true);
+      <main className="cad-canvas-region">
+        <div className="cad-floating-tools"><button aria-label="Toggle workflow panel" onClick={() => setLeftOpen(!leftOpen)}><PanelLeft /></button>{modes.map(({ id, label, icon: Icon }) => <button key={id} data-active={settings.visualization === id} onClick={() => setSetting("visualization", id)}><Icon />{label}</button>)}<button aria-haspopup="dialog" data-active={materialsOpen || settings.revealLayers} onClick={() => { setMaterialsOpen(true); setSetting("revealLayers", true); }}><Layers3 />Materials</button><button data-active={settings.transparentWalls} onClick={() => setSetting("transparentWalls", !settings.transparentWalls)}><Eye />X-ray</button></div>
+        <ShelterCanvas model={model} selected={selected} onSelect={setSelected} settings={settings} activePreset={preset} />
+        <div className="cad-mode-label"><span>{settings.visualization === "model" ? "Geometry model" : `${settings.visualization} preview`}</span><strong>{settings.visualization === "model" ? "Editable canonical geometry" : "Qualitative visualization · not simulation output"}</strong></div>
+        <div className="cad-metrics"><span><small>Floor area</small><strong>{area.toFixed(1)} m²</strong></span><span><small>Volume</small><strong>{volume.toFixed(1)} m³</strong></span><span><small>Window / wall</small><strong>{((windowArea / wallArea) * 100).toFixed(1)}%</strong></span><span><small>Openings</small><strong>{model.windows.length + model.doors.length}</strong></span></div>
+        <button className="cad-inspector-toggle" aria-label="Toggle properties panel" onClick={() => setRightOpen(!rightOpen)}><PanelRight /></button>
+      </main>
 
-  if (!activeProject) {
-    return (
-      <div className="flex h-screen flex-col items-center justify-center space-y-4 text-center bg-slate-950">
-        <Box className="h-12 w-12 text-slate-500 animate-pulse" />
-        <h2 className="text-xl font-bold text-white">No Active Shelter Project</h2>
-        <p className="text-sm text-slate-400 max-w-md">
-          Please select or create a project to start interactive 3D parametric design.
-        </p>
-        <Button asChild>
-          <Link href="/projects">Go to Projects</Link>
-        </Button>
-      </div>
-    );
-  }
-
-  // Real-time mutations to ShelterModel
-  const handleUpdateModel = (updates: Partial<ShelterModel>) => {
-    updateProject(activeProject.id, updates);
-  };
-
-  const handleAddWindow = (newWin: WindowModel) => {
-    const updatedWindows = [...activeProject.windows, newWin];
-    handleUpdateModel({ windows: updatedWindows });
-    setSelected({ type: "window", id: newWin.id });
-  };
-
-  const handleDeleteWindow = (id: string) => {
-    const updatedWindows = activeProject.windows.filter((w) => w.id !== id);
-    handleUpdateModel({ windows: updatedWindows });
-    if (selected?.type === "window" && selected.id === id) {
-      setSelected(null);
-    }
-  };
-
-  const handleAddDoor = (newDoor: DoorModel) => {
-    const updatedDoors = [...activeProject.doors, newDoor];
-    handleUpdateModel({ doors: updatedDoors });
-    setSelected({ type: "door", id: newDoor.id });
-  };
-
-  const handleDeleteDoor = (id: string) => {
-    const updatedDoors = activeProject.doors.filter((d) => d.id !== id);
-    handleUpdateModel({ doors: updatedDoors });
-    if (selected?.type === "door" && selected.id === id) {
-      setSelected(null);
-    }
-  };
-
-  // Helper from Inspector to quick-add a window/door to clicked wall
-  const handleAddWindowToWall = (wall: "north" | "south" | "east" | "west") => {
-    const wallLength =
-      wall === "north" || wall === "south"
-        ? activeProject.geometry.length
-        : activeProject.geometry.width;
-    const newWin: WindowModel = {
-      id: `win-${wall}-${Date.now().toString().slice(-4)}`,
-      wall,
-      positionX: Math.max(0.5, Number((wallLength * 0.35).toFixed(2))),
-      width: 1.5,
-      height: 1.2,
-      sillHeight: 0.9,
-      glazingType: "Double_LowE_Argon",
-      frameType: "UPVC_Insulated",
-      shadingOverhang: 0.4,
-    };
-    handleAddWindow(newWin);
-  };
-
-  const handleAddDoorToWall = (wall: "north" | "south" | "east" | "west") => {
-    const wallLength =
-      wall === "north" || wall === "south"
-        ? activeProject.geometry.length
-        : activeProject.geometry.width;
-    const newDoor: DoorModel = {
-      id: `door-${wall}-${Date.now().toString().slice(-4)}`,
-      wall,
-      positionX: Math.max(0.5, Number((wallLength * 0.2).toFixed(2))),
-      width: 0.95,
-      height: 2.1,
-      construction: "Airtight Thermal Break Insulated Timber Door (U=1.2)",
-      airTightness: "HighPerformance_Airtight",
-    };
-    handleAddDoor(newDoor);
-  };
-
-  // Real-time geometric summary calculations
-  const { length, width, height } = activeProject.geometry;
-  const floorArea = length * width;
-  const grossVolume = length * width * height;
-  const totalWindowArea = activeProject.windows.reduce((acc, w) => acc + w.width * w.height, 0);
-  const totalWallArea = 2 * (length * height) + 2 * (width * height);
-  const wwr = totalWallArea > 0 ? (totalWindowArea / totalWallArea) * 100 : 0;
-
-  return (
-    <div className="flex flex-col h-screen bg-slate-950 text-slate-100 overflow-hidden select-none">
-      {/* 1. Header Toolbar */}
-      <div className="flex items-center justify-between px-4 py-2.5 bg-slate-900/90 border-b border-slate-800/80 backdrop-blur-md z-20">
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2">
-            <div className="h-8 w-8 rounded-lg bg-gradient-to-tr from-sky-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-sky-500/20">
-              <Box className="h-4 w-4 text-white" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="font-bold text-sm text-white tracking-tight">
-                  {activeProject.project.name}
-                </span>
-                <Badge variant="outline" className="text-[10px] bg-sky-950/60 text-sky-400 border-sky-800/50 py-0">
-                  Parametric 3D
-                </Badge>
-                <Badge variant="outline" className="text-[10px] bg-emerald-950/60 text-emerald-400 border-emerald-800/50 py-0">
-                  Single Source of Truth
-                </Badge>
-              </div>
-              <p className="text-[11px] text-slate-400 font-mono">
-                {activeProject.geometry.length}m × {activeProject.geometry.width}m × {activeProject.geometry.height}m · {activeProject.geometry.roofType} Roof
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* Viewport Camera Preset Selector */}
-        <div className="hidden lg:flex items-center gap-1 bg-slate-950/80 p-1 rounded-lg border border-slate-800 text-xs">
-          <span className="text-[11px] text-slate-500 px-2 font-medium">Views:</span>
-          {(
-            [
-              { id: "iso", label: "3D Iso" },
-              { id: "top", label: "Plan (Top)" },
-              { id: "south", label: "South" },
-              { id: "north", label: "North" },
-              { id: "east", label: "East" },
-              { id: "west", label: "West" },
-            ] as const
-          ).map((view) => (
-            <button
-              key={view.id}
-              onClick={() => setActivePreset(view.id)}
-              className={`px-2.5 py-1 rounded text-[11px] font-medium transition-all ${
-                activePreset === view.id
-                  ? "bg-sky-600 text-white shadow-sm font-semibold"
-                  : "text-slate-400 hover:text-white hover:bg-slate-800"
-              }`}
-            >
-              {view.label}
-            </button>
-          ))}
-        </div>
-
-        {/* View Options & Action Buttons */}
-        <div className="flex items-center gap-2">
-          {/* Overlay Toggles */}
-          <div className="flex items-center bg-slate-950/80 p-0.5 rounded-lg border border-slate-800">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setSettings((s) => ({ ...s, showGrid: !s.showGrid }))}
-              title="Toggle Ground Grid"
-              className={`h-7 px-2 text-xs ${settings.showGrid ? "text-sky-400" : "text-slate-500 hover:text-slate-300"}`}
-            >
-              <Grid className="h-3.5 w-3.5 mr-1" />
-              <span className="hidden sm:inline text-[11px]">Grid</span>
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setSettings((s) => ({ ...s, showDimensions: !s.showDimensions }))}
-              title="Toggle Dimensions"
-              className={`h-7 px-2 text-xs ${settings.showDimensions ? "text-emerald-400" : "text-slate-500 hover:text-slate-300"}`}
-            >
-              <Ruler className="h-3.5 w-3.5 mr-1" />
-              <span className="hidden sm:inline text-[11px]">Dims</span>
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setSettings((s) => ({ ...s, showCompass: !s.showCompass }))}
-              title="Toggle Compass Rose"
-              className={`h-7 px-2 text-xs ${settings.showCompass ? "text-rose-400" : "text-slate-500 hover:text-slate-300"}`}
-            >
-              <Compass className="h-3.5 w-3.5 mr-1" />
-              <span className="hidden sm:inline text-[11px]">Compass</span>
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setSettings((s) => ({ ...s, wireframe: !s.wireframe }))}
-              title="Toggle Wireframe Mode"
-              className={`h-7 px-2 text-xs ${settings.wireframe ? "text-amber-400" : "text-slate-500 hover:text-slate-300"}`}
-            >
-              <Sparkles className="h-3.5 w-3.5 mr-1" />
-              <span className="hidden sm:inline text-[11px]">Wire</span>
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setSettings((s) => ({ ...s, transparentWalls: !s.transparentWalls }))}
-              title="Toggle X-Ray / Transparent Walls"
-              className={`h-7 px-2 text-xs ${settings.transparentWalls ? "text-indigo-400" : "text-slate-500 hover:text-slate-300"}`}
-            >
-              <Eye className="h-3.5 w-3.5 mr-1" />
-              <span className="hidden sm:inline text-[11px]">X-Ray</span>
-            </Button>
-          </div>
-
-          {/* Quick Simulation Link */}
-          <Button
-            size="sm"
-            onClick={() => router.push(`/simulations?newWith=${activeProject.id}`)}
-            className="h-8 gap-1.5 bg-gradient-to-r from-sky-600 to-indigo-600 hover:from-sky-500 hover:to-indigo-500 text-white font-medium text-xs shadow-md shadow-sky-900/30"
-          >
-            <Flame className="h-3.5 w-3.5 text-amber-300" />
-            <span>Simulate Model</span>
-          </Button>
-        </div>
-      </div>
-
-      {/* 2. Main Studio Body */}
-      <div className="relative flex flex-1 overflow-hidden">
-        {/* Left Sidebar: Parametric Sliders & Opening Modals */}
-        <div
-          className={`absolute left-0 top-0 bottom-0 z-10 w-80 lg:relative transition-transform duration-200 border-r border-slate-800 bg-slate-900/95 backdrop-blur-md ${
-            showSidebar ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
-          }`}
-        >
-          <div className="h-full overflow-hidden flex flex-col">
-            <ParametricSidebar
-              model={activeProject}
-              onUpdateModel={handleUpdateModel}
-              onAddWindow={handleAddWindow}
-              onAddDoor={handleAddDoor}
-            />
-          </div>
-        </div>
-
-        {/* Center: Interactive 3D Canvas */}
-        <div className="relative flex-1 h-full w-full overflow-hidden">
-          <ShelterCanvas
-            model={activeProject}
-            selected={selected}
-            onSelect={setSelected}
-            settings={settings}
-            activePreset={activePreset}
-          />
-
-          {/* Bottom HUD: Real-time Live Metrics Overlay */}
-          <div className="absolute bottom-4 left-4 z-10 flex flex-wrap items-center gap-2 bg-slate-900/85 backdrop-blur-md border border-slate-800/80 px-3 py-2 rounded-xl text-[11px] shadow-xl">
-            <div className="flex items-center gap-1.5 pr-2 border-r border-slate-800">
-              <span className="text-slate-400">Floor Area:</span>
-              <span className="font-mono font-bold text-sky-300">{floorArea.toFixed(1)} m²</span>
-            </div>
-            <div className="flex items-center gap-1.5 pr-2 border-r border-slate-800">
-              <span className="text-slate-400">Internal Vol:</span>
-              <span className="font-mono font-bold text-emerald-300">{grossVolume.toFixed(1)} m³</span>
-            </div>
-            <div className="flex items-center gap-1.5 pr-2 border-r border-slate-800">
-              <span className="text-slate-400">WWR:</span>
-              <span className="font-mono font-bold text-indigo-300">{wwr.toFixed(1)}%</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <span className="text-slate-400">Windows:</span>
-              <span className="font-mono font-bold text-amber-300">{activeProject.windows.length}</span>
-              <span className="text-slate-500 ml-1">Doors:</span>
-              <span className="font-mono font-bold text-amber-300">{activeProject.doors.length}</span>
-            </div>
-          </div>
-
-          {/* Bottom-right Interaction Guide Pill */}
-          <div className="hidden md:flex absolute bottom-4 right-4 z-10 items-center gap-2 bg-slate-900/80 backdrop-blur-sm border border-slate-800/60 px-2.5 py-1.5 rounded-lg text-[10px] text-slate-400">
-            <span>🖱️ Left-click: Rotate / Select</span>
-            <span>·</span>
-            <span>Right-click: Pan</span>
-            <span>·</span>
-            <span>Scroll: Zoom</span>
-          </div>
-        </div>
-
-        {/* Right Panel: Contextual Element Property Inspector */}
-        <div
-          className={`absolute right-0 top-0 bottom-0 z-10 w-80 lg:relative transition-transform duration-200 border-l border-slate-800 bg-slate-900/95 backdrop-blur-md overflow-y-auto p-4 ${
-            showInspector ? "translate-x-0" : "translate-x-full lg:translate-x-0"
-          }`}
-        >
-          <PropertyInspector
-            model={activeProject}
-            selected={selected}
-            onClose={() => setSelected(null)}
-            onDeleteWindow={handleDeleteWindow}
-            onDeleteDoor={handleDeleteDoor}
-            onAddWindowToWall={handleAddWindowToWall}
-            onAddDoorToWall={handleAddDoorToWall}
-          />
-        </div>
-      </div>
+      <aside className="cad-property-panel" data-open={rightOpen}><PropertyInspector model={model} selected={selected} onSelect={setSelected} onUpdate={update} /></aside>
     </div>
-  );
+
+    <footer className="cad-statusbar"><div><span className="cad-status-dot" />Canonical model synchronized</div><div>{readiness}/4 simulation checks complete</div><div className="cad-step-nav"><button disabled={step === 0} onClick={() => onStepChange(step - 1)}><ChevronLeft /> Previous</button><span>Stage {step + 1} of {stages.length}</span><button disabled={step === stages.length - 1} onClick={() => onStepChange(step + 1)}>Next <ChevronRight /></button></div></footer>
+    <MaterialWorkbenchDialog open={materialsOpen} model={model} onOpenChange={setMaterialsOpen} onUpdate={update} />
+  </div>;
 }

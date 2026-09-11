@@ -1,7 +1,10 @@
 "use client";
 
+import { useState } from "react";
 import dynamic from "next/dynamic";
+import { useRouter } from "next/navigation";
 import { Box, Loader2 } from "lucide-react";
+import { useShelterStore } from "@/lib/store/use-shelter-store";
 
 // Dynamically import the 3D designer with SSR disabled for WebGL canvas compatibility
 const Shelter3DDesigner = dynamic(
@@ -24,5 +27,27 @@ const Shelter3DDesigner = dynamic(
 );
 
 export default function Shelter3DPage() {
-  return <Shelter3DDesigner />;
+  const router = useRouter();
+  const { projects, activeProjectId, updateProject } = useShelterStore();
+  const [step, setStep] = useState(0);
+
+  const activeModel = projects.find((p) => p.id === activeProjectId) || projects[0];
+
+  if (!activeModel) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-slate-950 text-slate-400">
+        <p>No project loaded. Please create or select a project first.</p>
+      </div>
+    );
+  }
+
+  return (
+    <Shelter3DDesigner
+      model={activeModel}
+      step={step}
+      onStepChange={setStep}
+      onUpdate={(patch) => updateProject(activeModel.id, patch)}
+      onSimulate={() => router.push("/simulations")}
+    />
+  );
 }

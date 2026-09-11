@@ -64,9 +64,22 @@ export function deriveShelter3DGeometry(model: ShelterModel): Shelter3DRepresent
   const L = model.geometry.length;
   const W = model.geometry.width;
   const H = model.geometry.height;
-  const wallThickness = 0.20; // 200mm visual standard
-  const floorThickness = 0.20;
-  const roofThickness = 0.15;
+  const wallAssemblies = Object.values(model.envelope.walls);
+  const wallThickness = Math.max(
+    0.12,
+    wallAssemblies.reduce(
+      (sum, assembly) => sum + assembly.layers.reduce((total, layer) => total + layer.thickness, 0),
+      0,
+    ) / wallAssemblies.length,
+  );
+  const floorThickness = Math.max(
+    0.12,
+    model.envelope.floor.layers.reduce((sum, layer) => sum + layer.thickness, 0),
+  );
+  const roofThickness = Math.max(
+    0.12,
+    model.envelope.roof.layers.reduce((sum, layer) => sum + layer.thickness, 0),
+  );
   const roofAngle = model.geometry.roofAngle || 0;
   const roofType = model.geometry.roofType || "Flat";
 

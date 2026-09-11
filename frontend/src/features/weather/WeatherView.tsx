@@ -14,6 +14,7 @@ import {
   Sliders,
   X,
   Loader2,
+  ShieldCheck,
 } from "lucide-react";
 import {
   ResponsiveContainer,
@@ -30,6 +31,13 @@ import { useShelterStore, WeatherStation } from "@/lib/store/use-shelter-store";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  ActionButton,
+  ClimateProfile,
+  DataPair,
+  PageIntro,
+  Status,
+} from "@/components/v0/platform-components";
 
 export function WeatherView() {
   const { weatherDatasets, activeWeatherId, setActiveWeather, addWeatherDataset } = useShelterStore();
@@ -297,121 +305,126 @@ export function WeatherView() {
   };
 
   return (
-    <div className="space-y-8 max-w-7xl mx-auto">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-white flex items-center gap-2.5">
-            <CloudSun className="h-6 w-6 text-amber-400" />
-            Weather & Climate Datasets
-          </h1>
-          <p className="text-xs text-slate-400 mt-1">
-            Empirical high-altitude meteorological data (EPW, NASA POWER, CSV) with zero-silent-fallback policy enforcement.
+    <div className="space-y-10 max-w-7xl mx-auto">
+      {/* V0 Page Intro */}
+      <PageIntro
+        eyebrow="Climate provenance · Weather intelligence"
+        title={activeStation.name}
+        description={`${activeStation.region} · ${activeStation.climateZone} · ${activeStation.elevationM.toLocaleString()} m MSL`}
+        action={
+          <div className="flex flex-wrap items-center gap-2">
+            <ActionButton
+              tone="secondary"
+              onClick={() => { setActiveModal("epw"); setModalError(null); setModalSuccess(null); }}
+              className="rounded-full text-xs font-semibold"
+            >
+              <Upload className="size-3.5" />
+              Upload EPW
+            </ActionButton>
+            <ActionButton
+              tone="secondary"
+              onClick={() => { setActiveModal("csv"); setModalError(null); setModalSuccess(null); }}
+              className="rounded-full text-xs font-semibold"
+            >
+              <FileSpreadsheet className="size-3.5" />
+              Upload CSV
+            </ActionButton>
+            <ActionButton
+              tone="primary"
+              onClick={() => { setActiveModal("nasa"); setModalError(null); setModalSuccess(null); }}
+              className="rounded-full text-xs font-bold"
+            >
+              <Compass className="size-3.5" />
+              Query NASA POWER
+            </ActionButton>
+            <ActionButton
+              tone="signal"
+              onClick={() => { setActiveModal("manual"); setModalError(null); setModalSuccess(null); }}
+              className="rounded-full text-xs font-semibold"
+            >
+              <Sliders className="size-3.5" />
+              Design Day
+            </ActionButton>
+          </div>
+        }
+      />
+
+      {/* Top Feature Grid: Dark Provenance Panel + Climate Profile */}
+      <div className="workspace-feature-grid grid gap-6 lg:grid-cols-[.75fr_1.25fr]">
+        <div className="workspace-dark-panel rounded-[2rem] bg-[#000000] p-7 text-white sm:p-9 shadow-xl">
+          <div className="flex items-center justify-between">
+            <Status strong>{activeStation.provenanceStatus || (activeStation.isTestData ? "TEST_DATA" : "REAL_DATA")}</Status>
+            {!activeStation.isTestData && <ShieldCheck className="size-5 text-[#CBDCE6]" />}
+          </div>
+          <p className="mt-12 text-6xl font-medium tracking-[-0.06em]">
+            {activeStation.designWinterMinC} °C
           </p>
+          <p className="mt-2 text-sm text-white/50">Winter design dry-bulb minimum</p>
+          <dl className="mt-10 grid grid-cols-2 gap-x-6 gap-y-7 border-t border-white/15 pt-7">
+            <DataPair
+              label="Coordinates"
+              value={`${activeStation.latitude.toFixed(4)}°, ${activeStation.longitude.toFixed(4)}°`}
+            />
+            <DataPair
+              label="Elevation"
+              value={`${activeStation.elevationM.toLocaleString()} m`}
+            />
+            <DataPair
+              label="Annual HDD18"
+              value={activeStation.annualHDD18.toLocaleString()}
+            />
+            <DataPair label="Source" value={activeStation.sourceType} />
+          </dl>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => { setActiveModal("epw"); setModalError(null); setModalSuccess(null); }}
-            className="gap-2 text-xs font-semibold"
-          >
-            <Upload className="h-3.5 w-3.5" />
-            Upload EPW
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => { setActiveModal("csv"); setModalError(null); setModalSuccess(null); }}
-            className="gap-2 text-xs font-semibold"
-          >
-            <FileSpreadsheet className="h-3.5 w-3.5" />
-            Upload CSV
-          </Button>
-          <Button
-            variant="default"
-            size="sm"
-            onClick={() => { setActiveModal("nasa"); setModalError(null); setModalSuccess(null); }}
-            className="gap-2 text-xs font-bold bg-blue-600 hover:bg-blue-500"
-          >
-            <Compass className="h-3.5 w-3.5" />
-            Query NASA POWER
-          </Button>
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={() => { setActiveModal("manual"); setModalError(null); setModalSuccess(null); }}
-            className="gap-2 text-xs font-semibold"
-          >
-            <Sliders className="h-3.5 w-3.5" />
-            Design Day
-          </Button>
-        </div>
+        <ClimateProfile
+          winter={activeStation.designWinterMinC}
+          summer={activeStation.designSummerMaxC}
+          hdd={activeStation.annualHDD18}
+        />
       </div>
 
       {/* Station Selector Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
-        {weatherDatasets.map((stn) => {
-          const isSelected = stn.id === activeStation.id;
-          const isTest = stn.isTestData || stn.provenanceStatus === "TEST_DATA";
-          const isUser = stn.provenanceStatus === "USER_DEFINED";
-
-          return (
-            <Card
-              key={stn.id}
-              onClick={() => {
-                setSelectedStationId(stn.id);
-                setActiveWeather(stn.id);
-              }}
-              className={`cursor-pointer transition-all ${
-                isSelected
-                  ? "border-blue-500 bg-slate-900 shadow-md shadow-blue-500/10 ring-1 ring-blue-500/50"
-                  : "border-slate-800 bg-slate-900/60 hover:border-slate-700"
-              }`}
-            >
-              <CardHeader className="p-3.5 pb-2">
-                <div className="flex items-start justify-between gap-1">
-                  {isTest ? (
-                    <span className="inline-flex items-center rounded-full bg-amber-500/10 px-2 py-0.5 text-[9px] font-bold text-amber-500 ring-1 ring-inset ring-amber-500/20">
-                      TEST DATA
-                    </span>
-                  ) : isUser ? (
-                    <span className="inline-flex items-center rounded-full bg-purple-500/10 px-2 py-0.5 text-[9px] font-bold text-purple-400 ring-1 ring-inset ring-purple-500/20">
-                      USER-DEFINED
-                    </span>
-                  ) : (
-                    <span className="inline-flex items-center rounded-full bg-emerald-500/10 px-2 py-0.5 text-[9px] font-bold text-emerald-400 ring-1 ring-inset ring-emerald-500/20">
-                      REAL DATA
-                    </span>
-                  )}
-                  <span className="font-mono text-xs text-emerald-400 font-bold">
-                    {stn.elevationM}m
-                  </span>
-                </div>
-                <CardTitle className="text-xs font-bold text-white mt-2 line-clamp-1">
-                  {stn.name}
-                </CardTitle>
-                <p className="text-[10px] text-slate-400 line-clamp-1">{stn.region}</p>
-              </CardHeader>
-
-              <CardContent className="p-3.5 pt-1.5">
-                <div className="flex justify-between text-[11px] pt-2 border-t border-slate-800/80">
-                  <div>
-                    <span className="text-slate-500">Min: </span>
-                    <span className="font-mono font-bold text-blue-400">
-                      {stn.designWinterMinC}°C
-                    </span>
+      <div>
+        <div className="mb-4 flex items-end justify-between">
+          <div>
+            <p className="micro-label">Available sources</p>
+            <h2 className="text-xl font-medium">Dataset selection</h2>
+          </div>
+          <span className="text-xs text-muted-foreground">{weatherDatasets.length} datasets loaded</span>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+          {weatherDatasets.map((stn) => {
+            const isSelected = stn.id === activeStation.id;
+            return (
+              <button
+                key={stn.id}
+                onClick={() => {
+                  setSelectedStationId(stn.id);
+                  setActiveWeather(stn.id);
+                }}
+                className={`flex flex-col justify-between rounded-2xl border p-4 text-left transition-all ${
+                  isSelected
+                    ? "border-foreground bg-secondary/80 shadow-sm"
+                    : "border-border bg-card hover:border-[#6E818F]"
+                }`}
+              >
+                <div>
+                  <div className="flex items-center justify-between">
+                    <Status strong={isSelected}>{stn.provenanceStatus}</Status>
+                    <span className="text-xs font-semibold text-muted-foreground">{stn.elevationM}m</span>
                   </div>
-                  <div>
-                    <span className="text-slate-500">Src: </span>
-                    <span className="font-mono text-slate-300">{stn.sourceType}</span>
-                  </div>
+                  <h3 className="mt-3 text-xs font-bold line-clamp-1">{stn.name}</h3>
+                  <p className="text-[10px] text-muted-foreground line-clamp-1">{stn.region}</p>
                 </div>
-              </CardContent>
-            </Card>
-          );
-        })}
+                <div className="mt-3 flex justify-between border-t border-border/50 pt-2 text-[10px]">
+                  <span>Min: <strong>{stn.designWinterMinC}°C</strong></span>
+                  <span>Src: <strong>{stn.sourceType}</strong></span>
+                </div>
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       {/* Selected Station Meteorological Details */}

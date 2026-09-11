@@ -2,21 +2,16 @@
 
 import React, { useState } from "react";
 import {
-  Layers,
+  ArrowRight,
+  Calculator,
+  Database,
+  Layers3,
   Plus,
   Search,
-  Trash2,
-  HelpCircle,
-  Calculator,
   ShieldCheck,
+  Trash2,
 } from "lucide-react";
 import { useShelterStore, MaterialItem } from "@/lib/store/use-shelter-store";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Slider } from "@/components/ui/slider";
-import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table";
 import {
   Dialog,
   DialogHeader,
@@ -24,17 +19,25 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
+import { Slider } from "@/components/ui/slider";
+import {
+  ActionButton,
+  PageIntro,
+  Status,
+} from "@/components/v0/platform-components";
 
 export function MaterialsView() {
   const { materials, addMaterial, deleteMaterial } = useShelterStore();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
+  const [selectedMaterial, setSelectedMaterial] = useState<MaterialItem | null>(null);
 
   // R-value interactive calculator state
   const [calcMaterialId, setCalcMaterialId] = useState(materials[0]?.id || "mat-eps-insulation");
   const [calcThicknessMm, setCalcThicknessMm] = useState(150);
+  const [showCalculator, setShowCalculator] = useState(false);
 
-  // Modal state
+  // New Material Modal state
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [newMatName, setNewMatName] = useState("");
   const [newMatCategory, setNewMatCategory] = useState<MaterialItem["category"]>("Insulation");
@@ -50,10 +53,14 @@ export function MaterialsView() {
       : 0;
   const calculatedUValue = calculatedRValue > 0 ? 1 / calculatedRValue : 0;
 
+  const verifiedCount = materials.filter((material) => material.status === "VERIFIED").length;
+  const categoryCount = new Set(materials.map((material) => material.category)).size;
+
   const filteredMaterials = materials.filter((m) => {
     const matchesSearch =
       m.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (m.notes && m.notes.toLowerCase().includes(searchTerm.toLowerCase()));
+      (m.notes && m.notes.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      m.category.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory = selectedCategory === "All" || m.category === selectedCategory;
     return matchesSearch && matchesCategory;
   });
@@ -62,307 +69,402 @@ export function MaterialsView() {
     e.preventDefault();
     if (!newMatName.trim()) return;
 
-    const k = parseFloat(newMatConductivity) || 0.035;
-    const rho = parseFloat(newMatDensity) || 30;
-    const cp = parseFloat(newMatSpecificHeat) || 1400;
-
-    addMaterial({
-      id: `mat-custom-${Date.now().toString().slice(-6)}`,
+    const id = `custom-${newMatName.toLowerCase().replace(/[^a-z0-9]/g, "-")}-${Date.now().toString().slice(-4)}`;
+    const newMat: MaterialItem = {
+      id,
       name: newMatName.trim(),
       category: newMatCategory,
-      thermalConductivity: k,
-      density: rho,
-      specificHeat: cp,
+      thermalConductivity: parseFloat(newMatConductivity) || 0.04,
+      density: parseFloat(newMatDensity) || 100,
+      specificHeat: parseFloat(newMatSpecificHeat) || 1000,
       status: "USER_DEFINED",
-      provenance: "User Defined",
-      source: "User Input via Materials Designer",
-      notes: newMatNotes.trim() || "User-defined custom engineering material.",
-    });
+      source: "User Definition",
+      notes: newMatNotes.trim() || undefined,
+    };
 
+    addMaterial(newMat);
     setIsCreateOpen(false);
     setNewMatName("");
     setNewMatNotes("");
   };
 
-  const categories = ["All", "Insulation", "Mass / Masonry", "Structure / Metal", "Wood / Finish", "Glazing"];
-
   return (
-    <div className="space-y-8 max-w-7xl mx-auto">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-white flex items-center gap-2.5">
-            <Layers className="h-6 w-6 text-blue-400" />
-            Thermal Materials Database
-          </h1>
-          <p className="text-xs text-slate-400 mt-1">
-            Physical thermal properties (k, ρ, Cp) verified for high-altitude cold climate envelopes.
-          </p>
-        </div>
+    <div className="space-y-8 max-w-7xl mx-auto pb-12">
+      <PageIntro
+        eyebrow="Reference library · Thermophysical database"
+        title="Materials library"
+        description="Thermophysical properties, standard thicknesses, and source provenance used by canonical assemblies."
+        action={
+          <div className="flex items-center gap-2.5">
+            <ActionButton
+              tone="secondary"
+              onClick={() => setShowCalculator(!showCalculator)}
+              className="rounded-full text-xs font-semibold"
+            >
+              <Calculator className="size-3.5" />
+              {showCalculator ? "Hide R-Value Tool" : "R-Value Calculator"}
+            </ActionButton>
+            <ActionButton
+              tone="primary"
+              onClick={() => setIsCreateOpen(true)}
+              className="rounded-full text-xs font-bold"
+            >
+              <Plus className="size-3.5" />
+              New Material
+            </ActionButton>
+          </div>
+        }
+      />
 
-        <Button onClick={() => setIsCreateOpen(true)} className="gap-2 font-bold shadow-sm">
-          <Plus className="h-4 w-4" />
-          Add Custom Material
-        </Button>
+      {/* Summary strip matching V0 */}
+      <div className="material-library-summary">
+        <div>
+          <Layers3 />
+          <span>
+            <small>Library entries</small>
+            <strong>{materials.length}</strong>
+          </span>
+        </div>
+        <div>
+          <ShieldCheck />
+          <span>
+            <small>Verified records</small>
+            <strong>{verifiedCount}</strong>
+          </span>
+        </div>
+        <div>
+          <Database />
+          <span>
+            <small>Material families</small>
+            <strong>{categoryCount}</strong>
+          </span>
+        </div>
       </div>
 
-      {/* Interactive Thermal R-Value & U-Value Calculator */}
-      <Card className="border-slate-800 bg-gradient-to-r from-slate-900 to-slate-950 p-6">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-          <div className="space-y-4 max-w-md w-full">
-            <div className="flex items-center gap-2 text-xs font-bold text-blue-400 uppercase tracking-wider">
-              <Calculator className="h-4 w-4" />
-              Live Thermal Resistance Calculator
+      {/* Interactive R-Value Calculator Card */}
+      {showCalculator && (
+        <div className="rounded-2xl border border-border bg-card p-6 shadow-md space-y-4">
+          <div className="flex items-center justify-between border-b border-border pb-3">
+            <div className="flex items-center gap-2">
+              <Calculator className="size-4 text-foreground" />
+              <h3 className="text-sm font-semibold">Interactive Assembly R-Value & U-Factor Calculator</h3>
             </div>
+            <span className="text-xs text-muted-foreground">ISO 6946 / ASHRAE 90.1</span>
+          </div>
 
-            <div className="space-y-2">
-              <label className="text-xs font-semibold text-slate-300">Selected Material</label>
+          <div className="grid gap-6 sm:grid-cols-3 items-center">
+            <div>
+              <label className="text-xs font-semibold text-muted-foreground block mb-1">Select Material:</label>
               <select
                 value={calcMaterialId}
                 onChange={(e) => setCalcMaterialId(e.target.value)}
-                className="w-full rounded-lg border border-slate-800 bg-slate-950 px-3 py-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
+                className="w-full rounded-xl border border-border bg-background p-2.5 text-xs font-semibold focus:outline-none"
               >
                 {materials.map((m) => (
                   <option key={m.id} value={m.id}>
-                    {m.name} ({m.thermalConductivity} W/m-K)
+                    {m.name} ({m.thermalConductivity} W/m·K)
                   </option>
                 ))}
               </select>
             </div>
 
-            <Slider
-              label="Layer Thickness"
-              value={calcThicknessMm}
-              onValueChange={setCalcThicknessMm}
-              min={10}
-              max={400}
-              step={5}
-              unit="mm"
-            />
-          </div>
-
-          {/* Calculator Output KPI badges */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 w-full lg:w-auto">
-            <div className="rounded-xl border border-slate-800 bg-slate-950/80 p-4 text-center min-w-[130px]">
-              <div className="text-[10px] font-bold text-slate-500 uppercase">Conductivity (k)</div>
-              <div className="text-lg font-mono font-bold text-white mt-1">
-                {activeCalcMat?.thermalConductivity}
-              </div>
-              <div className="text-[10px] text-slate-500">W/m-K</div>
-            </div>
-
-            <div className="rounded-xl border border-blue-500/30 bg-blue-950/30 p-4 text-center min-w-[130px]">
-              <div className="text-[10px] font-bold text-blue-400 uppercase">Thermal R-Value</div>
-              <div className="text-xl font-mono font-bold text-blue-400 mt-1">
-                {calculatedRValue.toFixed(2)}
-              </div>
-              <div className="text-[10px] text-blue-400/80">m²-K / W</div>
-            </div>
-
-            <div className="rounded-xl border border-emerald-500/30 bg-emerald-950/30 p-4 text-center min-w-[130px]">
-              <div className="text-[10px] font-bold text-emerald-400 uppercase">Thermal U-Value</div>
-              <div className="text-xl font-mono font-bold text-emerald-400 mt-1">
-                {calculatedUValue.toFixed(3)}
-              </div>
-              <div className="text-[10px] text-emerald-400/80">W / m²-K</div>
-            </div>
-          </div>
-        </div>
-      </Card>
-
-      {/* Filters and Search */}
-      <div className="flex flex-col sm:flex-row items-center gap-3">
-        <div className="relative flex-1 w-full">
-          <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
-          <Input
-            placeholder="Search materials by name or description..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-9 bg-slate-900 border-slate-800"
-          />
-        </div>
-
-        <div className="flex flex-wrap gap-1.5 w-full sm:w-auto">
-          {categories.map((cat) => (
-            <Button
-              key={cat}
-              variant={selectedCategory === cat ? "default" : "outline"}
-              size="sm"
-              onClick={() => setSelectedCategory(cat)}
-              className="text-xs"
-            >
-              {cat}
-            </Button>
-          ))}
-        </div>
-      </div>
-
-      {/* Materials Table */}
-      <Card className="border-slate-800 bg-slate-900/60">
-        <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Material Name</TableHead>
-                <TableHead>Category</TableHead>
-                <TableHead>Status & Provenance</TableHead>
-                <TableHead>Conductivity (W/m-K)</TableHead>
-                <TableHead>Density (kg/m³)</TableHead>
-                <TableHead>Specific Heat (J/kg-K)</TableHead>
-                <TableHead>Standard Thickness</TableHead>
-                <TableHead className="text-right">Action</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredMaterials.map((m) => (
-                <TableRow key={m.id}>
-                  <TableCell>
-                    <div className="font-bold text-white">{m.name}</div>
-                    {m.notes && <div className="text-xs text-slate-400 line-clamp-1 mt-0.5">{m.notes}</div>}
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="outline" className="text-[10px]">
-                      {m.category}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <div className="space-y-1">
-                      {m.status === "VERIFIED" ? (
-                        <Badge variant="outline" className="border-emerald-500/40 text-emerald-400 bg-emerald-950/20 text-[10px] gap-1">
-                          <ShieldCheck className="h-3 w-3" /> VERIFIED
-                        </Badge>
-                      ) : (
-                        <Badge variant="outline" className="border-amber-500/40 text-amber-400 bg-amber-950/20 text-[10px]">
-                          {m.status || "USER_DEFINED"}
-                        </Badge>
-                      )}
-                      {m.source && (
-                        <div className="text-[10px] text-slate-400 truncate max-w-[200px]" title={m.source}>
-                          {m.source}
-                        </div>
-                      )}
-                    </div>
-                  </TableCell>
-                  <TableCell className="font-mono font-bold text-blue-400">
-                    {m.thermalConductivity}
-                  </TableCell>
-                  <TableCell className="font-mono text-slate-300">{m.density}</TableCell>
-                  <TableCell className="font-mono text-slate-300">{m.specificHeat}</TableCell>
-                  <TableCell className="font-mono text-slate-400">
-                    {m.standardThicknessMm ? `${m.standardThicknessMm} mm` : "Custom"}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    {m.id.startsWith("mat-custom") ? (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => deleteMaterial(m.id)}
-                        className="text-red-400 hover:bg-red-950/40 h-7 w-7 p-0"
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </Button>
-                    ) : (
-                      <span className="text-[10px] text-slate-500">Core</span>
-                    )}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
-
-      {/* Add Custom Material Modal */}
-      <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-        <form onSubmit={handleCreateMaterial} className="space-y-4">
-          <DialogHeader>
-            <DialogTitle>Add Custom Thermal Material</DialogTitle>
-            <DialogDescription>
-              Define physical engineering parameters for your envelope assembly layers.
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-3">
             <div>
-              <label className="text-xs font-semibold text-slate-300">Material Name</label>
-              <Input
-                placeholder="e.g. Local Himalayan Sheep Wool Insulation"
-                value={newMatName}
-                onChange={(e) => setNewMatName(e.target.value)}
-                required
-                className="mt-1 bg-slate-950 border-slate-800"
+              <div className="flex justify-between text-xs mb-1">
+                <span className="font-semibold text-muted-foreground">Thickness:</span>
+                <span className="font-bold">{calcThicknessMm} mm</span>
+              </div>
+              <Slider
+                value={calcThicknessMm}
+                min={10}
+                max={400}
+                step={5}
+                onValueChange={(val) => setCalcThicknessMm(val)}
+                className="py-2"
               />
             </div>
 
-            <div>
-              <label className="text-xs font-semibold text-slate-300">Category</label>
-              <select
-                value={newMatCategory}
-                onChange={(e) => setNewMatCategory(e.target.value as any)}
-                className="w-full mt-1 rounded-lg border border-slate-800 bg-slate-950 px-3 py-2 text-xs text-white"
+            <div className="grid grid-cols-2 gap-3 bg-secondary/50 p-4 rounded-xl text-center">
+              <div>
+                <span className="micro-label">Resistance (R)</span>
+                <p className="text-2xl font-bold tracking-tight">{calculatedRValue.toFixed(2)}</p>
+                <span className="text-[10px] text-muted-foreground">m²·K/W</span>
+              </div>
+              <div>
+                <span className="micro-label">Transmittance (U)</span>
+                <p className="text-2xl font-bold tracking-tight">{calculatedUValue.toFixed(2)}</p>
+                <span className="text-[10px] text-muted-foreground">W/m²·K</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Search & Filter Tools matching V0 */}
+      <div className="material-library-tools flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <label className="flex min-h-12 flex-1 items-center gap-3 rounded-2xl border border-border bg-card px-4 shadow-sm">
+          <Search className="size-4 text-muted-foreground" />
+          <span className="sr-only">Search materials</span>
+          <input
+            value={searchTerm}
+            onChange={(event) => setSearchTerm(event.target.value)}
+            placeholder="Search material by name, category, or notes"
+            className="w-full bg-transparent py-3 text-sm outline-none placeholder:text-muted-foreground"
+          />
+        </label>
+        <span className="text-xs text-muted-foreground">
+          Click any material to inspect its complete engineering record
+        </span>
+      </div>
+
+      {/* V0 Data Table */}
+      <div className="data-table-shell material-library-table overflow-x-auto rounded-2xl border border-border bg-card">
+        <table className="w-full min-w-[800px] text-left">
+          <thead>
+            <tr className="border-b border-border text-[10px] uppercase tracking-[0.08em] text-muted-foreground bg-secondary/30">
+              <th className="py-4 pl-6 pr-4">Material</th>
+              <th className="p-4">Category</th>
+              <th className="p-4">Conductivity</th>
+              <th className="p-4">Density</th>
+              <th className="p-4">Thickness</th>
+              <th className="py-4 pr-6 pl-4">Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filteredMaterials.map((material) => (
+              <tr
+                key={material.id}
+                role="button"
+                tabIndex={0}
+                aria-label={`Open ${material.name} details`}
+                onClick={() => setSelectedMaterial(material)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    setSelectedMaterial(material);
+                  }
+                }}
+                className="border-b border-border/60 hover:bg-secondary/40 transition-colors cursor-pointer"
               >
-                <option value="Insulation">Insulation</option>
-                <option value="Mass / Masonry">Mass / Masonry</option>
-                <option value="Structure / Metal">Structure / Metal</option>
-                <option value="Wood / Finish">Wood / Finish</option>
-                <option value="Glazing">Glazing</option>
-              </select>
+                <td className="py-4 pl-6 pr-4">
+                  <span className="material-name-cell flex items-center gap-3">
+                    <span className="size-2 rounded-full bg-foreground" />
+                    <span>
+                      <strong className="block text-sm font-semibold">{material.name}</strong>
+                      <small className="text-[10px] text-muted-foreground">{material.source || "Library Reference"}</small>
+                    </span>
+                    <ArrowRight className="size-3.5 text-muted-foreground ml-auto opacity-0 group-hover:opacity-100" />
+                  </span>
+                </td>
+                <td className="p-4 text-xs font-medium">{material.category}</td>
+                <td className="p-4 text-sm font-semibold">
+                  {material.thermalConductivity} <small className="text-muted-foreground font-normal">W/m·K</small>
+                </td>
+                <td className="p-4 text-sm font-semibold">
+                  {material.density} <small className="text-muted-foreground font-normal">kg/m³</small>
+                </td>
+                <td className="p-4 text-sm font-semibold">
+                  {material.standardThicknessMm ?? "—"} <small className="text-muted-foreground font-normal">mm</small>
+                </td>
+                <td className="py-4 pr-6 pl-4">
+                  <Status strong={material.status === "VERIFIED"}>{material.status || "VERIFIED"}</Status>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+
+        {filteredMaterials.length === 0 && (
+          <div className="material-empty-state py-12 text-center text-muted-foreground">
+            <Search className="size-8 mx-auto mb-2 opacity-50" />
+            <strong className="block text-sm text-foreground">No matching materials</strong>
+            <span className="text-xs">Try adjusting your search terms.</span>
+          </div>
+        )}
+      </div>
+
+      {/* Material Detail Record Dialog */}
+      <Dialog
+        open={selectedMaterial !== null}
+        onOpenChange={(open) => {
+          if (!open) setSelectedMaterial(null);
+        }}
+        contentClassName="material-detail-dialog max-w-xl"
+      >
+        {selectedMaterial && (
+          <>
+            <DialogHeader className="material-detail-header">
+              <span className="material-detail-kicker flex items-center gap-1.5 text-xs text-muted-foreground">
+                <Layers3 className="size-3.5" /> Material engineering record
+              </span>
+              <DialogTitle className="text-2xl font-medium tracking-tight mt-1">
+                {selectedMaterial.name}
+              </DialogTitle>
+              <DialogDescription className="text-xs text-muted-foreground">
+                {selectedMaterial.category} · {selectedMaterial.status?.replace("_", " ")}
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="material-detail-body space-y-6 pt-4">
+              <div className="material-detail-primary grid grid-cols-3 gap-3 bg-secondary/50 p-4 rounded-xl text-center">
+                <span>
+                  <small className="micro-label block">Conductivity</small>
+                  <strong className="text-xl font-bold">{selectedMaterial.thermalConductivity}</strong>
+                  <em className="text-[10px] text-muted-foreground not-italic block">W/m·K</em>
+                </span>
+                <span>
+                  <small className="micro-label block">Density</small>
+                  <strong className="text-xl font-bold">{selectedMaterial.density}</strong>
+                  <em className="text-[10px] text-muted-foreground not-italic block">kg/m³</em>
+                </span>
+                <span>
+                  <small className="micro-label block">Specific Heat</small>
+                  <strong className="text-xl font-bold">{selectedMaterial.specificHeat}</strong>
+                  <em className="text-[10px] text-muted-foreground not-italic block">J/kg·K</em>
+                </span>
+              </div>
+
+              <div className="material-detail-grid grid grid-cols-2 gap-4 border-y border-border py-4 text-xs">
+                <div>
+                  <small className="text-muted-foreground block">Standard thickness</small>
+                  <strong className="font-semibold">{selectedMaterial.standardThicknessMm ?? "Not set"}{selectedMaterial.standardThicknessMm ? " mm" : ""}</strong>
+                </div>
+                <div>
+                  <small className="text-muted-foreground block">Embodied carbon</small>
+                  <strong className="font-semibold">{selectedMaterial.embodiedCarbonKgCo2 ?? "Low"}{selectedMaterial.embodiedCarbonKgCo2 ? " kgCO₂e" : ""}</strong>
+                </div>
+                <div>
+                  <small className="text-muted-foreground block">Solar absorptance</small>
+                  <strong className="font-semibold">{selectedMaterial.solarAbsorptance ?? "0.70"}</strong>
+                </div>
+                <div>
+                  <small className="text-muted-foreground block">Thermal emittance</small>
+                  <strong className="font-semibold">{selectedMaterial.thermalEmittance ?? "0.90"}</strong>
+                </div>
+              </div>
+
+              <div className="material-provenance flex items-start gap-3 rounded-xl border border-border bg-secondary/30 p-4 text-xs">
+                <ShieldCheck className="size-5 text-foreground shrink-0 mt-0.5" />
+                <div>
+                  <small className="text-muted-foreground block">Source & provenance</small>
+                  <strong className="font-semibold">{selectedMaterial.source || "Project material library"}</strong>
+                  <p className="text-muted-foreground mt-1 leading-relaxed">
+                    {selectedMaterial.notes || "Thermophysical properties are synchronized with the verified Cold-Climate Building Physics library (DRDO PS 26051)."}
+                  </p>
+                </div>
+              </div>
             </div>
 
-            <div className="grid grid-cols-3 gap-2">
+            <DialogFooter className="material-detail-footer flex items-center justify-between pt-4 border-t border-border">
+              <span className="text-[10px] font-mono text-muted-foreground">ID: {selectedMaterial.id}</span>
+              <div className="flex gap-2">
+                {selectedMaterial.status === "USER_DEFINED" && (
+                  <ActionButton
+                    tone="quiet"
+                    onClick={() => {
+                      deleteMaterial(selectedMaterial.id);
+                      setSelectedMaterial(null);
+                    }}
+                    className="text-red-500"
+                  >
+                    <Trash2 className="size-3.5" /> Delete
+                  </ActionButton>
+                )}
+                <ActionButton tone="secondary" onClick={() => setSelectedMaterial(null)}>
+                  Close record
+                </ActionButton>
+              </div>
+            </DialogFooter>
+          </>
+        )}
+      </Dialog>
+
+      {/* New Material Modal */}
+      <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen} contentClassName="max-w-md">
+        <form onSubmit={handleCreateMaterial}>
+          <DialogHeader>
+            <DialogTitle>Add Custom Material</DialogTitle>
+            <DialogDescription>Define a new material item in the workspace library.</DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4 text-xs">
+            <div>
+              <label className="font-semibold block mb-1">Material Name:</label>
+              <input
+                value={newMatName}
+                onChange={(e) => setNewMatName(e.target.value)}
+                placeholder="e.g. Local Pine Timber Deck"
+                required
+                className="w-full rounded-xl border border-border bg-background p-2.5 outline-none focus:border-foreground"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-xs font-semibold text-slate-300">k (W/m-K)</label>
-                <Input
+                <label className="font-semibold block mb-1">Category:</label>
+                <select
+                  value={newMatCategory}
+                  onChange={(e) => setNewMatCategory(e.target.value as any)}
+                  className="w-full rounded-xl border border-border bg-background p-2.5 outline-none"
+                >
+                  <option value="Insulation">Insulation</option>
+                  <option value="Thermal Mass">Thermal Mass</option>
+                  <option value="Structural">Structural</option>
+                  <option value="Finish">Finish</option>
+                  <option value="Membrane">Membrane</option>
+                </select>
+              </div>
+              <div>
+                <label className="font-semibold block mb-1">Conductivity (W/m·K):</label>
+                <input
                   type="number"
                   step="0.001"
                   value={newMatConductivity}
                   onChange={(e) => setNewMatConductivity(e.target.value)}
-                  required
-                  className="mt-1 bg-slate-950 border-slate-800"
+                  className="w-full rounded-xl border border-border bg-background p-2.5 outline-none"
                 />
               </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-xs font-semibold text-slate-300">ρ (kg/m³)</label>
-                <Input
+                <label className="font-semibold block mb-1">Density (kg/m³):</label>
+                <input
                   type="number"
-                  step="1"
                   value={newMatDensity}
                   onChange={(e) => setNewMatDensity(e.target.value)}
-                  required
-                  className="mt-1 bg-slate-950 border-slate-800"
+                  className="w-full rounded-xl border border-border bg-background p-2.5 outline-none"
                 />
               </div>
               <div>
-                <label className="text-xs font-semibold text-slate-300">Cp (J/kg-K)</label>
-                <Input
+                <label className="font-semibold block mb-1">Specific Heat (J/kg·K):</label>
+                <input
                   type="number"
-                  step="10"
                   value={newMatSpecificHeat}
                   onChange={(e) => setNewMatSpecificHeat(e.target.value)}
-                  required
-                  className="mt-1 bg-slate-950 border-slate-800"
+                  className="w-full rounded-xl border border-border bg-background p-2.5 outline-none"
                 />
               </div>
             </div>
 
             <div>
-              <label className="text-xs font-semibold text-slate-300">Engineering Notes / Source</label>
-              <Input
-                placeholder="e.g. Tested at NIT Srinagar / ASHRAE Fundamentals table"
+              <label className="font-semibold block mb-1">Engineering Notes / Source:</label>
+              <textarea
                 value={newMatNotes}
                 onChange={(e) => setNewMatNotes(e.target.value)}
-                className="mt-1 bg-slate-950 border-slate-800"
+                placeholder="Source documentation or manufacturer datasheet reference."
+                rows={3}
+                className="w-full rounded-xl border border-border bg-background p-2.5 outline-none"
               />
             </div>
           </div>
 
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => setIsCreateOpen(false)}>
+          <DialogFooter className="flex justify-end gap-2">
+            <ActionButton tone="quiet" type="button" onClick={() => setIsCreateOpen(false)}>
               Cancel
-            </Button>
-            <Button type="submit" className="font-bold">
+            </ActionButton>
+            <ActionButton tone="primary" type="submit">
               Save Material
-            </Button>
+            </ActionButton>
           </DialogFooter>
         </form>
       </Dialog>
