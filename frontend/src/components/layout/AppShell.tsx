@@ -16,6 +16,7 @@ import {
 import { useShelterStore } from "@/lib/store/use-shelter-store";
 import { BrandMark, Status } from "@/components/v0/platform-components";
 import { WORKFLOW_PIPELINE } from "@/components/layout/WorkflowFooter";
+import { usePlatformInit } from "@/hooks/use-platform-init";
 
 interface NavItem {
   id: string;
@@ -30,6 +31,7 @@ const GLOBAL_NAV: NavItem[] = [
 ];
 
 export function AppShell({ children }: { children: React.ReactNode }) {
+  usePlatformInit();
   const pathname = usePathname();
   const router = useRouter();
   const [mobileOpen, setMobileOpen] = useState(false);

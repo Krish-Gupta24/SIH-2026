@@ -219,7 +219,7 @@ export function generateReproducibilityManifest(jobs: SimulationJobItem[]): Repr
     manifestId: `REP-MAN-${Date.now().toString().slice(-8)}`,
     generatedAt: new Date().toISOString(),
     engineName: referenceJob?.engine || "EnergyPlus",
-    engineVersion: referenceJob?.engineVersion || "24.1.0",
+    engineVersion: referenceJob?.engineVersion || "26.1.0",
     weatherDatasetName: weather,
     weatherStationId: referenceJob?.weatherDatasetId || "wx-leh-ladakh",
     elevationM: elevation,

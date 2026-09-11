@@ -58,7 +58,7 @@ export function ReportsView() {
   
   const wallAssembly = activeProject?.envelope?.walls?.south || activeProject?.envelope?.walls?.north;
   const wallLayers = wallAssembly?.layers || [];
-  const rSum = wallLayers.reduce((acc: number, l: any) => acc + (l.thickness / (l.conductivity || 0.04)), 0) + 0.17;
+  const rSum = wallLayers.reduce((acc: number, l: any) => acc + (l.thickness / (l.conductivity || l.thermalConductivity || 0.04)), 0) + 0.17;
   const uVal = rSum > 0.17 ? Number((1 / rSum).toFixed(2)) : null;
   const isECBCCompliant = uVal !== null ? uVal <= 0.30 : false;
   const isAirtight = (activeProject.ventilation?.infiltrationACH || 0.35) <= 0.5;
@@ -70,7 +70,7 @@ export function ReportsView() {
     ? Number((completedSim.results.hourlyTimeseries.reduce((sum, h) => sum + (h.solarGainsW || 0), 0) / 1000).toFixed(1))
     : null;
 
-  const preservedEngine = completedSim?.engine ? `${completedSim.engine} (v${completedSim.engineVersion})` : "EnergyPlus v24.1.0 / RC Solver";
+  const preservedEngine = completedSim?.engine ? `${completedSim.engine} (v${completedSim.engineVersion})` : "EnergyPlus v26.1.0 / RC Solver";
   const preservedWeather = activeWeather?.name || "Leh Airport Station (3500m) IND_JK_Leh.420270_ISHRAE.epw";
   const preservedProjectVer = `v${activeProject.project?.version || "1.0.0"}`;
   const preservedModelVer = `Canonical Schema ${activeProject.schemaVersion || "1.0.0"}`;

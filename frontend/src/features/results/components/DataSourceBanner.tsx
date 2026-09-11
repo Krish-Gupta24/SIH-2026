@@ -18,7 +18,7 @@ export function DataSourceBanner({
   visibility,
   onToggle,
   engineName = "EnergyPlus",
-  engineVersion = "24.1.0",
+  engineVersion = "26.1.0",
   fieldSiteName = "Ladakh High-Altitude Field Sensor Array (3,500m)",
   benchmarkStandard = "ASHRAE 55 / IS 15865 Baseline",
 }: DataSourceBannerProps) {

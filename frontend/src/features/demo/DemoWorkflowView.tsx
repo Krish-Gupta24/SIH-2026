@@ -242,20 +242,20 @@ const DEMO_STEPS: DemoStep[] = [
     id: 11,
     title: "11. Run Simulation",
     category: "3D & Simulation",
-    shortSummary: "Submit canonical ShelterModel to the EnergyPlus 24.1 simulation engine without fake shortcuts.",
+    shortSummary: "Submit canonical ShelterModel to the EnergyPlus 26.1 simulation engine without fake shortcuts.",
     defenseRationale: "Executes rigorous first-principles heat balance calculations (TARP inside, DOE-2 outside, CTF conduction transfer functions).",
     actionLabel: "Submit EnergyPlus Simulation Job",
     targetRoute: "/simulations",
     provenance: "SIMULATED",
     parameters: [
-      { label: "Simulation Engine", value: "EnergyPlus Version 24.1.0 (US DOE / NREL)" },
+      { label: "Simulation Engine", value: "EnergyPlus Version 26.1.0 (US DOE / NREL)" },
       { label: "Job ID", value: "sim-ladakh-01 (Canonical Outpost Run)" },
       { label: "Execution Mode", value: "True Physics Engine (Asynchronous Worker)" },
       { label: "Timestep Frequency", value: "4 Timesteps per Hour (15-min Integration)" },
       { label: "Simulation Status", value: "COMPLETED (Exit Code 0)", badge: "SIMULATED" },
     ],
     keyInsight: "Zero fake numbers: all outputs are parsed from authentic EnergyPlus output artifacts (eplusout.csv, eplusout.err).",
-    executedStatus: "EnergyPlus 24.1 simulation completed in 14.2 seconds",
+    executedStatus: "EnergyPlus 26.1 simulation completed in 14.2 seconds",
   },
   {
     id: 12,
@@ -418,7 +418,7 @@ const DEMO_STEPS: DemoStep[] = [
     provenance: "REFERENCE",
     parameters: [
       { label: "Report Title", value: "Defense Shelter Thermal Engineering Assessment" },
-      { label: "Engine Provenance", value: "EnergyPlus Version 24.1.0" },
+      { label: "Engine Provenance", value: "EnergyPlus Version 26.1.0" },
       { label: "Weather Citation", value: "IND_JK_Leh.420270_ISHRAE.epw" },
       { label: "Export Formats", value: "Vector PDF (ReportLab) | CSV Timeseries | JSON Schema" },
       { label: "SIH Problem Statement", value: "Compliant with SIH 2026 Problem 26051" },
@@ -808,7 +808,7 @@ export function DemoWorkflowView() {
               <div className="pt-3 border-t border-slate-800 flex justify-between">
                 <span className="text-slate-400">Simulation Status:</span>
                 <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30 text-[10px]">
-                  Simulated via EnergyPlus 24.1
+                  Simulated via EnergyPlus 26.1
                 </Badge>
               </div>
             </CardContent>

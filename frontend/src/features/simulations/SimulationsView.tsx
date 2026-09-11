@@ -19,7 +19,8 @@ import {
   Calendar,
   ArrowRight,
 } from "lucide-react";
-import { useShelterStore, SimulationJobItem } from "@/lib/store/use-shelter-store";
+import { useShelterStore, SimulationJobItem, transformBackendJobToItem } from "@/lib/store/use-shelter-store";
+import { simulationApi } from "@/lib/api";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -48,6 +49,7 @@ export function SimulationsView() {
     comparisonJobIds,
     activeWeatherId,
     weatherDatasets,
+    settings,
   } = useShelterStore();
 
   const [isQueueing, setIsQueueing] = useState(false);
@@ -56,6 +58,68 @@ export function SimulationsView() {
 
   const [confirmTestDataModal, setConfirmTestDataModal] = useState<boolean>(false);
   const [pendingSimProject, setPendingSimProject] = useState<any>(null);
+
+  // Poll active simulation jobs until completion
+  const pollSimulationStatus = React.useCallback(
+    (simId: string, proj: any) => {
+      let attempts = 0;
+      const maxAttempts = 120; // Up to 5 minutes
+      const interval = setInterval(async () => {
+        attempts++;
+        try {
+          const statusData = await simulationApi.status(simId);
+          if (statusData.status === "completed") {
+            clearInterval(interval);
+            try {
+              const results = await simulationApi.results(simId);
+              const transformed = transformBackendJobToItem({ ...statusData, results }, projects);
+              updateSimulationJob(simId, {
+                status: "completed",
+                results: transformed.results,
+                completedAt: statusData.completed_at || new Date().toISOString(),
+                durationSeconds: statusData.duration_seconds,
+              });
+            } catch (rErr) {
+              console.error("Failed to fetch completed results:", rErr);
+              updateSimulationJob(simId, {
+                status: "completed",
+                completedAt: statusData.completed_at || new Date().toISOString(),
+                durationSeconds: statusData.duration_seconds,
+              });
+            }
+          } else if (statusData.status === "failed" || statusData.status === "cancelled") {
+            clearInterval(interval);
+            updateSimulationJob(simId, {
+              status: "failed",
+              error: statusData.error_message || "Simulation failed during execution.",
+            });
+          } else {
+            updateSimulationJob(simId, {
+              status: statusData.status || "running",
+              durationSeconds: statusData.duration_seconds,
+            });
+          }
+        } catch (pollErr) {
+          console.warn(`Polling simulation ${simId} check warning:`, pollErr);
+        }
+
+        if (attempts >= maxAttempts) {
+          clearInterval(interval);
+        }
+      }, 2500);
+    },
+    [projects, updateSimulationJob]
+  );
+
+  // Auto-resume polling for any active simulation jobs in the store
+  React.useEffect(() => {
+    const activeJobs = simulations.filter(
+      (s) => s.status === "queued" || s.status === "preparing" || s.status === "running"
+    );
+    activeJobs.forEach((job) => {
+      pollSimulationStatus(job.id, job.shelterModel);
+    });
+  }, [simulations, pollSimulationStatus]);
 
   // Simulation Period & Timestep Configuration State
   const [periodPreset, setPeriodPreset] = useState<"quick" | "multi_3" | "multi_7" | "monthly" | "full_year" | "custom">("quick");
@@ -157,18 +221,7 @@ export function SimulationsView() {
         allow_test_data: allowTestData,
       };
 
-      const res = await fetch("/api/simulations", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-
-      if (!res.ok) {
-        const errJson = await res.json().catch(() => ({ detail: "Failed to queue simulation job." }));
-        throw new Error(errJson.detail || "Server failed to queue simulation.");
-      }
-
-      const data = await res.json();
+      const data = await simulationApi.queue(payload);
       const simId = data.simulation_id || `sim-${Date.now().toString().slice(-6)}`;
       setLastQueuedJobId(simId);
 
@@ -200,14 +253,13 @@ export function SimulationsView() {
         },
         allowTestData: isTest,
         engine: "EnergyPlus",
-        engineVersion: "24.1.0",
-        status: "completed",
+        engineVersion: settings.energyPlusVersion || "26.1.0",
+        status: "queued",
         queuedAt: new Date().toISOString(),
-        completedAt: new Date().toISOString(),
-        durationSeconds: isAnnual ? 65.4 : 14.2,
       };
 
       addSimulationJob(newJob);
+      pollSimulationStatus(simId, projToSim);
     } catch (err: any) {
       console.error("Queueing simulation failed:", err);
       setQueueError(err.message || "Failed to dispatch simulation to EnergyPlus engine.");
@@ -267,7 +319,7 @@ export function SimulationsView() {
     <div className="space-y-10 max-w-7xl mx-auto">
       {/* V0 Page Intro */}
       <PageIntro
-        eyebrow="Validated EnergyPlus 24.1 Dispatch"
+        eyebrow="Validated EnergyPlus 26.1 Dispatch"
         title="Run thermal simulation"
         description="Send the canonical model to the physics simulation engine with explicit period, timestep resolution, and authentic weather provenance."
         action={
@@ -315,7 +367,7 @@ export function SimulationsView() {
             <div className="space-y-1.5">
               <div className="flex items-center gap-2">
                 <Status strong>Simulation Validated · Run {latestRun.id}</Status>
-                <span className="text-[10px] text-[#6E818F]">EnergyPlus 24.1</span>
+                <span className="text-[10px] text-[#6E818F]">EnergyPlus 26.1</span>
               </div>
               <h3 className="font-editorial text-2xl font-medium tracking-tight text-foreground">
                 Thermal Performance Ready for Analysis
@@ -545,7 +597,7 @@ export function SimulationsView() {
 
         <div className="rounded-[2rem] border border-border bg-card p-6 shadow-[0_20px_55px_rgba(0,0,0,.04)]">
           <div className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Engine In Use</div>
-          <div className="text-base font-bold text-foreground mt-2">EnergyPlus 24.1.0</div>
+          <div className="text-base font-bold text-foreground mt-2">EnergyPlus 26.1.0</div>
           <p className="text-[10px] text-muted-foreground mt-1">RC Solver & heat balance</p>
         </div>
 

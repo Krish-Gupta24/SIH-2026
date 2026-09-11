@@ -128,7 +128,7 @@ export function PremiumLanding({ onOpen, onContinue, hasProject, summary }: Land
           <nav className="mx-5 mt-2 rounded-[2rem] border border-white/20 bg-black/95 p-6 text-white shadow-2xl backdrop-blur-2xl md:hidden space-y-4">
             <div className="flex items-center justify-between border-b border-white/10 pb-3">
               <span className="text-xs font-semibold uppercase tracking-wider text-white/60">Platform Modules</span>
-              <span className="text-[10px] text-emerald-400 font-mono">EnergyPlus v24.1.0</span>
+              <span className="text-[10px] text-emerald-400 font-mono">EnergyPlus v26.1.0</span>
             </div>
 
             <div className="grid grid-cols-2 gap-2 text-xs font-medium">
@@ -246,7 +246,7 @@ export function PremiumLanding({ onOpen, onContinue, hasProject, summary }: Land
                   <span className="size-2 rounded-full bg-emerald-400 animate-pulse" />
                   <span className="font-semibold uppercase tracking-wider">SIH 2026 · DRDO PS 26051</span>
                   <span className="text-white/30">•</span>
-                  <span className="font-mono text-emerald-300">EnergyPlus 24.1.0</span>
+                  <span className="font-mono text-emerald-300">EnergyPlus 26.1.0</span>
                 </div>
 
                 <h1 className="hero-title text-balance mt-4">

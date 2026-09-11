@@ -26,7 +26,7 @@ export function WarningsAndErrorsAlert({
   status,
   durationSeconds = 12.4,
   engineName = "EnergyPlus",
-  engineVersion = "24.1.0",
+  engineVersion = "26.1.0",
   completedAt,
   warnings = [
     "Zone 'LIVING_ZONE' evaluated under Leh Ladakh sub-zero nocturnal design conditions.",

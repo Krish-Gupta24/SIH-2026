@@ -19,6 +19,7 @@ import {
   CheckCircle2,
 } from "lucide-react";
 import { useShelterStore } from "@/lib/store/use-shelter-store";
+import { simulationApi } from "@/lib/api";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -43,28 +44,46 @@ export function ProjectDetailsView({ projectId }: { projectId: string }) {
     );
   }
 
-  const handleRunSimulation = () => {
+  const handleRunSimulation = async () => {
     setIsSimulating(true);
-    const newJobId = `sim-${Date.now().toString().slice(-6)}`;
+    try {
+      const weatherFileName = project.location?.weatherSource || activeWeather?.filePath || "IND_JK_Leh.427053_TMYx.epw";
+      const payload = {
+        project_id: project.id,
+        shelter_model: project,
+        weather_file: weatherFileName,
+        start_month: 1,
+        start_day: 1,
+        end_month: 1,
+        end_day: 3,
+        timestep: 4,
+        is_annual: false,
+        timeout_seconds: 600,
+        allow_test_data: false,
+      };
 
-    // Dispatch simulation job to store
-    addSimulationJob({
-      id: newJobId,
-      projectId: project.id,
-      projectName: project.project?.name || project.id,
-      shelterModel: project,
-      weatherDatasetId: activeWeather.id,
-      weatherDatasetName: activeWeather.name,
-      engine: "EnergyPlus",
-      engineVersion: "24.1.0",
-      status: "queued",
-      queuedAt: new Date().toISOString(),
-    });
+      const data = await simulationApi.queue(payload);
+      const newJobId = data.simulation_id;
 
-    setTimeout(() => {
-      setIsSimulating(false);
+      // Dispatch simulation job to store
+      addSimulationJob({
+        id: newJobId,
+        projectId: project.id,
+        projectName: project.project?.name || project.id,
+        shelterModel: project,
+        weatherDatasetId: activeWeather?.id || "leh-weather",
+        weatherDatasetName: activeWeather?.name || weatherFileName,
+        engine: "EnergyPlus",
+        engineVersion: "26.1.0",
+        status: "queued",
+        queuedAt: new Date().toISOString(),
+      });
+
       router.push("/simulations");
-    }, 600);
+    } catch (err) {
+      console.error("Failed to queue simulation from project details:", err);
+      setIsSimulating(false);
+    }
   };
 
   const walls = Object.entries(project.envelope?.walls || {});

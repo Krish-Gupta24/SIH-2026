@@ -50,7 +50,7 @@ export function Step13SimulationSettings({ form, advancedMode }: StepProps) {
             {...register("simulationSettings.engine")}
             className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-blue-500 focus:outline-none dark:border-slate-700 dark:bg-slate-900 dark:text-white"
           >
-            <option value="EnergyPlus">EnergyPlus 24.1 (Active Production Engine — DOE Certified)</option>
+            <option value="EnergyPlus">EnergyPlus 26.1 (Active Production Engine — DOE Certified)</option>
             <option value="OpenStudio">OpenStudio 3.7 (Detailed HVAC & Envelope)</option>
             <option value="ANSYS" disabled>ANSYS Fluent (Optional / Future Validation Engine — Inactive)</option>
           </select>

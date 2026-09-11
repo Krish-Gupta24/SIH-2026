@@ -9,7 +9,8 @@ import {
   defaultShelterFormValues,
 } from "./schema";
 import { useDesignerDraft } from "./use-designer-draft";
-import { useShelterStore, SimulationJobItem } from "@/lib/store/use-shelter-store";
+import { useShelterStore, SimulationJobItem, transformBackendJobToItem } from "@/lib/store/use-shelter-store";
+import { simulationApi } from "@/lib/api";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { WorkflowFooter } from "@/components/layout/WorkflowFooter";
@@ -81,6 +82,7 @@ export function ShelterDesignerWizard() {
     setActiveWizardStep,
     updateProject,
     addSimulationJob,
+    updateSimulationJob,
   } = useShelterStore();
   const activeModel = projects.find((p) => p.id === activeProjectId) || projects[0];
 
@@ -100,6 +102,58 @@ export function ShelterDesignerWizard() {
   const [submissionError, setSubmissionError] = useState<string | null>(null);
   const [confirmTestDataModal, setConfirmTestDataModal] = useState<boolean>(false);
   const [pendingValues, setPendingValues] = useState<ShelterFormValues | null>(null);
+
+  // Poll simulation until completion
+  const pollJobStatus = React.useCallback(
+    (simId: string, model: any) => {
+      let attempts = 0;
+      const maxAttempts = 120;
+      const interval = setInterval(async () => {
+        attempts++;
+        try {
+          const statusData = await simulationApi.status(simId);
+          if (statusData.status === "completed") {
+            clearInterval(interval);
+            try {
+              const results = await simulationApi.results(simId);
+              const transformed = transformBackendJobToItem({ ...statusData, results }, projects);
+              updateSimulationJob(simId, {
+                status: "completed",
+                results: transformed.results,
+                completedAt: statusData.completed_at || new Date().toISOString(),
+                durationSeconds: statusData.duration_seconds,
+              });
+            } catch (rErr) {
+              console.error("Failed to fetch completed results in wizard:", rErr);
+              updateSimulationJob(simId, {
+                status: "completed",
+                completedAt: statusData.completed_at || new Date().toISOString(),
+                durationSeconds: statusData.duration_seconds,
+              });
+            }
+          } else if (statusData.status === "failed" || statusData.status === "cancelled") {
+            clearInterval(interval);
+            updateSimulationJob(simId, {
+              status: "failed",
+              error: statusData.error_message || "Simulation failed during execution.",
+            });
+          } else {
+            updateSimulationJob(simId, {
+              status: statusData.status || "running",
+              durationSeconds: statusData.duration_seconds,
+            });
+          }
+        } catch (pollErr) {
+          console.warn(`Polling simulation ${simId} check warning:`, pollErr);
+        }
+
+        if (attempts >= maxAttempts) {
+          clearInterval(interval);
+        }
+      }, 2500);
+    },
+    [projects, updateSimulationJob]
+  );
 
   // Sync step if store or query param changes
   React.useEffect(() => {
@@ -278,18 +332,7 @@ export function ShelterDesignerWizard() {
         allow_test_data: Boolean(allowTestDataOverride),
       };
 
-      const res = await fetch("/api/simulations", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-
-      if (!res.ok) {
-        const errorData = await res.json().catch(() => ({ detail: "Failed to queue simulation job." }));
-        throw new Error(errorData.detail || errorData.error || "Server error queueing simulation.");
-      }
-
-      const data = await res.json();
+      const data = await simulationApi.queue(payload);
       setSubmittedJobId(data.simulation_id);
 
       const isTest = Boolean(allowTestDataOverride || isTestData);
@@ -302,12 +345,11 @@ export function ShelterDesignerWizard() {
         weatherDatasetName: values.location.weatherSource || "Authentic Leh Climate",
         engine: "EnergyPlus",
         engineVersion: "26.1.0",
-        status: "completed",
+        status: "queued",
         queuedAt: new Date().toISOString(),
-        completedAt: new Date().toISOString(),
-        durationSeconds: 12.5,
       };
       addSimulationJob(newJob);
+      pollJobStatus(data.simulation_id, payload.shelter_model);
     } catch (err: any) {
       console.error("Submission failed:", err);
       setSubmissionError(err.message || "Failed to submit simulation.");
@@ -501,10 +543,10 @@ export function ShelterDesignerWizard() {
                     View in Simulations Dashboard &rarr;
                   </Link>
                   <Link
-                    href="/results"
+                    href={`/results?jobId=${submittedJobId}`}
                     className="inline-flex items-center gap-1.5 rounded-full border border-emerald-600/40 bg-white px-4 py-2 text-xs font-bold text-emerald-800 shadow-sm transition hover:bg-[#CBDCE6]"
                   >
-                    Analyze Thermal Results
+                    Analyze Thermal Results &rarr;
                   </Link>
                 </div>
               </div>
