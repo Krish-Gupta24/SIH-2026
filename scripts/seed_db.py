@@ -9,11 +9,15 @@ ROOT_DIR = Path(__file__).resolve().parent.parent
 if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
-from backend.core.database import AsyncSessionLocal
+from backend.core.database import AsyncSessionLocal, engine, Base
+import backend.models
 from backend.models.material import MaterialEntity
 
 
 async def seed_materials():
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+
     materials_file = ROOT_DIR / "database" / "seeds" / "default_materials.json"
     if not materials_file.exists():
         print("Seed file not found:", materials_file)
@@ -23,6 +27,7 @@ async def seed_materials():
         data = json.load(f)
 
     async with AsyncSessionLocal() as session:
+
         for item in data:
             entity = MaterialEntity(
                 id=item["id"],

@@ -98,7 +98,7 @@ class OutputVariableRegistry:
             frequency="Hourly",
             parser_key="solar_gains_total_energy_j",
             category=OutputCategory.SOLAR,
-            concept="total useful solar gain",
+            concept="transmitted solar radiation (total useful solar gain)",
             is_required=True,
             description="Cumulative integrated solar heat energy transmitted into zone across timestep",
         ),
@@ -241,7 +241,7 @@ class OutputVariableRegistry:
         ),
         OutputVariableSpec(
             metric="zone_infiltration_ach",
-            ep_variable_name="Zone Infiltration Current Density Air Change Rate",
+            ep_variable_name="Zone Infiltration Air Change Rate",
             unit="ach",
             frequency="Hourly",
             parser_key="infiltration_ach",

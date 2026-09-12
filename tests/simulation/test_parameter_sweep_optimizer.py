@@ -22,6 +22,7 @@ from backend.optimization.parameter_sweep_optimizer import (
     ParameterSweepOptimizer,
     OptimizationConstraint,
 )
+from simulation.runners.energyplus_runner import EnergyPlusRunner
 
 
 class TestParameterSweepOptimizer(unittest.TestCase):
@@ -209,6 +210,7 @@ class TestParameterSweepOptimizer(unittest.TestCase):
         self.assertEqual(len(violations_fail), 1)
         self.assertIn("indoor_min_c", violations_fail[0])
 
+    @unittest.skipUnless(EnergyPlusRunner().is_available, "EnergyPlus binary not available on host machine")
     def test_06_full_sweep_ranking_and_best_candidate(self):
         """Verify complete 8-step sweep execution, ranking, and Pareto identification."""
         custom_options = {

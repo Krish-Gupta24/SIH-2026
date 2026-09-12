@@ -17,6 +17,7 @@ from simulation.results.result import (
 from simulation.results.metrics import MetricCalculator
 from simulation.results.parser import EnergyPlusResultParser
 from simulation.runners.engine import EnergyPlusEngine
+from simulation.runners.energyplus_runner import EnergyPlusRunner
 
 
 class TestNormalizedSimulationResult(unittest.TestCase):
@@ -291,6 +292,7 @@ class TestNormalizedSimulationResult(unittest.TestCase):
             self.assertIn("24.1.0-custom", result.metadata.engine_version)
             self.assertIn("Leh_Ladakh_IND", result.metadata.weather_dataset)
 
+    @unittest.skipUnless(EnergyPlusRunner().is_available, "EnergyPlus binary not available on host machine")
     def test_09_end_to_end_engine_generates_simulation_result(self):
         """Verify EnergyPlusEngine produces typed SimulationResult and valid normalized_results.json."""
         shelter_model = {

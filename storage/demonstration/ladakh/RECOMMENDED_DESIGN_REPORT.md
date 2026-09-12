@@ -1,6 +1,6 @@
 # RECOMMENDED DESIGN: Standard EPS Wall (200mm) [Maximize Comfort]
-> **Report ID**: `REC-opt-sweep-65ecfa16-CAND-FA16-003` | **Simulation ID**: `sim-fa16-003` | **Generated**: 2026-09-11T12:22:12.056570+00:00
-> **Simulation Engine**: `26.1.0-6f2e40d102` | **Weather Dataset**: `IND_JK_Leh.427053_TMYx.epw`
+> **Report ID**: `REC-opt-sweep-f19bfb55-CAND-FB55-003` | **Simulation ID**: `sim-fb55-003` | **Generated**: 2026-09-12T10:05:54.938280+00:00
+> **Simulation Engine**: `24.1.0-9d7789a3ac` | **Weather Dataset**: `IND_JK_Leh.427053_TMYx.epw`
 > **Engineering Notice**: Best configuration found within the evaluated design space and constraints.
 
 ## 1. Objective

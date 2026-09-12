@@ -37,7 +37,7 @@ class Settings(BaseSettings):
     # Simulation Engines
     ENERGYPLUS_DIR: str = r"C:\EnergyPlusV24-1-0"
     ENERGYPLUS_EXE: str = r"C:\EnergyPlusV24-1-0\energyplus.exe"
-    OPENSTUDIO_EXE: str = r"C:\openstudio-3.7.0\bin\openstudio.exe"
+    OPENSTUDIO_EXE: str = r"C:\openstudio-3.7.0\bin\openstudio.exe"  # Reserved for future extension; primary solver is EnergyPlus 24.1.0
     ANSYS_DIR: str = r"C:\Program Files\ANSYS Inc\v241"
     SIMULATION_TEMP_DIR: str = "./storage/simulations"
     SIMULATION_TIMEOUT_SECONDS: int = 600

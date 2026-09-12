@@ -258,6 +258,186 @@ INITIAL_TEST_MATERIALS: List[Material] = [
         notes="Non-combustible stone wool / mineral fiber thermal insulation for roof assemblies.",
         cost_per_m3=95.0,
     ),
+    # 15. Pine Wood Ceiling Deck
+    Material(
+        id="mat-timber-deck",
+        name="Pine Wood Ceiling Deck",
+        category="Wood / Finish",
+        density=550.0,                 # kg/m³
+        thermal_conductivity=0.13,     # W/(m·K)
+        specific_heat=1600.0,          # J/(kg·K)
+        thermal_absorptance=0.90,
+        solar_absorptance=0.60,
+        visible_absorptance=0.60,
+        roughness="MediumSmooth",
+        source="IS 3792:1978 / NBC 2016",
+        provenance="Table 1, Timber Across Grain / Pine Ceiling Board",
+        status=MaterialStatus.VERIFIED,
+        notes="Interior timber ceiling deck and lining for roof assemblies.",
+        cost_per_m3=240.0,
+    ),
+    # 16. Crushed Stone Hardcore Sub-base
+    Material(
+        id="mat-gravel-bed",
+        name="Crushed Stone Hardcore Sub-base",
+        category="Mass / Masonry",
+        density=1800.0,                # kg/m³
+        thermal_conductivity=0.85,     # W/(m·K)
+        specific_heat=1000.0,          # J/(kg·K)
+        thermal_absorptance=0.90,
+        solar_absorptance=0.80,
+        visible_absorptance=0.80,
+        roughness="Rough",
+        source="IS 3792:1978 & NBC 2016 Part 8",
+        provenance="Table 27, Dry Gravel / Crushed Stone Hardcore Sub-base",
+        status=MaterialStatus.VERIFIED,
+        notes="Drainage and capillary break hardcore layer under ground contact slabs.",
+        cost_per_m3=35.0,
+    ),
+    # 17. Rigid Polyurethane Foam (PIR)
+    Material(
+        id="mat-polyurethane-foam",
+        name="Rigid Polyurethane Foam (PIR)",
+        category="Insulation",
+        density=32.0,                  # kg/m³
+        thermal_conductivity=0.024,    # W/(m·K)
+        specific_heat=1400.0,          # J/(kg·K)
+        thermal_absorptance=0.90,
+        solar_absorptance=0.60,
+        visible_absorptance=0.60,
+        roughness="Smooth",
+        source="ASHRAE Handbook Fundamentals 2021",
+        provenance="Chapter 26, Table 4, Entry: Polyisocyanurate / Polyurethane Board",
+        status=MaterialStatus.VERIFIED,
+        notes="High-performance closed-cell thermal insulation for roofs and cold bridges.",
+        cost_per_m3=180.0,
+    ),
+    # 18. Bitumen Waterproofing Membrane
+    Material(
+        id="mat-asphalt-shingle",
+        name="Bitumen Waterproofing Membrane",
+        category="Roofing / Membrane",
+        density=1100.0,                # kg/m³
+        thermal_conductivity=0.17,     # W/(m·K)
+        specific_heat=1000.0,          # J/(kg·K)
+        thermal_absorptance=0.90,
+        solar_absorptance=0.85,
+        visible_absorptance=0.85,
+        roughness="Rough",
+        source="ASHRAE Handbook Fundamentals 2021",
+        provenance="Chapter 26, Table 4, Entry: Asphalt Roll Roofing / Shingle",
+        status=MaterialStatus.VERIFIED,
+        notes="Waterproofing underlayment and weather barrier.",
+        cost_per_m3=75.0,
+    ),
+    # 19. Hardwood / Timber Plank Flooring
+    Material(
+        id="mat-timber-flooring",
+        name="Hardwood Timber Plank Flooring",
+        category="Wood / Finish",
+        density=650.0,                 # kg/m³
+        thermal_conductivity=0.14,     # W/(m·K)
+        specific_heat=1600.0,          # J/(kg·K)
+        thermal_absorptance=0.90,
+        solar_absorptance=0.65,
+        visible_absorptance=0.65,
+        roughness="MediumSmooth",
+        source="IS 3792:1978",
+        provenance="Table 1, Hardwood Flooring",
+        status=MaterialStatus.VERIFIED,
+        notes="Interior floor timber planking.",
+        cost_per_m3=320.0,
+    ),
+    # 20. Softwood Timber Framing
+    Material(
+        id="mat-timber-stud",
+        name="Softwood Timber Framing",
+        category="Wood / Structure",
+        density=500.0,                 # kg/m³
+        thermal_conductivity=0.13,     # W/(m·K)
+        specific_heat=1600.0,          # J/(kg·K)
+        thermal_absorptance=0.90,
+        solar_absorptance=0.65,
+        visible_absorptance=0.65,
+        roughness="MediumSmooth",
+        source="IS 3792:1978",
+        provenance="Table 1, Structural Softwood",
+        status=MaterialStatus.VERIFIED,
+        notes="Lightweight framing and structural studs.",
+        cost_per_m3=260.0,
+    ),
+    # 21. Hollow Concrete Block
+    Material(
+        id="mat-concrete-block",
+        name="Hollow Concrete Block",
+        category="Mass / Masonry",
+        density=1400.0,                # kg/m³
+        thermal_conductivity=0.90,     # W/(m·K)
+        specific_heat=1000.0,          # J/(kg·K)
+        thermal_absorptance=0.90,
+        solar_absorptance=0.70,
+        visible_absorptance=0.70,
+        roughness="MediumRough",
+        source="IS 2185 (Part 1): 2005 / IS 3792",
+        provenance="Table 1, Concrete Hollow Block Class A",
+        status=MaterialStatus.VERIFIED,
+        notes="Cellular masonry with moderate thermal mass.",
+        cost_per_m3=80.0,
+    ),
+    # 22. Lime Sand Interior Plaster
+    Material(
+        id="mat-lime-plaster",
+        name="Lime Sand Interior Plaster",
+        category="Plaster / Finish",
+        density=1600.0,                # kg/m³
+        thermal_conductivity=0.70,     # W/(m·K)
+        specific_heat=900.0,           # J/(kg·K)
+        thermal_absorptance=0.90,
+        solar_absorptance=0.50,
+        visible_absorptance=0.50,
+        roughness="MediumSmooth",
+        source="IS 3792:1978",
+        provenance="Table 1, Lime Sand Plaster",
+        status=MaterialStatus.VERIFIED,
+        notes="Breathable internal lime plaster finish.",
+        cost_per_m3=50.0,
+    ),
+    # 23. Traditional Mud & Straw Plaster
+    Material(
+        id="mat-mud-straw-plaster",
+        name="Traditional Mud & Straw Plaster",
+        category="Plaster / Finish",
+        density=1300.0,                # kg/m³
+        thermal_conductivity=0.45,     # W/(m·K)
+        specific_heat=920.0,           # J/(kg·K)
+        thermal_absorptance=0.90,
+        solar_absorptance=0.68,
+        visible_absorptance=0.65,
+        roughness="Rough",
+        source="DRDO DIHAR Leh Field Study 2019",
+        provenance="Technical Bulletin on High-Altitude Mud-Straw Plasters",
+        status=MaterialStatus.VERIFIED,
+        notes="Traditional insulating clay-straw blend finish.",
+        cost_per_m3=40.0,
+    ),
+    # 24. Himalayan Cedar / Deodar Finish
+    Material(
+        id="mat-timber-cedar",
+        name="Himalayan Cedar / Deodar Finish",
+        category="Wood / Finish",
+        density=550.0,                 # kg/m³
+        thermal_conductivity=0.12,     # W/(m·K)
+        specific_heat=1600.0,          # J/(kg·K)
+        thermal_absorptance=0.90,
+        solar_absorptance=0.65,
+        visible_absorptance=0.65,
+        roughness="MediumSmooth",
+        source="IS 3792:1978",
+        provenance="Table 1, Cedrus deodara Wood Across Grain",
+        status=MaterialStatus.VERIFIED,
+        notes="Durable aromatic alpine wood finish.",
+        cost_per_m3=350.0,
+    ),
 ]
 
 
@@ -270,6 +450,8 @@ class MaterialDatabase:
         "mineralwool": "mat-mineral-wool",
         "mat_mineral_wool": "mat-mineral-wool",
         "mat-mineral-wool": "mat-mineral-wool",
+        "mat-rockwool": "mat-mineral-wool",
+        "rockwool": "mat-mineral-wool",
         "eps_insulation": "mat-eps-insulation",
 
         "eps": "mat-eps-insulation",
@@ -278,6 +460,7 @@ class MaterialDatabase:
         "aerogel": "mat-aerogel-blanket",
         "aerogel_blanket": "mat-aerogel-blanket",
         "mat_aerogel_blanket": "mat-aerogel-blanket",
+        "mat-aerogel": "mat-aerogel-blanket",
         "rammedearth": "mat-rammed-earth",
         "rammed_earth": "mat-rammed-earth",
         "mudplaster": "mat-mud-plaster",
@@ -287,6 +470,9 @@ class MaterialDatabase:
         "stone_masonry": "mat-granite-stone",
         "mat_stone_masonry": "mat-granite-stone",
         "mat-stone-masonry": "mat-granite-stone",
+        "mat-stone-granite": "mat-granite-stone",
+        "mat_stone_granite": "mat-granite-stone",
+        "stone_granite": "mat-granite-stone",
         "himalayantimber": "mat-himalayan-timber",
         "himalayan_timber": "mat-himalayan-timber",
         "concreteslab": "mat-concrete-slab",
@@ -305,8 +491,49 @@ class MaterialDatabase:
         "metalroofing": "mat-galvanized-steel",
         "metal_roofing": "mat-galvanized-steel",
         "galvanized_steel": "mat-galvanized-steel",
+        "mat-corrugated-gi": "mat-galvanized-steel",
+        "corrugated_gi": "mat-galvanized-steel",
+        "mat-tin-sheet": "mat-galvanized-steel",
+        "tin_sheet": "mat-galvanized-steel",
         "double_low_e": "mat-double-low-e",
         "low_e": "mat-double-low-e",
+        "mat-timber-deck": "mat-timber-deck",
+        "timber_deck": "mat-timber-deck",
+        "mat_timber_deck": "mat-timber-deck",
+        "pine_wood_ceiling_deck": "mat-timber-deck",
+        "mat-gravel-bed": "mat-gravel-bed",
+        "gravel_bed": "mat-gravel-bed",
+        "mat_gravel_bed": "mat-gravel-bed",
+        "crushed_stone_hardcore_sub_base": "mat-gravel-bed",
+        "mat-polyurethane-foam": "mat-polyurethane-foam",
+        "polyurethane_foam": "mat-polyurethane-foam",
+        "polyurethane": "mat-polyurethane-foam",
+        "pir": "mat-polyurethane-foam",
+        "mat_polyurethane_foam": "mat-polyurethane-foam",
+        "mat-pir": "mat-polyurethane-foam",
+        "mat_pir": "mat-polyurethane-foam",
+        "mat-asphalt-shingle": "mat-asphalt-shingle",
+        "asphalt_shingle": "mat-asphalt-shingle",
+        "mat_asphalt_shingle": "mat-asphalt-shingle",
+        "bitumen_waterproofing_membrane": "mat-asphalt-shingle",
+        "mat-timber-flooring": "mat-timber-flooring",
+        "timber_flooring": "mat-timber-flooring",
+        "mat_timber_flooring": "mat-timber-flooring",
+        "mat-timber-stud": "mat-timber-stud",
+        "timber_stud": "mat-timber-stud",
+        "mat_timber_stud": "mat-timber-stud",
+        "mat-concrete-block": "mat-concrete-block",
+        "concrete_block": "mat-concrete-block",
+        "mat_concrete_block": "mat-concrete-block",
+        "mat-lime-plaster": "mat-lime-plaster",
+        "lime_plaster": "mat-lime-plaster",
+        "mat_lime_plaster": "mat-lime-plaster",
+        "mat-mud-straw-plaster": "mat-mud-straw-plaster",
+        "mud_straw_plaster": "mat-mud-straw-plaster",
+        "mat_mud_straw_plaster": "mat-mud-straw-plaster",
+        "mat-timber-cedar": "mat-timber-cedar",
+        "timber_cedar": "mat-timber-cedar",
+        "mat_timber_cedar": "mat-timber-cedar",
     }
 
     def __init__(self):

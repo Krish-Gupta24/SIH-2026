@@ -392,6 +392,10 @@ def test_complete_19_step_e2e_engineering_workflow(tmp_path):
     # -------------------------------------------------------------------------
     # STEP 17: OPTIMIZE (Parameter Sweep Optimizer)
     # -------------------------------------------------------------------------
+    from simulation.runners.energyplus_runner import EnergyPlusRunner
+    if not EnergyPlusRunner().is_available:
+        pytest.skip("EnergyPlus binary not installed on host machine — skipping live simulation sweep steps 17-19")
+
     optimizer = ParameterSweepOptimizer(
         base_model=shelter_model_a,
         objective="maximize_comfort",

@@ -22,9 +22,11 @@ from pathlib import Path
 
 from simulation.results.output_registry import OutputVariableRegistry, OutputCategory
 from simulation.runners.engine import EnergyPlusEngine
+from simulation.runners.energyplus_runner import EnergyPlusRunner
 from simulation.results.parser import EnergyPlusResultParser
 
 
+@unittest.skipUnless(EnergyPlusRunner().is_available, "EnergyPlus binary not available on host machine")
 class TestSolarOutputAudit(unittest.TestCase):
     """Rigorous audit test asserting 100% production and integrity of solar variables."""
 

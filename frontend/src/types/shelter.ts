@@ -115,11 +115,25 @@ export interface InternalLoadsModel {
   lightingPowerDensityWpm2: number; // Lighting density (W/m²)
   equipmentPowerWatts: number; // Plug load equipment total (W)
   scheduleProfile: "Continuous" | "DiurnalOccupied" | "Intermittent";
+  occupancy?: {
+    peopleCount: number;
+    sensibleGainWattsPerPerson: number;
+    totalWatts: number;
+  };
+  lighting?: {
+    totalWatts: number;
+    powerDensityWpm2?: number;
+  };
+  equipment?: {
+    totalWatts: number;
+  };
 }
 
 export interface DesignTargetsModel {
   comfortTempMinC: number;     // Lower comfort boundary (°C), default 18°C
   comfortTempMaxC: number;     // Upper comfort boundary (°C), default 26°C
+  comfortTargetMinC?: number;  // Canonical backend alias
+  comfortTargetMaxC?: number;  // Canonical backend alias
   targetIndoorTempC?: number;  // Target indoor operative temperature (°C), default 21°C
   comfortModel?: string;       // Formal standard or model name (e.g. ASHRAE 55 Adaptive)
   assumptions?: string;        // Comfort assumptions (clothing clo, metabolic rate, air speed)
@@ -139,16 +153,23 @@ export interface SimulationSettingsModel {
 
 export interface ShelterModel {
   id: string;
+  name?: string;
   schemaVersion: string;
   project: ProjectMeta;
   location: LocationModel;
   geometry: GeometryModel;
   envelope: EnvelopeModel;
+  envelopeWalls?: EnvelopeModel["walls"]; // Top-level fallback alias for backend compatibility
   windows: WindowModel[];
   doors: DoorModel[];
+  openings?: {
+    windows: WindowModel[];
+    doors: DoorModel[];
+  };
   thermalMass: ThermalMassElement[];
   ventilation: VentilationModel;
   internalLoads: InternalLoadsModel;
   designTargets: DesignTargetsModel;
   simulationSettings: SimulationSettingsModel;
 }
+

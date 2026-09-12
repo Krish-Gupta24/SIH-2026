@@ -99,8 +99,21 @@ class CSVWeatherConverter:
             rel_hum = max(1.0, min(100.0, rel_hum))
             wind_spd = float(row[wind_col]) if wind_col else 2.0
             ghi = float(row[solar_col]) if solar_col else 0.0
-            dni = max(0.0, ghi * 1.1) if ghi > 0 else 0.0
-            dhi = max(0.0, ghi * 0.4) if ghi > 0 else 0.0
+            day_of_year = (month_val - 1) * 30 + day_val
+            declination = 23.45 * math.sin(math.radians(360.0 / 365.0 * (284 + day_of_year)))
+            hour_angle = (hour_val - 12) * 15.0
+            lat_rad = math.radians(latitude)
+            dec_rad = math.radians(declination)
+            ha_rad = math.radians(hour_angle)
+            sin_altitude = math.sin(lat_rad) * math.sin(dec_rad) + math.cos(lat_rad) * math.cos(dec_rad) * math.cos(ha_rad)
+            cos_zenith = max(0.0, sin_altitude)
+
+            if ghi > 0 and cos_zenith > 0.08:
+                dhi = min(ghi, max(0.0, ghi * 0.25))
+                dni = max(0.0, min(1367.0, (ghi - dhi) / cos_zenith))
+            else:
+                dhi = ghi
+                dni = 0.0
 
             # Calculate dew point and infrared
             a, b = 17.27, 237.7

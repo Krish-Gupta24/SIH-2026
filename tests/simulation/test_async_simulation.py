@@ -9,7 +9,7 @@ from backend.main import app
 from backend.core.celery_app import celery_app
 from backend.simulation.store import simulation_store, SimulationStatus
 from backend.simulation.tasks import run_simulation_task
-from simulation.runners.energyplus_runner import SimulationExecutionOutput
+from simulation.runners.energyplus_runner import SimulationExecutionOutput, EnergyPlusRunner
 
 
 class TestAsyncSimulationWorkflow(unittest.TestCase):
@@ -44,6 +44,7 @@ class TestAsyncSimulationWorkflow(unittest.TestCase):
         }
         self.weather_file = "simulation/weather/test_weather.epw"
 
+    @unittest.skipUnless(EnergyPlusRunner().is_available, "EnergyPlus binary not available on host machine")
     def test_01_successful_simulation_workflow(self):
         """Verify full lifecycle: POST /simulate -> queued -> preparing -> running -> parsing -> completed."""
         payload = {

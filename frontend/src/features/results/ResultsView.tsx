@@ -101,22 +101,23 @@ export function ResultsView() {
     );
   }
 
-  const { summary, hourlyTimeseries } = activeJob.results;
+  const summary = activeJob.results.summary;
+  const rawHourlyTimeseries = activeJob.results.hourlyTimeseries || [];
   const isCompared = comparisonJobIds.includes(activeJob.id);
   const unit: UnitSystem = settings.unitSystem || "SI";
 
   // Extract arrays for chart consumption
-  const timestamps: string[] = hourlyTimeseries.map((t) => t.timestamp || String(t.hour));
-  const indoorTemp: number[] = hourlyTimeseries.map((t) => t.indoorTempC ?? 20);
-  const outdoorTemp: number[] = hourlyTimeseries.map((t) => t.outdoorTempC ?? -15);
-  const solarRadiation: number[] = hourlyTimeseries.map((t) => t.solarRadiationWm2 ?? 0);
-  const solarGains: number[] = hourlyTimeseries.map((t) => t.solarGainsW ?? 0);
-  const wallHeatTransfer: number[] = hourlyTimeseries.map((t) => t.wallHeatTransferW ?? 0);
-  const roofHeatTransfer: number[] = hourlyTimeseries.map((t) => t.roofHeatTransferW ?? 0);
-  const floorHeatTransfer: number[] = hourlyTimeseries.map((t) => t.floorHeatTransferW ?? 0);
-  const windowHeatTransfer: number[] = hourlyTimeseries.map((t) => t.windowHeatTransferW ?? 0);
-  const doorHeatTransfer: number[] = hourlyTimeseries.map((t) => t.doorHeatTransferW ?? 0);
-  const infiltrationHeatTransfer: number[] = hourlyTimeseries.map((t) => t.infiltrationHeatTransferW ?? 0);
+  const timestamps: string[] = rawHourlyTimeseries.map((t: any) => t.timestamp || String(t.hour));
+  const indoorTemp: number[] = rawHourlyTimeseries.map((t: any) => t.indoorTempC ?? 20);
+  const outdoorTemp: number[] = rawHourlyTimeseries.map((t: any) => t.outdoorTempC ?? -15);
+  const solarRadiation: number[] = rawHourlyTimeseries.map((t: any) => t.solarRadiationWm2 ?? 0);
+  const solarGains: number[] = rawHourlyTimeseries.map((t: any) => t.solarGainsW ?? 0);
+  const wallHeatTransfer: number[] = rawHourlyTimeseries.map((t: any) => t.wallHeatTransferW ?? 0);
+  const roofHeatTransfer: number[] = rawHourlyTimeseries.map((t: any) => t.roofHeatTransferW ?? 0);
+  const floorHeatTransfer: number[] = rawHourlyTimeseries.map((t: any) => t.floorHeatTransferW ?? 0);
+  const windowHeatTransfer: number[] = rawHourlyTimeseries.map((t: any) => t.windowHeatTransferW ?? 0);
+  const doorHeatTransfer: number[] = rawHourlyTimeseries.map((t: any) => t.doorHeatTransferW ?? 0);
+  const infiltrationHeatTransfer: number[] = rawHourlyTimeseries.map((t: any) => t.infiltrationHeatTransferW ?? 0);
 
   // Derive comfort metrics from verified summary or null
   const rawUnderheating = (summary as any)?.underheatingDegreeHoursCh ?? (activeJob.results as any)?.comfort?.underheating_degree_hours_c_h;

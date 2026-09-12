@@ -22,6 +22,12 @@ from backend.optimization.recommendation_engine import (
     RecommendationEngine,
     RecommendationReport,
 )
+from simulation.runners.energyplus_runner import EnergyPlusRunner
+
+pytestmark = pytest.mark.skipif(
+    not EnergyPlusRunner().is_available,
+    reason="EnergyPlus binary not installed on host machine"
+)
 
 
 @pytest.fixture

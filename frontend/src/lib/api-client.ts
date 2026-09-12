@@ -28,6 +28,14 @@ export async function fetchApi<T>(endpoint: string, options: RequestInit = {}): 
   }
 }
 
+export interface SimulationSubmitResponse {
+  simulation_id: string;
+  job_id?: string;
+  status: string;
+  message: string;
+  created_at?: string;
+}
+
 export const api = {
   projects: {
     list: () => fetchApi<any[]>("/projects"),
@@ -41,6 +49,10 @@ export const api = {
       fetchApi<any>(`/projects/${id}`, {
         method: "PUT",
         body: JSON.stringify(data),
+      }),
+    delete: (id: string) =>
+      fetchApi<any>(`/projects/${id}`, {
+        method: "DELETE",
       }),
   },
   materials: {
@@ -57,13 +69,50 @@ export const api = {
       }),
   },
   simulations: {
-    submit: (projectId: string, payload: any) =>
-      fetchApi<{ job_id: string; status: string; message: string }>(`/projects/${projectId}/simulate`, {
+    queue: (payload: any) =>
+      fetchApi<SimulationSubmitResponse>("/simulations", {
         method: "POST",
         body: JSON.stringify(payload),
       }),
+    submit: (arg1: any, arg2?: any) => {
+      // Support both submit(payload) and submit(projectId, payload)
+      const payload = arg2 !== undefined ? arg2 : arg1;
+      return fetchApi<SimulationSubmitResponse>("/simulations", {
+        method: "POST",
+        body: JSON.stringify(payload),
+      });
+    },
     status: (jobId: string) => fetchApi<any>(`/simulations/${jobId}`),
     results: (jobId: string) => fetchApi<any>(`/simulations/${jobId}/results`),
+    list: () => fetchApi<any[]>("/simulations"),
+    demonstration: () =>
+      fetchApi<any>("/simulations/demonstration", {
+        method: "POST",
+      }),
+    cancel: (jobId: string) =>
+      fetchApi<any>(`/simulations/${jobId}/cancel`, {
+        method: "POST",
+      }),
+    outputVariables: () => fetchApi<any>("/simulations/output-variables"),
+  },
+  weather: {
+    list: () => fetchApi<any[]>("/weather"),
+    sources: () => fetchApi<any[]>("/weather/sources"),
+    queryNasa: (params: any) =>
+      fetchApi<any>("/weather/nasa-power", {
+        method: "POST",
+        body: JSON.stringify(params),
+      }),
+    validate: (weatherFile: string) =>
+      fetchApi<any>("/weather/validate", {
+        method: "POST",
+        body: JSON.stringify({ weather_file: weatherFile }),
+      }),
+    generateManual: (params: any) =>
+      fetchApi<any>("/weather/manual", {
+        method: "POST",
+        body: JSON.stringify(params),
+      }),
   },
   ansys: {
     status: () => fetchApi<any>("/ansys/status"),
@@ -75,3 +124,4 @@ export const api = {
     downloadUrl: `${API_BASE_URL}/ansys/download`,
   },
 };
+

@@ -62,6 +62,7 @@ from backend.optimization.parameter_sweep_optimizer import ParameterSweepOptimiz
 from backend.optimization.recommendation_engine import RecommendationEngine, RecommendationReport
 
 
+@pytest.mark.skipif(not EnergyPlusRunner().is_available, reason="EnergyPlus binary not installed on host machine")
 class TestCompleteRealE2EWorkflow:
     """Rigorous end-to-end verification of the high-altitude shelter thermal simulation platform."""
 

@@ -93,3 +93,8 @@ class ConstructionLayer(BaseEntity):
     # Relationships
     construction = relationship("Construction", back_populates="layers")
     material = relationship("Material", back_populates="construction_layers")
+
+
+# Alias for backward-compatibility
+MaterialEntity = Material
+

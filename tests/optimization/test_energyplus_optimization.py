@@ -14,6 +14,7 @@ from backend.optimization.parameter_sweep_optimizer import (
     OptimizationConstraint,
     CandidateEvaluation,
 )
+from simulation.runners.energyplus_runner import EnergyPlusRunner
 
 
 class TestEnergyPlusOptimization(unittest.TestCase):
@@ -110,6 +111,7 @@ class TestEnergyPlusOptimization(unittest.TestCase):
         self.assertFalse(valid)
         self.assertIn("Insulation thickness", err)
 
+    @unittest.skipUnless(EnergyPlusRunner().is_available, "EnergyPlus binary not installed on host machine")
     def test_03_energyplus_candidate_evaluation_records_all_fields(self):
         """Verify candidate evaluation uses real EnergyPlus and records all 8 mandatory fields."""
         opt = ParameterSweepOptimizer(base_model=self.base_shelter, run_period_days=2)
@@ -176,6 +178,7 @@ class TestEnergyPlusOptimization(unittest.TestCase):
             self.assertEqual(cand["objective_score"], -999999.0)
             self.assertIsNotNone(cand["failure_reason"])
 
+    @unittest.skipUnless(EnergyPlusRunner().is_available, "EnergyPlus binary not installed on host machine")
     def test_05_design_targets_drive_comfort_calculations(self):
         """Verify that active project DesignTargets are used rather than hardcoded climate constants."""
         custom_shelter = copy.deepcopy(self.base_shelter)
