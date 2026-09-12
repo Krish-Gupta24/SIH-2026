@@ -394,7 +394,7 @@ export function WeatherView() {
           </div>
           <span className="text-xs text-muted-foreground">{weatherDatasets.length} datasets loaded</span>
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3">
           {weatherDatasets.map((stn) => {
             const isSelected = stn.id === activeStation.id;
             return (

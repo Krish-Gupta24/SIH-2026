@@ -41,6 +41,7 @@ import { EnvelopeHeatBalanceChart } from "./components/EnvelopeHeatBalanceChart"
 import { ComfortAndEnergyPanel } from "./components/ComfortAndEnergyPanel";
 import { ResultsDataTable } from "./components/ResultsDataTable";
 import { WarningsAndErrorsAlert } from "./components/WarningsAndErrorsAlert";
+import { FossilFuelDisplacementCard } from "./components/FossilFuelDisplacementCard";
 
 export function ResultsView() {
   const searchParams = useSearchParams();
@@ -330,6 +331,14 @@ export function ResultsView() {
           underheatingDegreeHoursCh: (summary as any).underheatingDegreeHoursCh,
         }}
         unit={unit}
+      />
+
+      {/* 4.5. Fossil Fuel & Bukhari Defense Mitigation Card (PS 26051 Core Deliverable) */}
+      <FossilFuelDisplacementCard
+        heatingDemandKwhM2={summary.heatingDemandKwhM2}
+        floorAreaM2={(activeJob.shelterModel?.geometry?.length || 6) * (activeJob.shelterModel?.geometry?.width || 4)}
+        comfortHoursPct={summary.comfortHoursPct}
+        projectName={activeJob.projectName}
       />
 
       {/* 5. Tabbed Analytics Experience */}

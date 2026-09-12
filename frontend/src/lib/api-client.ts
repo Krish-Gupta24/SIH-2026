@@ -65,4 +65,13 @@ export const api = {
     status: (jobId: string) => fetchApi<any>(`/simulations/${jobId}`),
     results: (jobId: string) => fetchApi<any>(`/simulations/${jobId}/results`),
   },
+  ansys: {
+    status: () => fetchApi<any>("/ansys/status"),
+    export: (shelterModel: any, weatherContext?: any) =>
+      fetchApi<any>("/ansys/export", {
+        method: "POST",
+        body: JSON.stringify({ shelter_model: shelterModel, weather_context: weatherContext }),
+      }),
+    downloadUrl: `${API_BASE_URL}/ansys/download`,
+  },
 };

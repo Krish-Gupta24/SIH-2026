@@ -33,6 +33,7 @@ import {
   Status,
 } from "@/components/v0/platform-components";
 import { WorkflowFooter } from "@/components/layout/WorkflowFooter";
+import { AnsysDeckExportModal } from "@/components/modals/AnsysDeckExportModal";
 
 export function SimulationsView() {
   const searchParams = useSearchParams();
@@ -58,6 +59,7 @@ export function SimulationsView() {
 
   const [confirmTestDataModal, setConfirmTestDataModal] = useState<boolean>(false);
   const [pendingSimProject, setPendingSimProject] = useState<any>(null);
+  const [ansysModalOpen, setAnsysModalOpen] = useState(false);
 
   // Poll active simulation jobs until completion
   const pollSimulationStatus = React.useCallback(
@@ -323,12 +325,22 @@ export function SimulationsView() {
         title="Run thermal simulation"
         description="Send the canonical model to the physics simulation engine with explicit period, timestep resolution, and authentic weather provenance."
         action={
-          <Link href="/designer">
-            <ActionButton tone="secondary">
-              <Play className="size-3.5" />
-              Designer Wizard
+          <div className="flex flex-wrap items-center gap-2.5">
+            <ActionButton
+              tone="secondary"
+              onClick={() => setAnsysModalOpen(true)}
+              className="rounded-full text-xs font-semibold"
+            >
+              <Cpu className="size-3.5" />
+              Export ANSYS Deck (.jou / .mac)
             </ActionButton>
-          </Link>
+            <Link href="/designer">
+              <ActionButton tone="primary" className="rounded-full text-xs font-semibold">
+                <Play className="size-3.5" />
+                Designer Wizard
+              </ActionButton>
+            </Link>
+          </div>
         }
       />
 
@@ -773,6 +785,9 @@ export function SimulationsView() {
           </div>
         </div>
       )}
+
+      {/* ANSYS Validation Deck Export Modal */}
+      <AnsysDeckExportModal open={ansysModalOpen} onOpenChange={setAnsysModalOpen} />
 
       {/* Connected Linear Workflow Footer */}
       <WorkflowFooter customNextLabel="Analyze Thermal Results" customNextHref="/results" />

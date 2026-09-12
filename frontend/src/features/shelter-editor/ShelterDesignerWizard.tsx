@@ -29,6 +29,7 @@ import { Step10Ventilation } from "./steps/Step10Ventilation";
 import { Step11InternalConditions } from "./steps/Step11InternalConditions";
 import { Step12DesignTargets } from "./steps/Step12DesignTargets";
 import { Step13SimulationSettings } from "./steps/Step13SimulationSettings";
+import { DesignPresetsDropdown } from "./components/DesignPresetsDropdown";
 
 import {
   FolderKanban,
@@ -450,6 +451,9 @@ export function ShelterDesignerWizard() {
           )}
         </div>
       </div>
+
+      {/* 1-Click Design Presets (Baseline vs Passive Solar vs Super-Insulated) */}
+      <DesignPresetsDropdown />
 
       {/* Stepper Navigation Strip with V0 Pills */}
       <div className="overflow-x-auto pb-2">

@@ -11,6 +11,7 @@ from backend.api.v1.endpoints import (
     reports,
     auth,
     validation,
+    ansys,
 )
 
 api_router = APIRouter()
@@ -24,4 +25,5 @@ api_router.include_router(materials.router, prefix="/materials", tags=["Material
 api_router.include_router(optimization.router, prefix="/optimization", tags=["Multi-Objective Optimization"])
 api_router.include_router(reports.router, prefix="/reports", tags=["Reports & Provenance"])
 api_router.include_router(validation.router, prefix="/validation", tags=["Empirical Validation"])
+api_router.include_router(ansys.router, prefix="/ansys", tags=["ANSYS Simulation Deck & Validation"])
 

@@ -47,7 +47,7 @@ export function ProjectDetailsView({ projectId }: { projectId: string }) {
   const handleRunSimulation = async () => {
     setIsSimulating(true);
     try {
-      const weatherFileName = project.location?.weatherSource || activeWeather?.filePath || "IND_JK_Leh.427053_TMYx.epw";
+      const weatherFileName = project.location?.weatherSource || activeWeather?.epwFileName || "IND_JK_Leh.427053_TMYx.epw";
       const payload = {
         project_id: project.id,
         shelter_model: project,

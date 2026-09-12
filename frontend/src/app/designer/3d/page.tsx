@@ -46,7 +46,10 @@ import {
   Target,
   Sliders,
   Eye,
+  Cpu,
 } from "lucide-react";
+import { AnsysDeckExportModal } from "@/components/modals/AnsysDeckExportModal";
+import { DesignPresetsDropdown } from "@/features/shelter-editor/components/DesignPresetsDropdown";
 
 const UNIFIED_13_STEPS = [
   { id: 1, name: "Project", description: "Identity & Version", icon: FolderKanban },
@@ -84,6 +87,8 @@ function Shelter3DPageContent() {
     }
     return step2dTo3d(activeWizardStep || 1);
   });
+
+  const [ansysModalOpen, setAnsysModalOpen] = useState(false);
 
   const activeModel = projects.find((p) => p.id === activeProjectId) || projects[0];
 
@@ -141,22 +146,37 @@ function Shelter3DPageContent() {
             </p>
           </div>
 
-          {/* View Switcher: 2D Wizard vs 3D CAD Studio */}
-          <div className="flex items-center gap-1 rounded-full border border-border bg-secondary/40 p-0.5">
-            <Link
-              href={`/designer?step=${step3dTo2d(step)}`}
-              onClick={() => setActiveWizardStep(step3dTo2d(step))}
-              className="inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-semibold text-muted-foreground transition hover:text-foreground"
+          {/* Action Area: ANSYS Export + View Switcher */}
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setAnsysModalOpen(true)}
+              className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3.5 py-1.5 text-xs font-semibold text-foreground hover:bg-secondary/60 transition shadow-sm"
             >
-              <Sliders className="size-3.5" />
-              <span>2D Wizard</span>
-            </Link>
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-foreground px-3.5 py-1.5 text-xs font-semibold text-background shadow-sm">
-              <Eye className="size-3.5" />
-              <span>3D CAD Studio</span>
-            </span>
+              <Cpu className="size-3.5 text-emerald-500" />
+              <span>Export ANSYS Deck</span>
+            </button>
+
+            {/* View Switcher: 2D Wizard vs 3D CAD Studio */}
+            <div className="flex items-center gap-1 rounded-full border border-border bg-secondary/40 p-0.5">
+              <Link
+                href={`/designer?step=${step3dTo2d(step)}`}
+                onClick={() => setActiveWizardStep(step3dTo2d(step))}
+                className="inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-semibold text-muted-foreground transition hover:text-foreground"
+              >
+                <Sliders className="size-3.5" />
+                <span>2D Wizard</span>
+              </Link>
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-foreground px-3.5 py-1.5 text-xs font-semibold text-background shadow-sm">
+                <Eye className="size-3.5" />
+                <span>3D CAD Studio</span>
+              </span>
+            </div>
           </div>
         </div>
+
+        {/* 1-Click Design Presets (Baseline vs Passive Solar vs Super-Insulated) */}
+        <DesignPresetsDropdown />
 
         {/* Stepper Navigation Strip with all 13 options */}
         <div className="overflow-x-auto pb-2">
@@ -207,6 +227,9 @@ function Shelter3DPageContent() {
           onUpdate={(patch: any) => updateProject(activeModel.id, patch)}
           onSimulate={() => router.push("/simulations")}
         />
+
+        {/* ANSYS Validation Deck Export Modal */}
+        <AnsysDeckExportModal open={ansysModalOpen} onOpenChange={setAnsysModalOpen} />
 
         {/* Connected Linear Workflow Footer */}
         <WorkflowFooter customNextLabel="Proceed to EnergyPlus Simulation" customNextHref="/simulations" />
