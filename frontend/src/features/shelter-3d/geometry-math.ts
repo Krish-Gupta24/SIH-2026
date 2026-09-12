@@ -345,32 +345,73 @@ export function findNextAvailableOpeningPosition(
   // Sort existing openings from left to right along the wall
   const sorted = [...existingOpenings].sort((a, b) => a.positionX - b.positionX);
 
-  // 1. Check gap before first opening
-  if (sorted[0].positionX >= margin + newWidth + margin) {
-    const candidate = margin + (sorted[0].positionX - margin - newWidth) / 2;
-    return Number(candidate.toFixed(2));
+  // Find all available gaps along the wall
+  interface Gap {
+    start: number;
+    end: number;
+    size: number;
+  }
+  const gaps: Gap[] = [];
+
+  // Gap before first opening
+  if (sorted[0].positionX > margin) {
+    gaps.push({
+      start: margin,
+      end: sorted[0].positionX,
+      size: sorted[0].positionX - margin,
+    });
   }
 
-  // 2. Check gaps between adjacent openings
+  // Gaps between adjacent openings
   for (let i = 0; i < sorted.length - 1; i++) {
     const endA = sorted[i].positionX + sorted[i].width;
     const startB = sorted[i + 1].positionX;
-    const gap = startB - endA;
-    if (gap >= newWidth + margin * 2) {
-      const candidate = endA + (gap - newWidth) / 2;
-      return Number(candidate.toFixed(2));
+    if (startB > endA) {
+      gaps.push({
+        start: endA,
+        end: startB,
+        size: startB - endA,
+      });
     }
   }
 
-  // 3. Check gap after last opening
+  // Gap after last opening
   const lastEnd = sorted[sorted.length - 1].positionX + sorted[sorted.length - 1].width;
-  if (wallLength - lastEnd >= newWidth + margin) {
-    const candidate = lastEnd + margin;
+  const wallRightEdge = wallLength - margin;
+  if (wallRightEdge > lastEnd) {
+    gaps.push({
+      start: lastEnd,
+      end: wallRightEdge,
+      size: wallRightEdge - lastEnd,
+    });
+  }
+
+  // Find the largest gap that can accommodate newWidth + margins
+  const suitableGaps = gaps
+    .filter((g) => g.size >= newWidth + margin)
+    .sort((a, b) => b.size - a.size);
+
+  if (suitableGaps.length > 0) {
+    const best = suitableGaps[0];
+    // Center the new opening inside the gap
+    const candidate = best.start + (best.size - newWidth) / 2;
     return Number(candidate.toFixed(2));
   }
 
-  // Fallback: place in largest available slot clamped within wall boundary
-  return Number(Math.max(margin, Math.min(wallLength - newWidth - margin, lastEnd + 0.2)).toFixed(2));
+  // If no gap is strictly large enough with full margin, check if it fits without margin
+  const tightGaps = gaps
+    .filter((g) => g.size >= newWidth + 0.1)
+    .sort((a, b) => b.size - a.size);
+
+  if (tightGaps.length > 0) {
+    const best = tightGaps[0];
+    const candidate = best.start + (best.size - newWidth) / 2;
+    return Number(candidate.toFixed(2));
+  }
+
+  // Fallback: place past the rightmost edge clamped within safe wall boundaries
+  const fallback = Math.max(margin, Math.min(wallLength - newWidth - margin, lastEnd + 0.2));
+  return Number(fallback.toFixed(2));
 }
 
 /**
@@ -393,7 +434,7 @@ export function clampOpeningPlacement(
   );
 
   if (isDoor) {
-    const clampedHeight = Math.max(1.6, Math.min(wallHeight - safeMargin, height));
+    const clampedHeight = Math.max(1.6, Math.min(wallHeight - 0.1, height));
     return {
       positionX: Number(clampedPositionX.toFixed(2)),
       width: Number(clampedWidth.toFixed(2)),
@@ -402,10 +443,10 @@ export function clampOpeningPlacement(
     };
   }
 
-  const clampedHeight = Math.max(0.4, Math.min(wallHeight - 0.5, height));
+  const clampedHeight = Math.max(0.4, Math.min(wallHeight - 0.4, height));
   const clampedSill = Math.max(
-    0.2,
-    Math.min(wallHeight - clampedHeight - safeMargin, sillHeight)
+    0.15,
+    Math.min(wallHeight - clampedHeight - 0.15, sillHeight)
   );
 
   return {
@@ -414,5 +455,41 @@ export function clampOpeningPlacement(
     sillHeight: Number(clampedSill.toFixed(2)),
     height: Number(clampedHeight.toFixed(2)),
   };
+}
+
+/**
+ * Computes standard architectural lintel datum alignment (2.10m header height above finished floor).
+ */
+export function alignToStandardHeader(
+  wallHeight: number,
+  windowHeight: number,
+  headerDatum = 2.1
+): { sillHeight: number; height: number } {
+  const clampedHeight = Math.min(windowHeight, headerDatum - 0.2);
+  const sillHeight = Math.max(0.2, headerDatum - clampedHeight);
+  return {
+    sillHeight: Number(sillHeight.toFixed(2)),
+    height: Number(clampedHeight.toFixed(2)),
+  };
+}
+
+/**
+ * Distributes all openings on a wall evenly with balanced architectural bays.
+ */
+export function distributeOpeningsEvenly(
+  wallLength: number,
+  openings: { id: string; width: number }[]
+): { id: string; positionX: number }[] {
+  if (openings.length === 0) return [];
+  const totalWidth = openings.reduce((sum, op) => sum + op.width, 0);
+  const remainingSpace = wallLength - totalWidth;
+  const gap = Math.max(0.2, remainingSpace / (openings.length + 1));
+
+  let currentX = gap;
+  return openings.map((op) => {
+    const pos = currentX;
+    currentX += op.width + gap;
+    return { id: op.id, positionX: Number(pos.toFixed(2)) };
+  });
 }
 

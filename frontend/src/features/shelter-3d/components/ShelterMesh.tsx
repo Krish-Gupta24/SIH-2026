@@ -31,15 +31,15 @@ const palette = {
   xrayEdge: "#60a5fa",
 };
 
-// Refined, human-designed architectural thermal engineering palette (FLIR / Ladybug standard)
+// Vivid FLIR thermal camera palette — high saturation colors that pop against dark background
 const thermalPalette = {
-  southHot: "#c25e2e",    // Warm terracotta/amber for solar-absorbed South facade (+21.5°C)
-  northCold: "#334155",   // Calm alpine slate for shaded North facade (-12.0°C)
-  eastNeutral: "#6b7280", // Natural stone grey for morning transition (+3.2°C)
-  westCold: "#475569",    // Cool slate for windward West facade (+1.4°C)
-  roofHot: "#524636",     // Muted thermal earth-charcoal for roof deck (+15.8°C)
-  floorWarm: "#b45309",   // Warm earthenware for interior thermal mass (+19.0°C)
-  glazingPeak: "#ea580c", // Ambient radiant amber for solar apertures (+26.5°C)
+  southHot: "#ef4444",    // Bright red — highest solar absorption (+21.5°C)
+  northCold: "#3b82f6",   // Vivid blue — shaded, heat loss (-12.0°C)
+  eastNeutral: "#eab308", // Yellow — moderate morning warmth (+3.2°C)
+  westCold: "#06b6d4",    // Cyan — wind-cooled (+1.4°C)
+  roofHot: "#f97316",     // Orange — high thermal exposure (+15.8°C)
+  floorWarm: "#f59e0b",   // Amber — thermal mass storage (+19.0°C)
+  glazingPeak: "#dc2626", // Deep red — peak solar hotspot (+26.5°C)
 };
 
 function getWallMaterialColor(
@@ -67,6 +67,72 @@ function getWallMaterialColor(
     return heatFlowColors[side];
   }
   return side === "south" ? "#ded9cb" : palette.paper;
+}
+
+function createThermalTexture(type: "south" | "north" | "east" | "west" | "roof" | "floor"): THREE.CanvasTexture | null {
+  if (typeof document === "undefined") return null;
+  const canvas = document.createElement("canvas");
+  canvas.width = 256;
+  canvas.height = 256;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return null;
+
+  if (type === "south") {
+    // FLIR Ironbow solar absorption gradient
+    const grad = ctx.createRadialGradient(128, 100, 20, 128, 128, 160);
+    grad.addColorStop(0, "#ffffff");
+    grad.addColorStop(0.2, "#fde047");
+    grad.addColorStop(0.45, "#f97316");
+    grad.addColorStop(0.75, "#ef4444");
+    grad.addColorStop(0.92, "#a855f7");
+    grad.addColorStop(1, "#1e3a8a");
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, 256, 256);
+  } else if (type === "north") {
+    // Cold convective sub-zero gradient
+    const grad = ctx.createLinearGradient(0, 0, 0, 256);
+    grad.addColorStop(0, "#1e3a8a");
+    grad.addColorStop(0.35, "#2563eb");
+    grad.addColorStop(0.7, "#06b6d4");
+    grad.addColorStop(1, "#0f172a");
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, 256, 256);
+  } else if (type === "east") {
+    const grad = ctx.createLinearGradient(0, 0, 256, 256);
+    grad.addColorStop(0, "#eab308");
+    grad.addColorStop(0.5, "#d97706");
+    grad.addColorStop(1, "#0284c7");
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, 256, 256);
+  } else if (type === "west") {
+    const grad = ctx.createLinearGradient(256, 0, 0, 256);
+    grad.addColorStop(0, "#f97316");
+    grad.addColorStop(0.4, "#06b6d4");
+    grad.addColorStop(1, "#1e40af");
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, 256, 256);
+  } else if (type === "roof") {
+    const grad = ctx.createRadialGradient(128, 128, 30, 128, 128, 140);
+    grad.addColorStop(0, "#fef08a");
+    grad.addColorStop(0.4, "#f97316");
+    grad.addColorStop(0.85, "#dc2626");
+    grad.addColorStop(1, "#7c3aed");
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, 256, 256);
+  } else {
+    // floor mass
+    const grad = ctx.createRadialGradient(128, 128, 10, 128, 128, 130);
+    grad.addColorStop(0, "#fbbf24");
+    grad.addColorStop(0.6, "#d97706");
+    grad.addColorStop(1, "#0369a1");
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, 256, 256);
+  }
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.wrapS = THREE.ClampToEdgeWrapping;
+  texture.wrapT = THREE.ClampToEdgeWrapping;
+  return texture;
 }
 
 /**
@@ -193,8 +259,22 @@ export function ShelterMesh({ model, selected, onSelect, settings }: Props) {
   }, [geom.walls, openingsByWall]);
 
   const isXRay = settings.transparentWalls;
-  const xrayWallOpacity = 0.18;
-  const xrayEdgeOpacity = 0.85;
+  const isThermal = settings.visualization === "thermal";
+  const xrayWallOpacity = 0.14;
+  const xrayEdgeOpacity = 0.88;
+
+  // Procedural FLIR thermal gradient maps for surfaces
+  const thermalTextures = useMemo(() => {
+    if (typeof window === "undefined") return null;
+    return {
+      south: createThermalTexture("south"),
+      north: createThermalTexture("north"),
+      east: createThermalTexture("east"),
+      west: createThermalTexture("west"),
+      roof: createThermalTexture("roof"),
+      floor: createThermalTexture("floor"),
+    };
+  }, []);
 
   return (
     <group rotation={[0, orientation, 0]}>
@@ -213,15 +293,21 @@ export function ShelterMesh({ model, selected, onSelect, settings }: Props) {
         <boxGeometry args={geom.floor.dimensions} />
         <meshStandardMaterial
           color={
-            isActive("floor")
+            isXRay
+              ? "#0f172a"
+              : isActive("floor")
               ? palette.solar
-              : settings.visualization === "thermal"
-              ? thermalPalette.floorWarm
+              : isThermal
+              ? "#ffffff"
               : palette.ink
           }
-          roughness={0.78}
+          map={!isXRay && isThermal ? thermalTextures?.floor : null}
+          emissiveMap={!isXRay && isThermal ? thermalTextures?.floor : null}
+          emissive={!isXRay && isThermal ? "#ffffff" : "#000000"}
+          emissiveIntensity={!isXRay && isThermal ? 0.45 : 0}
+          roughness={isThermal ? 0.4 : 0.78}
           transparent={isXRay}
-          opacity={isXRay ? 0.25 : 1}
+          opacity={isXRay ? 0.2 : 1}
           wireframe={settings.wireframe}
           side={isXRay ? THREE.DoubleSide : THREE.FrontSide}
         />
@@ -231,7 +317,7 @@ export function ShelterMesh({ model, selected, onSelect, settings }: Props) {
       {isXRay && (
         <lineSegments position={geom.floor.center}>
           <edgesGeometry args={[new THREE.BoxGeometry(...geom.floor.dimensions)]} />
-          <lineBasicMaterial color={palette.xrayEdge} transparent opacity={xrayEdgeOpacity} />
+          <lineBasicMaterial color="#38bdf8" transparent opacity={xrayEdgeOpacity} />
         </lineSegments>
       )}
 
@@ -258,9 +344,19 @@ export function ShelterMesh({ model, selected, onSelect, settings }: Props) {
               onPointerOut={(e) => pointer(e, null)}
             >
               <meshStandardMaterial
-                color={isXRay ? palette.xrayTint : getWallMaterialColor(settings.visualization, side, active)}
-                roughness={isXRay ? 0.3 : 0.7}
-                metalness={isXRay ? 0.1 : 0.04}
+                color={
+                  isXRay
+                    ? palette.xrayTint
+                    : isThermal
+                    ? "#ffffff"
+                    : getWallMaterialColor(settings.visualization, side, active)
+                }
+                map={!isXRay && isThermal ? thermalTextures?.[side] : null}
+                emissiveMap={!isXRay && isThermal ? thermalTextures?.[side] : null}
+                emissive={!isXRay && isThermal ? "#ffffff" : "#000000"}
+                emissiveIntensity={!isXRay && isThermal ? 0.6 : 0}
+                roughness={isXRay ? 0.15 : isThermal ? 0.45 : 0.7}
+                metalness={isXRay ? 0.08 : 0.04}
                 wireframe={settings.wireframe}
                 transparent={isXRay}
                 opacity={isXRay ? xrayWallOpacity : 1}
@@ -274,7 +370,7 @@ export function ShelterMesh({ model, selected, onSelect, settings }: Props) {
               <lineSegments position={wall.position} rotation={wall.rotation}>
                 <edgesGeometry args={[wallGeom]} />
                 <lineBasicMaterial
-                  color={active ? palette.solar : palette.xrayEdge}
+                  color={active ? palette.solar : "#38bdf8"}
                   transparent
                   opacity={xrayEdgeOpacity}
                   linewidth={2}
@@ -348,14 +444,20 @@ export function ShelterMesh({ model, selected, onSelect, settings }: Props) {
                   <boxGeometry args={gableDimensions} />
                   <meshStandardMaterial
                     color={
-                      isActive("roof")
+                      isXRay
+                        ? palette.xrayTint
+                        : isActive("roof")
                         ? palette.solar
-                        : settings.visualization === "thermal"
-                        ? thermalPalette.roofHot
+                        : isThermal
+                        ? "#ffffff"
                         : palette.charcoal
                     }
-                    roughness={0.48}
-                    metalness={0.22}
+                    map={!isXRay && isThermal ? thermalTextures?.roof : null}
+                    emissiveMap={!isXRay && isThermal ? thermalTextures?.roof : null}
+                    emissive={!isXRay && isThermal ? "#ffffff" : "#000000"}
+                    emissiveIntensity={!isXRay && isThermal ? 0.55 : 0}
+                    roughness={isXRay ? 0.15 : 0.48}
+                    metalness={isXRay ? 0.08 : 0.22}
                     wireframe={settings.wireframe}
                     transparent={isXRay}
                     opacity={isXRay ? xrayWallOpacity : 1}
@@ -366,7 +468,7 @@ export function ShelterMesh({ model, selected, onSelect, settings }: Props) {
                 {isXRay && (
                   <lineSegments>
                     <edgesGeometry args={[new THREE.BoxGeometry(...gableDimensions)]} />
-                    <lineBasicMaterial color={palette.xrayEdge} transparent opacity={xrayEdgeOpacity} />
+                    <lineBasicMaterial color="#38bdf8" transparent opacity={xrayEdgeOpacity} />
                   </lineSegments>
                 )}
               </group>
@@ -388,14 +490,20 @@ export function ShelterMesh({ model, selected, onSelect, settings }: Props) {
             <boxGeometry args={geom.roof.dimensions} />
             <meshStandardMaterial
               color={
-                isActive("roof")
+                isXRay
+                  ? palette.xrayTint
+                  : isActive("roof")
                   ? palette.solar
-                  : settings.visualization === "thermal"
-                  ? thermalPalette.roofHot
+                  : isThermal
+                  ? "#ffffff"
                   : palette.charcoal
               }
-              roughness={0.48}
-              metalness={0.22}
+              map={!isXRay && isThermal ? thermalTextures?.roof : null}
+              emissiveMap={!isXRay && isThermal ? thermalTextures?.roof : null}
+              emissive={!isXRay && isThermal ? "#ffffff" : "#000000"}
+              emissiveIntensity={!isXRay && isThermal ? 0.55 : 0}
+              roughness={isXRay ? 0.15 : 0.48}
+              metalness={isXRay ? 0.08 : 0.22}
               wireframe={settings.wireframe}
               transparent={isXRay}
               opacity={isXRay ? xrayWallOpacity : 1}
@@ -406,7 +514,7 @@ export function ShelterMesh({ model, selected, onSelect, settings }: Props) {
           {isXRay && (
             <lineSegments>
               <edgesGeometry args={[new THREE.BoxGeometry(...geom.roof.dimensions)]} />
-              <lineBasicMaterial color={palette.xrayEdge} transparent opacity={xrayEdgeOpacity} />
+              <lineBasicMaterial color="#38bdf8" transparent opacity={xrayEdgeOpacity} />
             </lineSegments>
           )}
         </group>
@@ -444,6 +552,8 @@ export function ShelterMesh({ model, selected, onSelect, settings }: Props) {
                 color={active ? palette.solar : palette.frame}
                 roughness={0.35}
                 metalness={0.2}
+                transparent={isXRay}
+                opacity={isXRay ? 0.35 : 1}
               />
             </mesh>
 
@@ -454,6 +564,8 @@ export function ShelterMesh({ model, selected, onSelect, settings }: Props) {
                 color={active ? palette.solar : palette.frame}
                 roughness={0.35}
                 metalness={0.2}
+                transparent={isXRay}
+                opacity={isXRay ? 0.35 : 1}
               />
             </mesh>
 
@@ -464,6 +576,8 @@ export function ShelterMesh({ model, selected, onSelect, settings }: Props) {
                 color={active ? palette.solar : palette.frame}
                 roughness={0.35}
                 metalness={0.2}
+                transparent={isXRay}
+                opacity={isXRay ? 0.35 : 1}
               />
             </mesh>
 
@@ -474,6 +588,8 @@ export function ShelterMesh({ model, selected, onSelect, settings }: Props) {
                 color={active ? palette.solar : palette.frame}
                 roughness={0.35}
                 metalness={0.2}
+                transparent={isXRay}
+                opacity={isXRay ? 0.35 : 1}
               />
             </mesh>
 
@@ -485,6 +601,8 @@ export function ShelterMesh({ model, selected, onSelect, settings }: Props) {
                   color={active ? palette.solar : palette.frame}
                   roughness={0.35}
                   metalness={0.2}
+                  transparent={isXRay}
+                  opacity={isXRay ? 0.35 : 1}
                 />
               </mesh>
             ) : null}
@@ -498,10 +616,20 @@ export function ShelterMesh({ model, selected, onSelect, settings }: Props) {
             {/* Double/Triple Glazing Glass Pane */}
             <mesh position={[0, 0, 0.01]}>
               <boxGeometry args={[glassWidth, glassHeight, glassThickness]} />
-              {settings.visualization === "thermal" ? (
+              {isThermal ? (
                 <meshStandardMaterial
-                  color={thermalPalette.glazingPeak}
-                  roughness={0.25}
+                  color="#dc2626"
+                  emissive="#ef4444"
+                  emissiveIntensity={0.85}
+                  roughness={0.15}
+                />
+              ) : isXRay ? (
+                <meshPhysicalMaterial
+                  color="#bae6fd"
+                  transmission={0.92}
+                  transparent
+                  opacity={0.15}
+                  roughness={0.05}
                 />
               ) : settings.visualization === "solar" ? (
                 <meshPhysicalMaterial
@@ -588,19 +716,37 @@ export function ShelterMesh({ model, selected, onSelect, settings }: Props) {
             {/* Door Frame: Left Jamb */}
             <mesh position={[-dWidth / 2 + frameThickness / 2, 0, 0]} castShadow>
               <boxGeometry args={[frameThickness, dHeight, dDepth]} />
-              <meshStandardMaterial color={active ? palette.solar : palette.frame} roughness={0.4} metalness={0.2} />
+              <meshStandardMaterial
+                color={active ? palette.solar : palette.frame}
+                roughness={0.4}
+                metalness={0.2}
+                transparent={isXRay}
+                opacity={isXRay ? 0.35 : 1}
+              />
             </mesh>
 
             {/* Door Frame: Right Jamb */}
             <mesh position={[dWidth / 2 - frameThickness / 2, 0, 0]} castShadow>
               <boxGeometry args={[frameThickness, dHeight, dDepth]} />
-              <meshStandardMaterial color={active ? palette.solar : palette.frame} roughness={0.4} metalness={0.2} />
+              <meshStandardMaterial
+                color={active ? palette.solar : palette.frame}
+                roughness={0.4}
+                metalness={0.2}
+                transparent={isXRay}
+                opacity={isXRay ? 0.35 : 1}
+              />
             </mesh>
 
             {/* Door Frame: Top Header */}
             <mesh position={[0, dHeight / 2 - frameThickness / 2, 0]} castShadow>
               <boxGeometry args={[dWidth, frameThickness, dDepth]} />
-              <meshStandardMaterial color={active ? palette.solar : palette.frame} roughness={0.4} metalness={0.2} />
+              <meshStandardMaterial
+                color={active ? palette.solar : palette.frame}
+                roughness={0.4}
+                metalness={0.2}
+                transparent={isXRay}
+                opacity={isXRay ? 0.35 : 1}
+              />
             </mesh>
 
             {/* Insulated Heavy Door Leaf Panel */}
@@ -610,12 +756,16 @@ export function ShelterMesh({ model, selected, onSelect, settings }: Props) {
                 color={
                   active
                     ? palette.solar
-                    : settings.visualization === "thermal"
+                    : isThermal
                     ? thermalPalette.eastNeutral
                     : palette.charcoal
                 }
+                emissive={!isXRay && isThermal ? thermalPalette.eastNeutral : "#000000"}
+                emissiveIntensity={!isXRay && isThermal ? 0.35 : 0}
                 roughness={0.55}
                 metalness={0.1}
+                transparent={isXRay}
+                opacity={isXRay ? 0.35 : 1}
               />
             </mesh>
 
@@ -681,13 +831,17 @@ export function ShelterMesh({ model, selected, onSelect, settings }: Props) {
           />
           <meshStandardMaterial
             color={
-              selected?.type === "thermalMass" && selected.id === mass.id
+              isXRay
+                ? "#f59e0b"
+                : selected?.type === "thermalMass" && selected.id === mass.id
                 ? palette.solar
-                : settings.visualization === "thermal"
+                : isThermal
                 ? thermalPalette.floorWarm
                 : palette.slate
             }
-            roughness={0.85}
+            emissive={isXRay ? "#f59e0b" : isThermal ? thermalPalette.floorWarm : "#000000"}
+            emissiveIntensity={isXRay ? 0.45 : isThermal ? 0.45 : 0}
+            roughness={0.7}
           />
         </mesh>
       ))}

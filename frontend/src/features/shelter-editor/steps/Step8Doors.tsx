@@ -3,6 +3,8 @@ import { ShelterFormValues, ShelterFormReturn } from "../schema";
 import { FieldWrapper } from "../components/FieldWrapper";
 import { DoorOpen, Plus, Trash2, ShieldCheck } from "lucide-react";
 
+import { findNextAvailableOpeningPosition } from "@/features/shelter-3d/geometry-math";
+
 interface StepProps {
   form: ShelterFormReturn;
   advancedMode: boolean;
@@ -17,12 +19,15 @@ export function Step8Doors({ form, advancedMode }: StepProps) {
 
   const addDoor = () => {
     const nextIdx = doors.length + 1;
+    const wall = "east";
+    const wallOpenings = doors.filter((d) => d.wall === wall).map((d) => ({ positionX: d.positionX, width: d.width }));
+    const posX = findNextAvailableOpeningPosition(width, wallOpenings, 0.95);
     setValue("doors", [
       ...doors,
       {
         id: `door-${nextIdx}`,
-        wall: "east",
-        positionX: 1.0,
+        wall,
+        positionX: posX,
         width: 0.95,
         height: 2.1,
         construction: "Insulated Heavy Timber Door with Dual Weatherstrips",

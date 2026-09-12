@@ -81,7 +81,7 @@ export function ThermalScaleLegend({ mode }: Props) {
                   display: "block",
                   fontSize: "12px",
                   fontWeight: 650,
-                  color: "#101820",
+                  color: "inherit",
                   letterSpacing: "-0.02em",
                 }}
               >
@@ -127,7 +127,7 @@ function ThermalContent() {
             width: "100%",
             borderRadius: "4px",
             background:
-              "linear-gradient(90deg, #1e3a5f, #334155, #6b7280, #d97706, #ea580c)",
+              "linear-gradient(90deg, #3b82f6, #06b6d4, #eab308, #f97316, #ef4444)",
             boxShadow: "inset 0 1px 2px rgba(0,0,0,0.15)",
           }}
         />
