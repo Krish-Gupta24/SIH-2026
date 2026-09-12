@@ -47,6 +47,7 @@ import {
   Sliders,
   Eye,
   Cpu,
+  CheckCircle2,
 } from "lucide-react";
 import { AnsysDeckExportModal } from "@/components/modals/AnsysDeckExportModal";
 import { DesignPresetsDropdown } from "@/features/shelter-editor/components/DesignPresetsDropdown";
@@ -76,6 +77,7 @@ function Shelter3DPageContent() {
     activeWizardStep,
     setActiveWizardStep,
     updateProject,
+    addProject,
   } = useShelterStore();
 
   const stageParam = searchParams.get("stage") ?? searchParams.get("step");
@@ -89,6 +91,7 @@ function Shelter3DPageContent() {
   });
 
   const [ansysModalOpen, setAnsysModalOpen] = useState(false);
+  const [savedToast, setSavedToast] = useState(false);
 
   const activeModel = projects.find((p) => p.id === activeProjectId) || projects[0];
 
@@ -146,8 +149,30 @@ function Shelter3DPageContent() {
             </p>
           </div>
 
-          {/* Action Area: ANSYS Export + View Switcher */}
+          {/* Action Area: Save Project + ANSYS Export + View Switcher */}
           <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                if (activeModel) {
+                  addProject(activeModel);
+                  setSavedToast(true);
+                  setTimeout(() => setSavedToast(false), 3000);
+                }
+              }}
+              className="inline-flex items-center gap-1.5 rounded-full bg-foreground px-4 py-1.5 text-xs font-semibold text-background shadow-sm hover:opacity-90 transition"
+            >
+              <FolderKanban className="size-3.5" />
+              <span>Save Project</span>
+            </button>
+
+            {savedToast && (
+              <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 flex items-center gap-1 animate-in fade-in">
+                <CheckCircle2 className="size-3.5" />
+                Saved to Projects
+              </span>
+            )}
+
             <button
               type="button"
               onClick={() => setAnsysModalOpen(true)}

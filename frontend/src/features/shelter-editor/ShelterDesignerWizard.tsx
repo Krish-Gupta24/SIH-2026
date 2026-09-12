@@ -82,6 +82,7 @@ export function ShelterDesignerWizard() {
     activeWizardStep,
     setActiveWizardStep,
     updateProject,
+    addProject,
     addSimulationJob,
     updateSimulationJob,
   } = useShelterStore();
@@ -239,6 +240,20 @@ export function ShelterDesignerWizard() {
     return gross > 0 ? ((Number(windowArea) / gross) * 100).toFixed(1) : "0.0";
   }, [grossWallArea, windowArea]);
 
+  const [projectSavedToast, setProjectSavedToast] = useState(false);
+
+  const handleSaveProject = () => {
+    try {
+      const values = form.getValues();
+      const modelToSave = formValuesToModel(values, activeModel);
+      addProject(modelToSave);
+      setProjectSavedToast(true);
+      setTimeout(() => setProjectSavedToast(false), 3000);
+    } catch (err: any) {
+      console.error("Save project failed:", err);
+    }
+  };
+
   const handleNext = async () => {
     // Validate current step before advancing
     const isValid = await form.trigger();
@@ -336,6 +351,10 @@ export function ShelterDesignerWizard() {
       const data = await simulationApi.queue(payload);
       setSubmittedJobId(data.simulation_id);
 
+      // Automatically register and persist the simulated model into the projects library and backend
+      const modelToSave = formValuesToModel(values, activeModel);
+      addProject(modelToSave);
+
       const isTest = Boolean(allowTestDataOverride || isTestData);
       const newJob: SimulationJobItem = {
         id: data.simulation_id,
@@ -406,6 +425,22 @@ export function ShelterDesignerWizard() {
             <Sliders className="size-3.5" />
             {advancedMode ? "Advanced Mode" : "Standard"}
           </button>
+
+          <button
+            type="button"
+            onClick={handleSaveProject}
+            className="inline-flex items-center gap-1.5 rounded-full bg-foreground px-4 py-1.5 text-xs font-semibold text-background shadow-sm hover:opacity-90 transition"
+          >
+            <FolderKanban className="size-3.5" />
+            <span>Save Project</span>
+          </button>
+
+          {projectSavedToast && (
+            <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 flex items-center gap-1 animate-in fade-in">
+              <CheckCircle2 className="size-3.5" />
+              Saved to Projects
+            </span>
+          )}
 
           <button
             type="button"

@@ -1063,13 +1063,18 @@ export const useShelterStore = create<ShelterStoreState>()(
           projects: [...state.projects.filter((p) => p.id !== project.id), project],
           activeProjectId: project.id,
         }));
+        // Automatically persist to backend storage and DB
+        api.projects.create(project).catch((err) => {
+          console.warn("Backend project create sync note:", err);
+        });
       },
 
       updateProject: (id: string, updates: Partial<ShelterModel>) => {
+        let updatedProject: ShelterModel | undefined;
         set((state) => ({
           projects: state.projects.map((p) => {
             if (p.id === id) {
-              return {
+              updatedProject = {
                 ...p,
                 ...updates,
                 project: {
@@ -1077,10 +1082,14 @@ export const useShelterStore = create<ShelterStoreState>()(
                   ...(updates.project || {}),
                 },
               };
+              return updatedProject;
             }
             return p;
           }),
         }));
+        if (updatedProject) {
+          api.projects.update(id, updatedProject).catch(() => {});
+        }
       },
 
       deleteProject: (id: string) => {
@@ -1095,6 +1104,7 @@ export const useShelterStore = create<ShelterStoreState>()(
             activeProjectId: nextActiveId,
           };
         });
+        api.projects.delete(id).catch(() => {});
       },
 
       saveProjectVersion: (sourceId: string, versionName: string, description?: string) => {
@@ -1197,6 +1207,77 @@ export const useShelterStore = create<ShelterStoreState>()(
       loadAllInitialData: async () => {
         try {
           set({ isLoadingApi: true });
+
+          // 1. Sync persistent projects from backend (storage/shelters & DB)
+          const backendShelters = await api.projects.list().catch(() => null);
+          if (Array.isArray(backendShelters) && backendShelters.length > 0) {
+            const normalizedShelters: ShelterModel[] = backendShelters
+              .filter((s: any) => s && s.id)
+              .map((s: any) => ({
+                id: s.id,
+                schemaVersion: s.schemaVersion || "1.0.0",
+                project: {
+                  id: s.id,
+                  name: s.project?.name || s.name || "Custom Shelter",
+                  version: s.project?.version || s.version || "1.0.0",
+                  description: s.project?.description || s.description || "High-altitude engineering model.",
+                  createdAt: s.project?.createdAt || s.createdAt || new Date().toISOString(),
+                  tags: s.project?.tags || s.tags || [],
+                },
+                location: {
+                  region: s.location?.region || "Ladakh, India",
+                  latitude: s.location?.latitude ?? 34.1526,
+                  longitude: s.location?.longitude ?? 77.5771,
+                  elevation: s.location?.elevation ?? 3500,
+                  climateZone: s.location?.climateZone || "Cold / Extreme Alpine",
+                  weatherSource: s.location?.weatherSource || "IND_JK_Leh.427053_TMYx.epw",
+                  designTempWinter: s.location?.designTempWinter ?? -20,
+                  designTempSummer: s.location?.designTempSummer ?? 28,
+                  annualHeatingDegreeDays: s.location?.annualHeatingDegreeDays ?? 4850,
+                  ...(s.location || {}),
+                },
+                geometry: {
+                  shape: s.geometry?.shape || "Rectangle",
+                  length: s.geometry?.length ?? 6.0,
+                  width: s.geometry?.width ?? 4.0,
+                  height: s.geometry?.height ?? 2.8,
+                  orientation: s.geometry?.orientation ?? 0,
+                  roofType: s.geometry?.roofType || "Flat",
+                  roofAngle: s.geometry?.roofAngle ?? 0,
+                  floorElevation: s.geometry?.floorElevation ?? 0,
+                  ...(s.geometry || {}),
+                },
+                envelope: s.envelope || {
+                  walls: {
+                    north: { id: "w-n", name: "Wall North", layers: [] },
+                    south: { id: "w-s", name: "Wall South", layers: [] },
+                    east: { id: "w-e", name: "Wall East", layers: [] },
+                    west: { id: "w-w", name: "Wall West", layers: [] },
+                  },
+                  roof: { id: "r-1", name: "Roof Assembly", layers: [] },
+                  floor: { id: "f-1", name: "Floor Assembly", layers: [] },
+                },
+                windows: s.windows || [],
+                doors: s.doors || [],
+                thermalMass: s.thermalMass || [],
+                ventilation: s.ventilation || { infiltrationACH: 0.25 },
+                internalLoads: s.internalLoads || { occupantsCount: 4 },
+                designTargets: s.designTargets || { comfortTempMinC: 18, comfortTempMaxC: 24, targetComfortPercent: 85 },
+                simulationSettings: s.simulationSettings || { engine: "EnergyPlus", timestepsPerHour: 4, runPeriodDays: 1 },
+                ...s,
+              }));
+
+            set((state) => {
+              const existingIds = new Set(state.projects.map((p) => p.id));
+              const additions = normalizedShelters.filter((ns) => !existingIds.has(ns.id));
+              if (additions.length > 0) {
+                return { projects: [...state.projects, ...additions] };
+              }
+              return state;
+            });
+          }
+
+          // 2. Sync materials from backend
           const backendMaterials = await api.materials.list().catch(() => null);
           if (Array.isArray(backendMaterials) && backendMaterials.length > 0) {
             const mapped: MaterialItem[] = backendMaterials.map((bm: any) => ({

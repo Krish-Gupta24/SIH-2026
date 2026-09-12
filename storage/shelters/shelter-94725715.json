@@ -1,0 +1,28 @@
+{
+  "id": "shelter-94725715",
+  "name": "dummy-1",
+  "project": {
+    "id": "shelter-94725715",
+    "name": "dummy-1",
+    "version": "1.0.0"
+  },
+  "location": {
+    "latitude": 32.246,
+    "longitude": 78.034,
+    "elevation": 3800.0,
+    "region": "Spiti Valley",
+    "weatherSource": "spiti_valley.epw"
+  },
+  "geometry": {
+    "length": 6.0,
+    "width": 4.0,
+    "height": 2.8,
+    "shape": "Rectangle",
+    "wall_thickness": 0.2
+  },
+  "construction": {
+    "wall_type": "PUF_SANDWICH_100MM",
+    "roof_type": "PUF_SANDWICH_100MM",
+    "floor_type": "INSULATED_CONCRETE"
+  }
+}

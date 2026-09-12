@@ -18,6 +18,7 @@ import {
   Flame,
   Calendar,
   ArrowRight,
+  FolderKanban,
 } from "lucide-react";
 import { useShelterStore, SimulationJobItem, transformBackendJobToItem } from "@/lib/store/use-shelter-store";
 import { simulationApi } from "@/lib/api";
@@ -43,6 +44,7 @@ export function SimulationsView() {
     projects,
     activeProjectId,
     simulations,
+    addProject,
     addSimulationJob,
     updateSimulationJob,
     removeSimulationJob,
@@ -72,6 +74,9 @@ export function SimulationsView() {
           const statusData = await simulationApi.status(simId);
           if (statusData.status === "completed") {
             clearInterval(interval);
+            if (proj) {
+              addProject(proj);
+            }
             try {
               const results = await simulationApi.results(simId);
               const transformed = transformBackendJobToItem({ ...statusData, results }, projects);
@@ -110,7 +115,7 @@ export function SimulationsView() {
         }
       }, 2500);
     },
-    [projects, updateSimulationJob]
+    [projects, updateSimulationJob, addProject]
   );
 
   // Auto-resume polling for any active simulation jobs in the store
@@ -288,6 +293,7 @@ export function SimulationsView() {
         queuedAt: new Date().toISOString(),
       };
 
+      addProject(projToSim);
       addSimulationJob(newJob);
       pollSimulationStatus(simId, projToSim);
     } catch (err: any) {
@@ -767,6 +773,32 @@ export function SimulationsView() {
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-1.5">
+                          {sim.shelterModel && (
+                            projects.some((p) => p.id === sim.shelterModel?.id || p.id === sim.projectId) ? (
+                              <span
+                                className="hidden sm:inline-flex items-center gap-1 rounded bg-emerald-500/10 px-2 py-1 text-[10px] font-semibold text-emerald-400 ring-1 ring-inset ring-emerald-500/20"
+                                title="Project is saved in Projects library"
+                              >
+                                <CheckCircle2 className="h-3 w-3" />
+                                Saved
+                              </span>
+                            ) : (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => {
+                                  if (sim.shelterModel) {
+                                    addProject(sim.shelterModel);
+                                  }
+                                }}
+                                className="h-7 text-xs gap-1 border-emerald-500/40 text-emerald-400 hover:bg-emerald-950/40"
+                                title="Save this model to Projects library"
+                              >
+                                <FolderKanban className="h-3 w-3" />
+                                Save
+                              </Button>
+                            )
+                          )}
                           {sim.status === "completed" && (
                             <>
                               <Link href={`/results?jobId=${sim.id}`}>

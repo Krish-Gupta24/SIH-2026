@@ -16,6 +16,7 @@ import {
   Zap,
   AlertTriangle,
   CheckCircle2,
+  FolderKanban,
 } from "lucide-react";
 import { useShelterStore } from "@/lib/store/use-shelter-store";
 import { Button } from "@/components/ui/button";
@@ -48,6 +49,8 @@ export function ResultsView() {
   const urlJobId = searchParams.get("jobId");
 
   const {
+    projects,
+    addProject,
     simulations,
     toggleComparisonJobId,
     comparisonJobIds,
@@ -62,6 +65,7 @@ export function ResultsView() {
 
   const [selectedJobId, setSelectedJobId] = useState<string>(initialJob?.id || "");
   const [activeTab, setActiveTab] = useState<string>("overview");
+  const [savedToast, setSavedToast] = useState<boolean>(false);
 
   // Multi-source data trace visibility
   const [traceVisibility, setTraceVisibility] = useState<DataTraceVisibility>({
@@ -207,6 +211,38 @@ export function ResultsView() {
               ))}
             </select>
 
+            {/* Save to Projects Library */}
+            {activeJob?.shelterModel && (
+              projects.some((p) => p.id === activeJob.shelterModel?.id || p.id === activeJob.projectId) ? (
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3.5 py-1.5 text-xs font-semibold text-emerald-600 dark:text-emerald-400 shadow-sm">
+                  <CheckCircle2 className="size-3.5" />
+                  <span>In Projects</span>
+                </span>
+              ) : (
+                <ActionButton
+                  tone="secondary"
+                  onClick={() => {
+                    if (activeJob.shelterModel) {
+                      addProject(activeJob.shelterModel);
+                      setSavedToast(true);
+                      setTimeout(() => setSavedToast(false), 3000);
+                    }
+                  }}
+                  className="rounded-full text-xs font-semibold"
+                >
+                  <FolderKanban className="size-3.5" />
+                  <span>Save to Projects</span>
+                </ActionButton>
+              )
+            )}
+
+            {savedToast && (
+              <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 flex items-center gap-1 animate-in fade-in">
+                <CheckCircle2 className="size-3.5" />
+                Saved to Projects!
+              </span>
+            )}
+
             {/* Comparison Trigger */}
             <ActionButton
               tone={isCompared ? "primary" : "secondary"}
@@ -247,8 +283,10 @@ export function ResultsView() {
                 ? "The envelope holds through the design period."
                 : "The envelope falls short of the comfort target."}
             </h2>
-            <p className="mt-5 text-sm leading-6 text-white/55">
-              Read this result with its weather provenance, period, and model version—not as an isolated score.
+            <p className="mt-4 text-xs sm:text-sm leading-relaxed text-white/70">
+              {summary.comfortHoursPct >= 80
+                ? `The shelter maintains indoor living comfort (18°C–24°C) for ${summary.comfortHoursPct}% of the simulation period, meeting the ≥80% design target.`
+                : `Achieved ${summary.comfortHoursPct}% comfort hours (target is ≥80% in the 18°C–24°C band). Under sub-zero alpine conditions, indoor temperatures drop to ${summary.indoorMinC}°C. Increase envelope insulation (e.g. 150mm EPS), add a Trombe wall, or enable auxiliary heating.`}
             </p>
           </div>
           <div className="mt-8 flex items-center gap-3">

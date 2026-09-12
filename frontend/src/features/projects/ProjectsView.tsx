@@ -32,14 +32,14 @@ export function ProjectsView() {
 
   const filteredProjects = [...projects]
     .filter((project) =>
-      `${project.project.name} ${project.location.region} ${project.project.description || ""}`
+      `${project.project?.name || project.name || ""} ${project.location?.region || ""} ${project.project?.description || (project as any).description || ""}`
         .toLowerCase()
         .includes(search.toLowerCase())
     )
     .sort((a, b) =>
       sort === "name"
-        ? a.project.name.localeCompare(b.project.name)
-        : a.location.region.localeCompare(b.location.region)
+        ? (a.project?.name || a.name || "").localeCompare(b.project?.name || b.name || "")
+        : (a.location?.region || "").localeCompare(b.location?.region || "")
     );
 
   const openProject = (id: string) => {
@@ -187,7 +187,10 @@ export function ProjectsView() {
                 item.status === "completed" &&
                 item.results
             );
-            const updated = project.project.updatedAt || project.project.createdAt;
+            const updated = project.project?.updatedAt || project.project?.createdAt || (project as any).createdAt;
+            const projectName = project.project?.name || project.name || "Untitled Shelter";
+            const projectRegion = project.location?.region || "High-Altitude";
+            const projectDesc = project.project?.description || (project as any).description || "Canonical shelter definition ready for thermal simulation.";
             const isActive = project.id === activeProjectId;
 
             return (
@@ -199,13 +202,13 @@ export function ProjectsView() {
               >
                 <div className="flex items-start justify-between">
                   <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-muted-foreground">
-                    0{index + 1} · {project.location.region} {isActive ? "· Active" : ""}
+                    0{index + 1} · {projectRegion} {isActive ? "· Active" : ""}
                   </span>
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => duplicateProject(project)}
                       className="flex size-9 items-center justify-center rounded-full border border-border opacity-70 transition-all hover:opacity-100 hover:bg-secondary"
-                      aria-label={`Duplicate ${project.project.name}`}
+                      aria-label={`Duplicate ${projectName}`}
                       title="Duplicate project"
                     >
                       <Copy className="size-3.5" />
@@ -213,12 +216,12 @@ export function ProjectsView() {
                     {projects.length > 1 && (
                       <button
                         onClick={() => {
-                          if (confirm(`Delete project "${project.project.name}"?`)) {
+                          if (confirm(`Delete project "${projectName}"?`)) {
                             deleteProject(project.id);
                           }
                         }}
                         className="flex size-9 items-center justify-center rounded-full border border-border text-red-500 opacity-50 transition-all hover:opacity-100 hover:bg-red-50"
-                        aria-label={`Delete ${project.project.name}`}
+                        aria-label={`Delete ${projectName}`}
                         title="Delete project"
                       >
                         <Trash2 className="size-3.5" />
@@ -232,17 +235,17 @@ export function ProjectsView() {
                   className="mt-8 block text-left"
                 >
                   <h2 className="max-w-lg text-2xl font-medium tracking-[-0.04em] sm:text-3xl">
-                    {project.project.name}
+                    {projectName}
                   </h2>
                   <p className="mt-3 max-w-xl text-sm leading-6 text-muted-foreground">
-                    {project.project.description || "Canonical shelter definition ready for thermal simulation."}
+                    {projectDesc}
                   </p>
                 </button>
 
                 <dl className="mt-auto grid grid-cols-3 border-t border-border pt-6">
                   <DataPair
                     label="Elevation"
-                    value={`${project.location.elevation.toLocaleString()} m`}
+                    value={project.location?.elevation ? `${project.location.elevation.toLocaleString()} m` : "3,500 m"}
                   />
                   <DataPair
                     label="Demand"

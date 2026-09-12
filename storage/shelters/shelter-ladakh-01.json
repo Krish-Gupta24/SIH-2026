@@ -1,18 +1,10 @@
 {
   "id": "shelter-ladakh-01",
-  "name": "Ladakh High-Altitude Outpost Shelter",
-  "description": "Cold-climate high-altitude insulated shelter designed for extreme temperature swings in Leh, Ladakh.",
-  "tags": [
-    "High-Altitude",
-    "Extreme-Cold",
-    "Passive-Solar",
-    "Rammed-Earth"
-  ],
-  "version": "1.0.0",
+  "schemaVersion": "1.0.0",
   "project": {
     "id": "shelter-ladakh-01",
-    "name": "Ladakh High-Altitude Outpost Shelter",
-    "description": "Cold-climate high-altitude insulated shelter designed for extreme temperature swings in Leh, Ladakh.",
+    "name": "Ladakh Passive Solar Outpost (Our Solution)",
+    "description": "Cold-climate high-altitude insulated shelter designed for extreme temperature swings in Leh, Ladakh with 200mm rammed earth Trombe wall and 150mm EPS composite envelope.",
     "tags": [
       "High-Altitude",
       "Extreme-Cold",
@@ -39,97 +31,103 @@
     "orientation": 0,
     "roofType": "Flat",
     "roofAngle": 14,
-    "floorElevation": 0.3,
-    "floorArea": 24,
-    "volume": 72
+    "floorElevation": 0.3
   },
   "envelope": {
     "walls": {
       "north": {
-        "id": "const-north-insulated-rammed-earth",
+        "constructionId": "const-north-insulated-rammed-earth",
         "name": "North Insulated Rammed Earth Wall",
         "layers": [
           {
             "materialId": "mat-eps-insulation",
+            "name": "Expanded Polystyrene (EPS)",
             "thickness": 0.15
           },
           {
             "materialId": "mat-rammed-earth",
-            "thickness": 0.3
+            "name": "Rammed Earth (Local Ladakh)",
+            "thickness": 0.2
           }
         ]
       },
       "south": {
-        "id": "const-south-insulated-rammed-earth",
-        "name": "South Passive Solar Absorbing Wall",
+        "constructionId": "const-south-passive-solar-trombe",
+        "name": "South Passive Solar Wall",
         "layers": [
           {
-            "materialId": "mat-eps-insulation",
-            "thickness": 0.15
+            "materialId": "mat-rammed-earth",
+            "name": "Rammed Earth (Local Ladakh)",
+            "thickness": 0.3
           },
           {
-            "materialId": "mat-rammed-earth",
-            "thickness": 0.3
+            "materialId": "mat-eps-insulation",
+            "name": "Expanded Polystyrene (EPS)",
+            "thickness": 0.1
           }
         ]
       },
       "east": {
-        "id": "const-east-insulated-rammed-earth",
-        "name": "East Thermal Barrier Wall",
+        "constructionId": "const-east-insulated-rammed-earth",
+        "name": "East Insulated Rammed Earth Wall",
         "layers": [
           {
             "materialId": "mat-eps-insulation",
+            "name": "Expanded Polystyrene (EPS)",
             "thickness": 0.15
           },
           {
             "materialId": "mat-rammed-earth",
-            "thickness": 0.3
+            "name": "Rammed Earth (Local Ladakh)",
+            "thickness": 0.2
           }
         ]
       },
       "west": {
-        "id": "const-west-insulated-rammed-earth",
-        "name": "West Windbreak Insulated Wall",
+        "constructionId": "const-west-insulated-rammed-earth",
+        "name": "West Insulated Rammed Earth Wall",
         "layers": [
           {
             "materialId": "mat-eps-insulation",
+            "name": "Expanded Polystyrene (EPS)",
             "thickness": 0.15
           },
           {
             "materialId": "mat-rammed-earth",
-            "thickness": 0.3
+            "name": "Rammed Earth (Local Ladakh)",
+            "thickness": 0.2
           }
         ]
       }
     },
     "roof": {
-      "id": "const-insulated-deck-roof",
-      "name": "Insulated High-Snow Load Roof Assembly",
+      "constructionId": "const-insulated-metal-roof",
+      "name": "Insulated Metal Sandwich Roof",
+      "slope": 15,
+      "overhang": 0.45,
+      "solarAbsorptance": 0.65,
       "layers": [
         {
-          "materialId": "mat-roof-decking",
-          "thickness": 0.02
-        },
-        {
           "materialId": "mat-eps-insulation",
+          "name": "Expanded Polystyrene (EPS)",
           "thickness": 0.2
-        },
-        {
-          "materialId": "mat-roof-cgi-sheet",
-          "thickness": 0.005
         }
       ]
     },
     "floor": {
-      "id": "const-perimeter-insulated-slab",
-      "name": "Perimeter-Insulated Ground Contact Slab",
+      "constructionId": "const-insulated-slab-floor",
+      "name": "Insulated Ground Slab",
+      "groundContact": true,
+      "perimeterInsulation": true,
       "layers": [
         {
-          "materialId": "mat-concrete-slab",
-          "thickness": 0.15
+          "materialId": "mat-stone-granite",
+          "name": "Local Granite Stone Masonry",
+          "thickness": 0.1
         },
         {
           "materialId": "mat-eps-insulation",
+          "name": "Expanded Polystyrene (EPS)",
           "thickness": 0.1
         }
       ]
@@ -139,64 +137,86 @@
     {
       "id": "win-south-01",
       "wall": "south",
-      "width": 1.5,
+      "positionX": 1,
+      "width": 1.4,
       "height": 1.2,
       "sillHeight": 0.9,
-      "positionX": 1,
       "glazingType": "Double_LowE_Argon",
       "frameType": "UPVC_Insulated",
-      "shadingOverhang": 0.3
+      "shadingOverhang": 0.4
     },
     {
       "id": "win-south-02",
       "wall": "south",
-      "width": 1.5,
+      "positionX": 3.6,
+      "width": 1.4,
       "height": 1.2,
       "sillHeight": 0.9,
-      "positionX": 3.5,
       "glazingType": "Double_LowE_Argon",
       "frameType": "UPVC_Insulated",
-      "shadingOverhang": 0.3
+      "shadingOverhang": 0.4
     }
   ],
   "doors": [
     {
-      "id": "door-east-01",
-      "wall": "east",
+      "id": "door-north-01",
+      "wall": "north",
+      "positionX": 1.5,
       "width": 0.9,
       "height": 2.1,
-      "positionX": 1.5,
-      "type": "Insulated Air-Lock Vestibule Door"
+      "construction": "Insulated Timber Door (U=1.2)",
+      "airTightness": "HighPerformance_Airtight"
     }
   ],
-  "thermalMass": {
-    "internalFloors": 0,
-    "interiorPartitions": 18,
-    "massMaterial": "Rammed Earth Stabilized Block",
-    "effectiveThickness": 0.2
-  },
+  "thermalMass": [
+    {
+      "id": "tm-floor-slab",
+      "name": "Concrete & Granite Floor Slab",
+      "type": "FloorSlab",
+      "materialId": "mat-stone-granite",
+      "thickness": 0.15,
+      "surfaceArea": 24
+    },
+    {
+      "id": "tm-trombe-wall",
+      "name": "South Facing Trombe Wall Storage",
+      "type": "InternalPartition",
+      "materialId": "mat-rammed-earth",
+      "thickness": 0.3,
+      "surfaceArea": 12
+    }
+  ],
   "ventilation": {
     "infiltrationACH": 0.35,
-    "mechanicalVentilation": false,
-    "heatRecoveryEfficiency": 0
+    "naturalVentilationEnabled": true,
+    "naturalSchedule": "TemperatureControlled",
+    "mechanicalVentilationEnabled": false,
+    "mechanicalFlowRateLps": 15,
+    "heatRecoveryEfficiency": 0.75
   },
-  "occupancy": {
-    "peopleCount": 4,
-    "activityLevel": "Moderate",
-    "heatGainWattsPerPerson": 115,
-    "schedule": "24/7 Outpost Presence"
+  "internalLoads": {
+    "occupantsCount": 2,
+    "activityLevelWatts": 120,
+    "lightingPowerDensityWpm2": 3.5,
+    "equipmentPowerWatts": 110,
+    "scheduleProfile": "DiurnalOccupied"
   },
   "designTargets": {
     "comfortTempMinC": 18,
-    "comfortTempMaxC": 24,
-    "targetIndoorTempC": 21,
+    "comfortTempMaxC": 26,
+    "maxAnnualHeatingDemandKwhM2": 65,
     "targetComfortPercent": 85,
-    "maxAnnualHeatingDemandKwhM2": 95
+    "targetIndoorTempC": 21,
+    "comfortModel": "ASHRAE 55 Adaptive Cold Extreme",
+    "assumptions": "Clo: 1.5 (heavy arctic fleece/wool), Met: 1.2, Air: 0.1 m/s",
+    "applicableConditions": "Unconditioned passive high-altitude shelter"
   },
   "simulationSettings": {
     "engine": "EnergyPlus",
     "timestepsPerHour": 4,
-    "runPeriodDays": 3,
+    "runPeriodDays": 1,
+    "startMonth": 1,
+    "startDay": 15,
     "detailedComponentOutputs": true
   }
 }
