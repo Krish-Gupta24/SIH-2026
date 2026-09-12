@@ -66,15 +66,22 @@ export function DashboardView() {
 
       {/* Main Feature Grid: 3D Scene + Immediate Judgment */}
       <div className="workspace-feature-grid grid gap-6 lg:grid-cols-[1.15fr_.85fr]">
-        <div className="relative min-h-[480px] overflow-hidden rounded-[2rem] bg-[#CBDCE6] shadow-[0_24px_70px_rgba(0,0,0,.08)]">
+        <div className="relative min-h-[480px] overflow-hidden rounded-[2rem] border border-border bg-[#f0f4f8] shadow-[0_24px_70px_rgba(0,0,0,.08)]">
           <ShelterScene project={activeProject} wireframe={false} />
-          <div className="absolute left-5 top-5 rounded-full bg-white/90 px-4 py-2 backdrop-blur">
-            <Status strong>Model ready</Status>
+          <div className="absolute left-5 top-5 flex items-center gap-2">
+            <div className="rounded-full bg-white/90 px-4 py-2 backdrop-blur shadow-sm border border-black/5">
+              <Status strong>Model ready</Status>
+            </div>
+            <div className="hidden sm:flex items-center gap-1.5 rounded-full bg-white/90 px-3.5 py-2 text-[11px] font-mono font-bold text-[#101820] backdrop-blur shadow-sm border border-black/5">
+              <span>
+                {activeProject.geometry.length.toFixed(1)} × {activeProject.geometry.width.toFixed(1)} × {activeProject.geometry.height.toFixed(1)} m · {activeProject.geometry.roofType}
+              </span>
+            </div>
           </div>
           <div className="absolute bottom-5 right-5">
             <Link
               href="/designer/3d"
-              className="inline-flex items-center gap-2 rounded-full border border-black/20 bg-white/90 px-4 py-2 text-xs font-semibold text-black backdrop-blur hover:bg-white transition-colors"
+              className="inline-flex items-center gap-2 rounded-full border border-black/20 bg-white/90 px-4 py-2 text-xs font-semibold text-black backdrop-blur hover:bg-white transition-all shadow-sm"
             >
               <Box className="size-3.5" />
               Open 3D CAD

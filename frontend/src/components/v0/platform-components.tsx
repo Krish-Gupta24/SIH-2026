@@ -1,11 +1,13 @@
 "use client";
 
-import type { ButtonHTMLAttributes, ReactNode } from "react";
+import { useEffect, useRef, useState, type ButtonHTMLAttributes, type ReactNode } from "react";
 import { Canvas } from "@react-three/fiber";
-import { Environment, OrbitControls } from "@react-three/drei";
+import { Grid, OrbitControls } from "@react-three/drei";
+import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
 import { ArrowRight, Compass, Rotate3D } from "lucide-react";
 import type { ShelterModel } from "@/types/shelter";
 import type { SimulationJobItem } from "@/lib/store/use-shelter-store";
+import { ShelterMesh } from "@/features/shelter-3d/components/ShelterMesh";
 
 export function BrandMark({ inverse = false }: { inverse?: boolean }) {
   return (
@@ -371,76 +373,118 @@ function MetricBar({
   );
 }
 
+function DashboardCameraController({ model }: { model: ShelterModel }) {
+  const controlsRef = useRef<OrbitControlsImpl>(null);
+
+  useEffect(() => {
+    const controls = controlsRef.current;
+    if (!controls) return;
+    const maxDim = Math.max(model.geometry.length, model.geometry.width, model.geometry.height);
+    const dist = Math.max(10, maxDim * 2.2);
+    const midY = model.geometry.height * 0.55;
+
+    controls.object.position.set(dist * 0.85, dist * 0.65, dist * 0.85);
+    controls.target.set(0, midY, 0);
+    controls.update();
+  }, [model.geometry.length, model.geometry.width, model.geometry.height]);
+
+  return (
+    <OrbitControls
+      ref={controlsRef}
+      makeDefault
+      enableDamping
+      dampingFactor={0.08}
+      minDistance={3.5}
+      maxDistance={45}
+      maxPolarAngle={Math.PI / 2 - 0.02}
+    />
+  );
+}
+
 export function ShelterScene({
   project,
-  wireframe,
+  wireframe = false,
 }: {
   project: ShelterModel;
-  wireframe: boolean;
+  wireframe?: boolean;
 }) {
-  const length = Math.min(project.geometry.length, 12);
-  const width = Math.min(project.geometry.width, 9);
-  const height = Math.min(project.geometry.height, 5);
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) {
+    return (
+      <div className="absolute inset-0 flex items-center justify-center bg-[#f0f4f8] text-[#6e818f] text-xs font-semibold">
+        <span>Loading parametric 3D model...</span>
+      </div>
+    );
+  }
+
   return (
     <div
       className="absolute inset-0"
       role="img"
       aria-label="Interactive three-dimensional shelter model"
     >
-      <Canvas camera={{ position: [10, 6.4, 10], fov: 34 }} shadows>
-        <color attach="background" args={["#CBDCE6"]} />
-        <fog attach="fog" args={["#CBDCE6", 18, 38]} />
-        <ambientLight intensity={1.25} />
-        <directionalLight position={[7, 10, 5]} intensity={2.4} castShadow />
-        <group
-          rotation={[0, (project.geometry.orientation * Math.PI) / 180, 0]}
-        >
-          <mesh position={[0, height / 2 + 0.15, 0]} castShadow receiveShadow>
-            <boxGeometry args={[length, height, width]} />
-            <meshStandardMaterial
-              color="#f2f4f1"
-              wireframe={wireframe}
-              roughness={0.75}
-            />
-          </mesh>
-          {project.geometry.roofType === "Flat" ? (
-            <mesh position={[0, height + 0.34, 0]} castShadow>
-              <boxGeometry args={[length + 0.55, 0.35, width + 0.55]} />
-              <meshStandardMaterial
-                color="#26343d"
-                wireframe={wireframe}
-                roughness={0.82}
-              />
-            </mesh>
-          ) : (
-            <mesh
-              position={[0, height + 0.9, 0]}
-              rotation={[0, 0, Math.PI / 4]}
-              castShadow
-            >
-              <boxGeometry args={[1.55, 1.55, width + 0.6]} />
-              <meshStandardMaterial
-                color="#26343d"
-                wireframe={wireframe}
-                roughness={0.82}
-              />
-            </mesh>
-          )}
-          <mesh
-            position={[length / 2 + 0.01, 1.65, 0]}
-            rotation={[0, Math.PI / 2, 0]}
-          >
-            <planeGeometry args={[2.3, 1.5]} />
-            <meshStandardMaterial color="#6E818F" />
-          </mesh>
-        </group>
-        <gridHelper args={[34, 34, "#80939d", "#bac9cf"]} />
-        <Environment preset="studio" />
-        <OrbitControls
-          makeDefault
-          minDistance={6}
-          maxDistance={26}
-          maxPolarAngle={Math.PI / 2.05}
+      <Canvas
+        camera={{ position: [12, 8, 12], fov: 36, near: 0.1, far: 200 }}
+        shadows
+        className="touch-none"
+      >
+        <color attach="background" args={["#f0f4f8"]} />
+        <fog attach="fog" args={["#f0f4f8", 30, 75]} />
+
+        <DashboardCameraController model={project} />
+
+        <ambientLight intensity={0.75} />
+        <hemisphereLight args={["#ffffff", "#cbdce6", 0.75]} />
+
+        <directionalLight
+          position={[11, 18, 10]}
+          intensity={1.85}
+          castShadow
+          shadow-mapSize-width={2048}
+          shadow-mapSize-height={2048}
+          shadow-bias={-0.0002}
+        />
+
+        {/* Ground Terrain Plane */}
+        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.025, 0]} receiveShadow>
+          <planeGeometry args={[100, 100]} />
+          <meshStandardMaterial color="#e2ecf2" roughness={0.9} metalness={0.05} />
+        </mesh>
+
+        {/* Precision Architectural Grid */}
+        <Grid
+          position={[0, 0.005, 0]}
+          args={[60, 60]}
+          cellSize={0.5}
+          cellThickness={0.5}
+          cellColor="#cbdce6"
+          sectionSize={5}
+          sectionThickness={1.1}
+          sectionColor="#94a3b8"
+          fadeDistance={45}
+          fadeStrength={1.2}
+          infiniteGrid
+        />
+
+        {/* Canonical Parametric 3D Shelter Mesh (Clean Model Preview) */}
+        <ShelterMesh
+          model={project}
+          selected={null}
+          onSelect={() => {}}
+          settings={{
+            showGrid: true,
+            showDimensions: false,
+            showCompass: false,
+            showSunShadows: true,
+            wireframe: wireframe,
+            transparentWalls: false,
+            revealLayers: false,
+            visualization: "model",
+          }}
         />
       </Canvas>
     </div>
