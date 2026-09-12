@@ -14,15 +14,20 @@ import {
   Zap,
 } from "lucide-react";
 import type { VisualizationMode } from "../types";
+import type { ShelterModel } from "@/types/shelter";
+import { calculateThermalMetrics, type DynamicThermalCalculations } from "../thermal-physics";
 
 interface Props {
   mode: VisualizationMode;
+  model?: ShelterModel;
 }
 
-export function ThermalScaleLegend({ mode }: Props) {
+export function ThermalScaleLegend({ mode, model }: Props) {
   const [collapsed, setCollapsed] = useState(false);
 
   if (mode === "model") return null;
+
+  const metrics = model ? calculateThermalMetrics(model) : null;
 
   const modeConfig = {
     thermal: {
@@ -106,9 +111,9 @@ export function ThermalScaleLegend({ mode }: Props) {
         {/* ── Expandable Content ────────────────── */}
         {!collapsed && (
           <div style={{ marginTop: "10px" }}>
-            {mode === "thermal" && <ThermalContent />}
-            {mode === "solar" && <SolarContent />}
-            {mode === "heat-flow" && <HeatFlowContent />}
+            {mode === "thermal" && <ThermalContent metrics={metrics} />}
+            {mode === "solar" && <SolarContent metrics={metrics} />}
+            {mode === "heat-flow" && <HeatFlowContent metrics={metrics} />}
           </div>
         )}
       </div>
@@ -116,7 +121,12 @@ export function ThermalScaleLegend({ mode }: Props) {
   );
 }
 
-function ThermalContent() {
+function ThermalContent({ metrics }: { metrics?: DynamicThermalCalculations | null }) {
+  const southSign = (metrics?.tSurfaceSouth ?? 21.5) >= 0 ? "+" : "";
+  const northSign = (metrics?.tSurfaceNorth ?? -12.0) >= 0 ? "+" : "";
+  const glazingSign = (metrics?.tGlazing ?? 26.5) >= 0 ? "+" : "";
+  const floorSign = (metrics?.tFloorMass ?? 19.0) >= 0 ? "+" : "";
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
       {/* Temperature gradient bar */}
@@ -141,7 +151,7 @@ function ThermalContent() {
             color: "#6e818f",
           }}
         >
-          <span>-15°C</span>
+          <span>{metrics?.tOutdoor !== undefined ? `${metrics.tOutdoor}°C` : "-15°C"}</span>
           <span>0°C</span>
           <span>+10°C</span>
           <span>+25°C</span>
@@ -161,28 +171,28 @@ function ThermalContent() {
         <MetricCell
           icon={<ArrowUpRight className="size-3" style={{ color: "#d97706" }} />}
           label="South Absorber"
-          value="+21.5°C"
-          sub="410 W/m²"
+          value={`${southSign}${(metrics?.tSurfaceSouth ?? 21.5).toFixed(1)}°C`}
+          sub={`+${metrics?.iSouthIncident ?? 410} W/m²`}
           color="#d97706"
         />
         <MetricCell
           icon={<ArrowDownRight className="size-3" style={{ color: "#3b82f6" }} />}
           label="North Shaded"
-          value="-12.0°C"
-          sub="-88 W/m²"
+          value={`${northSign}${(metrics?.tSurfaceNorth ?? -12.0).toFixed(1)}°C`}
+          sub={`${metrics?.qNorthFlux ?? -88} W/m²`}
           color="#3b82f6"
         />
         <MetricCell
           icon={<Zap className="size-3" style={{ color: "#ea580c" }} />}
           label="Glazing Peak"
-          value="+26.5°C"
-          sub="480 W/m²"
+          value={`${glazingSign}${(metrics?.tGlazing ?? 26.5).toFixed(1)}°C`}
+          sub={`${metrics?.qGlazingTransmitted ?? 480} W/m²`}
           color="#ea580c"
         />
         <MetricCell
           icon={<Thermometer className="size-3" style={{ color: "#b45309" }} />}
           label="Floor Mass"
-          value="+19.0°C"
+          value={`${floorSign}${(metrics?.tFloorMass ?? 19.0).toFixed(1)}°C`}
           sub="Storage"
           color="#b45309"
         />
@@ -191,7 +201,7 @@ function ThermalContent() {
   );
 }
 
-function SolarContent() {
+function SolarContent({ metrics }: { metrics?: DynamicThermalCalculations | null }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
       {/* Irradiance gradient bar */}
@@ -218,7 +228,7 @@ function SolarContent() {
         >
           <span>65 W/m²</span>
           <span>450 W/m²</span>
-          <span>950 W/m²</span>
+          <span>{metrics?.dniNoon ?? 950} W/m²</span>
         </div>
       </div>
 
@@ -232,16 +242,26 @@ function SolarContent() {
           borderTop: "1px solid rgba(110,129,143,0.18)",
         }}
       >
-        <DataRow label="Solar Altitude" value="32.0° @ noon" />
-        <DataRow label="Azimuth" value="180° (due South)" />
-        <DataRow label="Aperture Gain" value="Deep floor harvest" highlight />
-        <DataRow label="North Facade" value="Diffuse only (65 W/m²)" />
+        <DataRow
+          label="Solar Altitude"
+          value={`${(metrics?.solarAltitudeDeg ?? 32.0).toFixed(1)}° @ winter noon`}
+        />
+        <DataRow label="Direct Irradiance" value={`${metrics?.dniNoon ?? 950} W/m² DNI`} />
+        <DataRow
+          label="Aperture Solar Gain"
+          value={`${metrics?.estDailySolarKwh ?? 8.0} kWh/d harvest`}
+          highlight
+        />
+        <DataRow
+          label="North Facade"
+          value={`Diffuse only (${metrics?.iNorthIncident ?? 65} W/m²)`}
+        />
       </div>
     </div>
   );
 }
 
-function HeatFlowContent() {
+function HeatFlowContent({ metrics }: { metrics?: DynamicThermalCalculations | null }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
       {/* Legend items */}
@@ -253,12 +273,12 @@ function HeatFlowContent() {
           paddingTop: "2px",
         }}
       >
-        <LegendRow color="#dc2626" label="Heat gain (South)" arrow="→ Interior" />
-        <LegendRow color="#2563eb" label="Heat loss (North)" arrow="→ Exterior" />
-        <LegendRow color="#a855f7" label="Roof stack loss" arrow="↑ Sky" />
+        <LegendRow color="#dc2626" label="South sol-air gain" arrow={`+${metrics?.iSouthIncident ?? 410} W/m²`} />
+        <LegendRow color="#2563eb" label="North conduction loss" arrow={`${metrics?.qNorthFlux ?? -88} W/m²`} />
+        <LegendRow color="#a855f7" label="Roof stack & sky loss" arrow={`U ${metrics?.uRoof.toFixed(2) ?? "0.32"}`} />
         <LegendRow color="#14b8a6" label="Internal convection" arrow="↻ Loop" />
-        <LegendRow color="#38bdf8" label="Air infiltration" arrow="❄ Draft" />
-        <LegendRow color="#ef4444" label="Thermal bridges" arrow="● Corners" />
+        <LegendRow color="#38bdf8" label="Air infiltration" arrow={`❄ ${metrics?.infiltrationACH.toFixed(2) ?? "0.35"} ACH`} />
+        <LegendRow color="#ef4444" label="Thermal bridges" arrow={`● Ψ ${(metrics?.psiBridge ?? 0.15).toFixed(2)}`} />
       </div>
 
       {/* Key values */}
@@ -271,9 +291,19 @@ function HeatFlowContent() {
           borderTop: "1px solid rgba(110,129,143,0.18)",
         }}
       >
-        <DataRow label="Infiltration Rate" value="0.35 ACH" />
-        <DataRow label="Thermal Bridges" value="Ψ = 0.15 W/(m·K)" highlight />
-        <DataRow label="Convection" value="South → Mass loop" />
+        <DataRow
+          label="Infiltration Rate"
+          value={`${metrics?.infiltrationACH.toFixed(2) ?? "0.35"} ACH (~${Math.round(metrics?.qInfiltrationLossW ?? 290)} W loss)`}
+        />
+        <DataRow
+          label="Thermal Bridges"
+          value={`Ψ = ${(metrics?.psiBridge ?? 0.15).toFixed(2)} W/(m·K)`}
+          highlight
+        />
+        <DataRow
+          label="Envelope Conduction"
+          value={`U_wall ${metrics?.uSouth.toFixed(2) ?? "0.28"} / U_roof ${metrics?.uRoof.toFixed(2) ?? "0.32"} W/m²K`}
+        />
       </div>
     </div>
   );

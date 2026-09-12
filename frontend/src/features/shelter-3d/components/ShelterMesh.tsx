@@ -554,6 +554,7 @@ export function ShelterMesh({ model, selected, onSelect, settings }: Props) {
                 metalness={0.2}
                 transparent={isXRay}
                 opacity={isXRay ? 0.35 : 1}
+                wireframe={settings.wireframe}
               />
             </mesh>
 
@@ -566,6 +567,7 @@ export function ShelterMesh({ model, selected, onSelect, settings }: Props) {
                 metalness={0.2}
                 transparent={isXRay}
                 opacity={isXRay ? 0.35 : 1}
+                wireframe={settings.wireframe}
               />
             </mesh>
 
@@ -578,6 +580,7 @@ export function ShelterMesh({ model, selected, onSelect, settings }: Props) {
                 metalness={0.2}
                 transparent={isXRay}
                 opacity={isXRay ? 0.35 : 1}
+                wireframe={settings.wireframe}
               />
             </mesh>
 
@@ -590,6 +593,7 @@ export function ShelterMesh({ model, selected, onSelect, settings }: Props) {
                 metalness={0.2}
                 transparent={isXRay}
                 opacity={isXRay ? 0.35 : 1}
+                wireframe={settings.wireframe}
               />
             </mesh>
 
@@ -603,6 +607,7 @@ export function ShelterMesh({ model, selected, onSelect, settings }: Props) {
                   metalness={0.2}
                   transparent={isXRay}
                   opacity={isXRay ? 0.35 : 1}
+                  wireframe={settings.wireframe}
                 />
               </mesh>
             ) : null}
@@ -610,7 +615,12 @@ export function ShelterMesh({ model, selected, onSelect, settings }: Props) {
             {/* Exterior Projecting Window Sill Flashing */}
             <mesh position={[0, -wHeight / 2 - 0.015, wDepth / 2 + 0.03]} rotation={[0.08, 0, 0]}>
               <boxGeometry args={[wWidth + 0.12, 0.035, 0.12]} />
-              <meshStandardMaterial color={active ? palette.solar : palette.steel} roughness={0.3} metalness={0.5} />
+              <meshStandardMaterial
+                color={active ? palette.solar : palette.steel}
+                roughness={0.3}
+                metalness={0.5}
+                wireframe={settings.wireframe}
+              />
             </mesh>
 
             {/* Double/Triple Glazing Glass Pane */}
@@ -622,6 +632,7 @@ export function ShelterMesh({ model, selected, onSelect, settings }: Props) {
                   emissive="#ef4444"
                   emissiveIntensity={0.85}
                   roughness={0.15}
+                  wireframe={settings.wireframe}
                 />
               ) : isXRay ? (
                 <meshPhysicalMaterial
@@ -630,6 +641,7 @@ export function ShelterMesh({ model, selected, onSelect, settings }: Props) {
                   transparent
                   opacity={0.15}
                   roughness={0.05}
+                  wireframe={settings.wireframe}
                 />
               ) : settings.visualization === "solar" ? (
                 <meshPhysicalMaterial
@@ -638,6 +650,7 @@ export function ShelterMesh({ model, selected, onSelect, settings }: Props) {
                   roughness={0.08}
                   transparent
                   opacity={0.8}
+                  wireframe={settings.wireframe}
                 />
               ) : (
                 <meshPhysicalMaterial
@@ -649,6 +662,7 @@ export function ShelterMesh({ model, selected, onSelect, settings }: Props) {
                   metalness={0.12}
                   reflectivity={0.9}
                   clearcoat={1}
+                  wireframe={settings.wireframe}
                 />
               )}
             </mesh>
@@ -722,6 +736,7 @@ export function ShelterMesh({ model, selected, onSelect, settings }: Props) {
                 metalness={0.2}
                 transparent={isXRay}
                 opacity={isXRay ? 0.35 : 1}
+                wireframe={settings.wireframe}
               />
             </mesh>
 
@@ -734,6 +749,7 @@ export function ShelterMesh({ model, selected, onSelect, settings }: Props) {
                 metalness={0.2}
                 transparent={isXRay}
                 opacity={isXRay ? 0.35 : 1}
+                wireframe={settings.wireframe}
               />
             </mesh>
 
@@ -746,6 +762,7 @@ export function ShelterMesh({ model, selected, onSelect, settings }: Props) {
                 metalness={0.2}
                 transparent={isXRay}
                 opacity={isXRay ? 0.35 : 1}
+                wireframe={settings.wireframe}
               />
             </mesh>
 
@@ -766,6 +783,7 @@ export function ShelterMesh({ model, selected, onSelect, settings }: Props) {
                 metalness={0.1}
                 transparent={isXRay}
                 opacity={isXRay ? 0.35 : 1}
+                wireframe={settings.wireframe}
               />
             </mesh>
 
@@ -778,23 +796,24 @@ export function ShelterMesh({ model, selected, onSelect, settings }: Props) {
                 transparent
                 opacity={0.65}
                 roughness={0.05}
+                wireframe={settings.wireframe}
               />
             </mesh>
 
             {/* Stainless Steel Lever Handle & Escutcheon */}
             <mesh position={[panelWidth / 2 - 0.12, -0.05, dDepth / 2 + 0.045]}>
               <boxGeometry args={[0.04, 0.18, 0.015]} />
-              <meshStandardMaterial color="#d4d4d8" metalness={0.9} roughness={0.1} />
+              <meshStandardMaterial color="#d4d4d8" metalness={0.9} roughness={0.1} wireframe={settings.wireframe} />
             </mesh>
             <mesh position={[panelWidth / 2 - 0.16, -0.05, dDepth / 2 + 0.065]}>
               <boxGeometry args={[0.12, 0.025, 0.025]} />
-              <meshStandardMaterial color="#d4d4d8" metalness={0.9} roughness={0.1} />
+              <meshStandardMaterial color="#d4d4d8" metalness={0.9} roughness={0.1} wireframe={settings.wireframe} />
             </mesh>
 
             {/* Weather-Seal Aluminum Threshold */}
             <mesh position={[0, -dHeight / 2 + 0.015, dDepth / 2]} castShadow>
               <boxGeometry args={[dWidth + 0.04, 0.03, 0.12]} />
-              <meshStandardMaterial color={palette.steel} metalness={0.8} roughness={0.2} />
+              <meshStandardMaterial color={palette.steel} metalness={0.8} roughness={0.2} wireframe={settings.wireframe} />
             </mesh>
 
             {/* Minimal In-Situ Tooltip on Hover only (when not selected) */}
@@ -842,6 +861,7 @@ export function ShelterMesh({ model, selected, onSelect, settings }: Props) {
             emissive={isXRay ? "#f59e0b" : isThermal ? thermalPalette.floorWarm : "#000000"}
             emissiveIntensity={isXRay ? 0.45 : isThermal ? 0.45 : 0}
             roughness={0.7}
+            wireframe={settings.wireframe}
           />
         </mesh>
       ))}

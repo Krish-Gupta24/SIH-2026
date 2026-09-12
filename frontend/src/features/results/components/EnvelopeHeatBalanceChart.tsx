@@ -205,6 +205,12 @@ export function EnvelopeHeatBalanceChart({
           </BarChart>
         </ResponsiveContainer>
       </div>
+
+      <div className="pt-3 border-t border-border/60 text-[11px] text-muted-foreground flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 bg-muted/20 -mx-7 -mb-7 px-7 py-3 rounded-b-[2rem]">
+        <span>
+          <strong className="text-foreground">Thermodynamic First-Law Balance:</strong> Sensible heat transmission leaving the conditioned living zone to freezing outdoor ambient is negative (–Q), while transmitted solar radiation entering through glazing is positive (+Q).
+        </span>
+      </div>
     </div>
   );
 }

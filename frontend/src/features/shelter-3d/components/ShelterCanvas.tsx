@@ -152,7 +152,7 @@ export function ShelterCanvas({
       </Canvas>
 
       {/* Thermographic & Solar Scale Legend HUD */}
-      <ThermalScaleLegend mode={settings.visualization} />
+      <ThermalScaleLegend mode={settings.visualization} model={model} />
     </div>
   );
 }

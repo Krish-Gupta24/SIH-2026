@@ -1,10 +1,12 @@
 "use client";
 
+import { useMemo } from "react";
 import { Html, Line } from "@react-three/drei";
 import * as THREE from "three";
 import type { ShelterModel } from "@/types/shelter";
 import type { VisualizationMode } from "../types";
 import type { Shelter3DRepresentation } from "../geometry-math";
+import { calculateThermalMetrics, type DynamicThermalCalculations } from "../thermal-physics";
 
 interface Props {
   model: ShelterModel;
@@ -136,13 +138,20 @@ function PillCallout({
 function ThermalAnnotations({
   model,
   geom,
+  metrics,
 }: {
   model: ShelterModel;
   geom: Shelter3DRepresentation;
+  metrics: DynamicThermalCalculations;
 }) {
   const H = model.geometry.height;
   const halfL = model.geometry.length / 2;
   const halfW = model.geometry.width / 2;
+
+  const southSign = metrics.tSurfaceSouth >= 0 ? "+" : "";
+  const northSign = metrics.tSurfaceNorth >= 0 ? "+" : "";
+  const roofSign = metrics.tSurfaceRoof >= 0 ? "+" : "";
+  const glazingSign = metrics.tGlazing >= 0 ? "+" : "";
 
   return (
     <group>
@@ -197,7 +206,12 @@ function ThermalAnnotations({
           occlude
           style={{ pointerEvents: "none" }}
         >
-          <PillCallout value="+21.5°C" label="South Absorber" sub="+410 W/m²" status="hot" />
+          <PillCallout
+            value={`${southSign}${metrics.tSurfaceSouth.toFixed(1)}°C`}
+            label="South Absorber"
+            sub={`+${metrics.iSouthIncident} W/m² sol-air`}
+            status={metrics.tSurfaceSouth > 15 ? "hot" : "warm"}
+          />
         </Html>
       </group>
 
@@ -220,7 +234,12 @@ function ThermalAnnotations({
           occlude
           style={{ pointerEvents: "none" }}
         >
-          <PillCallout value="-12.0°C" label="North Shaded" sub="-88 W/m²" status="cold" />
+          <PillCallout
+            value={`${northSign}${metrics.tSurfaceNorth.toFixed(1)}°C`}
+            label="North Shaded"
+            sub={`${metrics.qNorthFlux} W/m² conduction`}
+            status="cold"
+          />
         </Html>
       </group>
 
@@ -243,7 +262,12 @@ function ThermalAnnotations({
           occlude
           style={{ pointerEvents: "none" }}
         >
-          <PillCallout value="+15.8°C" label="Roof Radiance" sub="Sky Loss" status="warm" />
+          <PillCallout
+            value={`${roofSign}${metrics.tSurfaceRoof.toFixed(1)}°C`}
+            label="Roof Deck"
+            sub={`U ${metrics.uRoof.toFixed(2)} W/m²K`}
+            status={metrics.tSurfaceRoof > 10 ? "warm" : "cold"}
+          />
         </Html>
       </group>
 
@@ -273,7 +297,12 @@ function ThermalAnnotations({
             occlude
             style={{ pointerEvents: "none" }}
           >
-            <PillCallout value="+26.5°C" label="Glazing Hotspot" sub="480 W/m²" status="hot" />
+            <PillCallout
+              value={`${glazingSign}${metrics.tGlazing.toFixed(1)}°C`}
+              label="Glazing Hotspot"
+              sub={`${metrics.qGlazingTransmitted} W/m² trans`}
+              status="hot"
+            />
           </Html>
         </group>
       )}
@@ -289,9 +318,11 @@ function ThermalAnnotations({
 function HeatFlowAnnotations({
   model,
   geom,
+  metrics,
 }: {
   model: ShelterModel;
   geom: Shelter3DRepresentation;
+  metrics: DynamicThermalCalculations;
 }) {
   const L = model.geometry.length;
   const W = model.geometry.width;
@@ -337,7 +368,12 @@ function HeatFlowAnnotations({
           occlude
           style={{ pointerEvents: "none" }}
         >
-          <PillCallout value="Ψ 0.15" label="Thermal Bridge" sub="W/(m·K)" status="hot" />
+          <PillCallout
+            value={`Ψ ${metrics.psiBridge.toFixed(2)}`}
+            label="Thermal Bridge"
+            sub="W/(m·K)"
+            status={metrics.psiBridge > 0.2 ? "hot" : "warm"}
+          />
         </Html>
       </group>
 
@@ -369,7 +405,12 @@ function HeatFlowAnnotations({
         occlude
         style={{ pointerEvents: "none" }}
       >
-        <PillCallout value="+410" label="Heat Gain →" sub="W/m² solar" status="hot" />
+        <PillCallout
+          value={`+${metrics.iSouthIncident}`}
+          label="South Solar Gain →"
+          sub="W/m² incident"
+          status="hot"
+        />
       </Html>
 
       {/* ── North Wall Heat Loss Streamlines ── */}
@@ -400,7 +441,12 @@ function HeatFlowAnnotations({
         occlude
         style={{ pointerEvents: "none" }}
       >
-        <PillCallout value="-88" label="← Heat Loss" sub="W/m² conduction" status="cold" />
+        <PillCallout
+          value={`${metrics.qNorthFlux}`}
+          label="← North Heat Loss"
+          sub={`U ${metrics.uNorth.toFixed(2)} W/m²K`}
+          status="cold"
+        />
       </Html>
 
       {/* ── Internal Convection Loop ── */}
@@ -440,7 +486,12 @@ function HeatFlowAnnotations({
             occlude
             style={{ pointerEvents: "none" }}
           >
-            <PillCallout value="0.35 ACH" label="Door Infiltration" status="cold" />
+            <PillCallout
+              value={`${metrics.infiltrationACH.toFixed(2)} ACH`}
+              label="Door Infiltration"
+              sub={`-${metrics.qInfiltrationLossW} W`}
+              status="cold"
+            />
           </Html>
         </group>
       ))}
@@ -456,9 +507,11 @@ function HeatFlowAnnotations({
 function SolarAnnotations({
   model,
   geom,
+  metrics,
 }: {
   model: ShelterModel;
   geom: Shelter3DRepresentation;
+  metrics: DynamicThermalCalculations;
 }) {
   const L = model.geometry.length;
   const W = model.geometry.width;
@@ -466,7 +519,7 @@ function SolarAnnotations({
   const halfL = L / 2;
   const halfW = W / 2;
 
-  const sunAltitudeRad = THREE.MathUtils.degToRad(32);
+  const sunAltitudeRad = THREE.MathUtils.degToRad(metrics.solarAltitudeDeg);
   const sunAzimuthRad = THREE.MathUtils.degToRad(180 - model.geometry.orientation);
   const sunDistance = 22;
   const sunX = sunDistance * Math.cos(sunAltitudeRad) * Math.sin(sunAzimuthRad);
@@ -487,7 +540,12 @@ function SolarAnnotations({
           <meshBasicMaterial color="#f59e0b" transparent opacity={0.25} />
         </mesh>
         <Html center distanceFactor={22} style={{ pointerEvents: "none" }}>
-          <PillCallout value="950 W/m²" label="Winter Sun" sub="Alt 32° · Leh 34°N" status="solar" />
+          <PillCallout
+            value={`${metrics.dniNoon} W/m²`}
+            label="Winter Sun DNI"
+            sub={`Alt ${metrics.solarAltitudeDeg}° · ${model.location?.region?.split(",")[0] || "34°N"}`}
+            status="solar"
+          />
         </Html>
       </group>
 
@@ -546,8 +604,9 @@ function SolarAnnotations({
               style={{ pointerEvents: "none" }}
             >
               <PillCallout
-                value={`${(win.dimensions[0] * win.dimensions[1] * 0.55 * 5.2).toFixed(1)} kWh/d`}
+                value={`${metrics.estDailySolarKwh} kWh/d`}
                 label="Solar Harvest"
+                sub={`${metrics.qGlazingTransmitted} W/m² trans`}
                 status="solar"
               />
             </Html>
@@ -560,8 +619,10 @@ function SolarAnnotations({
 
 /* ── Main Overlay Component ─────────────────────────────────── */
 export function ThermalRadiationOverlay({ model, geom, mode }: Props) {
-  if (mode === "thermal") return <ThermalAnnotations model={model} geom={geom} />;
-  if (mode === "heat-flow") return <HeatFlowAnnotations model={model} geom={geom} />;
-  if (mode === "solar") return <SolarAnnotations model={model} geom={geom} />;
+  const metrics = useMemo(() => calculateThermalMetrics(model), [model]);
+
+  if (mode === "thermal") return <ThermalAnnotations model={model} geom={geom} metrics={metrics} />;
+  if (mode === "heat-flow") return <HeatFlowAnnotations model={model} geom={geom} metrics={metrics} />;
+  if (mode === "solar") return <SolarAnnotations model={model} geom={geom} metrics={metrics} />;
   return null;
 }

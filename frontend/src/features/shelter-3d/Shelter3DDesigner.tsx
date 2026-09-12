@@ -1,7 +1,7 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
-import { ArrowRight, Box, Check, ChevronLeft, ChevronRight, Compass, Eye, Grid3X3, Layers3, PanelLeft, PanelRight, Redo2, Ruler, Save, Sun, Undo2, Wind } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { ArrowRight, Box, Boxes, Check, ChevronLeft, ChevronRight, Compass, Eye, Grid3X3, Layers3, PanelLeft, PanelRight, Redo2, Ruler, Save, Sun, Undo2, Wind } from "lucide-react";
 import type { ShelterModel } from "@/types/shelter";
 import type { CameraPreset, SelectedElement, ViewerSettings, VisualizationMode } from "./types";
 import { ShelterCanvas } from "./components/ShelterCanvas";
@@ -42,6 +42,20 @@ export function Shelter3DDesigner({ model, step, onStepChange, onUpdate, onSimul
   const undo = () => { const previous = history.current.pop(); if (!previous) return; future.current.push(structuredClone(model)); onUpdate(previous); };
   const redo = () => { const next = future.current.pop(); if (!next) return; history.current.push(structuredClone(model)); onUpdate(next); };
   const setSetting = <K extends keyof ViewerSettings>(key: K, value: ViewerSettings[K]) => setSettings((current) => ({ ...current, [key]: value }));
+
+  // Shortcut: Press W to toggle Wireframe, X for X-ray, G for Grid
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+      if (e.key === "w" || e.key === "W") {
+        setSettings((s) => ({ ...s, wireframe: !s.wireframe }));
+      } else if (e.key === "x" || e.key === "X") {
+        setSettings((s) => ({ ...s, transparentWalls: !s.transparentWalls }));
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
   const area = model.geometry.length * model.geometry.width;
   const volume = area * model.geometry.height;
   const wallArea = 2 * (model.geometry.length + model.geometry.width) * model.geometry.height;
@@ -70,7 +84,7 @@ export function Shelter3DDesigner({ model, step, onStepChange, onUpdate, onSimul
     <header className="cad-toolbar">
       <div className="cad-model-identity"><span className="cad-model-icon"><Box /></span><div><strong>{model.project.name}</strong><span>{model.geometry.length.toFixed(1)} × {model.geometry.width.toFixed(1)} × {model.geometry.height.toFixed(1)} m · {model.geometry.roofType}</span></div></div>
       <div className="cad-view-switcher" aria-label="Camera views">{views.map((view) => <button key={view.id} data-active={preset === view.id} onClick={() => setPreset(view.id)}>{view.label}</button>)}</div>
-      <div className="cad-toolbar-actions"><button aria-label="Undo" disabled={!history.current.length} onClick={undo}><Undo2 /></button><button aria-label="Redo" disabled={!future.current.length} onClick={redo}><Redo2 /></button><button data-active={settings.showGrid} aria-label="Toggle grid" onClick={() => setSetting("showGrid", !settings.showGrid)}><Grid3X3 /></button><button data-active={settings.showDimensions} aria-label="Toggle dimensions" onClick={() => setSetting("showDimensions", !settings.showDimensions)}><Ruler /></button><button data-active={settings.showCompass} aria-label="Toggle compass" onClick={() => setSetting("showCompass", !settings.showCompass)}><Compass /></button><button className="cad-save" onClick={() => { setSaved(true); window.setTimeout(() => setSaved(false), 1800); }}>{saved ? <Check /> : <Save />}{saved ? "Saved" : "Save"}</button><button className="cad-simulate" onClick={onSimulate}>Simulate <ArrowRight /></button></div>
+      <div className="cad-toolbar-actions"><button aria-label="Undo" disabled={!history.current.length} onClick={undo}><Undo2 /></button><button aria-label="Redo" disabled={!future.current.length} onClick={redo}><Redo2 /></button><button data-active={settings.showGrid} aria-label="Toggle grid" onClick={() => setSetting("showGrid", !settings.showGrid)}><Grid3X3 /></button><button data-active={settings.showDimensions} aria-label="Toggle dimensions" onClick={() => setSetting("showDimensions", !settings.showDimensions)}><Ruler /></button><button data-active={settings.showCompass} aria-label="Toggle compass" onClick={() => setSetting("showCompass", !settings.showCompass)}><Compass /></button><button data-active={settings.wireframe} aria-label="Toggle wireframe" title="Toggle wireframe mode (W)" onClick={() => setSetting("wireframe", !settings.wireframe)}><Boxes /></button><button className="cad-save" onClick={() => { setSaved(true); window.setTimeout(() => setSaved(false), 1800); }}>{saved ? <Check /> : <Save />}{saved ? "Saved" : "Save"}</button><button className="cad-simulate" onClick={onSimulate}>Simulate <ArrowRight /></button></div>
     </header>
 
     <div className="cad-workspace">
@@ -81,7 +95,7 @@ export function Shelter3DDesigner({ model, step, onStepChange, onUpdate, onSimul
       </aside>
 
       <main className="cad-canvas-region">
-        <div className="cad-floating-tools"><button aria-label="Toggle workflow panel" onClick={() => setLeftOpen(!leftOpen)}><PanelLeft /></button>{modes.map(({ id, label, icon: Icon }) => <button key={id} data-active={settings.visualization === id} onClick={() => setSetting("visualization", id)}><Icon />{label}</button>)}<button aria-haspopup="dialog" data-active={materialsOpen || settings.revealLayers} onClick={() => { setMaterialsOpen(true); setSetting("revealLayers", true); }}><Layers3 />Materials</button><button data-active={settings.transparentWalls} onClick={() => setSetting("transparentWalls", !settings.transparentWalls)}><Eye />X-ray</button></div>
+        <div className="cad-floating-tools"><button aria-label="Toggle workflow panel" onClick={() => setLeftOpen(!leftOpen)}><PanelLeft /></button>{modes.map(({ id, label, icon: Icon }) => <button key={id} data-active={settings.visualization === id} onClick={() => setSetting("visualization", id)}><Icon />{label}</button>)}<button aria-haspopup="dialog" data-active={materialsOpen || settings.revealLayers} onClick={() => { setMaterialsOpen(true); setSetting("revealLayers", true); }}><Layers3 />Materials</button><button data-active={settings.transparentWalls} onClick={() => setSetting("transparentWalls", !settings.transparentWalls)}><Eye />X-ray</button><button data-active={settings.wireframe} title="Toggle wireframe (W)" onClick={() => setSetting("wireframe", !settings.wireframe)}><Boxes />Wireframe</button></div>
         <ShelterCanvas model={model} selected={selected} onSelect={setSelected} settings={settings} activePreset={preset} />
         <div className="cad-mode-label"><span>{settings.visualization === "model" ? "Geometry model" : `${settings.visualization.toUpperCase()} preview`}</span><strong>{settings.visualization === "thermal" ? "FLIR false-color IR thermography · Stefan-Boltzmann radiation emission" : settings.visualization === "solar" ? "Direct winter solar irradiance & glazing penetration (Leh Ladakh 34°N)" : settings.visualization === "heat-flow" ? "Envelope thermal bridges & convective currents" : "Editable canonical geometry"}</strong></div>
         <div className="cad-metrics"><span><small>Floor area</small><strong>{area.toFixed(1)} m²</strong></span><span><small>Volume</small><strong>{volume.toFixed(1)} m³</strong></span><span><small>South Glazing</small><strong>{southGlazingRatio.toFixed(1)}% WWR</strong></span><span><small>Solar Harvest</small><strong>~{estDailySolarGainKwh} kWh/d</strong></span><span><small>Openings</small><strong>{model.windows.length}W / {model.doors.length}D</strong></span></div>
