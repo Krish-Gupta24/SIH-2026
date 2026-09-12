@@ -51,11 +51,20 @@ export function Shelter3DDesigner({ model, step, onStepChange, onUpdate, onSimul
   // Handle stage change with auto-focusing elements in 3D
   const handleStageSelect = (idx: number) => {
     onStepChange(idx);
-    if (idx === 4) setSelected({ type: "wall", orientation: "south" });
+    if (idx === 3 || idx === 4) setSelected({ type: "wall", orientation: "south" });
     else if (idx === 5) setSelected({ type: "roof" });
     else if (idx === 6) setSelected({ type: "floor" });
-    else setSelected(null);
+    else if (idx === 7) setSelected(model.windows[0] ? { type: "window", id: model.windows[0].id } : null);
+    else if (idx === 8) setSelected(model.doors[0] ? { type: "door", id: model.doors[0].id } : null);
+    else if (idx === 9) setSelected(model.windows[0] ? { type: "window", id: model.windows[0].id } : null);
+    else if (idx === 10) setSelected(model.thermalMass[0] ? { type: "thermalMass", id: model.thermalMass[0].id } : null);
+    else setSelected({ type: "shelter" });
   };
+
+  const southWallArea = model.geometry.length * model.geometry.height;
+  const southWinArea = model.windows.filter((w) => w.wall === "south").reduce((sum, w) => sum + w.width * w.height, 0);
+  const southGlazingRatio = southWallArea > 0 ? (southWinArea / southWallArea) * 100 : 0;
+  const estDailySolarGainKwh = (southWinArea * 0.55 * 5.2).toFixed(1);
 
   return <div className="cad-shell">
     <header className="cad-toolbar">
@@ -74,8 +83,8 @@ export function Shelter3DDesigner({ model, step, onStepChange, onUpdate, onSimul
       <main className="cad-canvas-region">
         <div className="cad-floating-tools"><button aria-label="Toggle workflow panel" onClick={() => setLeftOpen(!leftOpen)}><PanelLeft /></button>{modes.map(({ id, label, icon: Icon }) => <button key={id} data-active={settings.visualization === id} onClick={() => setSetting("visualization", id)}><Icon />{label}</button>)}<button aria-haspopup="dialog" data-active={materialsOpen || settings.revealLayers} onClick={() => { setMaterialsOpen(true); setSetting("revealLayers", true); }}><Layers3 />Materials</button><button data-active={settings.transparentWalls} onClick={() => setSetting("transparentWalls", !settings.transparentWalls)}><Eye />X-ray</button></div>
         <ShelterCanvas model={model} selected={selected} onSelect={setSelected} settings={settings} activePreset={preset} />
-        <div className="cad-mode-label"><span>{settings.visualization === "model" ? "Geometry model" : `${settings.visualization} preview`}</span><strong>{settings.visualization === "model" ? "Editable canonical geometry" : "Qualitative visualization · not simulation output"}</strong></div>
-        <div className="cad-metrics"><span><small>Floor area</small><strong>{area.toFixed(1)} m²</strong></span><span><small>Volume</small><strong>{volume.toFixed(1)} m³</strong></span><span><small>Window / wall</small><strong>{((windowArea / wallArea) * 100).toFixed(1)}%</strong></span><span><small>Openings</small><strong>{model.windows.length + model.doors.length}</strong></span></div>
+        <div className="cad-mode-label"><span>{settings.visualization === "model" ? "Geometry model" : `${settings.visualization.toUpperCase()} preview`}</span><strong>{settings.visualization === "thermal" ? "FLIR false-color IR thermography · Stefan-Boltzmann radiation emission" : settings.visualization === "solar" ? "Direct winter solar irradiance & glazing penetration (Leh Ladakh 34°N)" : settings.visualization === "heat-flow" ? "Envelope thermal bridges & convective currents" : "Editable canonical geometry"}</strong></div>
+        <div className="cad-metrics"><span><small>Floor area</small><strong>{area.toFixed(1)} m²</strong></span><span><small>Volume</small><strong>{volume.toFixed(1)} m³</strong></span><span><small>South Glazing</small><strong>{southGlazingRatio.toFixed(1)}% WWR</strong></span><span><small>Solar Harvest</small><strong>~{estDailySolarGainKwh} kWh/d</strong></span><span><small>Openings</small><strong>{model.windows.length}W / {model.doors.length}D</strong></span></div>
         <button className="cad-inspector-toggle" aria-label="Toggle properties panel" onClick={() => setRightOpen(!rightOpen)}><PanelRight /></button>
       </main>
 

@@ -35,6 +35,10 @@ export interface Opening3DPlacement {
   dimensions: [number, number, number]; // [width, height, depth]
   area: number;
   original: WindowModel | DoorModel;
+  localWallPosition: [number, number]; // [x, y] relative to host wall center
+  exteriorPosition: [number, number, number];
+  normal: [number, number, number];
+  wallThickness: number;
 }
 
 export interface Shelter3DRepresentation {
@@ -66,14 +70,14 @@ export function deriveShelter3DGeometry(model: ShelterModel): Shelter3DRepresent
   const H = model.geometry.height;
   const wallAssemblies = Object.values(model.envelope.walls);
   const wallThickness = Math.max(
-    0.12,
+    0.15,
     wallAssemblies.reduce(
       (sum, assembly) => sum + assembly.layers.reduce((total, layer) => total + layer.thickness, 0),
       0,
     ) / wallAssemblies.length,
   );
   const floorThickness = Math.max(
-    0.12,
+    0.15,
     model.envelope.floor.layers.reduce((sum, layer) => sum + layer.thickness, 0),
   );
   const roofThickness = Math.max(
@@ -172,35 +176,57 @@ export function deriveShelter3DGeometry(model: ShelterModel): Shelter3DRepresent
     peakHeight,
   };
 
+  // Assembly depth spans through the host wall thickness with a 4cm outer/inner architectural protrusion
+  const windowDepth = wallThickness + 0.06;
+  const doorDepth = wallThickness + 0.08;
+
   // 4. Windows Placement on Host Walls
   const windows3D: Opening3DPlacement[] = (model.windows || []).map((win) => {
     const winW = win.width;
     const winH = win.height;
     const sill = win.sillHeight;
     const posY = sill + winH / 2;
+    const localY = -halfH + posY;
+    let localX = 0;
     let posX = 0;
     let posZ = 0;
+    let extX = 0;
+    let extZ = 0;
     let rotY = 0;
+    let normal: [number, number, number] = [0, 0, 1];
 
-    // Relative to left wall corner (positionX) mapped to centered wall coordinate
     if (win.wall === "south") {
-      // South wall spans along X from -halfL to +halfL
-      posX = -halfL + win.positionX + winW / 2;
-      posZ = halfW + wallThickness / 2 + 0.01;
+      localX = -halfL + win.positionX + winW / 2;
+      posX = localX;
+      posZ = halfW + wallThickness / 2;
+      extX = posX;
+      extZ = halfW + wallThickness;
       rotY = 0;
+      normal = [0, 0, 1];
     } else if (win.wall === "north") {
+      localX = -halfL + win.positionX + winW / 2;
       posX = halfL - (win.positionX + winW / 2);
-      posZ = -(halfW + wallThickness / 2 + 0.01);
+      posZ = -(halfW + wallThickness / 2);
+      extX = posX;
+      extZ = -(halfW + wallThickness);
       rotY = Math.PI;
+      normal = [0, 0, -1];
     } else if (win.wall === "east") {
-      // East wall spans along Z from -halfW to +halfW
-      posX = halfL + wallThickness / 2 + 0.01;
+      localX = -halfW + win.positionX + winW / 2;
+      posX = halfL + wallThickness / 2;
       posZ = halfW - (win.positionX + winW / 2);
+      extX = halfL + wallThickness;
+      extZ = posZ;
       rotY = Math.PI / 2;
+      normal = [1, 0, 0];
     } else if (win.wall === "west") {
-      posX = -(halfL + wallThickness / 2 + 0.01);
+      localX = -halfW + win.positionX + winW / 2;
+      posX = -(halfL + wallThickness / 2);
       posZ = -halfW + win.positionX + winW / 2;
+      extX = -(halfL + wallThickness);
+      extZ = posZ;
       rotY = -Math.PI / 2;
+      normal = [-1, 0, 0];
     }
 
     return {
@@ -208,10 +234,14 @@ export function deriveShelter3DGeometry(model: ShelterModel): Shelter3DRepresent
       type: "window",
       wall: win.wall,
       worldPosition: [posX, posY, posZ],
+      exteriorPosition: [extX, posY, extZ],
+      localWallPosition: [localX, localY],
       rotation: [0, rotY, 0],
-      dimensions: [winW, winH, 0.08],
+      dimensions: [winW, winH, windowDepth],
       area: winW * winH,
       original: win,
+      normal,
+      wallThickness,
     };
   });
 
@@ -220,26 +250,47 @@ export function deriveShelter3DGeometry(model: ShelterModel): Shelter3DRepresent
     const doorW = door.width;
     const doorH = door.height;
     const posY = doorH / 2;
+    const localY = -halfH + posY;
+    let localX = 0;
     let posX = 0;
     let posZ = 0;
+    let extX = 0;
+    let extZ = 0;
     let rotY = 0;
+    let normal: [number, number, number] = [0, 0, 1];
 
     if (door.wall === "south") {
-      posX = -halfL + door.positionX + doorW / 2;
-      posZ = halfW + wallThickness / 2 + 0.01;
+      localX = -halfL + door.positionX + doorW / 2;
+      posX = localX;
+      posZ = halfW + wallThickness / 2;
+      extX = posX;
+      extZ = halfW + wallThickness;
       rotY = 0;
+      normal = [0, 0, 1];
     } else if (door.wall === "north") {
+      localX = -halfL + door.positionX + doorW / 2;
       posX = halfL - (door.positionX + doorW / 2);
-      posZ = -(halfW + wallThickness / 2 + 0.01);
+      posZ = -(halfW + wallThickness / 2);
+      extX = posX;
+      extZ = -(halfW + wallThickness);
       rotY = Math.PI;
+      normal = [0, 0, -1];
     } else if (door.wall === "east") {
-      posX = halfL + wallThickness / 2 + 0.01;
+      localX = -halfW + door.positionX + doorW / 2;
+      posX = halfL + wallThickness / 2;
       posZ = halfW - (door.positionX + doorW / 2);
+      extX = halfL + wallThickness;
+      extZ = posZ;
       rotY = Math.PI / 2;
+      normal = [1, 0, 0];
     } else if (door.wall === "west") {
-      posX = -(halfL + wallThickness / 2 + 0.01);
+      localX = -halfW + door.positionX + doorW / 2;
+      posX = -(halfL + wallThickness / 2);
       posZ = -halfW + door.positionX + doorW / 2;
+      extX = -(halfL + wallThickness);
+      extZ = posZ;
       rotY = -Math.PI / 2;
+      normal = [-1, 0, 0];
     }
 
     return {
@@ -247,10 +298,14 @@ export function deriveShelter3DGeometry(model: ShelterModel): Shelter3DRepresent
       type: "door",
       wall: door.wall,
       worldPosition: [posX, posY, posZ],
+      exteriorPosition: [extX, posY, extZ],
+      localWallPosition: [localX, localY],
       rotation: [0, rotY, 0],
-      dimensions: [doorW, doorH, 0.12],
+      dimensions: [doorW, doorH, doorDepth],
       area: doorW * doorH,
       original: door,
+      normal,
+      wallThickness,
     };
   });
 
@@ -273,3 +328,91 @@ export function deriveShelter3DGeometry(model: ShelterModel): Shelter3DRepresent
     volume,
   };
 }
+
+/**
+ * Calculates a clean, non-overlapping position along a host wall for a new window or door.
+ */
+export function findNextAvailableOpeningPosition(
+  wallLength: number,
+  existingOpenings: { positionX: number; width: number }[],
+  newWidth: number,
+  margin = 0.35
+): number {
+  if (existingOpenings.length === 0) {
+    return Number(Math.max(margin, (wallLength - newWidth) / 2).toFixed(2));
+  }
+
+  // Sort existing openings from left to right along the wall
+  const sorted = [...existingOpenings].sort((a, b) => a.positionX - b.positionX);
+
+  // 1. Check gap before first opening
+  if (sorted[0].positionX >= margin + newWidth + margin) {
+    const candidate = margin + (sorted[0].positionX - margin - newWidth) / 2;
+    return Number(candidate.toFixed(2));
+  }
+
+  // 2. Check gaps between adjacent openings
+  for (let i = 0; i < sorted.length - 1; i++) {
+    const endA = sorted[i].positionX + sorted[i].width;
+    const startB = sorted[i + 1].positionX;
+    const gap = startB - endA;
+    if (gap >= newWidth + margin * 2) {
+      const candidate = endA + (gap - newWidth) / 2;
+      return Number(candidate.toFixed(2));
+    }
+  }
+
+  // 3. Check gap after last opening
+  const lastEnd = sorted[sorted.length - 1].positionX + sorted[sorted.length - 1].width;
+  if (wallLength - lastEnd >= newWidth + margin) {
+    const candidate = lastEnd + margin;
+    return Number(candidate.toFixed(2));
+  }
+
+  // Fallback: place in largest available slot clamped within wall boundary
+  return Number(Math.max(margin, Math.min(wallLength - newWidth - margin, lastEnd + 0.2)).toFixed(2));
+}
+
+/**
+ * Validates and clamps opening coordinates to ensure it stays strictly within the host wall boundaries.
+ */
+export function clampOpeningPlacement(
+  wallLength: number,
+  wallHeight: number,
+  positionX: number,
+  width: number,
+  sillHeight: number,
+  height: number,
+  isDoor: boolean
+): { positionX: number; width: number; sillHeight: number; height: number } {
+  const safeMargin = 0.2;
+  const clampedWidth = Math.max(0.4, Math.min(wallLength - safeMargin * 2, width));
+  const clampedPositionX = Math.max(
+    safeMargin,
+    Math.min(wallLength - clampedWidth - safeMargin, positionX)
+  );
+
+  if (isDoor) {
+    const clampedHeight = Math.max(1.6, Math.min(wallHeight - safeMargin, height));
+    return {
+      positionX: Number(clampedPositionX.toFixed(2)),
+      width: Number(clampedWidth.toFixed(2)),
+      sillHeight: 0,
+      height: Number(clampedHeight.toFixed(2)),
+    };
+  }
+
+  const clampedHeight = Math.max(0.4, Math.min(wallHeight - 0.5, height));
+  const clampedSill = Math.max(
+    0.2,
+    Math.min(wallHeight - clampedHeight - safeMargin, sillHeight)
+  );
+
+  return {
+    positionX: Number(clampedPositionX.toFixed(2)),
+    width: Number(clampedWidth.toFixed(2)),
+    sillHeight: Number(clampedSill.toFixed(2)),
+    height: Number(clampedHeight.toFixed(2)),
+  };
+}
+

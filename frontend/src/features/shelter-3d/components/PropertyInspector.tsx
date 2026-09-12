@@ -24,6 +24,7 @@ import {
 } from "lucide-react";
 import type { ShelterModel, WindowModel, DoorModel } from "@/types/shelter";
 import type { SelectedElement, WallOrientation } from "../types";
+import { findNextAvailableOpeningPosition, clampOpeningPlacement } from "../geometry-math";
 
 interface Props {
   model: ShelterModel;
@@ -128,38 +129,60 @@ export function PropertyInspector({
         : model.geometry.width;
 
       const addOpening = (type: "window" | "door") => {
+        const wall = selected.orientation;
+        const span = ["north", "south"].includes(wall)
+          ? model.geometry.length
+          : model.geometry.width;
+        const wallOpenings = [
+          ...model.windows.filter((w) => w.wall === wall).map((w) => ({ positionX: w.positionX, width: w.width })),
+          ...model.doors.filter((d) => d.wall === wall).map((d) => ({ positionX: d.positionX, width: d.width })),
+        ];
+
         if (type === "window") {
+          const width = 1.4;
+          const height = 1.2;
+          const sillHeight = 0.9;
+          const positionX = findNextAvailableOpeningPosition(span, wallOpenings, width);
+          const clamped = clampOpeningPlacement(span, model.geometry.height, positionX, width, sillHeight, height, false);
+          const newId = `win-${Date.now()}`;
           onUpdate({
             windows: [
               ...model.windows,
               {
-                id: `win-${Date.now()}`,
-                wall: selected.orientation,
-                positionX: span * 0.3,
-                width: 1.4,
-                height: 1.2,
-                sillHeight: 0.9,
+                id: newId,
+                wall,
+                positionX: clamped.positionX,
+                width: clamped.width,
+                height: clamped.height,
+                sillHeight: clamped.sillHeight,
                 glazingType: "Double_LowE_Argon",
                 frameType: "UPVC_Insulated",
                 shadingOverhang: 0.35,
               },
             ],
           });
+          onSelect({ type: "window", id: newId });
         } else {
+          const width = 0.95;
+          const height = 2.1;
+          const positionX = findNextAvailableOpeningPosition(span, wallOpenings, width);
+          const clamped = clampOpeningPlacement(span, model.geometry.height, positionX, width, 0, height, true);
+          const newId = `door-${Date.now()}`;
           onUpdate({
             doors: [
               ...model.doors,
               {
-                id: `door-${Date.now()}`,
-                wall: selected.orientation,
-                positionX: span * 0.15,
-                width: 0.95,
-                height: 2.1,
+                id: newId,
+                wall,
+                positionX: clamped.positionX,
+                width: clamped.width,
+                height: clamped.height,
                 construction: "Insulated timber door",
                 airTightness: "HighPerformance_Airtight",
               },
             ],
           });
+          onSelect({ type: "door", id: newId });
         }
       };
 
@@ -672,24 +695,37 @@ export function PropertyInspector({
 
         <button
           type="button"
-          onClick={() =>
+          onClick={() => {
+            const wall = "south";
+            const span = model.geometry.length;
+            const wallOpenings = [
+              ...model.windows.filter((w) => w.wall === wall).map((w) => ({ positionX: w.positionX, width: w.width })),
+              ...model.doors.filter((d) => d.wall === wall).map((d) => ({ positionX: d.positionX, width: d.width })),
+            ];
+            const width = 1.6;
+            const height = 1.3;
+            const sillHeight = 0.9;
+            const positionX = findNextAvailableOpeningPosition(span, wallOpenings, width);
+            const clamped = clampOpeningPlacement(span, model.geometry.height, positionX, width, sillHeight, height, false);
+            const newId = `win-${Date.now()}`;
             onUpdate({
               windows: [
                 ...model.windows,
                 {
-                  id: `win-${Date.now()}`,
-                  wall: "south",
-                  positionX: model.geometry.length * 0.25,
-                  width: 1.6,
-                  height: 1.3,
-                  sillHeight: 0.9,
+                  id: newId,
+                  wall,
+                  positionX: clamped.positionX,
+                  width: clamped.width,
+                  height: clamped.height,
+                  sillHeight: clamped.sillHeight,
                   glazingType: "Triple_LowE_Krypton",
                   frameType: "Wood_HighPerformance",
                   shadingOverhang: 0.45,
                 },
               ],
-            })
-          }
+            });
+            onSelect({ type: "window", id: newId });
+          }}
           className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-xl border border-foreground bg-foreground py-2 text-xs font-semibold text-background shadow-sm hover:opacity-90"
         >
           <Plus className="size-3.5" /> + Add South Solar Window
@@ -726,22 +762,34 @@ export function PropertyInspector({
 
         <button
           type="button"
-          onClick={() =>
+          onClick={() => {
+            const wall = "east";
+            const span = model.geometry.width;
+            const wallOpenings = [
+              ...model.windows.filter((w) => w.wall === wall).map((w) => ({ positionX: w.positionX, width: w.width })),
+              ...model.doors.filter((d) => d.wall === wall).map((d) => ({ positionX: d.positionX, width: d.width })),
+            ];
+            const width = 0.95;
+            const height = 2.1;
+            const positionX = findNextAvailableOpeningPosition(span, wallOpenings, width);
+            const clamped = clampOpeningPlacement(span, model.geometry.height, positionX, width, 0, height, true);
+            const newId = `door-${Date.now()}`;
             onUpdate({
               doors: [
                 ...model.doors,
                 {
-                  id: `door-${Date.now()}`,
-                  wall: "east",
-                  positionX: model.geometry.width * 0.2,
-                  width: 0.95,
-                  height: 2.1,
+                  id: newId,
+                  wall,
+                  positionX: clamped.positionX,
+                  width: clamped.width,
+                  height: clamped.height,
                   construction: "Insulated timber door",
                   airTightness: "HighPerformance_Airtight",
                 },
               ],
-            })
-          }
+            });
+            onSelect({ type: "door", id: newId });
+          }}
           className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-xl border border-foreground bg-foreground py-2 text-xs font-semibold text-background shadow-sm hover:opacity-90"
         >
           <Plus className="size-3.5" /> + Add Exterior Door
