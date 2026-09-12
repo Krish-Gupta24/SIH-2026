@@ -14,6 +14,7 @@ import {
 import { useShelterStore } from "@/lib/store/use-shelter-store";
 import type { ShelterModel } from "@/types/shelter";
 import { ActionButton, DataPair, EmptyState, PageIntro } from "@/components/v0/platform-components";
+import { NewProjectModal } from "./NewProjectModal";
 
 export function ProjectsView() {
   const router = useRouter();
@@ -29,6 +30,7 @@ export function ProjectsView() {
 
   const [search, setSearch] = useState("");
   const [sort, setSort] = useState<"name" | "region">("name");
+  const [isNewProjectModalOpen, setIsNewProjectModalOpen] = useState(false);
 
   const filteredProjects = [...projects]
     .filter((project) =>
@@ -144,7 +146,7 @@ export function ProjectsView() {
         title="Shelter projects"
         description="Canonical models, climate context, and simulation history. Continue what needs attention or begin a controlled variant."
         action={
-          <ActionButton onClick={createProject}>
+          <ActionButton onClick={() => setIsNewProjectModalOpen(true)}>
             <Plus className="size-4" />
             New project
           </ActionButton>
@@ -297,13 +299,18 @@ export function ProjectsView() {
           title="No projects match your search"
           description="Try changing your search terms or create a new shelter definition."
           action={
-            <ActionButton onClick={createProject}>
+            <ActionButton onClick={() => setIsNewProjectModalOpen(true)}>
               <Plus className="size-4" />
               Create new project
             </ActionButton>
           }
         />
       )}
+
+      <NewProjectModal
+        isOpen={isNewProjectModalOpen}
+        onClose={() => setIsNewProjectModalOpen(false)}
+      />
     </div>
   );
 }

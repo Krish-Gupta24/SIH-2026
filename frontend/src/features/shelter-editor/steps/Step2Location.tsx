@@ -1,7 +1,8 @@
 import React from "react";
 import { ShelterFormValues, ShelterFormReturn } from "../schema";
 import { FieldWrapper } from "../components/FieldWrapper";
-import { MapPin, Compass } from "lucide-react";
+import { MapPin, Compass, Sparkles } from "lucide-react";
+import { OpenFreeMapPicker } from "@/features/weather/components/OpenFreeMapPicker";
 
 interface StepProps {
   form: ShelterFormReturn;
@@ -55,9 +56,85 @@ const REGION_PRESETS = [
   },
 ];
 
+import { api } from "@/lib/api-client";
+
 export function Step2Location({ form, advancedMode }: StepProps) {
   const { register, formState: { errors }, setValue, watch } = form;
-  const currentElevation = watch("location.elevation");
+  const currentElevation = watch("location.elevation") || 3500;
+  const currentLatitude = watch("location.latitude") || 34.1526;
+  const currentLongitude = watch("location.longitude") || 77.5771;
+  const currentRegion = watch("location.region") || "Leh Ladakh, India";
+
+  const [isFetchingWeather, setIsFetchingWeather] = React.useState(false);
+  const [liveFetchStatus, setLiveFetchStatus] = React.useState<{ type: "success" | "error"; message: string } | null>(null);
+
+  const handleLocationMapChange = (loc: {
+    latitude: number;
+    longitude: number;
+    elevation: number;
+    locality: string;
+    region: string;
+  }) => {
+    setValue("location.latitude", loc.latitude);
+    setValue("location.longitude", loc.longitude);
+    setValue("location.elevation", loc.elevation);
+    setValue("location.region", loc.locality);
+    if (loc.elevation >= 4500) {
+      setValue("location.climateZone", "Extreme Cold Alpine (ASHRAE 8)");
+      setValue("location.designTempWinter", -35.0);
+    }
+  };
+
+  const handleEpwGenerated = (epwFile: string) => {
+    setValue("location.weatherSource", epwFile);
+  };
+
+  const handleLiveFetchClimate = async () => {
+    const lat = Number(watch("location.latitude"));
+    const lon = Number(watch("location.longitude"));
+    const reg = watch("location.region") || "Tactical Outpost";
+
+    if (isNaN(lat) || isNaN(lon)) {
+      setLiveFetchStatus({
+        type: "error",
+        message: "Please specify valid numerical Latitude and Longitude before querying satellite climate.",
+      });
+      return;
+    }
+
+    setIsFetchingWeather(true);
+    setLiveFetchStatus(null);
+
+    try {
+      const res = await api.weather.liveFetch({
+        latitude: lat,
+        longitude: lon,
+        location_name: reg,
+        elevation_m: currentElevation ? Number(currentElevation) : undefined,
+        provider: "open-meteo",
+      });
+
+      if (res && res.epw_file) {
+        setValue("location.weatherSource", res.epw_file);
+        if (res.dataset?.header?.elevation_m && (!currentElevation || currentElevation === 0)) {
+          setValue("location.elevation", res.dataset.header.elevation_m);
+        }
+        setLiveFetchStatus({
+          type: "success",
+          message: `Ingested ${res.dataset?.records_count || 72} hourly observations (${res.provider?.toUpperCase()}). Generated EPW: ${res.epw_file}`,
+        });
+      } else {
+        throw new Error("Invalid response received from weather pipeline.");
+      }
+    } catch (err: any) {
+      setLiveFetchStatus({
+        type: "error",
+        message: `Live satellite climate fetch failed: ${err.message || "Network error"}`,
+      });
+    } finally {
+      setIsFetchingWeather(false);
+    }
+  };
 
   const applyPreset = (preset: typeof REGION_PRESETS[0]) => {
     setValue("location.latitude", preset.latitude);
@@ -79,9 +156,32 @@ export function Step2Location({ form, advancedMode }: StepProps) {
         <div>
           <h3 className="text-base font-bold text-slate-900 dark:text-white">Geographic & Climate Boundary</h3>
           <p className="text-xs text-slate-500 dark:text-slate-400">
-            Select high-altitude cold-climate presets or specify precise geographic coordinates and solar parameters.
+            Interactive OpenFreeMap positioning, high-altitude microclimate synthesis, and certified meteorological datasets.
           </p>
         </div>
+      </div>
+
+      {/* Interactive OpenFreeMap Positioning & Microclimate Synthesizer */}
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <label className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-200 flex items-center gap-1.5">
+            <Sparkles className="h-3.5 w-3.5 text-emerald-500" />
+            Tactical Map Coordinate Acquisition & Microclimate Downscaling
+          </label>
+          <span className="text-[10px] text-slate-400">
+            Zero Guesswork: Click map or search place name
+          </span>
+        </div>
+
+        <OpenFreeMapPicker
+          initialLatitude={Number(currentLatitude)}
+          initialLongitude={Number(currentLongitude)}
+          initialElevation={Number(currentElevation)}
+          initialLocationName={currentRegion}
+          onLocationChange={handleLocationMapChange}
+          onEpwGenerated={handleEpwGenerated}
+          height="390px"
+        />
       </div>
 
       {/* Preset Quick Select */}
@@ -184,13 +284,47 @@ export function Step2Location({ form, advancedMode }: StepProps) {
               : undefined
           }
         >
-          <div className="space-y-1.5">
-            <input
-              {...register("location.weatherSource")}
-              type="text"
-              placeholder="e.g. IND_JK_Leh.420270_ISHRAE.epw"
-              className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-emerald-500 focus:outline-none dark:border-slate-700 dark:bg-slate-900 dark:text-white"
-            />
+          <div className="space-y-2">
+            <div className="flex gap-2">
+              <input
+                {...register("location.weatherSource")}
+                type="text"
+                placeholder="e.g. IND_JK_Leh.420270_ISHRAE.epw"
+                className="flex-1 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-emerald-500 focus:outline-none dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+              />
+              <button
+                type="button"
+                disabled={isFetchingWeather}
+                onClick={handleLiveFetchClimate}
+                className="inline-flex items-center gap-1.5 rounded-md bg-emerald-600 px-3 py-2 text-xs font-semibold text-white shadow-sm hover:bg-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 disabled:opacity-50"
+                title="Query Open-Meteo & NASA POWER for exact coordinates and elevation"
+              >
+                {isFetchingWeather ? (
+                  <>
+                    <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                    Fetching Live...
+                  </>
+                ) : (
+                  <>
+                    <Compass className="h-3.5 w-3.5" />
+                    Fetch Live Climate
+                  </>
+                )}
+              </button>
+            </div>
+
+            {liveFetchStatus && (
+              <div
+                className={`rounded-md p-2.5 text-xs ${
+                  liveFetchStatus.type === "success"
+                    ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
+                    : "bg-red-500/10 text-red-400 border border-red-500/20"
+                }`}
+              >
+                {liveFetchStatus.message}
+              </div>
+            )}
+
             <div className="flex items-center gap-2">
               {watch("location.weatherSource")?.toLowerCase().includes("test_weather") ? (
                 <span className="inline-flex items-center rounded-full bg-amber-500/10 px-2 py-0.5 text-[10px] font-bold tracking-wide text-amber-500 ring-1 ring-inset ring-amber-500/20">
@@ -200,6 +334,10 @@ export function Step2Location({ form, advancedMode }: StepProps) {
                 watch("location.weatherSource")?.toLowerCase().includes("manual") ? (
                 <span className="inline-flex items-center rounded-full bg-purple-500/10 px-2 py-0.5 text-[10px] font-bold tracking-wide text-purple-400 ring-1 ring-inset ring-purple-500/20">
                   USER-DEFINED
+                </span>
+              ) : watch("location.weatherSource")?.toLowerCase().includes("live_") ? (
+                <span className="inline-flex items-center rounded-full bg-cyan-500/10 px-2 py-0.5 text-[10px] font-bold tracking-wide text-cyan-400 ring-1 ring-inset ring-cyan-500/20">
+                  LIVE SATELLITE EPW
                 </span>
               ) : (
                 <span className="inline-flex items-center rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold tracking-wide text-emerald-400 ring-1 ring-inset ring-emerald-500/20">

@@ -4,25 +4,248 @@
   "project": {
     "id": "shelter-94725715",
     "name": "dummy-1",
-    "version": "1.0.0"
+    "version": "0.1.0",
+    "description": "Cold-climate high-altitude insulated shelter designed for extreme diurnal temperature swings in Leh, Ladakh.",
+    "tags": [
+      "High-Altitude",
+      "Extreme-Cold",
+      "Passive-Solar",
+      "Rammed-Earth"
+    ],
+    "createdAt": "2026-09-12T10:37:52.571Z"
   },
   "location": {
     "latitude": 32.246,
     "longitude": 78.034,
-    "elevation": 3800.0,
-    "region": "Spiti Valley",
-    "weatherSource": "spiti_valley.epw"
+    "elevation": 3800,
+    "region": "Kaza, Spiti Valley, India",
+    "climateZone": "Cold Desert",
+    "weatherSource": "spiti_valley.epw",
+    "designTempWinter": -25,
+    "designTempSummer": 22
   },
   "geometry": {
-    "length": 6.0,
-    "width": 4.0,
-    "height": 2.8,
     "shape": "Rectangle",
-    "wall_thickness": 0.2
+    "length": 7.1,
+    "width": 5.1,
+    "height": 3.1,
+    "orientation": 45,
+    "roofType": "Shed",
+    "roofAngle": 21,
+    "floorElevation": 0.3
   },
   "construction": {
     "wall_type": "PUF_SANDWICH_100MM",
     "roof_type": "PUF_SANDWICH_100MM",
     "floor_type": "INSULATED_CONCRETE"
+  },
+  "schemaVersion": "1.0.0",
+  "envelope": {
+    "walls": {
+      "north": {
+        "constructionId": "const-north-insulated-rammed-earth",
+        "name": "North Insulated Rammed Earth Wall",
+        "layers": [
+          {
+            "materialId": "mat-stone-masonry",
+            "name": "Granite Stone Masonry",
+            "thickness": 0.25
+          },
+          {
+            "materialId": "mat-rammed-earth",
+            "name": "Stabilized Rammed Earth",
+            "thickness": 0.385
+          }
+        ]
+      },
+      "south": {
+        "constructionId": "const-south-insulated-rammed-earth",
+        "name": "South Passive Solar Absorbing Wall",
+        "layers": [
+          {
+            "materialId": "mat-stone-masonry",
+            "name": "Granite Stone Masonry",
+            "thickness": 0.25
+          },
+          {
+            "materialId": "mat-rammed-earth",
+            "name": "Stabilized Rammed Earth",
+            "thickness": 0.385
+          }
+        ]
+      },
+      "east": {
+        "constructionId": "const-east-insulated-wall",
+        "name": "East Protected Wall",
+        "layers": [
+          {
+            "materialId": "mat-stone-masonry",
+            "name": "Granite Stone Masonry",
+            "thickness": 0.25
+          },
+          {
+            "materialId": "mat-rammed-earth",
+            "name": "Stabilized Rammed Earth",
+            "thickness": 0.385
+          }
+        ]
+      },
+      "west": {
+        "constructionId": "const-west-insulated-wall",
+        "name": "West Windward Wall",
+        "layers": [
+          {
+            "materialId": "mat-stone-masonry",
+            "name": "Granite Stone Masonry",
+            "thickness": 0.25
+          },
+          {
+            "materialId": "mat-rammed-earth",
+            "name": "Stabilized Rammed Earth",
+            "thickness": 0.385
+          }
+        ]
+      }
+    },
+    "roof": {
+      "constructionId": "const-insulated-metal-roof",
+      "name": "Insulated Heavy Metal Roof",
+      "slope": 0,
+      "overhang": 1.8,
+      "solarAbsorptance": 0.25,
+      "layers": [
+        {
+          "materialId": "mat-timber-deck",
+          "name": "Pine Wood Ceiling Deck",
+          "thickness": 0.005
+        },
+        {
+          "materialId": "mat-eps-insulation",
+          "name": "Rigid EPS Insulation",
+          "thickness": 0.15
+        },
+        {
+          "materialId": "mat-timber-deck",
+          "name": "Pine Wood Ceiling Deck",
+          "thickness": 0.025
+        }
+      ]
+    },
+    "floor": {
+      "constructionId": "const-insulated-concrete-floor",
+      "name": "Insulated Ground Slab with Thermal Mass",
+      "groundContact": true,
+      "perimeterInsulation": true,
+      "layers": [
+        {
+          "materialId": "mat-gravel-bed",
+          "name": "Crushed Stone Hardcore Sub-base",
+          "thickness": 0.15
+        },
+        {
+          "materialId": "mat-timber-flooring",
+          "name": "Hardwood / Timber Plank Flooring",
+          "thickness": 0.1
+        }
+      ]
+    }
+  },
+  "windows": [
+    {
+      "id": "win-south-01",
+      "wall": "south",
+      "positionX": 1,
+      "width": 1.8,
+      "height": 1.4,
+      "sillHeight": 0.9,
+      "glazingType": "Triple_LowE_Krypton",
+      "frameType": "UPVC_Insulated",
+      "shadingOverhang": 0.5
+    },
+    {
+      "id": "win-south-02",
+      "wall": "south",
+      "positionX": 3.5,
+      "width": 1.8,
+      "height": 1.4,
+      "sillHeight": 0.9,
+      "glazingType": "Triple_LowE_Krypton",
+      "frameType": "UPVC_Insulated",
+      "shadingOverhang": 0.5
+    },
+    {
+      "id": "win-3",
+      "wall": "west",
+      "positionX": 1.7,
+      "width": 1.4,
+      "height": 1.2,
+      "sillHeight": 0.9,
+      "glazingType": "Triple_LowE_Krypton",
+      "frameType": "UPVC_Insulated",
+      "shadingOverhang": 0.4
+    }
+  ],
+  "doors": [
+    {
+      "id": "door-east-01",
+      "wall": "east",
+      "positionX": 1.5,
+      "width": 0.95,
+      "height": 2.1,
+      "construction": "Airtight Thermal Break Insulated Timber Door (U=1.2)",
+      "airTightness": "HighPerformance_Airtight"
+    },
+    {
+      "id": "door-2",
+      "wall": "west",
+      "positionX": 3.13,
+      "width": 0.95,
+      "height": 2.1,
+      "construction": "Insulated Heavy Timber Door with Dual Weatherstrips",
+      "airTightness": "HighPerformance_Airtight"
+    }
+  ],
+  "thermalMass": [
+    {
+      "id": "tmass-slab-01",
+      "name": "High-Density Exposed Concrete Slab",
+      "type": "InternalExposedMass",
+      "materialId": "mat-stone-masonry",
+      "thickness": 0.15,
+      "surfaceArea": 24
+    }
+  ],
+  "ventilation": {
+    "infiltrationACH": 0.75,
+    "naturalVentilationEnabled": true,
+    "naturalSchedule": "DayOnly",
+    "mechanicalVentilationEnabled": true,
+    "mechanicalFlowRateLps": 15,
+    "heatRecoveryEfficiency": 0.82
+  },
+  "internalLoads": {
+    "occupantsCount": 8,
+    "activityLevelWatts": 100,
+    "lightingPowerDensityWpm2": 3,
+    "equipmentPowerWatts": 120,
+    "scheduleProfile": "DiurnalOccupied"
+  },
+  "designTargets": {
+    "comfortTempMinC": 18,
+    "comfortTempMaxC": 24,
+    "maxAnnualHeatingDemandKwhM2": 50,
+    "targetComfortPercent": 83,
+    "targetIndoorTempC": 21,
+    "comfortModel": "ASHRAE Standard 55 Adaptive Model (High Altitude)",
+    "assumptions": "Clo: 1.5, Met: 1.2, Air: 0.1 m/s",
+    "applicableConditions": "Unconditioned passive high-altitude shelter"
+  },
+  "simulationSettings": {
+    "engine": "EnergyPlus",
+    "timestepsPerHour": 4,
+    "runPeriodDays": 3,
+    "startMonth": 1,
+    "startDay": 1,
+    "detailedComponentOutputs": true
   }
 }

@@ -23,6 +23,11 @@ from simulation.parsers.energyplus_parser import EnergyPlusOutputParser
 from simulation.results.parser import EnergyPlusResultParser
 
 
+import logging
+
+logger = logging.getLogger("backend.simulation.tasks")
+
+
 def safe_cleanup_work_dir(work_dir: Path):
     """Safely remove heavy intermediate scratch files, preserving logs, error reports, and normalized results."""
     transient_extensions = [".eso", ".bnd", ".audit", ".rdd", ".mdd", ".shd", ".rvaudit", ".mtd"]
@@ -104,24 +109,6 @@ def run_simulation_task(
                 if c.is_file():
                     epw = c.resolve()
                     break
-
-        if not epw or not epw.exists():
-            # If not found and not test weather, safely resolve to verified authentic Leh TMYx dataset
-            if "test_weather" not in str(weather_file_path).lower():
-                fallback_candidates = [
-                    Path("storage/weather/IND_JK_Leh.427053_TMYx.epw"),
-                    Path("simulation/weather/IND_JK_Leh.427053_TMYx.epw"),
-                    Path("storage/weather/IND_JK_Leh.420270_ISHRAE.epw"),
-                    Path("simulation/weather/IND_JK_Leh.420270_ISHRAE.epw"),
-                ]
-                for fb in fallback_candidates:
-                    if fb.is_file():
-                        epw = fb.resolve()
-                        logger.warning(
-                            f"Weather dataset '{raw_epw.name}' not found on disk. "
-                            f"Resolved to verified authentic regional dataset '{epw.name}'."
-                        )
-                        break
 
         if not epw or not epw.exists():
             raise FileNotFoundError(

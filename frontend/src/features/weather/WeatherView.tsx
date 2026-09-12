@@ -15,7 +15,9 @@ import {
   X,
   Loader2,
   ShieldCheck,
+  Sparkles,
 } from "lucide-react";
+import { OpenFreeMapPicker } from "@/features/weather/components/OpenFreeMapPicker";
 import {
   ResponsiveContainer,
   LineChart,
@@ -45,7 +47,7 @@ export function WeatherView() {
   const [selectedStationId, setSelectedStationId] = useState(activeWeatherId);
 
   // Modal States
-  const [activeModal, setActiveModal] = useState<"epw" | "csv" | "nasa" | "manual" | null>(null);
+  const [activeModal, setActiveModal] = useState<"epw" | "csv" | "nasa" | "manual" | "microclimate" | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [modalError, setModalError] = useState<string | null>(null);
   const [modalSuccess, setModalSuccess] = useState<string | null>(null);
@@ -58,6 +60,7 @@ export function WeatherView() {
     latitude: 33.76,
     longitude: 78.68,
     elevation_m: 4250,
+    provider: "open-meteo" as "open-meteo" | "nasa-power",
     start_date: "20230101",
     end_date: "20230103",
   });
@@ -213,15 +216,27 @@ export function WeatherView() {
     setIsLoading(true);
     setModalError(null);
     try {
-      const res = await fetch("/api/weather/nasa-power", {
+      const isMeteo = nasaForm.provider === "open-meteo";
+      const endpoint = isMeteo ? "/api/weather/live-fetch" : "/api/weather/nasa-power";
+      const payload = isMeteo
+        ? {
+            latitude: nasaForm.latitude,
+            longitude: nasaForm.longitude,
+            location_name: nasaForm.location_name,
+            elevation_m: nasaForm.elevation_m,
+            provider: "open-meteo",
+          }
+        : nasaForm;
+
+      const res = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(nasaForm),
+        body: JSON.stringify(payload),
       });
 
       if (!res.ok) {
-        const err = await res.json().catch(() => ({ detail: "NASA fetch failed" }));
-        throw new Error(err.detail || "NASA POWER satellite retrieval failed.");
+        const err = await res.json().catch(() => ({ detail: "Climate fetch failed" }));
+        throw new Error(err.detail || "Live meteorological retrieval failed.");
       }
 
       const data = await res.json();
@@ -230,12 +245,12 @@ export function WeatherView() {
       const newStation: WeatherStation = {
         id: `wx-${ds.file_hash_sha256.slice(0, 8)}`,
         name: nasaForm.location_name,
-        region: "NASA POWER Satellite Observation",
+        region: isMeteo ? "Open-Meteo Alpine Climate Reanalysis" : "NASA POWER Satellite Observation",
         latitude: nasaForm.latitude,
         longitude: nasaForm.longitude,
-        elevationM: nasaForm.elevation_m,
-        climateZone: "Satellite Reanalysis",
-        sourceType: "NASA_POWER",
+        elevationM: ds.header?.elevation_m || nasaForm.elevation_m,
+        climateZone: isMeteo ? "Alpine Cold (ASHRAE 8)" : "Satellite Reanalysis",
+        sourceType: isMeteo ? "EPW" : "NASA_POWER",
         provenanceStatus: "REAL_DATA",
         isTestData: false,
         designWinterMinC: -28.0,
@@ -248,10 +263,10 @@ export function WeatherView() {
       addWeatherDataset(newStation);
       setSelectedStationId(newStation.id);
       setActiveWeather(newStation.id);
-      setModalSuccess(`Retrieved ${ds.records_count} hourly records from NASA POWER!`);
+      setModalSuccess(`Retrieved ${ds.records_count} hourly records from ${isMeteo ? "Open-Meteo" : "NASA POWER"}!`);
       setTimeout(() => setActiveModal(null), 1500);
     } catch (err: any) {
-      setModalError(err.message || "Failed to retrieve NASA POWER satellite weather.");
+      setModalError(err.message || "Failed to retrieve live satellite/alpine weather.");
     } finally {
       setIsLoading(false);
     }
@@ -345,6 +360,14 @@ export function WeatherView() {
             >
               <Sliders className="size-3.5" />
               Design Day
+            </ActionButton>
+            <ActionButton
+              tone="signal"
+              onClick={() => { setActiveModal("microclimate"); setModalError(null); setModalSuccess(null); }}
+              className="rounded-full text-xs font-semibold"
+            >
+              <Sparkles className="size-3.5 text-black" />
+              Microclimate (PI-ML)
             </ActionButton>
           </div>
         }
@@ -831,6 +854,36 @@ export function WeatherView() {
 
             <div className="space-y-3 text-xs">
               <div>
+                <label className="block text-foreground font-semibold mb-1">Meteorological Provider</label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setNasaForm({ ...nasaForm, provider: "open-meteo" })}
+                    className={`rounded-xl p-2.5 text-left border transition-all ${
+                      nasaForm.provider === "open-meteo"
+                        ? "border-emerald-500 bg-emerald-500/10 text-emerald-400 font-bold"
+                        : "border-border bg-secondary/30 text-muted-foreground hover:bg-secondary/60"
+                    }`}
+                  >
+                    <div className="text-xs font-semibold">Open-Meteo Alpine</div>
+                    <div className="text-[10px] opacity-75 font-normal">Instant DEM elevation & lapse-rate</div>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setNasaForm({ ...nasaForm, provider: "nasa-power" })}
+                    className={`rounded-xl p-2.5 text-left border transition-all ${
+                      nasaForm.provider === "nasa-power"
+                        ? "border-emerald-500 bg-emerald-500/10 text-emerald-400 font-bold"
+                        : "border-border bg-secondary/30 text-muted-foreground hover:bg-secondary/60"
+                    }`}
+                  >
+                    <div className="text-xs font-semibold">NASA POWER</div>
+                    <div className="text-[10px] opacity-75 font-normal">Satellite radiation & multi-day</div>
+                  </button>
+                </div>
+              </div>
+
+              <div>
                 <label className="block text-foreground font-semibold mb-1">Target Location Name</label>
                 <input
                   type="text"
@@ -1067,6 +1120,73 @@ export function WeatherView() {
               >
                 {isLoading && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
                 Generate & Select
+              </ActionButton>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL 5: High-Altitude Microclimate Weather Synthesizer (PI-ML) */}
+      {activeModal === "microclimate" && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm overflow-y-auto">
+          <div className="w-full max-w-3xl rounded-[2rem] border border-border bg-card p-7 shadow-2xl space-y-5 text-foreground max-h-[92vh] overflow-y-auto">
+            <div className="flex items-center justify-between border-b border-border pb-4">
+              <div>
+                <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#6E818F]">
+                  Physics-Informed Downscaling · Atmospheric Synthesizer
+                </span>
+                <h3 className="font-editorial text-2xl font-medium tracking-tight text-foreground mt-0.5">
+                  High-Altitude Microclimate Synthesizer (PI-ML)
+                </h3>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Downscale reference airport weather to frontline Himalayan defense outposts with diurnal lapse rates.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setActiveModal(null)}
+                className="rounded-full p-2 text-[#6E818F] hover:bg-[#CBDCE6]/40 hover:text-black transition"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <OpenFreeMapPicker
+              initialLatitude={activeStation.latitude}
+              initialLongitude={activeStation.longitude}
+              initialElevation={activeStation.elevationM}
+              initialLocationName={activeStation.name}
+              onEpwGenerated={(epwFile, summary) => {
+                const newStation: WeatherStation = {
+                  id: `wx-micro-${Date.now().toString().slice(-6)}`,
+                  name: summary.location_name || "Synthesized Microclimate Outpost",
+                  region: `${summary.location_name} (Synthesized High-Altitude Microclimate)`,
+                  latitude: summary.latitude,
+                  longitude: summary.longitude,
+                  elevationM: summary.elevation_m,
+                  climateZone: summary.elevation_m > 4500 ? "Extreme Cold Alpine (ASHRAE 8)" : "Cold Alpine Continental",
+                  sourceType: "EPW",
+                  provenanceStatus: "REAL_DATA",
+                  isTestData: false,
+                  designWinterMinC: summary.min_temperature_c,
+                  designSummerMaxC: summary.max_temperature_c,
+                  annualHDD18: 6200,
+                  epwFileName: epwFile,
+                  sha256: `piml-synth-${Date.now()}`,
+                };
+                addWeatherDataset(newStation);
+                setSelectedStationId(newStation.id);
+                setActiveWeather(newStation.id);
+                setModalSuccess(`Generated & Selected Microclimate EPW: ${epwFile}!`);
+                setTimeout(() => setActiveModal(null), 1500);
+              }}
+              height="370px"
+              showMicroclimateSynthesizer={true}
+            />
+
+            <div className="flex justify-end pt-3 border-t border-border">
+              <ActionButton tone="quiet" onClick={() => setActiveModal(null)}>
+                Close
               </ActionButton>
             </div>
           </div>

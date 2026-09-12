@@ -352,6 +352,29 @@ async def get_output_variables():
 
 
 @router.get(
+    "/benchmark/ladakh",
+    summary="Get authentic EnergyPlus 24.1.0 physics benchmark for Ladakh high-altitude outpost",
+)
+async def get_authentic_ladakh_benchmark():
+    """Returns authentic EnergyPlus simulation results parsed from Ladakh outpost physical run."""
+    import json
+    from pathlib import Path
+    benchmark_path = Path(__file__).resolve().parents[3] / "data" / "authentic_benchmark.json"
+    if not benchmark_path.exists():
+        # Fallback check relative to cwd
+        alt_path = Path("backend/data/authentic_benchmark.json")
+        if alt_path.exists():
+            benchmark_path = alt_path
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Authentic benchmark data file not found."
+            )
+    with open(benchmark_path, "r", encoding="utf-8") as f:
+        return json.load(f)
+
+
+@router.get(
     "/{simulation_id}",
     summary="Get current simulation lifecycle status",
 )

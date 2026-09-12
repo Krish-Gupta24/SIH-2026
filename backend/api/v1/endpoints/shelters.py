@@ -33,13 +33,15 @@ async def list_shelters():
     include_in_schema=False,
 )
 async def create_shelter(shelter: Dict[str, Any]):
-    """Save a new shelter model into persistent storage."""
+    """Save a new shelter model into persistent storage and NeonDB."""
     if not shelter.get("geometry"):
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail="Shelter model must specify a geometry object.",
         )
-    return shelter_service.save_shelter(shelter)
+    saved = shelter_service.save_shelter(shelter)
+    await shelter_service.sync_to_db(saved)
+    return saved
 
 
 @router.get(
@@ -72,7 +74,9 @@ async def update_shelter(shelter_id: str, updates: Dict[str, Any]):
     updates["id"] = shelter_id
     # Deep merge or replace
     merged = {**existing, **updates}
-    return shelter_service.save_shelter(merged)
+    saved = shelter_service.save_shelter(merged)
+    await shelter_service.sync_to_db(saved)
+    return saved
 
 
 @router.delete(
@@ -80,11 +84,12 @@ async def update_shelter(shelter_id: str, updates: Dict[str, Any]):
     summary="Delete a shelter model",
 )
 async def delete_shelter(shelter_id: str):
-    """Remove a shelter model from persistent storage."""
+    """Remove a shelter model from persistent storage and NeonDB."""
     success = shelter_service.delete_shelter(shelter_id)
     if not success:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Shelter model '{shelter_id}' not found.",
         )
+    await shelter_service.delete_from_db(shelter_id)
     return {"status": "deleted", "id": shelter_id}

@@ -8,7 +8,9 @@ from backend.weather.validator import (
     haversine_distance_km,
 )
 from backend.weather.nasa_power import NASAPowerClient
+from backend.weather.open_meteo import OpenMeteoClient
 from backend.weather.converter import CSVWeatherConverter, ManualWeatherGenerator
+from backend.weather.microclimate_synthesizer import PhysicsInformedMicroclimateSynthesizer
 
 __all__ = [
     "WeatherValidator",
@@ -17,6 +19,8 @@ __all__ = [
     "WeatherLocationHeader",
     "haversine_distance_km",
     "NASAPowerClient",
+    "OpenMeteoClient",
     "CSVWeatherConverter",
     "ManualWeatherGenerator",
+    "PhysicsInformedMicroclimateSynthesizer",
 ]

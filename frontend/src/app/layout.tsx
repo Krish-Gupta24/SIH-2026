@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Cormorant_Garamond, Inter } from "next/font/google";
 import "./globals.css";
+import "maplibre-gl/dist/maplibre-gl.css";
 
 // Configured fonts: Inter (sans) & Cormorant Garamond (editorial serif)
 const geist = Inter({

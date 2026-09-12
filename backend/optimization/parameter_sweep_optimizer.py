@@ -209,7 +209,7 @@ class ParameterSweepOptimizer:
         )
 
     def _resolve_weather_file(self, explicit_path: Optional[str]) -> str:
-        """Resolve valid EPW weather file from explicit input, base model, or test default."""
+        """Resolve valid EPW weather file from explicit input, base model, or authentic regional TMYx default."""
         if explicit_path and Path(explicit_path).is_file():
             return str(Path(explicit_path).resolve())
 
@@ -217,19 +217,35 @@ class ParameterSweepOptimizer:
         loc = self.base_model.get("location", {})
         wf_name = loc.get("weather_file") or loc.get("weather_source")
         if wf_name:
-            cand1 = Path(wf_name)
-            if cand1.is_file():
-                return str(cand1.resolve())
-            cand2 = Path("simulation/weather") / wf_name
-            if cand2.is_file():
-                return str(cand2.resolve())
+            for cand_dir in [Path("."), Path("storage/weather"), Path("simulation/weather")]:
+                cand = cand_dir / wf_name
+                if cand.is_file():
+                    return str(cand.resolve())
 
-        # Fallback to test weather file
-        std_epw = Path("simulation/weather/test_weather.epw")
-        if std_epw.is_file():
-            return str(std_epw.resolve())
+        # Priority 1: High-Altitude Authenticated Leh TMYx Dataset
+        for default_name in [
+            "IND_JK_Leh.427053_TMYx.epw",
+            "IND_JK_Leh.420270_ISHRAE.epw",
+        ]:
+            for cand_dir in [Path("storage/weather"), Path("simulation/weather")]:
+                cand = cand_dir / default_name
+                if cand.is_file():
+                    return str(cand.resolve())
 
-        return str(std_epw)
+        # Priority 2: Any non-test EPW in storage/weather or simulation/weather
+        for cand_dir in [Path("storage/weather"), Path("simulation/weather")]:
+            if cand_dir.exists():
+                epws = [f for f in cand_dir.glob("*.epw") if "test" not in f.name.lower()]
+                if epws:
+                    return str(epws[0].resolve())
+
+        # Priority 3: Fallback to existing EPW in simulation/weather
+        cand_fallback = Path("simulation/weather/IND_JK_Leh.427053_TMYx.epw")
+        if cand_fallback.is_file():
+            return str(cand_fallback.resolve())
+
+        return str(Path("simulation/weather/IND_JK_Leh.427053_TMYx.epw").resolve())
+
 
     def _default_constraints(self) -> List[OptimizationConstraint]:
         """Default engineering constraints for high-altitude cold-climate shelters."""

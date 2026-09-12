@@ -94,12 +94,26 @@ export const api = {
         method: "POST",
       }),
     outputVariables: () => fetchApi<any>("/simulations/output-variables"),
+    benchmark: (benchmarkId = "ladakh") => fetchApi<any>(`/simulations/benchmark/${benchmarkId}`),
   },
   weather: {
     list: () => fetchApi<any[]>("/weather"),
     sources: () => fetchApi<any[]>("/weather/sources"),
     queryNasa: (params: any) =>
       fetchApi<any>("/weather/nasa-power", {
+        method: "POST",
+        body: JSON.stringify(params),
+      }),
+    liveFetch: (params: {
+      latitude: number;
+      longitude: number;
+      location_name?: string;
+      elevation_m?: number;
+      provider?: string;
+      start_date?: string;
+      end_date?: string;
+    }) =>
+      fetchApi<any>("/weather/live-fetch", {
         method: "POST",
         body: JSON.stringify(params),
       }),
@@ -113,6 +127,22 @@ export const api = {
         method: "POST",
         body: JSON.stringify(params),
       }),
+    microclimateSynthesize: (params: {
+      target_latitude: number;
+      target_longitude: number;
+      target_elevation_m: number;
+      location_name: string;
+      horizon_shadow_angle_deg?: number;
+      reference_epw?: string;
+    }) =>
+      fetchApi<any>("/weather/microclimate-synthesize", {
+        method: "POST",
+        body: JSON.stringify(params),
+      }),
+    geocode: (query: string) =>
+      fetchApi<any[]>(`/weather/geocode?query=${encodeURIComponent(query)}`),
+    reverseGeocode: (latitude: number, longitude: number) =>
+      fetchApi<any>(`/weather/reverse-geocode?latitude=${latitude}&longitude=${longitude}`),
   },
   ansys: {
     status: () => fetchApi<any>("/ansys/status"),

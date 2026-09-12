@@ -374,6 +374,60 @@ class ShelterService:
             return True
         return False
 
+    async def sync_to_db(self, shelter_data: Dict[str, Any]):
+        """Persist or update shelter in NeonDB PostgreSQL projects table."""
+        try:
+            from backend.core.database import engine
+            from sqlalchemy import text
+
+            sid = shelter_data["id"]
+            name = (
+                shelter_data.get("name")
+                or shelter_data.get("project", {}).get("name")
+                or "Custom Shelter"
+            )
+            desc = (
+                shelter_data.get("description")
+                or shelter_data.get("project", {}).get("description")
+                or ""
+            )
+
+            async with engine.begin() as conn:
+                res = await conn.execute(
+                    text("SELECT id FROM projects WHERE id = :id"), {"id": sid}
+                )
+                if res.fetchone():
+                    await conn.execute(
+                        text(
+                            "UPDATE projects SET name = :name, description = :desc, updated_at = NOW() WHERE id = :id"
+                        ),
+                        {"id": sid, "name": name, "desc": desc},
+                    )
+                else:
+                    await conn.execute(
+                        text(
+                            "INSERT INTO projects (id, user_id, name, description, created_at, updated_at) "
+                            "VALUES (:id, :uid, :name, :desc, NOW(), NOW())"
+                        ),
+                        {"id": sid, "uid": "usr-system-admin-001", "name": name, "desc": desc},
+                    )
+        except Exception as exc:
+            logger.warning(f"NeonDB sync note for {shelter_data.get('id')}: {exc}")
+
+    async def delete_from_db(self, shelter_id: str):
+        """Remove project from NeonDB PostgreSQL projects table."""
+        try:
+            from backend.core.database import engine
+            from sqlalchemy import text
+
+            async with engine.begin() as conn:
+                await conn.execute(
+                    text("DELETE FROM projects WHERE id = :id"), {"id": shelter_id}
+                )
+        except Exception as exc:
+            logger.warning(f"NeonDB delete note for {shelter_id}: {exc}")
+
 
 # Singleton instance
 shelter_service = ShelterService()
+
