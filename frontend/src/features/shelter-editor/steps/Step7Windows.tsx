@@ -3,6 +3,8 @@ import { ShelterFormValues, ShelterFormReturn } from "../schema";
 import { FieldWrapper } from "../components/FieldWrapper";
 import { AppWindow, Plus, Trash2, Sun, AlertTriangle } from "lucide-react";
 
+import { findNextAvailableOpeningPosition } from "@/features/shelter-3d/geometry-math";
+
 interface StepProps {
   form: ShelterFormReturn;
   advancedMode: boolean;
@@ -26,13 +28,16 @@ export function Step7Windows({ form, advancedMode }: StepProps) {
 
   const addWindow = () => {
     const nextIdx = windows.length + 1;
+    const wall = "south";
+    const wallOpenings = windows.filter((w) => w.wall === wall).map((w) => ({ positionX: w.positionX, width: w.width }));
+    const posX = findNextAvailableOpeningPosition(length, wallOpenings, 1.4);
     setValue("windows", [
       ...windows,
       {
         id: `win-${nextIdx}`,
-        wall: "south",
-        positionX: 1.0,
-        width: 1.5,
+        wall,
+        positionX: posX,
+        width: 1.4,
         height: 1.2,
         sillHeight: 0.9,
         glazingType: "Double_LowE_Argon",

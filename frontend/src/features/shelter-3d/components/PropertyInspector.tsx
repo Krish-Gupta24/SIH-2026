@@ -24,7 +24,12 @@ import {
 } from "lucide-react";
 import type { ShelterModel, WindowModel, DoorModel } from "@/types/shelter";
 import type { SelectedElement, WallOrientation } from "../types";
-import { findNextAvailableOpeningPosition, clampOpeningPlacement } from "../geometry-math";
+import {
+  findNextAvailableOpeningPosition,
+  clampOpeningPlacement,
+  alignToStandardHeader,
+  distributeOpeningsEvenly,
+} from "../geometry-math";
 
 interface Props {
   model: ShelterModel;
@@ -108,15 +113,50 @@ export function PropertyInspector({
   const updateGeometry = (key: keyof ShelterModel["geometry"], value: number | string) =>
     onUpdate({ geometry: { ...model.geometry, [key]: value } });
 
-  const updateWindow = (id: string, patch: Partial<WindowModel>) =>
-    onUpdate({
-      windows: model.windows.map((item) => (item.id === id ? { ...item, ...patch } : item)),
-    });
+  const updateWindow = (id: string, patch: Partial<WindowModel>) => {
+    const current = model.windows.find((item) => item.id === id);
+    if (!current) return;
+    const targetWall = (patch.wall ?? current.wall) as WallOrientation;
+    const wallSpan = ["north", "south"].includes(targetWall)
+      ? model.geometry.length
+      : model.geometry.width;
+    const wallH = model.geometry.height;
 
-  const updateDoor = (id: string, patch: Partial<DoorModel>) =>
+    const w = patch.width ?? current.width;
+    const h = patch.height ?? current.height;
+    const sill = patch.sillHeight ?? current.sillHeight;
+    const posX = patch.positionX ?? current.positionX;
+
+    const clamped = clampOpeningPlacement(wallSpan, wallH, posX, w, sill, h, false);
+
     onUpdate({
-      doors: model.doors.map((item) => (item.id === id ? { ...item, ...patch } : item)),
+      windows: model.windows.map((item) =>
+        item.id === id ? { ...item, ...patch, ...clamped, wall: targetWall } : item
+      ),
     });
+  };
+
+  const updateDoor = (id: string, patch: Partial<DoorModel>) => {
+    const current = model.doors.find((item) => item.id === id);
+    if (!current) return;
+    const targetWall = (patch.wall ?? current.wall) as WallOrientation;
+    const wallSpan = ["north", "south"].includes(targetWall)
+      ? model.geometry.length
+      : model.geometry.width;
+    const wallH = model.geometry.height;
+
+    const w = patch.width ?? current.width;
+    const h = patch.height ?? current.height;
+    const posX = patch.positionX ?? current.positionX;
+
+    const clamped = clampOpeningPlacement(wallSpan, wallH, posX, w, 0, h, true);
+
+    onUpdate({
+      doors: model.doors.map((item) =>
+        item.id === id ? { ...item, ...patch, ...clamped, wall: targetWall } : item
+      ),
+    });
+  };
 
   const close = () => onSelect(null);
 
@@ -278,52 +318,122 @@ export function PropertyInspector({
     if (selected.type === "window") {
       const item = model.windows.find((w) => w.id === selected.id);
       if (!item) return null;
+      const wallSpan = ["north", "south"].includes(item.wall)
+        ? model.geometry.length
+        : model.geometry.width;
+      const wallOpenings = model.windows.filter((w) => w.wall === item.wall);
+
       return (
         <div className="cad-inspector-content">
           <SectionTitle eyebrow="Aperture Element" title="Window Inspector" onClose={close} />
+
+          <label className="cad-field">
+            <span>Host Wall Orientation</span>
+            <select
+              value={item.wall}
+              onChange={(e) => updateWindow(item.id, { wall: e.target.value as WallOrientation })}
+            >
+              <option value="south">South Wall (High Solar Exposure)</option>
+              <option value="north">North Wall (Shaded / Heat Loss)</option>
+              <option value="east">East Wall (Morning Sun)</option>
+              <option value="west">West Wall (Afternoon / Wind)</option>
+            </select>
+          </label>
+
           <div className="cad-field-grid">
             <NumberField
               label="Width"
               value={item.width}
               unit="m"
-              min={0.3}
-              max={5}
+              min={0.4}
+              max={Math.max(0.5, wallSpan - 0.4)}
+              step={0.05}
               onChange={(v) => updateWindow(item.id, { width: v })}
             />
             <NumberField
               label="Height"
               value={item.height}
               unit="m"
-              min={0.3}
-              max={4}
+              min={0.4}
+              max={Math.max(0.5, model.geometry.height - 0.4)}
+              step={0.05}
               onChange={(v) => updateWindow(item.id, { height: v })}
             />
             <NumberField
               label="Sill Height"
               value={item.sillHeight}
               unit="m"
-              max={3}
+              min={0.15}
+              max={Math.max(0.2, model.geometry.height - item.height - 0.15)}
+              step={0.05}
               onChange={(v) => updateWindow(item.id, { sillHeight: v })}
             />
             <NumberField
-              label="Position X"
+              label="Position Along Wall"
               value={item.positionX}
               unit="m"
-              max={30}
+              min={0.2}
+              max={Math.max(0.2, wallSpan - item.width - 0.2)}
+              step={0.05}
               onChange={(v) => updateWindow(item.id, { positionX: v })}
             />
           </div>
+
+          {/* Quick Architectural Alignment Tools */}
+          <div className="mt-2 flex flex-col gap-1.5">
+            <button
+              type="button"
+              className="flex w-full items-center justify-center gap-1 rounded-lg border border-slate-700 bg-slate-800/80 px-2 py-1.5 text-[11px] font-medium text-slate-200 hover:bg-slate-700 hover:text-white"
+              onClick={() => {
+                const aligned = alignToStandardHeader(model.geometry.height, item.height, 2.1);
+                updateWindow(item.id, aligned);
+              }}
+              title="Align window header to standard 2.10m datum matching doors"
+            >
+              Align Header (2.1m Datum)
+            </button>
+            {wallOpenings.length > 1 && (
+              <button
+                type="button"
+                className="flex w-full items-center justify-center gap-1 rounded-lg border border-slate-700 bg-slate-800/80 px-2 py-1.5 text-[11px] font-medium text-slate-200 hover:bg-slate-700 hover:text-white"
+                onClick={() => {
+                  const distributed = distributeOpeningsEvenly(wallSpan, wallOpenings);
+                  const updatedMap = new Map(distributed.map((d) => [d.id, d.positionX]));
+                  onUpdate({
+                    windows: model.windows.map((w) =>
+                      updatedMap.has(w.id) ? { ...w, positionX: updatedMap.get(w.id)! } : w
+                    ),
+                  });
+                }}
+                title="Evenly space all windows across this facade"
+              >
+                Evenly Space All {item.wall.toUpperCase()} Windows
+              </button>
+            )}
+          </div>
+
           <label className="cad-field mt-2">
             <span>Glazing Specification</span>
             <select
               value={item.glazingType}
               onChange={(e) => updateWindow(item.id, { glazingType: e.target.value as any })}
             >
-              <option value="Triple_LowE_Krypton">Triple Low-E Krypton (U=0.8)</option>
-              <option value="Double_LowE_Argon">Double Low-E Argon (U=1.4)</option>
-              <option value="Single_Clear">Single Clear (Baseline U=5.8)</option>
+              <option value="Triple_LowE_Krypton">Triple Low-E Krypton (U=0.8 W/m²K)</option>
+              <option value="Double_LowE_Argon">Double Low-E Argon (U=1.4 W/m²K)</option>
+              <option value="Single_Clear">Single Clear (Baseline U=5.8 W/m²K)</option>
             </select>
           </label>
+
+          <NumberField
+            label="Shading Awning Overhang"
+            value={item.shadingOverhang || 0}
+            unit="m"
+            min={0}
+            max={1.5}
+            step={0.05}
+            onChange={(v) => updateWindow(item.id, { shadingOverhang: v })}
+          />
+
           <button
             type="button"
             className="cad-delete mt-4"
@@ -341,34 +451,69 @@ export function PropertyInspector({
     if (selected.type === "door") {
       const item = model.doors.find((d) => d.id === selected.id);
       if (!item) return null;
+      const wallSpan = ["north", "south"].includes(item.wall)
+        ? model.geometry.length
+        : model.geometry.width;
+
       return (
         <div className="cad-inspector-content">
           <SectionTitle eyebrow="Aperture Element" title="Exterior Door Inspector" onClose={close} />
+
+          <label className="cad-field">
+            <span>Host Wall Orientation</span>
+            <select
+              value={item.wall}
+              onChange={(e) => updateDoor(item.id, { wall: e.target.value as WallOrientation })}
+            >
+              <option value="east">East Wall (Primary Ingress)</option>
+              <option value="south">South Wall (Sunny Entry)</option>
+              <option value="west">West Wall (Airlock Ingress)</option>
+              <option value="north">North Wall (Service Door)</option>
+            </select>
+          </label>
+
           <div className="cad-field-grid">
             <NumberField
               label="Width"
               value={item.width}
               unit="m"
               min={0.6}
-              max={3}
+              max={Math.max(0.7, wallSpan - 0.4)}
+              step={0.05}
               onChange={(v) => updateDoor(item.id, { width: v })}
             />
             <NumberField
               label="Height"
               value={item.height}
               unit="m"
-              min={1.6}
-              max={4}
+              min={1.8}
+              max={Math.max(1.8, model.geometry.height - 0.1)}
+              step={0.05}
               onChange={(v) => updateDoor(item.id, { height: v })}
             />
             <NumberField
-              label="Position X"
+              label="Position Along Wall"
               value={item.positionX}
               unit="m"
-              max={30}
+              min={0.2}
+              max={Math.max(0.2, wallSpan - item.width - 0.2)}
+              step={0.05}
               onChange={(v) => updateDoor(item.id, { positionX: v })}
             />
           </div>
+
+          <label className="cad-field mt-2">
+            <span>Air-Tightness Rating</span>
+            <select
+              value={item.airTightness}
+              onChange={(e) => updateDoor(item.id, { airTightness: e.target.value as any })}
+            >
+              <option value="HighPerformance_Airtight">High Performance Airtight (Passive House spec)</option>
+              <option value="Standard_Weatherstripped">Standard Weatherstripped</option>
+              <option value="Basic_Drafty">Basic (Draft Risk)</option>
+            </select>
+          </label>
+
           <button
             type="button"
             className="cad-delete mt-4"
@@ -693,43 +838,64 @@ export function PropertyInspector({
           <span>{wwr}% Total WWR</span>
         </div>
 
-        <button
-          type="button"
-          onClick={() => {
-            const wall = "south";
-            const span = model.geometry.length;
-            const wallOpenings = [
-              ...model.windows.filter((w) => w.wall === wall).map((w) => ({ positionX: w.positionX, width: w.width })),
-              ...model.doors.filter((d) => d.wall === wall).map((d) => ({ positionX: d.positionX, width: d.width })),
-            ];
-            const width = 1.6;
-            const height = 1.3;
-            const sillHeight = 0.9;
-            const positionX = findNextAvailableOpeningPosition(span, wallOpenings, width);
-            const clamped = clampOpeningPlacement(span, model.geometry.height, positionX, width, sillHeight, height, false);
-            const newId = `win-${Date.now()}`;
-            onUpdate({
-              windows: [
-                ...model.windows,
-                {
-                  id: newId,
-                  wall,
-                  positionX: clamped.positionX,
-                  width: clamped.width,
-                  height: clamped.height,
-                  sillHeight: clamped.sillHeight,
-                  glazingType: "Triple_LowE_Krypton",
-                  frameType: "Wood_HighPerformance",
-                  shadingOverhang: 0.45,
-                },
-              ],
-            });
-            onSelect({ type: "window", id: newId });
-          }}
-          className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-xl border border-foreground bg-foreground py-2 text-xs font-semibold text-background shadow-sm hover:opacity-90"
-        >
-          <Plus className="size-3.5" /> + Add South Solar Window
-        </button>
+        <div className="mt-3 flex flex-col gap-2">
+          <button
+            type="button"
+            onClick={() => {
+              const wall = "south";
+              const span = model.geometry.length;
+              const wallOpenings = [
+                ...model.windows.filter((w) => w.wall === wall).map((w) => ({ positionX: w.positionX, width: w.width })),
+                ...model.doors.filter((d) => d.wall === wall).map((d) => ({ positionX: d.positionX, width: d.width })),
+              ];
+              const width = 1.4;
+              const height = 1.2;
+              const sillHeight = 0.9; // 0.9 + 1.2 = 2.1m standard header
+              const positionX = findNextAvailableOpeningPosition(span, wallOpenings, width);
+              const clamped = clampOpeningPlacement(span, model.geometry.height, positionX, width, sillHeight, height, false);
+              const newId = `win-${Date.now()}`;
+              onUpdate({
+                windows: [
+                  ...model.windows,
+                  {
+                    id: newId,
+                    wall,
+                    positionX: clamped.positionX,
+                    width: clamped.width,
+                    height: clamped.height,
+                    sillHeight: clamped.sillHeight,
+                    glazingType: "Triple_LowE_Krypton",
+                    frameType: "Wood_HighPerformance",
+                    shadingOverhang: 0.45,
+                  },
+                ],
+              });
+              onSelect({ type: "window", id: newId });
+            }}
+            className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-foreground bg-foreground py-2 text-xs font-semibold text-background shadow-sm hover:opacity-90"
+          >
+            <Plus className="size-3.5" /> + Add South Solar Window
+          </button>
+
+          {model.windows.filter((w) => w.wall === "south").length > 1 && (
+            <button
+              type="button"
+              className="flex w-full items-center justify-center gap-1.5 rounded-lg border border-slate-700 bg-slate-800/80 px-2 py-1.5 text-[11px] font-medium text-slate-200 hover:bg-slate-700 hover:text-white"
+              onClick={() => {
+                const southWins = model.windows.filter((w) => w.wall === "south");
+                const distributed = distributeOpeningsEvenly(model.geometry.length, southWins);
+                const posMap = new Map(distributed.map((d) => [d.id, d.positionX]));
+                onUpdate({
+                  windows: model.windows.map((w) =>
+                    posMap.has(w.id) ? { ...w, positionX: posMap.get(w.id)! } : w
+                  ),
+                });
+              }}
+            >
+              Evenly Distribute South Windows
+            </button>
+          )}
+        </div>
 
         <p className="cad-subhead mt-3">Active Window Schedule</p>
         <div className="cad-layer-stack">
@@ -740,7 +906,7 @@ export function PropertyInspector({
               onClick={() => onSelect({ type: "window", id: w.id })}
             >
               <span>
-                #{idx + 1} {w.wall.toUpperCase()} · {w.width}×{w.height}m
+                #{idx + 1} {w.wall.toUpperCase()} · {w.width}×{w.height}m · Sill {w.sillHeight}m
               </span>
               <strong>{w.glazingType?.replace(/_/g, " ")}</strong>
             </div>
@@ -792,7 +958,7 @@ export function PropertyInspector({
           }}
           className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-xl border border-foreground bg-foreground py-2 text-xs font-semibold text-background shadow-sm hover:opacity-90"
         >
-          <Plus className="size-3.5" /> + Add Exterior Door
+          <Plus className="size-3.5" /> + Add East Entry Door
         </button>
 
         <p className="cad-subhead mt-3">Active Door Schedule</p>
