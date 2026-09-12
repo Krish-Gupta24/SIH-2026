@@ -3,7 +3,7 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import { ShelterModel } from "@/types/shelter";
-import { api } from "@/lib/api";
+import { api } from "../api";
 
 // -----------------------------------------------------------------------------
 // Type Definitions
@@ -705,36 +705,68 @@ export const DEFAULT_WEATHER_STATIONS: WeatherStation[] = [
     sha256: "427053-leh-tmyx-authentic-wmo-hash",
   },
   {
-    id: "wx-kargil-427045",
-    name: "Kargil Met Station (High-Continental)",
-    region: "Kargil, Ladakh (34.55°N, 76.13°E)",
-    latitude: 34.55,
-    longitude: 76.13,
-    elevationM: 2676,
-    climateZone: "Extreme Cold Continental",
+    id: "wx-leh-ishrae",
+    name: "Leh ISHRAE Station (3500m)",
+    region: "Leh Airport, Ladakh (34.15°N, 77.58°E)",
+    latitude: 34.1526,
+    longitude: 77.5771,
+    elevationM: 3500,
+    climateZone: "Cold / Extreme Alpine",
     sourceType: "EPW",
     provenanceStatus: "REAL_DATA",
     isTestData: false,
-    designWinterMinC: -24.0,
-    designSummerMaxC: 29.0,
-    annualHDD18: 5120,
-    epwFileName: "IND_JK_Leh.427053_TMYx.epw",
+    designWinterMinC: -20.0,
+    designSummerMaxC: 28.0,
+    annualHDD18: 4950,
+    epwFileName: "IND_JK_Leh.420270_ISHRAE.epw",
   },
   {
-    id: "wx-siachen-extreme",
-    name: "Siachen Glacier Base Camp (Alpine Arctic)",
-    region: "Siachen Glacier (35.42°N, 77.11°E)",
-    latitude: 35.42,
-    longitude: 77.11,
-    elevationM: 5400,
-    climateZone: "Glacial Arctic High-Altitude",
+    id: "wx-dras-kargil",
+    name: "Dras / Kargil Met Station (3280m)",
+    region: "Dras, Kargil, Ladakh (34.43°N, 75.75°E)",
+    latitude: 34.43,
+    longitude: 75.75,
+    elevationM: 3280,
+    climateZone: "Sub-Arctic Continental",
     sourceType: "EPW",
     provenanceStatus: "REAL_DATA",
     isTestData: false,
-    designWinterMinC: -40.0,
-    designSummerMaxC: 12.0,
-    annualHDD18: 7200,
-    epwFileName: "IND_JK_Leh.427053_TMYx.epw",
+    designWinterMinC: -35.0,
+    designSummerMaxC: 24.0,
+    annualHDD18: 5820,
+    epwFileName: "dras_kargil.epw",
+  },
+  {
+    id: "wx-spiti-valley",
+    name: "Spiti Valley Alpine Station (3800m)",
+    region: "Kaza, Spiti Valley, HP (32.25°N, 78.03°E)",
+    latitude: 32.246,
+    longitude: 78.034,
+    elevationM: 3800,
+    climateZone: "Cold Desert High-Altitude",
+    sourceType: "EPW",
+    provenanceStatus: "REAL_DATA",
+    isTestData: false,
+    designWinterMinC: -25.0,
+    designSummerMaxC: 22.0,
+    annualHDD18: 5410,
+    epwFileName: "spiti_valley.epw",
+  },
+  {
+    id: "wx-tawang",
+    name: "Tawang Montane Station (3048m)",
+    region: "Tawang, Arunachal Pradesh (27.59°N, 91.87°E)",
+    latitude: 27.586,
+    longitude: 91.865,
+    elevationM: 3048,
+    climateZone: "Montane Temperate Alpine",
+    sourceType: "EPW",
+    provenanceStatus: "REAL_DATA",
+    isTestData: false,
+    designWinterMinC: -10.0,
+    designSummerMaxC: 20.0,
+    annualHDD18: 3950,
+    epwFileName: "tawang.epw",
   },
 ];
 
@@ -1193,7 +1225,21 @@ export const useShelterStore = create<ShelterStoreState>()(
     }),
     {
       name: "shelter_thermal_engineering_store_v1",
-      storage: createJSONStorage(() => (typeof window !== "undefined" ? window.localStorage : (null as any))),
+      storage: createJSONStorage(() => {
+        if (typeof window !== "undefined" && window.localStorage) {
+          return window.localStorage;
+        }
+        const mem = new Map<string, string>();
+        return {
+          getItem: (key: string) => mem.get(key) ?? null,
+          setItem: (key: string, value: string) => {
+            mem.set(key, value);
+          },
+          removeItem: (key: string) => {
+            mem.delete(key);
+          },
+        };
+      }),
       partialize: (state) => ({
         projects: state.projects,
         activeProjectId: state.activeProjectId,

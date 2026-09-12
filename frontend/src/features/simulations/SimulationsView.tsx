@@ -136,11 +136,40 @@ export function SimulationsView() {
     ? projects.find((p) => p.id === newWithId || p.project?.id === newWithId)
     : projects.find((p) => p.id === activeProjectId) || projects[0] || null;
 
-  const handleQueueSimulation = async (projToSim = targetProject || projects[0], allowTestData = false) => {
+  const [selectedStationId, setSelectedStationId] = useState<string>(activeWeatherId || "wx-leh-427053");
+
+  // Keep selected station in sync when target project changes or specifies a weather source
+  React.useEffect(() => {
+    if (targetProject?.location?.weatherSource) {
+      const match = weatherDatasets.find((w) => w.epwFileName === targetProject.location?.weatherSource);
+      if (match) {
+        setSelectedStationId(match.id);
+      }
+    } else if (activeWeatherId) {
+      setSelectedStationId(activeWeatherId);
+    }
+  }, [targetProject, activeWeatherId, weatherDatasets]);
+
+  const handleQueueSimulation = async (
+    projToSim = targetProject || projects[0],
+    allowTestData = false,
+    overrideStationId?: string
+  ) => {
     if (!projToSim) return;
 
-    const weatherFileName = projToSim.location?.weatherSource || "IND_JK_Leh.420270_ISHRAE.epw";
-    const isTestData = weatherFileName.toLowerCase().includes("test_weather");
+    const stationIdToUse = overrideStationId || selectedStationId || activeWeatherId;
+    const matchedStation =
+      weatherDatasets.find((w) => w.id === stationIdToUse) ||
+      weatherDatasets.find((w) => w.epwFileName === projToSim.location?.weatherSource) ||
+      weatherDatasets[0];
+
+    const weatherFileName =
+      matchedStation?.epwFileName ||
+      projToSim.location?.weatherSource ||
+      "IND_JK_Leh.427053_TMYx.epw";
+
+    const isTestData =
+      weatherFileName.toLowerCase().includes("test_weather") || Boolean(matchedStation?.isTestData);
 
     // Weather Data Policy Enforcement: Never silently use test weather
     if (isTestData && !allowTestData) {
@@ -227,16 +256,15 @@ export function SimulationsView() {
       const simId = data.simulation_id || `sim-${Date.now().toString().slice(-6)}`;
       setLastQueuedJobId(simId);
 
-      const matchedDataset = weatherDatasets.find((w) => w.id === activeWeatherId);
-      const isTest = isTestData || matchedDataset?.isTestData;
+      const isTest = isTestData || matchedStation?.isTestData;
 
       const newJob: SimulationJobItem = {
         id: simId,
         projectId: projToSim.id,
         projectName: projToSim.project?.name || "Canonical Shelter",
         shelterModel: projToSim,
-        weatherDatasetId: activeWeatherId,
-        weatherDatasetName: matchedDataset?.name || weatherFileName,
+        weatherDatasetId: matchedStation?.id || activeWeatherId,
+        weatherDatasetName: matchedStation?.name || weatherFileName,
         weatherProvenance: {
           weather_source: isTest ? "TEST_DATA" : "REAL_DATA",
           status: isTest ? "TEST_DATA" : "REAL_DATA",
@@ -277,7 +305,7 @@ export function SimulationsView() {
     (s) => s.status === "running" || s.status === "queued" || s.status === "preparing"
   ).length;
 
-  const renderStatusBadge = (status: string) => {
+  const renderStatusBadge = (status: string, error?: string) => {
     switch (status) {
       case "completed":
         return (
@@ -303,10 +331,20 @@ export function SimulationsView() {
         );
       case "failed":
         return (
-          <span className="inline-flex items-center gap-1 rounded-full bg-rose-600 px-2.5 py-0.5 text-[10px] font-bold text-white shadow-sm animate-pulse">
-            <AlertCircle className="size-3" />
-            Failed
-          </span>
+          <div className="flex flex-col gap-0.5">
+            <span
+              title={error || "Simulation failed during execution"}
+              className="inline-flex items-center gap-1 rounded-full bg-rose-600 px-2.5 py-0.5 text-[10px] font-bold text-white shadow-sm cursor-help"
+            >
+              <AlertCircle className="size-3" />
+              Failed
+            </span>
+            {error && (
+              <span className="text-[9px] text-rose-400 font-mono max-w-[170px] truncate" title={error}>
+                {error}
+              </span>
+            )}
+          </div>
         );
       default:
         return (
@@ -414,7 +452,7 @@ export function SimulationsView() {
                   {targetProject.project?.name || targetProject.id}
                 </h2>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  Geometry: {targetProject.geometry?.length}m × {targetProject.geometry?.width}m × {targetProject.geometry?.height}m · Weather: {targetProject.location?.weatherSource || "IND_JK_Leh.420270_ISHRAE.epw"}
+                  Geometry: {targetProject.geometry?.length}m × {targetProject.geometry?.width}m × {targetProject.geometry?.height}m · Weather: {weatherDatasets.find((w) => w.id === selectedStationId)?.name || targetProject.location?.weatherSource || "Leh WMO Station 427053 (TMYx)"}
                 </p>
               </div>
 
@@ -559,6 +597,32 @@ export function SimulationsView() {
                     </button>
                   ))}
                 </div>
+
+                {/* Weather Station selection */}
+                <div className="pt-2 border-t border-border/50">
+                  <span className="micro-label block mb-2">Target Climate & Weather Station</span>
+                  <div className="flex flex-wrap items-center gap-2">
+                    {weatherDatasets.map((ws) => (
+                      <button
+                        key={ws.id}
+                        type="button"
+                        onClick={() => setSelectedStationId(ws.id)}
+                        className={`rounded-full px-3.5 py-1.5 text-xs font-semibold transition-all flex items-center gap-2 ${
+                          selectedStationId === ws.id
+                            ? "bg-foreground text-background shadow-sm"
+                            : "border border-border bg-card text-muted-foreground hover:bg-secondary hover:text-foreground"
+                        }`}
+                      >
+                        <span
+                          className={`inline-block size-2 rounded-full ${
+                            ws.isTestData ? "bg-amber-400" : "bg-emerald-400"
+                          }`}
+                        />
+                        <span>{ws.name}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
               </div>
 
               {queueError && (
@@ -697,7 +761,7 @@ export function SimulationsView() {
                         <span className="font-mono text-xs text-slate-400">{sim.engine}</span>
                         <span className="ml-1 text-[10px] text-slate-500">v{sim.engineVersion}</span>
                       </TableCell>
-                      <TableCell>{renderStatusBadge(sim.status)}</TableCell>
+                      <TableCell>{renderStatusBadge(sim.status, sim.error)}</TableCell>
                       <TableCell className="font-mono text-xs text-slate-400">
                         {sim.durationSeconds ? `${sim.durationSeconds.toFixed(1)}s` : "—"}
                       </TableCell>
@@ -721,6 +785,23 @@ export function SimulationsView() {
                                 {isCompared ? "Compared" : "Compare"}
                               </Button>
                             </>
+                          )}
+                          {sim.status === "failed" && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => {
+                                const proj = sim.shelterModel || targetProject;
+                                if (proj) {
+                                  handleQueueSimulation(proj, sim.allowTestData, sim.weatherDatasetId);
+                                }
+                              }}
+                              className="h-7 text-xs gap-1 border-rose-500/40 text-rose-300 hover:bg-rose-950/40"
+                              title="Re-run simulation with verified weather dataset"
+                            >
+                              <RotateCw className="h-3 w-3" />
+                              Retry
+                            </Button>
                           )}
                           <Button
                             size="sm"

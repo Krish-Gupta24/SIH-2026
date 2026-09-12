@@ -327,7 +327,7 @@ export function ShelterDesignerWizard() {
             })),
           },
         },
-        weather_file: values.location.weatherSource,
+        weather_file: values.location.weatherSource || "IND_JK_Leh.427053_TMYx.epw",
         run_period_days: values.simulationSettings.runPeriodDays,
         timeout_seconds: 600,
         allow_test_data: Boolean(allowTestDataOverride),
