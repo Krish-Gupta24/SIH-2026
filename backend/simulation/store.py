@@ -197,7 +197,67 @@ class SimulationJobStore:
         """Clear all records (used in tests)."""
         self._jobs.clear()
 
+    def reap_stale_or_orphaned_jobs(self, timeout_threshold_seconds: int = 900) -> int:
+        """Scan simulation jobs and mark any QUEUED, PREPARING, or RUNNING jobs that have
+        exceeded the activity timeout threshold or were left over from server restarts as FAILED.
+        Returns the count of reaped jobs.
+        """
+        now = datetime.now(timezone.utc)
+        reaped_count = 0
+
+        for job in list(self._jobs.values()):
+            if job.status in (SimulationStatus.QUEUED, SimulationStatus.PREPARING, SimulationStatus.RUNNING):
+                ref_time_str = job.started_at or job.created_at
+                is_stale = False
+                if ref_time_str:
+                    try:
+                        ref_dt = datetime.fromisoformat(ref_time_str)
+                        if (now - ref_dt).total_seconds() > timeout_threshold_seconds:
+                            is_stale = True
+                    except Exception:
+                        is_stale = True
+                else:
+                    is_stale = True
+
+                if is_stale:
+                    job.status = SimulationStatus.FAILED
+                    job.completed_at = now.isoformat()
+                    job.error_message = (
+                        "Simulation interrupted: process terminated or timed out without heartbeat."
+                    )
+                    reaped_count += 1
+
+        return reaped_count
+
+    def prune_old_simulation_workdirs(self, storage_dir: Optional[str] = None, retention_days: int = 7) -> int:
+        """Prune intermediate scratch execution directories older than retention_days,
+        preserving normalized results.
+        """
+        import shutil
+        from pathlib import Path
+        import time
+
+        base_dir = Path(storage_dir or "storage/simulations")
+        if not base_dir.is_dir():
+            return 0
+
+        now_ts = time.time()
+        cutoff_sec = retention_days * 86400
+        pruned_count = 0
+
+        for entry in base_dir.glob("sim_*"):
+            if entry.is_dir():
+                try:
+                    mtime = entry.stat().st_mtime
+                    if (now_ts - mtime) > cutoff_sec:
+                        shutil.rmtree(entry, ignore_errors=True)
+                        pruned_count += 1
+                except Exception:
+                    pass
+
+        return pruned_count
 
 
 # Global singleton instance
 simulation_store = SimulationJobStore()
+

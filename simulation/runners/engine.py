@@ -47,6 +47,13 @@ class EnergyPlusEngine:
         if not geom:
             errors.append("Missing 'geometry' section.")
         else:
+            if "length" not in geom and "lengthM" in geom:
+                geom["length"] = geom["lengthM"]
+            if "width" not in geom and "widthM" in geom:
+                geom["width"] = geom["widthM"]
+            if "height" not in geom and "wallHeightM" in geom:
+                geom["height"] = geom["wallHeightM"]
+
             length = geom.get("length", 0)
             width = geom.get("width", 0)
             height = geom.get("height", 0)

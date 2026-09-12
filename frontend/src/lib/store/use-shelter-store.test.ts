@@ -1,12 +1,21 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, vi } from "vitest";
 import { useShelterStore, MaterialItem } from "./use-shelter-store";
 import { ShelterModel } from "@/types/shelter";
 
 describe("Shelter Zustand Store Unit Tests", () => {
   beforeEach(() => {
+    // Mock global fetch for API calls
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({ status: "success", id: "mock-id" }),
+      text: async () => JSON.stringify({ status: "success" }),
+    } as any);
+
     // Reset store state
     useShelterStore.setState({
       projects: [],
+      deletedProjectIds: [],
       activeProjectId: "",
       simulations: [],
       comparisonJobIds: [],
@@ -83,4 +92,74 @@ describe("Shelter Zustand Store Unit Tests", () => {
     const updated = useShelterStore.getState().materials.find((m) => m.id === "mat-custom-aerogel");
     expect(updated?.thermalConductivity).toBe(0.014);
   });
+
+  it("deletes a project and tracks deletedProjectIds while cascading simulations", async () => {
+    const p1: ShelterModel = {
+      id: "del-test-1",
+      schemaVersion: "1.0.0",
+      project: { id: "del-test-1", name: "Shelter To Delete", version: "1.0.0", tags: [] },
+      location: { latitude: 34.0, longitude: 77.0, elevation: 3000, region: "Leh", climateZone: "Cold", weatherSource: "test.epw" },
+      geometry: { shape: "Rectangle", length: 5, width: 4, height: 3, orientation: 0, roofType: "Flat", roofAngle: 0, floorElevation: 0 },
+      envelope: {
+        walls: {
+          north: { constructionId: "c1", layers: [] },
+          south: { constructionId: "c1", layers: [] },
+          east: { constructionId: "c1", layers: [] },
+          west: { constructionId: "c1", layers: [] },
+        },
+        roof: { constructionId: "r1", slope: 0, overhang: 0.2, solarAbsorptance: 0.7, layers: [] },
+        floor: { constructionId: "f1", groundContact: true, perimeterInsulation: true, layers: [] },
+      },
+      windows: [],
+      doors: [],
+      thermalMass: [],
+      ventilation: { infiltrationACH: 0.3, naturalVentilationEnabled: false, naturalSchedule: "DayOnly", mechanicalVentilationEnabled: false, mechanicalFlowRateLps: 0, heatRecoveryEfficiency: 0.75 },
+      internalLoads: { occupantsCount: 2, activityLevelWatts: 120, lightingPowerDensityWpm2: 3.0, equipmentPowerWatts: 150, scheduleProfile: "Continuous" },
+      designTargets: { comfortTempMinC: 18, comfortTempMaxC: 24, maxAnnualHeatingDemandKwhM2: 80, targetComfortPercent: 85 },
+      simulationSettings: { engine: "EnergyPlus", timestepsPerHour: 4, runPeriodDays: 3, startMonth: 1, startDay: 1, detailedComponentOutputs: true },
+    };
+
+    const p2: ShelterModel = {
+      ...p1,
+      id: "keep-test-2",
+      project: { id: "keep-test-2", name: "Shelter To Keep", version: "1.0.0", tags: [] },
+    };
+
+    const store = useShelterStore.getState();
+    store.addProject(p1);
+    store.addProject(p2);
+
+    // Add simulation linked to p1
+    useShelterStore.setState({
+      simulations: [
+        {
+          id: "sim-p1",
+          projectId: "del-test-1",
+          projectName: "Shelter To Delete",
+          weatherDatasetId: "w1",
+          weatherDatasetName: "Leh",
+          status: "completed",
+          engine: "EnergyPlus",
+          engineVersion: "24.1.0",
+        },
+      ],
+      comparisonJobIds: ["sim-p1"],
+      activeProjectId: "del-test-1",
+    });
+
+    expect(useShelterStore.getState().projects.length).toBe(2);
+    expect(useShelterStore.getState().simulations.length).toBe(1);
+
+    // Delete p1
+    await useShelterStore.getState().deleteProject("del-test-1");
+
+    const afterState = useShelterStore.getState();
+    expect(afterState.projects.length).toBe(1);
+    expect(afterState.projects[0].id).toBe("keep-test-2");
+    expect(afterState.deletedProjectIds).toContain("del-test-1");
+    expect(afterState.simulations.length).toBe(0);
+    expect(afterState.comparisonJobIds.length).toBe(0);
+    expect(afterState.activeProjectId).toBe("keep-test-2");
+  });
 });
+

@@ -11,6 +11,8 @@ from typing import Dict, List, Optional, Any
 logger = logging.getLogger(__name__)
 
 SHELTERS_DIR = Path("storage/shelters")
+DELETED_SHELTERS_FILE = Path("storage/shelters/.deleted_shelters.json")
+
 
 
 CANONICAL_SHELTERS: List[Dict[str, Any]] = [
@@ -311,68 +313,199 @@ CANONICAL_SHELTERS: List[Dict[str, Any]] = [
 ]
 
 
+def _normalize_shelter_dict(data: Dict[str, Any]) -> Dict[str, Any]:
+    """Ensure geometry and project fields conform to canonical schema."""
+    if not isinstance(data, dict):
+        return data
+    
+    geom = data.get("geometry")
+    if isinstance(geom, dict):
+        if "length" not in geom and "lengthM" in geom:
+            geom["length"] = geom["lengthM"]
+        if "width" not in geom and "widthM" in geom:
+            geom["width"] = geom["widthM"]
+        if "height" not in geom:
+            geom["height"] = geom.get("wallHeightM", 2.8)
+        if "roofAngle" not in geom and "roofPitchDeg" in geom:
+            geom["roofAngle"] = geom["roofPitchDeg"]
+        if "orientation" not in geom and "orientationDeg" in geom:
+            geom["orientation"] = geom["orientationDeg"]
+        if "shape" not in geom:
+            geom["shape"] = "Rectangle"
+    
+    proj = data.get("project")
+    if not isinstance(proj, dict):
+        data["project"] = {
+            "id": data.get("id", ""),
+            "name": data.get("name", "Custom Shelter"),
+            "version": data.get("version", "1.0.0"),
+            "description": data.get("description", ""),
+            "tags": data.get("tags", []),
+        }
+    return data
+
+
 class ShelterService:
     """Manages Canonical ShelterModel persistence and CRUD operations."""
 
     def __init__(self):
         self._shelters: Dict[str, Dict[str, Any]] = {}
+        self._deleted_ids: set = set()
+        self._file_mtimes: Dict[str, float] = {}
         self._init_storage()
+
+    def _save_deleted_ids(self):
+        """Persist deleted shelter IDs to prevent resurrection during restarts."""
+        try:
+            with open(DELETED_SHELTERS_FILE, "w", encoding="utf-8") as f:
+                json.dump(list(self._deleted_ids), f, indent=2)
+        except Exception as e:
+            logger.error(f"Failed to persist deleted shelter IDs: {e}")
+
+    def _load_shelter_from_file(self, fp: Path) -> Optional[Dict[str, Any]]:
+        """Load single shelter from disk and register its file modification time."""
+        try:
+            mtime = fp.stat().st_mtime
+            with open(fp, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            sid = data.get("id") or fp.stem
+            if sid in self._deleted_ids:
+                return None
+            data["id"] = sid
+            data = _normalize_shelter_dict(data)
+            self._shelters[sid] = data
+            self._file_mtimes[sid] = mtime
+            return data
+        except Exception as e:
+            logger.error(f"Error loading shelter model from {fp}: {e}")
+            return None
 
     def _init_storage(self):
         """Create storage directory and load existing or canonical models."""
         SHELTERS_DIR.mkdir(parents=True, exist_ok=True)
 
-        # 1. Seed canonical models if missing from disk
+        # 0. Load tombstones / deleted IDs
+        if DELETED_SHELTERS_FILE.is_file():
+            try:
+                with open(DELETED_SHELTERS_FILE, "r", encoding="utf-8") as f:
+                    self._deleted_ids = set(json.load(f))
+            except Exception as e:
+                logger.warning(f"Failed to load deleted shelters manifest: {e}")
+
+        # 1. Seed canonical models if missing from disk (and not deleted by user)
         for cs in CANONICAL_SHELTERS:
             sid = cs["id"]
+            if sid in self._deleted_ids:
+                continue
             fp = SHELTERS_DIR / f"{sid}.json"
             if not fp.is_file():
                 with open(fp, "w", encoding="utf-8") as f:
                     json.dump(cs, f, indent=2)
+                try:
+                    self._file_mtimes[sid] = fp.stat().st_mtime
+                except Exception:
+                    pass
 
         # 2. Load all models from storage directory
         for fp in SHELTERS_DIR.glob("*.json"):
-            try:
-                with open(fp, "r", encoding="utf-8") as f:
-                    data = json.load(f)
-                    sid = data.get("id") or fp.stem
-                    data["id"] = sid
-                    self._shelters[sid] = data
-            except Exception as e:
-                logger.error(f"Error loading shelter model from {fp}: {e}")
+            if fp.name.startswith("."):
+                continue
+            self._load_shelter_from_file(fp)
 
     def list_shelters(self) -> List[Dict[str, Any]]:
-        """Return all persisted shelter models."""
+        """Return all persisted shelter models, reconciling cross-process changes on disk."""
+        if SHELTERS_DIR.is_dir():
+            disk_ids = set()
+            for fp in SHELTERS_DIR.glob("*.json"):
+                if fp.name.startswith("."):
+                    continue
+                sid = fp.stem
+                if sid in self._deleted_ids:
+                    continue
+                disk_ids.add(sid)
+                try:
+                    curr_mtime = fp.stat().st_mtime
+                    if sid not in self._file_mtimes or curr_mtime > self._file_mtimes[sid]:
+                        self._load_shelter_from_file(fp)
+                except Exception:
+                    pass
+
+            # Remove any from memory that were deleted on disk externally
+            canonical_ids = {cs["id"] for cs in CANONICAL_SHELTERS if cs["id"] not in self._deleted_ids}
+            for cached_id in list(self._shelters.keys()):
+                if cached_id not in disk_ids and cached_id not in canonical_ids:
+                    del self._shelters[cached_id]
+                    self._file_mtimes.pop(cached_id, None)
+
         return list(self._shelters.values())
 
     def get_shelter(self, shelter_id: str) -> Optional[Dict[str, Any]]:
-        """Retrieve a single shelter by ID."""
+        """Retrieve a single shelter by ID with cross-process disk mtime validation."""
+        if shelter_id in self._deleted_ids:
+            return None
+
+        fp = SHELTERS_DIR / f"{shelter_id}.json"
+        if fp.is_file():
+            try:
+                curr_mtime = fp.stat().st_mtime
+                cached_mtime = self._file_mtimes.get(shelter_id)
+                if cached_mtime is None or curr_mtime > cached_mtime or shelter_id not in self._shelters:
+                    return self._load_shelter_from_file(fp)
+            except Exception:
+                pass
+        elif shelter_id in self._shelters:
+            # File removed from disk externally
+            canonical_ids = {cs["id"] for cs in CANONICAL_SHELTERS if cs["id"] not in self._deleted_ids}
+            if shelter_id not in canonical_ids:
+                del self._shelters[shelter_id]
+                self._file_mtimes.pop(shelter_id, None)
+                return None
+
         return self._shelters.get(shelter_id)
 
     def save_shelter(self, shelter_data: Dict[str, Any]) -> Dict[str, Any]:
-        """Save or update a shelter model to disk and memory."""
+        """Save or update a shelter model to disk and memory atomically."""
         sid = shelter_data.get("id") or f"shelter-{len(self._shelters) + 1:02d}"
         shelter_data["id"] = sid
+        shelter_data = _normalize_shelter_dict(shelter_data)
         self._shelters[sid] = shelter_data
+
+        # If previously deleted, unmark it
+        if sid in self._deleted_ids:
+            self._deleted_ids.remove(sid)
+            self._save_deleted_ids()
 
         fp = SHELTERS_DIR / f"{sid}.json"
         try:
             with open(fp, "w", encoding="utf-8") as f:
                 json.dump(shelter_data, f, indent=2)
+            self._file_mtimes[sid] = fp.stat().st_mtime
         except Exception as e:
             logger.error(f"Failed to persist shelter {sid} to disk: {e}")
 
         return shelter_data
 
     def delete_shelter(self, shelter_id: str) -> bool:
-        """Delete a shelter model by ID."""
+        """Delete a shelter model by ID idempotently."""
+        # 1. Record ID in deleted tombstones to prevent re-seeding
+        self._deleted_ids.add(shelter_id)
+        self._save_deleted_ids()
+
+        # 2. Remove from active memory and mtime tracking
         if shelter_id in self._shelters:
             del self._shelters[shelter_id]
-            fp = SHELTERS_DIR / f"{shelter_id}.json"
-            if fp.is_file():
+        self._file_mtimes.pop(shelter_id, None)
+
+        # 3. Unlink file from storage if present
+        fp = SHELTERS_DIR / f"{shelter_id}.json"
+        if fp.is_file():
+            try:
                 fp.unlink()
-            return True
-        return False
+            except Exception as e:
+                logger.warning(f"Error unlinking shelter file {fp}: {e}")
+
+        return True
+
 
     async def sync_to_db(self, shelter_data: Dict[str, Any]):
         """Persist or update shelter in NeonDB PostgreSQL projects table."""
@@ -415,7 +548,7 @@ class ShelterService:
             logger.warning(f"NeonDB sync note for {shelter_data.get('id')}: {exc}")
 
     async def delete_from_db(self, shelter_id: str):
-        """Remove project from NeonDB PostgreSQL projects table."""
+        """Remove project from NeonDB PostgreSQL projects table (cascading to versions)."""
         try:
             from backend.core.database import engine
             from sqlalchemy import text

@@ -25,6 +25,11 @@ from simulation.materials.database import material_db
 from simulation.materials.glazing import glazing_db
 
 
+class NoValidDesignError(Exception):
+    """Raised when no candidate satisfies all engineering constraints in an optimization sweep."""
+    pass
+
+
 @dataclass
 class LocationSpecification:
     region: str

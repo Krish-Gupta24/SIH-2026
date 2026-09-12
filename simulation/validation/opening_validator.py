@@ -43,9 +43,9 @@ class OpeningValidator:
     def get_wall_dimensions(cls, wall: str, geometry: Dict[str, Any]) -> Tuple[float, float]:
         """Return (length, height) for the specified cardinal wall."""
         norm_wall = str(wall).strip().lower().replace("wall_", "").replace("_wall", "")
-        length = float(geometry.get("length", 0.0))
-        width = float(geometry.get("width", 0.0))
-        height = float(geometry.get("height", 0.0))
+        length = float(geometry.get("length") if geometry.get("length") is not None else geometry.get("lengthM", 0.0))
+        width = float(geometry.get("width") if geometry.get("width") is not None else geometry.get("widthM", 0.0))
+        height = float(geometry.get("height") if geometry.get("height") is not None else geometry.get("wallHeightM", 0.0))
 
         if norm_wall in ("north", "south"):
             return length, height

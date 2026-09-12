@@ -96,8 +96,17 @@ def create_application() -> FastAPI:
 
     @app.on_event("startup")
     async def on_startup():
+        import logging
         from backend.services.seeder import seed_application_data
+        from backend.simulation.store import simulation_store
+
+        logger = logging.getLogger("backend.startup")
         seed_application_data()
+
+        # Reap any leftover/orphaned simulation jobs from previous unexpected server shutdowns
+        reaped = simulation_store.reap_stale_or_orphaned_jobs(timeout_threshold_seconds=600)
+        if reaped > 0:
+            logger.info(f"Startup maintenance: Reaped {reaped} orphaned simulation jobs.")
 
     return app
 

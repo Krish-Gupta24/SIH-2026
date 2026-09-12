@@ -863,6 +863,52 @@ class MaterialDatabase:
                 layer_specs=preset["layers"],
             )
 
+        # Known cardinal direction and standard envelope alias resolution
+        if norm_key in ("north", "south", "east", "west", "wall", "wall_north", "wall_south", "wall_east", "wall_west", "default_wall"):
+            preset = self.STANDARD_CONSTRUCTIONS["default_insulated_earth_wall"]
+            return self.build_construction(
+                construction_id=name_or_id,
+                name=preset["name"],
+                surface_type="WALL",
+                layer_specs=preset["layers"],
+            )
+
+        if norm_key in ("roof", "default_roof", "ceiling", "standing_seam_roof", "insulated_roof"):
+            preset = self.STANDARD_CONSTRUCTIONS["default_insulated_metal_roof"]
+            return self.build_construction(
+                construction_id=name_or_id,
+                name=preset["name"],
+                surface_type="ROOF",
+                layer_specs=preset["layers"],
+            )
+
+        if norm_key in ("floor", "default_floor", "slab", "ground", "ground_slab", "insulated_floor"):
+            preset = self.STANDARD_CONSTRUCTIONS["default_concrete_floor"]
+            return self.build_construction(
+                construction_id=name_or_id,
+                name=preset["name"],
+                surface_type="FLOOR",
+                layer_specs=preset["layers"],
+            )
+
+        # Substring matching for named wall composite presets
+        if any(w in norm_key for w in ("rammed_earth", "trombe")):
+            preset = self.STANDARD_CONSTRUCTIONS["rammed_earth_eps_composite"]
+            return self.build_construction(
+                construction_id=name_or_id,
+                name=preset["name"],
+                surface_type="WALL",
+                layer_specs=preset["layers"],
+            )
+        if any(w in norm_key for w in ("granite", "stone_masonry", "rockwool")):
+            preset = self.STANDARD_CONSTRUCTIONS["granite_stone_masonry"]
+            return self.build_construction(
+                construction_id=name_or_id,
+                name=preset["name"],
+                surface_type="WALL",
+                layer_specs=preset["layers"],
+            )
+
         return None
 
     def list_materials(self, status: Optional[MaterialStatus] = None) -> List[Material]:

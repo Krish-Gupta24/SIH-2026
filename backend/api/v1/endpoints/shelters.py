@@ -85,11 +85,6 @@ async def update_shelter(shelter_id: str, updates: Dict[str, Any]):
 )
 async def delete_shelter(shelter_id: str):
     """Remove a shelter model from persistent storage and NeonDB."""
-    success = shelter_service.delete_shelter(shelter_id)
-    if not success:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Shelter model '{shelter_id}' not found.",
-        )
+    shelter_service.delete_shelter(shelter_id)
     await shelter_service.delete_from_db(shelter_id)
     return {"status": "deleted", "id": shelter_id}

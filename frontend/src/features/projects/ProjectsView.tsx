@@ -15,6 +15,7 @@ import { useShelterStore } from "@/lib/store/use-shelter-store";
 import type { ShelterModel } from "@/types/shelter";
 import { ActionButton, DataPair, EmptyState, PageIntro } from "@/components/v0/platform-components";
 import { NewProjectModal } from "./NewProjectModal";
+import { DeleteProjectModal } from "./DeleteProjectModal";
 
 export function ProjectsView() {
   const router = useRouter();
@@ -31,6 +32,7 @@ export function ProjectsView() {
   const [search, setSearch] = useState("");
   const [sort, setSort] = useState<"name" | "region">("name");
   const [isNewProjectModalOpen, setIsNewProjectModalOpen] = useState(false);
+  const [projectToDelete, setProjectToDelete] = useState<ShelterModel | null>(null);
 
   const filteredProjects = [...projects]
     .filter((project) =>
@@ -217,12 +219,13 @@ export function ProjectsView() {
                     </button>
                     {projects.length > 1 && (
                       <button
-                        onClick={() => {
-                          if (confirm(`Delete project "${projectName}"?`)) {
-                            deleteProject(project.id);
-                          }
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setProjectToDelete(project);
                         }}
-                        className="flex size-9 items-center justify-center rounded-full border border-border text-red-500 opacity-50 transition-all hover:opacity-100 hover:bg-red-50"
+                        className="flex size-9 items-center justify-center rounded-full border border-border text-red-500 opacity-60 transition-all hover:opacity-100 hover:bg-red-50 dark:hover:bg-red-950/30"
                         aria-label={`Delete ${projectName}`}
                         title="Delete project"
                       >
@@ -310,6 +313,15 @@ export function ProjectsView() {
       <NewProjectModal
         isOpen={isNewProjectModalOpen}
         onClose={() => setIsNewProjectModalOpen(false)}
+      />
+
+      <DeleteProjectModal
+        isOpen={Boolean(projectToDelete)}
+        project={projectToDelete}
+        onClose={() => setProjectToDelete(null)}
+        onConfirm={async (id) => {
+          await deleteProject(id);
+        }}
       />
     </div>
   );

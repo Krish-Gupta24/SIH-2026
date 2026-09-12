@@ -1375,11 +1375,11 @@ class EnergyPlusIDFGenerator:
                     "",
                 ])
 
-            # 1b. Emit unique window frames if specified
+            # 1b. Emit unique window frames (defaulting to UPVC_Insulated for realistic alpine edge-of-glass modeling)
             emitted_frames = set()
             for win in windows:
-                raw_frame = win.get("frame_type") or win.get("frameType") or win.get("frame")
-                frame_def = glazing_db.get_frame(raw_frame)
+                raw_frame = win.get("frame_type") or win.get("frameType") or win.get("frame") or "UPVC_Insulated"
+                frame_def = glazing_db.get_frame(raw_frame) or glazing_db.get_frame("UPVC_Insulated")
                 if frame_def and frame_def.id not in emitted_frames:
                     emitted_frames.add(frame_def.id)
                     lines.extend([
@@ -1389,7 +1389,7 @@ class EnergyPlusIDFGenerator:
                         f"  0.0,                            !- Frame Outside Projection {{m}}",
                         f"  0.0,                            !- Frame Inside Projection {{m}}",
                         f"  {frame_def.u_value:.2f},        !- Frame Conductance {{W/m2-K}}",
-                        f"  1.0,                            !- Ratio of Frame-Edge Glass Conductance to Center-Of-Glass Conductance",
+                        f"  1.10,                           !- Ratio of Frame-Edge Glass Conductance to Center-Of-Glass Conductance",
                         f"  0.90,                           !- Frame Solar Absorptance",
                         f"  0.90,                           !- Frame Visible Absorptance",
                         f"  0.90,                           !- Frame Thermal Hemispherical Emissivity",
@@ -1472,9 +1472,9 @@ class EnergyPlusIDFGenerator:
             resolved_glazing = glazing_db.get_glazing(glaze_type)
             const_name = f"{resolved_glazing.id}_Const"
 
-            # Frame assignment
-            raw_frame = win.get("frame_type") or win.get("frameType") or win.get("frame")
-            frame_def = glazing_db.get_frame(raw_frame)
+            # Frame assignment (defaults to UPVC_Insulated)
+            raw_frame = win.get("frame_type") or win.get("frameType") or win.get("frame") or "UPVC_Insulated"
+            frame_def = glazing_db.get_frame(raw_frame) or glazing_db.get_frame("UPVC_Insulated")
             frame_field = f"Frame_{frame_def.id}" if frame_def else ""
 
             pos_x = float(win.get("position_x") if win.get("position_x") is not None else win.get("positionX", 1.0))

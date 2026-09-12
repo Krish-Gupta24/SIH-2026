@@ -119,6 +119,7 @@ export interface SettingsState {
 export interface ShelterStoreState {
   // Projects state
   projects: ShelterModel[];
+  deletedProjectIds?: string[];
   activeProjectId: string;
   activeWizardStep: number;
 
@@ -141,7 +142,7 @@ export interface ShelterStoreState {
   setActiveProject: (id: string) => void;
   addProject: (project: ShelterModel) => void;
   updateProject: (id: string, updates: Partial<ShelterModel>) => void;
-  deleteProject: (id: string) => void;
+  deleteProject: (id: string) => Promise<void>;
   saveProjectVersion: (sourceId: string, versionName: string, description?: string) => ShelterModel;
   setActiveWizardStep: (step: number) => void;
 
@@ -1032,6 +1033,180 @@ export function transformBackendJobToItem(
 }
 
 // -----------------------------------------------------------------------------
+// Shelter Model Normalization (guarantees canonical geometry & envelope safety)
+// -----------------------------------------------------------------------------
+
+export function normalizeShelterModel(s: any): ShelterModel {
+  if (!s) return DEFAULT_LADAKH_PROJECT;
+  const id = s.id || `shelter-${Date.now().toString().slice(-6)}`;
+  const len = Number(s.geometry?.length ?? s.geometry?.lengthM ?? 6.0);
+  const wid = Number(s.geometry?.width ?? s.geometry?.widthM ?? 4.0);
+  const hgt = Number(s.geometry?.height ?? s.geometry?.wallHeightM ?? 2.8);
+  const orient = Number(s.geometry?.orientation ?? s.geometry?.orientationDeg ?? 0);
+  const rawRoof = String(s.geometry?.roofType || "Gable");
+  const roofType = (rawRoof.charAt(0).toUpperCase() + rawRoof.slice(1).toLowerCase()) as "Flat" | "Shed" | "Gable";
+  const roofAngle = Number(s.geometry?.roofAngle ?? s.geometry?.roofPitchDeg ?? 15.0);
+  const floorElevation = Number(s.geometry?.floorElevation ?? 0.1);
+
+  // Normalize windows array
+  let windows: any[] = [];
+  if (Array.isArray(s.windows)) {
+    windows = s.windows;
+  } else if (s.windows && typeof s.windows === "object") {
+    windows = [
+      {
+        id: `win-${id}-s1`,
+        wall: "south",
+        positionX: (isNaN(len) ? 6.0 : len) * 0.25,
+        width: 1.2,
+        height: 1.4,
+        sillHeight: 0.9,
+        glazingType: s.windows.glazingType || "double_low_e_argon",
+        frameType: s.windows.frameType || "thermally_broken_upvc",
+        shadingOverhang: s.windows.overhangDepthM ?? 0.4,
+      },
+    ];
+  }
+
+  // Normalize doors array
+  let doors: any[] = [];
+  if (Array.isArray(s.doors)) {
+    doors = s.doors;
+  } else if (s.doors && typeof s.doors === "object") {
+    doors = [
+      {
+        id: `door-${id}-01`,
+        wall: "north",
+        positionX: (isNaN(len) ? 6.0 : len) * 0.4,
+        width: 0.9,
+        height: 2.1,
+        construction: s.doors.doorType || "insulated_steel",
+        airTightness: s.doors.weatherStrippingQuality || "high_performance_military",
+      },
+    ];
+  }
+
+  // Normalize envelope with certified default physical layers (guarantees zero empty layer arrays)
+  const defaultWallLayers = [
+    { materialId: "mat-eps-insulation", name: "Expanded Polystyrene (EPS)", thickness: 0.15 },
+    { materialId: "mat-rammed-earth", name: "Stabilized Rammed Earth", thickness: 0.25 },
+  ];
+  const defaultRoofLayers = [
+    { materialId: "mat-galvanized-steel", name: "Galvanized Corrugated Steel", thickness: 0.005 },
+    { materialId: "mat-eps-insulation", name: "Expanded Polystyrene (EPS)", thickness: 0.15 },
+  ];
+  const defaultFloorLayers = [
+    { materialId: "mat-concrete-slab", name: "Heavy Concrete Floor Slab", thickness: 0.15 },
+    { materialId: "mat-xps-insulation", name: "Extruded Polystyrene Sub-Slab", thickness: 0.05 },
+  ];
+
+  const inputWalls = s.envelope?.walls || {};
+  const normalizeWallFace = (face: any, defaultId: string, defaultName: string) => {
+    const layers = Array.isArray(face?.layers) && face.layers.length > 0 ? face.layers : defaultWallLayers;
+    return {
+      constructionId: face?.constructionId || defaultId,
+      name: face?.name || defaultName,
+      layers,
+    };
+  };
+
+  const wallsObj = {
+    north: normalizeWallFace(inputWalls.north, "const-north-insulated-rammed-earth", "Wall North"),
+    south: normalizeWallFace(inputWalls.south, "const-south-passive-solar-trombe", "Wall South"),
+    east: normalizeWallFace(inputWalls.east, "const-east-insulated-wall", "Wall East"),
+    west: normalizeWallFace(inputWalls.west, "const-west-insulated-wall", "Wall West"),
+  };
+
+  const inputRoof = s.envelope?.roof || {};
+  const roofObj = {
+    ...inputRoof,
+    constructionId: inputRoof.constructionId || "const-insulated-metal-roof",
+    name: inputRoof.name || "Insulated Standing Seam Roof",
+    slope: isNaN(roofAngle) ? (inputRoof.slope ?? 15.0) : roofAngle,
+    overhang: Number(s.geometry?.overhangM ?? inputRoof.overhang ?? 0.5),
+    solarAbsorptance: inputRoof.solarAbsorptance ?? 0.3,
+    layers: Array.isArray(inputRoof.layers) && inputRoof.layers.length > 0 ? inputRoof.layers : defaultRoofLayers,
+  };
+
+  const inputFloor = s.envelope?.floor || {};
+  const floorObj = {
+    ...inputFloor,
+    constructionId: inputFloor.constructionId || "const-insulated-concrete-floor",
+    name: inputFloor.name || "Insulated Slab on Grade",
+    groundContact: inputFloor.groundContact ?? true,
+    perimeterInsulation: inputFloor.perimeterInsulation ?? true,
+    layers: Array.isArray(inputFloor.layers) && inputFloor.layers.length > 0 ? inputFloor.layers : defaultFloorLayers,
+  };
+
+  const safeLen = isNaN(len) ? 6.0 : len;
+  const safeWid = isNaN(wid) ? 4.0 : wid;
+  const safeHgt = isNaN(hgt) ? 2.8 : hgt;
+
+  return {
+    ...s,
+    id,
+    schemaVersion: s.schemaVersion || "1.0.0",
+    project: {
+      id,
+      name: s.project?.name || s.name || "Custom Shelter",
+      version: s.project?.version || s.version || "1.0.0",
+      description: s.project?.description || s.description || "High-altitude engineering model.",
+      createdAt: s.project?.createdAt || s.createdAt || new Date().toISOString(),
+      tags: s.project?.tags || s.tags || ["high-altitude"],
+      ...(s.project || {}),
+    },
+    location: {
+      region: s.location?.region || "Leh Ladakh, India",
+      latitude: s.location?.latitude ?? 34.1526,
+      longitude: s.location?.longitude ?? 77.5771,
+      elevation: s.location?.elevation ?? 3500,
+      climateZone: s.location?.climateZone || "Cold / Extreme Alpine",
+      weatherSource: s.location?.weatherSource || "IND_JK_Leh.427053_TMYx.epw",
+      designTempWinter: s.location?.designTempWinter ?? -20,
+      designTempSummer: s.location?.designTempSummer ?? 28,
+      ...(s.location || {}),
+    },
+    geometry: {
+      shape: s.geometry?.shape || "Rectangle",
+      orientation: isNaN(orient) ? 0 : orient,
+      roofAngle: isNaN(roofAngle) ? 15.0 : roofAngle,
+      floorElevation: isNaN(floorElevation) ? 0.1 : floorElevation,
+      ...(s.geometry || {}),
+      length: safeLen,
+      width: safeWid,
+      height: safeHgt,
+      roofType: ["Flat", "Shed", "Gable"].includes(roofType) ? roofType : "Gable",
+    },
+    envelope: {
+      walls: wallsObj,
+      roof: roofObj,
+      floor: floorObj,
+    },
+    windows,
+    doors,
+    thermalMass: Array.isArray(s.thermalMass) ? s.thermalMass : [],
+    ventilation: {
+      infiltrationACH: Number(s.ventilation?.infiltrationACH ?? s.ventilation?.infiltrationRateAch ?? 0.25),
+      mechanicalVentilationACH: Number(s.ventilation?.mechanicalVentilationACH ?? 0.5),
+      heatRecoveryEfficiency: Number(s.ventilation?.heatRecoveryEfficiency ?? 0.85),
+      ...(s.ventilation || {}),
+    },
+    internalLoads: s.internalLoads || {
+      occupantsCount: 4,
+      activityLevelW: 120,
+      lightingPowerDensityWPerM2: 5,
+      equipmentPowerDensityWPerM2: 3,
+    },
+    designTargets: s.designTargets || {
+      comfortTempMinC: 18,
+      comfortTempMaxC: 24,
+      targetComfortPercent: 85,
+      maxAnnualHeatingDemandKwhM2: 35,
+    },
+  };
+}
+
+// -----------------------------------------------------------------------------
 // Zustand Store Implementation
 // -----------------------------------------------------------------------------
 
@@ -1044,6 +1219,7 @@ export const useShelterStore = create<ShelterStoreState>()(
         DEFAULT_KARGIL_PROJECT,
         DEFAULT_BASELINE_TIN_PROJECT,
       ],
+      deletedProjectIds: [],
       activeProjectId: "shelter-ladakh-01",
       activeWizardStep: 1,
 
@@ -1073,12 +1249,14 @@ export const useShelterStore = create<ShelterStoreState>()(
       },
 
       addProject: (project: ShelterModel) => {
+        const normalized = normalizeShelterModel(project);
         set((state) => ({
-          projects: [...state.projects.filter((p) => p.id !== project.id), project],
-          activeProjectId: project.id,
+          deletedProjectIds: (state.deletedProjectIds || []).filter((did) => did !== normalized.id),
+          projects: [...state.projects.filter((p) => p.id !== normalized.id), normalized],
+          activeProjectId: normalized.id,
         }));
         // Automatically persist to backend storage and DB
-        api.projects.create(project).catch((err) => {
+        api.projects.create(normalized).catch((err) => {
           console.warn("Backend project create sync note:", err);
         });
       },
@@ -1088,14 +1266,19 @@ export const useShelterStore = create<ShelterStoreState>()(
         set((state) => ({
           projects: state.projects.map((p) => {
             if (p.id === id) {
-              updatedProject = {
+              const merged = {
                 ...p,
                 ...updates,
                 project: {
                   ...p.project,
                   ...(updates.project || {}),
                 },
+                geometry: {
+                  ...p.geometry,
+                  ...(updates.geometry || {}),
+                },
               };
+              updatedProject = normalizeShelterModel(merged);
               return updatedProject;
             }
             return p;
@@ -1106,19 +1289,36 @@ export const useShelterStore = create<ShelterStoreState>()(
         }
       },
 
-      deleteProject: (id: string) => {
+      deleteProject: async (id: string) => {
         set((state) => {
+          const nextDeleted = Array.from(new Set([...(state.deletedProjectIds || []), id]));
           const nextProjects = state.projects.filter((p) => p.id !== id);
           const nextActiveId =
             state.activeProjectId === id
-              ? nextProjects[0]?.id || "shelter-ladakh-01"
+              ? nextProjects[0]?.id || ""
               : state.activeProjectId;
+
+          // Purge simulations belonging to the deleted project
+          const nextSimulations = state.simulations.filter((s) => s.projectId !== id);
+          const purgedJobIds = new Set(
+            state.simulations.filter((s) => s.projectId === id).map((s) => s.id)
+          );
+          const nextComparisons = state.comparisonJobIds.filter((cid) => !purgedJobIds.has(cid));
+
           return {
+            deletedProjectIds: nextDeleted,
             projects: nextProjects,
             activeProjectId: nextActiveId,
+            simulations: nextSimulations,
+            comparisonJobIds: nextComparisons,
           };
         });
-        api.projects.delete(id).catch(() => {});
+
+        try {
+          await api.projects.delete(id);
+        } catch (err) {
+          console.warn("Backend project delete note:", err);
+        }
       },
 
       saveProjectVersion: (sourceId: string, versionName: string, description?: string) => {
@@ -1227,63 +1427,14 @@ export const useShelterStore = create<ShelterStoreState>()(
           if (Array.isArray(backendShelters) && backendShelters.length > 0) {
             const normalizedShelters: ShelterModel[] = backendShelters
               .filter((s: any) => s && s.id)
-              .map((s: any) => ({
-                id: s.id,
-                schemaVersion: s.schemaVersion || "1.0.0",
-                project: {
-                  id: s.id,
-                  name: s.project?.name || s.name || "Custom Shelter",
-                  version: s.project?.version || s.version || "1.0.0",
-                  description: s.project?.description || s.description || "High-altitude engineering model.",
-                  createdAt: s.project?.createdAt || s.createdAt || new Date().toISOString(),
-                  tags: s.project?.tags || s.tags || [],
-                },
-                location: {
-                  region: s.location?.region || "Ladakh, India",
-                  latitude: s.location?.latitude ?? 34.1526,
-                  longitude: s.location?.longitude ?? 77.5771,
-                  elevation: s.location?.elevation ?? 3500,
-                  climateZone: s.location?.climateZone || "Cold / Extreme Alpine",
-                  weatherSource: s.location?.weatherSource || "IND_JK_Leh.427053_TMYx.epw",
-                  designTempWinter: s.location?.designTempWinter ?? -20,
-                  designTempSummer: s.location?.designTempSummer ?? 28,
-                  annualHeatingDegreeDays: s.location?.annualHeatingDegreeDays ?? 4850,
-                  ...(s.location || {}),
-                },
-                geometry: {
-                  shape: s.geometry?.shape || "Rectangle",
-                  length: s.geometry?.length ?? 6.0,
-                  width: s.geometry?.width ?? 4.0,
-                  height: s.geometry?.height ?? 2.8,
-                  orientation: s.geometry?.orientation ?? 0,
-                  roofType: s.geometry?.roofType || "Flat",
-                  roofAngle: s.geometry?.roofAngle ?? 0,
-                  floorElevation: s.geometry?.floorElevation ?? 0,
-                  ...(s.geometry || {}),
-                },
-                envelope: s.envelope || {
-                  walls: {
-                    north: { id: "w-n", name: "Wall North", layers: [] },
-                    south: { id: "w-s", name: "Wall South", layers: [] },
-                    east: { id: "w-e", name: "Wall East", layers: [] },
-                    west: { id: "w-w", name: "Wall West", layers: [] },
-                  },
-                  roof: { id: "r-1", name: "Roof Assembly", layers: [] },
-                  floor: { id: "f-1", name: "Floor Assembly", layers: [] },
-                },
-                windows: s.windows || [],
-                doors: s.doors || [],
-                thermalMass: s.thermalMass || [],
-                ventilation: s.ventilation || { infiltrationACH: 0.25 },
-                internalLoads: s.internalLoads || { occupantsCount: 4 },
-                designTargets: s.designTargets || { comfortTempMinC: 18, comfortTempMaxC: 24, targetComfortPercent: 85 },
-                simulationSettings: s.simulationSettings || { engine: "EnergyPlus", timestepsPerHour: 4, runPeriodDays: 1 },
-                ...s,
-              }));
+              .map((s: any) => normalizeShelterModel(s));
 
             set((state) => {
+              const deletedIds = new Set(state.deletedProjectIds || []);
               const existingIds = new Set(state.projects.map((p) => p.id));
-              const additions = normalizedShelters.filter((ns) => !existingIds.has(ns.id));
+              const additions = normalizedShelters.filter(
+                (ns) => !existingIds.has(ns.id) && !deletedIds.has(ns.id)
+              );
               if (additions.length > 0) {
                 return { projects: [...state.projects, ...additions] };
               }
@@ -1359,8 +1510,14 @@ export const useShelterStore = create<ShelterStoreState>()(
           },
         };
       }),
+      onRehydrateStorage: () => (state) => {
+        if (state && Array.isArray(state.projects)) {
+          state.projects = state.projects.map(normalizeShelterModel);
+        }
+      },
       partialize: (state) => ({
         projects: state.projects,
+        deletedProjectIds: state.deletedProjectIds,
         activeProjectId: state.activeProjectId,
         activeWizardStep: state.activeWizardStep,
         weatherDatasets: state.weatherDatasets,

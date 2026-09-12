@@ -56,10 +56,15 @@ export function DashboardView() {
     );
   }
 
+  const geomLength = Number(activeProject.geometry?.length ?? (activeProject.geometry as any)?.lengthM ?? 6);
+  const geomWidth = Number(activeProject.geometry?.width ?? (activeProject.geometry as any)?.widthM ?? 4);
+  const geomHeight = Number(activeProject.geometry?.height ?? (activeProject.geometry as any)?.wallHeightM ?? 2.8);
+  const roofType = activeProject.geometry?.roofType || "Gable";
+
   return (
     <div className="space-y-10">
       <PageIntro
-        eyebrow={`Project ${activeProject.project.version} · DRDO PS 26051`}
+        eyebrow={`Project ${activeProject.project?.version || "1.0.0"} · DRDO PS 26051`}
         title="Engineering overview"
         description="Canonical model readiness, climate context, latest thermal performance, and traceable validation sequence."
       />
@@ -74,7 +79,7 @@ export function DashboardView() {
             </div>
             <div className="hidden sm:flex items-center gap-1.5 rounded-full bg-white/90 px-3.5 py-2 text-[11px] font-mono font-bold text-[#101820] backdrop-blur shadow-sm border border-black/5">
               <span>
-                {activeProject.geometry.length.toFixed(1)} × {activeProject.geometry.width.toFixed(1)} × {activeProject.geometry.height.toFixed(1)} m · {activeProject.geometry.roofType}
+                {geomLength.toFixed(1)} × {geomWidth.toFixed(1)} × {geomHeight.toFixed(1)} m · {roofType}
               </span>
             </div>
           </div>
@@ -108,15 +113,15 @@ export function DashboardView() {
             <dl className="mt-8 grid grid-cols-2 gap-6 border-t border-border pt-6">
               <DataPair
                 label="Winter design"
-                value={`${activeProject.location.designTempWinter ?? -20.5} °C`}
+                value={`${activeProject.location?.designTempWinter ?? -20.5} °C`}
               />
               <DataPair
                 label="Floor area"
-                value={`${(activeProject.geometry.length * activeProject.geometry.width).toFixed(1)} m²`}
+                value={`${(geomLength * geomWidth).toFixed(1)} m²`}
               />
               <DataPair
                 label="Geometry"
-                value={`${activeProject.geometry.length} × ${activeProject.geometry.width} × ${activeProject.geometry.height} m`}
+                value={`${geomLength.toFixed(1)} × ${geomWidth.toFixed(1)} × ${geomHeight.toFixed(1)} m`}
               />
               <DataPair
                 label="Weather"
@@ -124,11 +129,11 @@ export function DashboardView() {
               />
               <DataPair
                 label="Openings"
-                value={`${activeProject.windows.length} windows · ${activeProject.doors.length} doors`}
+                value={`${(activeProject.windows || []).length} windows · ${(activeProject.doors || []).length} doors`}
               />
               <DataPair
                 label="Infiltration"
-                value={`${activeProject.ventilation.infiltrationACH} ACH`}
+                value={`${activeProject.ventilation?.infiltrationACH ?? (activeProject.ventilation as any)?.infiltrationRateAch ?? 0.25} ACH`}
               />
             </dl>
           </div>

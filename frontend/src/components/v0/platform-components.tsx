@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, type ButtonHTMLAttributes, type ReactNode } from "react";
+import Image from "next/image";
 import { Canvas } from "@react-three/fiber";
 import { Grid, OrbitControls } from "@react-three/drei";
 import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
@@ -11,13 +12,24 @@ import { ShelterMesh } from "@/features/shelter-3d/components/ShelterMesh";
 
 export function BrandMark({ inverse = false }: { inverse?: boolean }) {
   return (
-    <span className="flex items-center gap-3">
-      <span className="relative block h-8 w-10" aria-hidden="true">
-        <span className={`absolute bottom-1 left-0 h-6 w-[3px] origin-bottom rotate-[34deg] ${inverse ? "bg-white" : "bg-black"}`} />
-        <span className={`absolute bottom-1 left-[14px] h-7 w-[3px] origin-bottom -rotate-[34deg] ${inverse ? "bg-white" : "bg-black"}`} />
-        <span className={`absolute bottom-1 right-0 h-5 w-[3px] origin-bottom -rotate-[34deg] ${inverse ? "bg-white" : "bg-black"}`} />
+    <span className="flex items-center gap-3 group">
+      <span
+        className="relative flex items-center justify-center h-10 sm:h-11 w-auto shrink-0 transition-transform duration-200 group-hover:scale-105"
+        aria-hidden="true"
+      >
+        <img
+          src={inverse ? "/navlogo-mark-white.png" : "/navlogo-mark.png"}
+          alt="ThermoShelter Logo"
+          className="h-10 sm:h-11 w-auto object-contain drop-shadow-[0_1px_2px_rgba(0,0,0,0.12)]"
+          loading="eager"
+        />
       </span>
-      <span className="text-[17px] font-semibold tracking-[-0.045em]">ThermoShelter</span>
+      <span
+        className={`text-xl sm:text-[22px] font-bold tracking-[-0.03em] select-none ${inverse ? "text-white" : "text-foreground"
+          }`}
+      >
+        ThermoShelter
+      </span>
     </span>
   );
 }
@@ -379,14 +391,17 @@ function DashboardCameraController({ model }: { model: ShelterModel }) {
   useEffect(() => {
     const controls = controlsRef.current;
     if (!controls) return;
-    const maxDim = Math.max(model.geometry.length, model.geometry.width, model.geometry.height);
+    const len = Number(model.geometry?.length ?? (model.geometry as any)?.lengthM ?? 6);
+    const wid = Number(model.geometry?.width ?? (model.geometry as any)?.widthM ?? 4);
+    const hgt = Number(model.geometry?.height ?? (model.geometry as any)?.wallHeightM ?? 2.8);
+    const maxDim = Math.max(isNaN(len) ? 6 : len, isNaN(wid) ? 4 : wid, isNaN(hgt) ? 2.8 : hgt);
     const dist = Math.max(10, maxDim * 2.2);
-    const midY = model.geometry.height * 0.55;
+    const midY = (isNaN(hgt) ? 2.8 : hgt) * 0.55;
 
     controls.object.position.set(dist * 0.85, dist * 0.65, dist * 0.85);
     controls.target.set(0, midY, 0);
     controls.update();
-  }, [model.geometry.length, model.geometry.width, model.geometry.height]);
+  }, [model.geometry?.length, model.geometry?.width, model.geometry?.height]);
 
   return (
     <OrbitControls
@@ -474,7 +489,7 @@ export function ShelterScene({
         <ShelterMesh
           model={project}
           selected={null}
-          onSelect={() => {}}
+          onSelect={() => { }}
           settings={{
             showGrid: true,
             showDimensions: false,

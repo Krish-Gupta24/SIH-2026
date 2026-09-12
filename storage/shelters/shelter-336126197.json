@@ -1,0 +1,289 @@
+{
+  "id": "shelter-336126197",
+  "project": {
+    "id": "shelter-336126197",
+    "name": "Dummy-1",
+    "version": "1.0.0",
+    "description": "High-altitude forward operating shelter engineered for extreme cold climate and low air density.",
+    "createdAt": "2026-09-12T17:21:55.575Z",
+    "tags": [
+      "high-altitude",
+      "defense",
+      "siachen glacier forward base"
+    ]
+  },
+  "location": {
+    "region": "Siachen Glacier Forward Base",
+    "latitude": 35.42,
+    "longitude": 77.11,
+    "elevation": 5400,
+    "climateZone": "Extreme Cold Alpine (ASHRAE 8)",
+    "weatherSource": "MICROCLIMATE_Siachen_Glacier_Forward_Base_5400m_8760h.epw",
+    "designTempWinter": -35,
+    "designTempSummer": 22
+  },
+  "geometry": {
+    "shape": "Rectangle",
+    "orientation": 90,
+    "roofAngle": 20,
+    "floorElevation": 0.1,
+    "length": 7,
+    "width": 4.9,
+    "height": 3.5,
+    "roofType": "Flat",
+    "lengthM": 6,
+    "widthM": 4,
+    "wallHeightM": 2.8,
+    "orientationDeg": 0,
+    "roofPitchDeg": 15,
+    "overhangM": 0.5,
+    "foundationType": "slab_on_grade",
+    "permafrostProtection": true,
+    "internalPartitionsCount": 1
+  },
+  "walls": {
+    "constructionType": "mass_composite",
+    "exteriorFinish": "weather_resistant_render",
+    "structuralCore": "stabilized_rammed_earth",
+    "structuralThicknessMm": 200,
+    "insulationMaterial": "aerogel_blanket",
+    "insulationThicknessMm": 200,
+    "interiorFinish": "gypsum_board",
+    "cavityAirGapMm": 25
+  },
+  "roof": {
+    "roofCovering": "standing_seam_metal",
+    "insulationMaterial": "extruded_polystyrene",
+    "insulationThicknessMm": 200,
+    "ceilingFinish": "gypsum_board",
+    "snowLoadDesignKnM2": 5,
+    "solarReflectanceRooftop": 0.3
+  },
+  "floor": {
+    "slabThicknessMm": 150,
+    "subSlabInsulationMaterial": "extruded_polystyrene",
+    "subSlabInsulationThicknessMm": 150,
+    "perimeterInsulationDepthM": 1,
+    "finishedFloorType": "insulated_timber_deck"
+  },
+  "windows": [
+    {
+      "id": "win-shelter-336126197-s1",
+      "wall": "south",
+      "positionX": 1.2,
+      "width": 1.2,
+      "height": 1.4,
+      "sillHeight": 0.9,
+      "glazingType": "triple_low_e_argon",
+      "frameType": "thermally_broken_upvc",
+      "shadingOverhang": 0.4
+    },
+    {
+      "id": "win-1789234377487",
+      "wall": "north",
+      "positionX": 0.6,
+      "width": 1.2,
+      "height": 1.3,
+      "sillHeight": 0.9,
+      "glazingType": "Double_LowE_Argon",
+      "frameType": "UPVC_Insulated",
+      "shadingOverhang": 0.4
+    },
+    {
+      "id": "win-1789234384640",
+      "wall": "south",
+      "positionX": 3.2,
+      "width": 1.4,
+      "height": 1.3,
+      "sillHeight": 0.9,
+      "glazingType": "Double_LowE_Argon",
+      "frameType": "UPVC_Insulated",
+      "shadingOverhang": 0.4
+    },
+    {
+      "id": "win-1789234388537",
+      "wall": "east",
+      "positionX": 0.63,
+      "width": 1.4,
+      "height": 1.3,
+      "sillHeight": 0.9,
+      "glazingType": "Double_LowE_Argon",
+      "frameType": "UPVC_Insulated",
+      "shadingOverhang": 0.4
+    },
+    {
+      "id": "win-1789234574008",
+      "wall": "south",
+      "positionX": 5.0,
+      "width": 1.2,
+      "height": 1.2,
+      "sillHeight": 0.9,
+      "glazingType": "Double_LowE_Argon",
+      "frameType": "UPVC_Insulated",
+      "shadingOverhang": 0.35
+    }
+  ],
+  "doors": [
+    {
+      "id": "door-shelter-336126197-01",
+      "wall": "north",
+      "positionX": 2.4000000000000004,
+      "width": 0.9,
+      "height": 2.1,
+      "construction": "insulated_steel",
+      "airTightness": "high_performance_military"
+    }
+  ],
+  "thermalMass": [
+    {
+      "id": "tmass-1",
+      "name": "Internal Thermal Mass #1",
+      "surfaceType": "InternalMass",
+      "materialId": "mat-concrete-slab",
+      "surfaceAreaM2": 15,
+      "thicknessM": 0.1
+    }
+  ],
+  "ventilation": {
+    "infiltrationACH": 0.25,
+    "naturalVentilationEnabled": true,
+    "naturalSchedule": "TemperatureControlled",
+    "mechanicalVentilationEnabled": true,
+    "mechanicalFlowRateLps": 20,
+    "heatRecoveryEfficiency": 0.85
+  },
+  "internalLoads": {
+    "occupantsCount": 2,
+    "activityLevelWatts": 120,
+    "lightingPowerDensityWpm2": 3.5,
+    "equipmentPowerWatts": 150,
+    "scheduleProfile": "DiurnalOccupied"
+  },
+  "designTargets": {
+    "comfortTempMinC": 18,
+    "comfortTempMaxC": 26,
+    "targetIndoorTempC": 21,
+    "comfortModel": "ASHRAE 55 Adaptive Cold Extreme",
+    "assumptions": "Clo: 1.5, Met: 1.2, Air: 0.1 m/s",
+    "applicableConditions": "Unconditioned passive high-altitude shelter",
+    "maxAnnualHeatingDemandKwhM2": 65,
+    "targetComfortPercent": 85
+  },
+  "simulationSettings": {
+    "engine": "EnergyPlus",
+    "simulationType": "Annual",
+    "timestepsPerHour": 4,
+    "solarDistribution": "FullInteriorAndExterior",
+    "terrainType": "Country",
+    "runPeriodDays": 1,
+    "startMonth": 1,
+    "startDay": 15,
+    "detailedComponentOutputs": true
+  },
+  "schemaVersion": "1.0.0",
+  "envelope": {
+    "walls": {
+      "north": {
+        "constructionId": "const-north-insulated-rammed-earth",
+        "name": "Wall North",
+        "layers": [
+          {
+            "materialId": "mat-eps-insulation",
+            "name": "Expanded Polystyrene (EPS)",
+            "thickness": 0.05
+          },
+          {
+            "materialId": "mat-rammed-earth",
+            "name": "Stabilized Rammed Earth",
+            "thickness": 0.25
+          }
+        ]
+      },
+      "south": {
+        "constructionId": "const-south-passive-solar-trombe",
+        "name": "Wall South",
+        "layers": [
+          {
+            "materialId": "mat-eps-insulation",
+            "name": "Expanded Polystyrene (EPS)",
+            "thickness": 0.10
+          },
+          {
+            "materialId": "mat-rammed-earth",
+            "name": "Stabilized Rammed Earth",
+            "thickness": 0.25
+          }
+        ]
+      },
+      "east": {
+        "constructionId": "const-east-insulated-wall",
+        "name": "Wall East",
+        "layers": [
+          {
+            "materialId": "mat-eps-insulation",
+            "name": "Expanded Polystyrene (EPS)",
+            "thickness": 0.10
+          },
+          {
+            "materialId": "mat-stone-masonry",
+            "name": "Granite Stone Masonry",
+            "thickness": 0.20
+          }
+        ]
+      },
+      "west": {
+        "constructionId": "const-west-insulated-wall",
+        "name": "Wall West",
+        "layers": [
+          {
+            "materialId": "mat-eps-insulation",
+            "name": "Expanded Polystyrene (EPS)",
+            "thickness": 0.10
+          },
+          {
+            "materialId": "mat-stone-masonry",
+            "name": "Granite Stone Masonry",
+            "thickness": 0.20
+          }
+        ]
+      }
+    },
+    "roof": {
+      "constructionId": "const-insulated-metal-roof",
+      "name": "Insulated Standing Seam Roof",
+      "slope": 15,
+      "overhang": 1.2,
+      "solarAbsorptance": 0.3,
+      "layers": [
+        {
+          "materialId": "mat-galvanized-steel",
+          "name": "Galvanized Corrugated Steel",
+          "thickness": 0.005
+        },
+        {
+          "materialId": "mat-eps-insulation",
+          "name": "Expanded Polystyrene (EPS)",
+          "thickness": 0.15
+        }
+      ]
+    },
+    "floor": {
+      "constructionId": "const-insulated-concrete-floor",
+      "name": "Insulated Slab on Grade",
+      "groundContact": true,
+      "perimeterInsulation": true,
+      "layers": [
+        {
+          "materialId": "mat-concrete-slab",
+          "name": "Heavy Concrete Floor Slab",
+          "thickness": 0.15
+        },
+        {
+          "materialId": "mat-xps-insulation",
+          "name": "Extruded Polystyrene Sub-Slab",
+          "thickness": 0.05
+        }
+      ]
+    }
+  }
+}

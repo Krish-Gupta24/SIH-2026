@@ -99,6 +99,13 @@ class OpenMeteoClient:
             params["past_days"] = 2
             params["forecast_days"] = 1
 
+        # Optional commercial Open-Meteo API key support
+        api_key = os.getenv("OPEN_METEO_API_KEY")
+        if api_key:
+            params["apikey"] = api_key
+            if "api.open-meteo.com" in target_url:
+                target_url = target_url.replace("api.open-meteo.com", "customer-api.open-meteo.com")
+
         try:
             resp = requests.get(target_url, params=params, timeout=cls.TIMEOUT_SECONDS)
             resp.raise_for_status()

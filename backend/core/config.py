@@ -1,7 +1,7 @@
 """Core configuration and settings module for the backend application."""
 
 import os
-from typing import List, Union
+from typing import List, Union, Optional
 from pydantic import AnyHttpUrl, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -39,11 +39,14 @@ class Settings(BaseSettings):
     ENERGYPLUS_EXE: str = r"C:\EnergyPlusV24-1-0\energyplus.exe"
     OPENSTUDIO_EXE: str = r"C:\openstudio-3.7.0\bin\openstudio.exe"  # Reserved for future extension; primary solver is EnergyPlus 24.1.0
     ANSYS_DIR: str = r"C:\Program Files\ANSYS Inc\v241"
+    ANSYS_FLUENT_EXE: Optional[str] = None
+    ANSYSLMD_LICENSE_FILE: Optional[str] = None
     SIMULATION_TEMP_DIR: str = "./storage/simulations"
     SIMULATION_TIMEOUT_SECONDS: int = 600
 
     # Weather
     NASA_POWER_BASE_URL: str = "https://power.larc.nasa.gov/api/temporal/hourly/point"
+    OPEN_METEO_API_KEY: Optional[str] = None
     WEATHER_CACHE_DIR: str = "./storage/weather"
 
     # Storage
