@@ -168,13 +168,16 @@ class EnergyPlusRunner:
         if not epw_resolved.exists():
             raise FileNotFoundError(f"EPW weather file not found: {epw_path}")
 
-        # Command arguments: energyplus -w weather.epw -d output_dir -r input.idf
-        cmd = [
-            self.executable_path,
+        # Command arguments: energyplus -i idd -w weather.epw -d output_dir -r input.idf
+        idd_candidate = Path(self.executable_path).parent / "Energy+.idd"
+        cmd = [self.executable_path]
+        if idd_candidate.is_file():
+            cmd.extend(["-i", str(idd_candidate)])
+        cmd.extend([
             "-w", str(epw_resolved),
             "-d", str(work_path),
             "-r", str(idf_resolved),
-        ]
+        ])
         cmd_str = " ".join(f'"{c}"' if " " in c else c for c in cmd)
 
         start_time = time.time()
@@ -184,6 +187,7 @@ class EnergyPlusRunner:
                 cwd=str(work_path),
                 capture_output=True,
                 text=True,
+                stdin=subprocess.DEVNULL,
                 timeout=timeout_seconds,
             )
             duration = time.time() - start_time
