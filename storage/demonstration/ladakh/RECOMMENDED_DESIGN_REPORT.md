@@ -1,5 +1,5 @@
 # RECOMMENDED DESIGN: Standard EPS Wall (200mm) [Maximize Comfort]
-> **Report ID**: `REC-opt-sweep-f19bfb55-CAND-FB55-003` | **Simulation ID**: `sim-fb55-003` | **Generated**: 2026-09-12T10:05:54.938280+00:00
+> **Report ID**: `REC-opt-sweep-dcce4a34-CAND-4A34-003` | **Simulation ID**: `sim-4a34-003` | **Generated**: 2026-09-13T11:22:54.494068+00:00
 > **Simulation Engine**: `24.1.0-9d7789a3ac` | **Weather Dataset**: `IND_JK_Leh.427053_TMYx.epw`
 > **Engineering Notice**: Best configuration found within the evaluated design space and constraints.
 
@@ -7,12 +7,12 @@
 - **Target Objective**: **Maximize Living Zone Comfort Hours** (`maximize_comfort`)
 - **Optimization Goal**: Maximize the cumulative percentage of hours within the 18°C–24°C thermal comfort band while preventing nighttime hypothermia.
 - **Direction**: Maximize Comfort Hours % and Pre-Dawn Floor Stability
-- **Final Score**: `-43.50 points`
+- **Final Score**: `-43.66 points`
 
 ## 2. Boundary Constraints & Compliance Audit
 | Constraint | Required Threshold | Selected Value | Compliance | Safety Margin |
 | :--- | :--- | :--- | :--- | :--- |
-| **Min Night Temp** | `>= -15.0 ` | `-11.75 ` | ✅ PASSED | +3.25 above limit |
+| **Min Night Temp** | `>= -15.0 ` | `-11.83 ` | ✅ PASSED | +3.17 above limit |
 
 ## 3. Candidate Space Exploration
 - **Search Algorithm**: Deterministic Parameter Sweep (EnergyPlus Physical Simulation)
@@ -55,8 +55,8 @@
 ### Indoor Thermal Metrics
 - **Extreme Night Minimum ($T_{min}$)**: **-11.8°C** (Pre-dawn cold at –20.5°C ambient)
 - **Freeze Margin Safety**: +-11.8°C above 0°C freezing threshold
-- **Daytime Peak Maximum ($T_{max}$)**: -7.4°C
-- **Mean Indoor Temperature ($T_{mean}$)**: -9.7°C
+- **Daytime Peak Maximum ($T_{max}$)**: -7.5°C
+- **Mean Indoor Temperature ($T_{mean}$)**: -9.8°C
 - **Diurnal Zone Swing**: 4.4°C (Strong passive dampening)
 
 ### Comfort & Stability
@@ -69,16 +69,16 @@
 - **Useful Aperture Fraction**: 100.0% (Monitored by max temperature ceiling constraint)
 
 ### Heat Loss Breakdown
-- **Total Envelope Transmission UA**: **213.2 W/K**
-- **Peak Envelope Conduction**: 5178 W (100.0% of total loss)
+- **Total Envelope Transmission UA**: **212.5 W/K**
+- **Peak Envelope Conduction**: 5164 W (100.0% of total loss)
 
 ### Space Heating Energy & Carbon
 - **Annual Space Heating Demand**: **11.8 kWh/m²·a**
-- **Peak Auxiliary Heating Power**: 5.18 kW
+- **Peak Auxiliary Heating Power**: 5.16 kW
 - **Energy Reduction vs Uninsulated Baseline**: **92.8%** (283 kWh/year total)
 
 ## 6. Reason for Selection
-This candidate was selected because it achieved the highest composite objective score (-43.50 pts) under the active objective 'maximize comfort', while satisfying all boundary constraints without violation. In the evaluated candidate space, this design vector delivers the optimum balance between passive solar harvest, nighttime heat retention, and physical feasibility.
+This candidate was selected because it achieved the highest composite objective score (-43.66 pts) under the active objective 'maximize comfort', while satisfying all boundary constraints without violation. In the evaluated candidate space, this design vector delivers the optimum balance between passive solar harvest, nighttime heat retention, and physical feasibility.
 
 ### Key Engineering Trade-Offs Resolved:
 - **Insulation Thickness Diminishing Returns vs Logistics Payload**: Selected 200mm insulation thickness. Analysis of the thermal knee curve proves that increasing insulation from 50mm to 150mm yields a dramatic 68% heating reduction, while further thickening to 250mm provides only an additional 4% reduction at an unacceptable 66% logistics payload weight penalty.

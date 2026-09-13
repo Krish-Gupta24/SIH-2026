@@ -21,7 +21,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Download and install EnergyPlus 24.1.0 for Linux (Official NREL release)
 RUN curl -SLO https://github.com/NREL/EnergyPlus/releases/download/v24.1.0/EnergyPlus-24.1.0-9d7789a3ac-Linux-Ubuntu22.04-x86_64.tar.gz && \
     tar -xzf EnergyPlus-24.1.0-9d7789a3ac-Linux-Ubuntu22.04-x86_64.tar.gz -C /usr/local/ && \
-    ln -s /usr/local/EnergyPlus-24-1-0/energyplus /usr/local/bin/energyplus && \
+    EP_REAL_DIR=$(find /usr/local -maxdepth 1 -type d -name "*EnergyPlus*" | head -n 1) && \
+    ln -sf "$EP_REAL_DIR" /usr/local/EnergyPlus-24-1-0 && \
+    ln -sf "$EP_REAL_DIR" /usr/local/EnergyPlusV24-1-0 && \
+    ln -sf "$EP_REAL_DIR/energyplus" /usr/local/bin/energyplus && \
+    ln -sf "$EP_REAL_DIR/energyplus" /usr/bin/energyplus && \
+    chmod +x /usr/local/bin/energyplus "$EP_REAL_DIR/energyplus" && \
     rm EnergyPlus-24.1.0-9d7789a3ac-Linux-Ubuntu22.04-x86_64.tar.gz
 
 # Install python dependencies

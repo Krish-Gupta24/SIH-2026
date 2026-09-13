@@ -34,7 +34,10 @@ APPROVED_INSTALLATION_PREFIXES = [
     r"C:\Program Files\ANSYS",
     "/usr/local/EnergyPlus",
     "/usr/local/bin",
+    "/usr/local",
+    "/usr/bin",
     "/opt/EnergyPlus",
+    "/opt",
     "/opt/ansys_inc",
     "/ansys_inc",
 ]

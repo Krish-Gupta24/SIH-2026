@@ -72,13 +72,19 @@ class EnergyPlusRunner:
 
         user_profile = os.environ.get("USERPROFILE", "")
         if user_profile:
-            # Check user profile installation
+            # Check user profile installation recursively and directly
             p1 = Path(user_profile) / "EnergyPlusV24-1-0" / "energyplus.exe"
             p2 = Path(user_profile) / "EnergyPlusV24-1-0" / "EnergyPlus-24.1.0-9d7789a3ac-Windows-x86_64" / "energyplus.exe"
-            if p1.is_file() and BinaryAllowlist.is_binary_name_allowed(str(p1)):
-                candidates.append(str(p1))
             if p2.is_file() and BinaryAllowlist.is_binary_name_allowed(str(p2)):
                 candidates.append(str(p2))
+            if p1.is_file() and BinaryAllowlist.is_binary_name_allowed(str(p1)):
+                candidates.append(str(p1))
+            try:
+                for match in Path(user_profile).glob("**/EnergyPlus*/energyplus.exe"):
+                    if match.is_file() and BinaryAllowlist.is_binary_name_allowed(str(match)):
+                        candidates.append(str(match))
+            except Exception:
+                pass
 
         # Standard Windows paths
         std_paths = [
@@ -93,12 +99,34 @@ class EnergyPlusRunner:
             for ep_dir in Path("C:/").glob("EnergyPlus*/energyplus.exe"):
                 if ep_dir.is_file():
                     std_paths.insert(0, str(ep_dir))
+            for ep_dir in Path("C:/").glob("**/EnergyPlus*/energyplus.exe"):
+                if ep_dir.is_file():
+                    std_paths.append(str(ep_dir))
         except Exception:
             pass
 
         for sp in std_paths:
             if Path(sp).is_file() and BinaryAllowlist.is_binary_name_allowed(sp):
                 candidates.append(sp)
+
+        # Standard Linux paths (Docker / Cloud Deployments)
+        linux_paths = [
+            "/usr/local/bin/energyplus",
+            "/usr/bin/energyplus",
+        ]
+        try:
+            for ep_dir in Path("/usr/local").glob("*EnergyPlus*/**/energyplus"):
+                if ep_dir.is_file():
+                    linux_paths.append(str(ep_dir))
+            for ep_dir in Path("/opt").glob("*EnergyPlus*/**/energyplus"):
+                if ep_dir.is_file():
+                    linux_paths.append(str(ep_dir))
+        except Exception:
+            pass
+
+        for lp in linux_paths:
+            if Path(lp).is_file() and BinaryAllowlist.is_binary_name_allowed(lp):
+                candidates.append(lp)
 
         # In PATH
         which_path = shutil.which("energyplus")
