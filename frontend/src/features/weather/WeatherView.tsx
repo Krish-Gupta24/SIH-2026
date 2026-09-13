@@ -20,6 +20,8 @@ import {
   Info,
   Snowflake,
   Flame,
+  Trash2,
+  RotateCcw,
 } from "lucide-react";
 import { OpenFreeMapPicker } from "@/features/weather/components/OpenFreeMapPicker";
 import {
@@ -45,6 +47,7 @@ import {
   Status,
 } from "@/components/v0/platform-components";
 import { WorkflowFooter } from "@/components/layout/WorkflowFooter";
+import { api } from "@/lib/api-client";
 
 interface MonthMeta {
   index: number;
@@ -77,10 +80,27 @@ const formatHourMin = (hourDecimal: number) => {
   return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
 };
 
+const BUILTIN_STATION_IDS = new Set([
+  "wx-leh-427053",
+  "wx-leh-tmyx",
+  "wx-leh-ishrae",
+  "wx-dras-kargil",
+  "wx-spiti-valley",
+  "wx-tawang",
+]);
+
 export function WeatherView() {
-  const { weatherDatasets, activeWeatherId, setActiveWeather, addWeatherDataset } = useShelterStore();
+  const {
+    weatherDatasets,
+    activeWeatherId,
+    setActiveWeather,
+    addWeatherDataset,
+    deleteWeatherDataset,
+    resetWeatherDatasetsToDefault,
+  } = useShelterStore();
   const [selectedStationId, setSelectedStationId] = useState(activeWeatherId);
   const [selectedMonth, setSelectedMonth] = useState<number>(1);
+  const [stationToDelete, setStationToDelete] = useState<WeatherStation | null>(null);
 
   // Modal States
   const [activeModal, setActiveModal] = useState<"epw" | "csv" | "nasa" | "manual" | "microclimate" | null>(null);
@@ -472,6 +492,19 @@ export function WeatherView() {
               <Sparkles className="size-3.5 text-black" />
               Microclimate (PI-ML)
             </ActionButton>
+            <ActionButton
+              tone="secondary"
+              onClick={() => {
+                if (window.confirm("Reset weather catalog to certified Himalayan benchmarks? This will remove custom uploaded EPWs.")) {
+                  resetWeatherDatasetsToDefault();
+                  setSelectedStationId("wx-leh-427053");
+                }
+              }}
+              className="rounded-full text-xs font-semibold text-muted-foreground hover:text-foreground"
+            >
+              <RotateCcw className="size-3.5" />
+              Reset Benchmarks
+            </ActionButton>
           </div>
         }
       />
@@ -523,14 +556,23 @@ export function WeatherView() {
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3">
           {weatherDatasets.map((stn) => {
             const isSelected = stn.id === activeStation.id;
+            const isBuiltin = BUILTIN_STATION_IDS.has(stn.id);
             return (
-              <button
+              <div
                 key={stn.id}
+                role="button"
+                tabIndex={0}
                 onClick={() => {
                   setSelectedStationId(stn.id);
                   setActiveWeather(stn.id);
                 }}
-                className={`flex flex-col justify-between rounded-2xl border p-4 text-left transition-all ${
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    setSelectedStationId(stn.id);
+                    setActiveWeather(stn.id);
+                  }
+                }}
+                className={`group relative flex flex-col justify-between rounded-2xl border p-4 text-left transition-all cursor-pointer ${
                   isSelected
                     ? "border-foreground bg-secondary/80 shadow-sm"
                     : "border-border bg-card hover:border-[#6E818F]"
@@ -539,7 +581,22 @@ export function WeatherView() {
                 <div>
                   <div className="flex items-center justify-between">
                     <Status strong={isSelected}>{stn.provenanceStatus}</Status>
-                    <span className="text-xs font-semibold text-muted-foreground">{stn.elevationM}m</span>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-xs font-semibold text-muted-foreground">{stn.elevationM}m</span>
+                      {!isBuiltin && (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setStationToDelete(stn);
+                          }}
+                          className="p-1 rounded-lg text-rose-500 hover:text-rose-600 bg-rose-500/10 hover:bg-rose-500/20 transition-all cursor-pointer"
+                          title={`Delete dataset ${stn.name}`}
+                        >
+                          <Trash2 className="size-3.5" />
+                        </button>
+                      )}
+                    </div>
                   </div>
                   <h3 className="mt-3 text-xs font-bold line-clamp-1">{stn.name}</h3>
                   <p className="text-[10px] text-muted-foreground line-clamp-1">{stn.region}</p>
@@ -548,7 +605,7 @@ export function WeatherView() {
                   <span>Min: <strong>{stn.designWinterMinC}°C</strong></span>
                   <span>Src: <strong>{stn.sourceType}</strong></span>
                 </div>
-              </button>
+              </div>
             );
           })}
         </div>
@@ -626,6 +683,18 @@ export function WeatherView() {
               All physical building simulations execute strictly against validated meteorological datasets. Silent substitution of synthetic test weather is blocked by platform policy.
             </p>
           </div>
+
+          {!BUILTIN_STATION_IDS.has(activeStation.id) && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setStationToDelete(activeStation)}
+              className="w-full text-xs font-semibold text-rose-600 border-rose-500/30 hover:bg-rose-500/10 hover:text-rose-700 dark:text-rose-400 dark:hover:text-rose-300"
+            >
+              <Trash2 className="size-3.5 mr-1.5" />
+              Delete Custom Dataset
+            </Button>
+          )}
         </div>
 
         {/* Right Column: Dynamic 12-Month Weather Profiles & Charts */}
@@ -1447,6 +1516,78 @@ export function WeatherView() {
               <ActionButton tone="quiet" onClick={() => setActiveModal(null)}>
                 Close
               </ActionButton>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Weather Dataset Modal */}
+      {stationToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="w-full max-w-md rounded-[2rem] border border-border bg-card p-6 shadow-2xl space-y-4">
+            <div className="flex items-center gap-3 text-rose-600 dark:text-rose-400">
+              <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-rose-500/10">
+                <Trash2 className="h-5 w-5" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-foreground">Delete Weather Dataset</h3>
+                <p className="text-xs text-muted-foreground">Permanent meteorological removal</p>
+              </div>
+            </div>
+
+            <div className="rounded-2xl border border-border/60 bg-secondary/30 p-4 text-xs space-y-2">
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Station:</span>
+                <span className="font-semibold text-foreground">{stationToDelete.name}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">File:</span>
+                <span className="font-mono text-muted-foreground">{stationToDelete.epwFileName}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Elevation / Min:</span>
+                <span className="font-semibold text-foreground">{stationToDelete.elevationM}m / {stationToDelete.designWinterMinC}°C</span>
+              </div>
+            </div>
+
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              Are you sure you want to remove this dataset from your active catalog? EnergyPlus simulations using this dataset will default to certified WMO benchmarks.
+            </p>
+
+            <div className="flex justify-end gap-3 pt-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setStationToDelete(null)}
+                className="rounded-full text-xs font-semibold px-4"
+              >
+                Cancel
+              </Button>
+              <Button
+                size="sm"
+                onClick={async () => {
+                  const toDelete = stationToDelete;
+                  setStationToDelete(null);
+                  if (!toDelete) return;
+
+                  deleteWeatherDataset(toDelete.id);
+                  if (selectedStationId === toDelete.id) {
+                    const fallback = weatherDatasets.find((w) => w.id !== toDelete.id);
+                    if (fallback) setSelectedStationId(fallback.id);
+                  }
+
+                  try {
+                    if (toDelete.epwFileName) {
+                      await api.weather.deleteDataset(toDelete.epwFileName);
+                    }
+                  } catch (err) {
+                    console.warn("Backend EPW file deletion note:", err);
+                  }
+                }}
+                className="rounded-full bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold px-4 cursor-pointer"
+              >
+                Delete Dataset
+              </Button>
             </div>
           </div>
         </div>

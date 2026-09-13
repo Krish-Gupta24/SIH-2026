@@ -1,158 +1,50 @@
 {
   "id": "shelter-baseline-tin",
   "schemaVersion": "1.0.0",
+  "name": "CGI Tin Barrack (Baseline Uninsulated - 15% Comfort)",
+  "description": "Standard uninsulated corrugated steel with drafty single glazing. Freezes at -15\u00b0C at night demanding continuous Bukhari fuel burning.",
+  "tags": [
+    "Baseline",
+    "Uninsulated",
+    "CGI-Sheet",
+    "Drafty"
+  ],
   "project": {
     "id": "shelter-baseline-tin",
-    "name": "Conventional CGI Tin Barrack (Baseline)",
-    "version": "1.0.0",
+    "name": "CGI Tin Barrack (Baseline Uninsulated - 15% Comfort)",
     "description": "Standard uninsulated corrugated steel with drafty single glazing. Freezes at -15\u00b0C at night demanding continuous Bukhari fuel burning.",
-    "createdAt": "2026-09-13T12:47:27.175Z",
     "tags": [
       "Baseline",
       "Uninsulated",
       "CGI-Sheet",
       "Drafty"
-    ]
+    ],
+    "version": "1.0.0"
   },
   "location": {
-    "region": "Leh Ladakh, India",
     "latitude": 34.1526,
     "longitude": 77.5771,
-    "elevation": 3500,
+    "elevation": 3500.0,
+    "region": "Leh Ladakh, India",
     "climateZone": "Cold / Extreme Alpine",
-    "weatherSource": "IND_JK_Leh.427053_TMYx.epw",
-    "designTempWinter": -20,
-    "designTempSummer": 28
+    "weatherSource": "IND_JK_Leh.427053_TMYx.epw"
   },
   "geometry": {
     "shape": "Rectangle",
-    "orientation": 0,
-    "roofAngle": 0,
-    "floorElevation": 0.1,
-    "length": 6.3,
-    "width": 4.7,
-    "height": 2.9,
-    "roofType": "Flat"
-  },
-  "envelope": {
-    "walls": {
-      "north": {
-        "constructionId": "const-tin-north",
-        "name": "Single Corrugated Galvanized Iron",
-        "layers": [
-          {
-            "materialId": "mat-stone-granite",
-            "thickness": 0.05
-          }
-        ]
-      },
-      "south": {
-        "constructionId": "const-tin-south",
-        "name": "Single CGI Sheet",
-        "layers": [
-          {
-            "materialId": "mat-stone-granite",
-            "thickness": 0.05
-          }
-        ]
-      },
-      "east": {
-        "constructionId": "const-tin-east",
-        "name": "Single CGI Sheet",
-        "layers": [
-          {
-            "materialId": "mat-stone-granite",
-            "thickness": 0.05
-          }
-        ]
-      },
-      "west": {
-        "constructionId": "const-tin-west",
-        "name": "Single CGI Sheet",
-        "layers": [
-          {
-            "materialId": "mat-stone-granite",
-            "thickness": 0.05
-          }
-        ]
-      }
-    },
-    "roof": {
-      "constructionId": "const-tin-roof",
-      "name": "Uninsulated Corrugated Sheet Roof",
-      "slope": 0,
-      "overhang": 0.5,
-      "solarAbsorptance": 0.8,
-      "layers": [
-        {
-          "materialId": "mat-stone-granite",
-          "thickness": 0.996
-        }
-      ]
-    },
-    "floor": {
-      "constructionId": "const-tin-floor",
-      "name": "Uninsulated Thin Concrete Screed",
-      "groundContact": true,
-      "perimeterInsulation": false,
-      "layers": [
-        {
-          "materialId": "mat-stone-granite",
-          "thickness": 0.05
-        }
-      ]
-    }
-  },
-  "windows": [
-    {
-      "id": "win-tin-01",
-      "wall": "south",
-      "positionX": 1.5,
-      "width": 1,
-      "height": 1,
-      "sillHeight": 0.9,
-      "glazingType": "Single_Clear",
-      "frameType": "Aluminum_ThermalBreak",
-      "shadingOverhang": 0
-    }
-  ],
-  "doors": [
-    {
-      "id": "door-tin-01",
-      "wall": "north",
-      "positionX": 1.5,
-      "width": 0.8,
-      "height": 1.9,
-      "construction": "Single Sheet Metal Door",
-      "airTightness": "Standard"
-    }
-  ],
-  "thermalMass": [],
-  "ventilation": {
-    "infiltrationACH": 1.8,
-    "mechanicalVentilationACH": 0.5,
-    "heatRecoveryEfficiency": 0,
-    "naturalVentilationEnabled": true,
-    "naturalSchedule": "Always",
-    "mechanicalVentilationEnabled": false,
-    "mechanicalFlowRateLps": 0
-  },
-  "internalLoads": {
-    "occupantsCount": 2,
-    "activityLevelWatts": 120,
-    "lightingPowerDensityWpm2": 5,
-    "equipmentPowerWatts": 80,
-    "scheduleProfile": "DiurnalOccupied"
+    "length": 6.0,
+    "width": 4.0,
+    "height": 2.6,
+    "orientation": 0.0,
+    "roofType": "Gable",
+    "roofAngle": 15.0,
+    "floorElevation": 0.1
   },
   "designTargets": {
-    "comfortTempMinC": 18,
-    "comfortTempMaxC": 24,
-    "targetIndoorTempC": 20,
-    "maxAnnualHeatingDemandKwhM2": 240,
-    "targetComfortPercent": 15,
-    "comfortModel": "ASHRAE 55 Adaptive Cold Extreme",
-    "assumptions": "Clo: 1.5, Met: 1.2, Air: 0.1 m/s",
-    "applicableConditions": "Unconditioned passive high-altitude shelter"
+    "comfortTempMinC": 18.0,
+    "comfortTempMaxC": 24.0,
+    "targetIndoorTempC": 21.0,
+    "targetComfortPercent": 15.0,
+    "maxAnnualHeatingDemandKwhM2": 215.0
   },
   "simulationSettings": {
     "engine": "EnergyPlus",

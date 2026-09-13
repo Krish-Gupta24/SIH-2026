@@ -5,6 +5,8 @@ import {
   windowSchema,
   doorSchema,
 } from "./schema";
+import { DEFAULT_PRESET_PROJECTS } from "@/lib/store/use-shelter-store";
+import { modelToFormValues } from "@/lib/store/shelter-model-adapter";
 
 describe("Shelter Schema Validation Unit Tests", () => {
   it("validates default shelter form values successfully", () => {
@@ -81,5 +83,16 @@ describe("Shelter Schema Validation Unit Tests", () => {
     };
     const result = shelterFormSchema.safeParse(invalidComfort);
     expect(result.success).toBe(false);
+  });
+
+  it("validates all 5 regional demo presets (13 wizard steps) with zero errors", () => {
+    for (const preset of DEFAULT_PRESET_PROJECTS) {
+      const formValues = modelToFormValues(preset);
+      const parseResult = shelterFormSchema.safeParse(formValues);
+      if (!parseResult.success) {
+        console.error(`Validation failure on preset ${preset.id}:`, parseResult.error.issues);
+      }
+      expect(parseResult.success).toBe(true);
+    }
   });
 });

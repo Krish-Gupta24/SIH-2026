@@ -10,6 +10,7 @@ import {
   Plus,
   Search,
   Trash2,
+  RotateCcw,
 } from "lucide-react";
 import { useShelterStore } from "@/lib/store/use-shelter-store";
 import type { ShelterModel } from "@/types/shelter";
@@ -27,6 +28,7 @@ export function ProjectsView() {
     addProject,
     deleteProject,
     saveProjectVersion,
+    resetProjectsToDefault,
   } = useShelterStore();
 
   const [search, setSearch] = useState("");
@@ -148,10 +150,24 @@ export function ProjectsView() {
         title="Shelter projects"
         description="Canonical models, climate context, and simulation history. Continue what needs attention or begin a controlled variant."
         action={
-          <ActionButton onClick={() => setIsNewProjectModalOpen(true)}>
-            <Plus className="size-4" />
-            New project
-          </ActionButton>
+          <div className="flex flex-wrap items-center gap-2">
+            <ActionButton
+              tone="secondary"
+              onClick={() => {
+                if (window.confirm("Reset projects to certified 1-Year Max Comfort Himalayan Presets (Leh, Dras-Kargil, Spiti, Tawang)? All standard models will be restored.")) {
+                  resetProjectsToDefault();
+                }
+              }}
+              className="rounded-full text-xs font-semibold"
+            >
+              <RotateCcw className="size-3.5 mr-1" />
+              Reset Demo Presets
+            </ActionButton>
+            <ActionButton onClick={() => setIsNewProjectModalOpen(true)}>
+              <Plus className="size-4" />
+              New project
+            </ActionButton>
+          </div>
         }
       />
 

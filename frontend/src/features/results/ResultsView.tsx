@@ -50,6 +50,7 @@ export function ResultsView() {
 
   const {
     projects,
+    activeProjectId,
     addProject,
     simulations,
     toggleComparisonJobId,
@@ -61,7 +62,9 @@ export function ResultsView() {
   const completedJobs = simulations.filter((s) => s.status === "completed" && s.results);
 
   const initialJob =
-    (urlJobId && completedJobs.find((j) => j.id === urlJobId)) || completedJobs[0];
+    (urlJobId && completedJobs.find((j) => j.id === urlJobId)) ||
+    completedJobs.find((j) => j.projectId === activeProjectId) ||
+    completedJobs[0];
 
   const [selectedJobId, setSelectedJobId] = useState<string>(initialJob?.id || "");
   const [activeTab, setActiveTab] = useState<string>("overview");
@@ -71,6 +74,16 @@ export function ResultsView() {
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  // Synchronize selected job with active project when navigating between projects
+  useEffect(() => {
+    if (!urlJobId && activeProjectId) {
+      const matchForActive = completedJobs.find((j) => j.projectId === activeProjectId);
+      if (matchForActive && matchForActive.id !== selectedJobId) {
+        setSelectedJobId(matchForActive.id);
+      }
+    }
+  }, [activeProjectId, urlJobId, completedJobs, selectedJobId]);
 
   // Multi-source data trace visibility
   const [traceVisibility, setTraceVisibility] = useState<DataTraceVisibility>({
@@ -86,6 +99,7 @@ export function ResultsView() {
   const activeJob =
     completedJobs.find((j) => j.id === selectedJobId) ||
     (urlJobId && completedJobs.find((j) => j.id === urlJobId)) ||
+    completedJobs.find((j) => j.projectId === activeProjectId) ||
     completedJobs[0] ||
     null;
 

@@ -147,6 +147,8 @@ export const api = {
       fetchApi<any[]>(`/weather/geocode?query=${encodeURIComponent(query)}`),
     reverseGeocode: (latitude: number, longitude: number) =>
       fetchApi<any>(`/weather/reverse-geocode?latitude=${latitude}&longitude=${longitude}`),
+    deleteDataset: (filename: string) =>
+      fetchApi<any>(`/weather/datasets/${encodeURIComponent(filename)}`, { method: "DELETE" }),
   },
   ansys: {
     status: () => fetchApi<any>("/ansys/status"),
@@ -165,18 +167,22 @@ export const api = {
       }),
     exportPdf: async (payload: any): Promise<Blob> => {
       const urlsToTry = [
-        `${API_BASE_URL}/reports/export/pdf`,
         "/api/v1/reports/export/pdf",
+        `${API_BASE_URL}/reports/export/pdf`,
         "http://localhost:8000/api/v1/reports/export/pdf",
       ];
       let lastErr: any = null;
       for (const url of urlsToTry) {
         try {
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 6000);
           const res = await fetch(url, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(payload),
+            signal: controller.signal,
           });
+          clearTimeout(timeoutId);
           if (res.ok) {
             return await res.blob();
           }

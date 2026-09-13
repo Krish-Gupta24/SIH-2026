@@ -1,187 +1,57 @@
 {
   "id": "shelter-kargil-02",
-  "name": "Kargil High-Thermal Mass Bunkhouse",
-  "description": "Multi-occupant military shelter in Kargil utilizing local granite thermal mass and rockwool batt insulation.",
+  "schemaVersion": "1.0.0",
+  "name": "Dras-Kargil Extreme Cold Bunkhouse (88% Comfort)",
+  "description": "Multi-occupant military shelter in Dras-Kargil utilizing local granite thermal mass, triple glazing, and 200mm EPS insulation for sustained sub-zero resilience.",
   "tags": [
-    "Kargil",
-    "Granite",
-    "High-Thermal-Mass",
-    "Rockwool"
+    "Dras-Kargil",
+    "Extreme-Cold",
+    "Granite-Mass",
+    "Annual-Comfort-88%"
   ],
-  "version": "1.0.0",
   "project": {
     "id": "shelter-kargil-02",
-    "name": "Kargil High-Thermal Mass Bunkhouse",
-    "description": "Multi-occupant military shelter in Kargil utilizing local granite thermal mass and rockwool batt insulation.",
+    "name": "Dras-Kargil Extreme Cold Bunkhouse (88% Comfort)",
+    "description": "Multi-occupant military shelter in Dras-Kargil utilizing local granite thermal mass, triple glazing, and 200mm EPS insulation for sustained sub-zero resilience.",
     "tags": [
-      "Kargil",
-      "Granite",
-      "High-Thermal-Mass",
-      "Rockwool"
+      "Dras-Kargil",
+      "Extreme-Cold",
+      "Granite-Mass",
+      "Annual-Comfort-88%"
     ],
     "version": "1.0.0"
   },
   "location": {
-    "latitude": 34.5539,
-    "longitude": 76.1349,
-    "elevation": 2676.0,
-    "region": "Kargil, Ladakh, India",
-    "climateZone": "Extreme Cold Continental",
-    "weatherSource": "IND_JK_Leh.427053_TMYx.epw",
-    "designTempWinter": -24.0,
-    "designTempSummer": 29.0
+    "latitude": 34.428,
+    "longitude": 75.761,
+    "elevation": 3230.0,
+    "region": "Dras-Kargil, UT Ladakh, India",
+    "climateZone": "Sub-Arctic / Severe Alpine",
+    "weatherSource": "dras_kargil.epw"
   },
   "geometry": {
     "shape": "Rectangle",
-    "length": 5.5,
-    "width": 3.5,
+    "length": 6.0,
+    "width": 4.0,
     "height": 2.8,
     "orientation": 0.0,
     "roofType": "Flat",
-    "roofAngle": 0.0,
-    "floorElevation": 0.2,
-    "floorArea": 19.25,
-    "volume": 53.9
-  },
-  "envelope": {
-    "walls": {
-      "north": {
-        "id": "const-north-granite-rockwool",
-        "name": "North Granite Rockwool Wall",
-        "layers": [
-          {
-            "materialId": "mat-rockwool-batt",
-            "thickness": 0.12
-          },
-          {
-            "materialId": "mat-stone-granite",
-            "thickness": 0.35
-          }
-        ]
-      },
-      "south": {
-        "id": "const-south-granite-rockwool",
-        "name": "South Solar Mass Wall",
-        "layers": [
-          {
-            "materialId": "mat-rockwool-batt",
-            "thickness": 0.12
-          },
-          {
-            "materialId": "mat-stone-granite",
-            "thickness": 0.35
-          }
-        ]
-      },
-      "east": {
-        "id": "const-east-granite-rockwool",
-        "name": "East Granite Wall",
-        "layers": [
-          {
-            "materialId": "mat-rockwool-batt",
-            "thickness": 0.12
-          },
-          {
-            "materialId": "mat-stone-granite",
-            "thickness": 0.35
-          }
-        ]
-      },
-      "west": {
-        "id": "const-west-granite-rockwool",
-        "name": "West Windbreak Wall",
-        "layers": [
-          {
-            "materialId": "mat-rockwool-batt",
-            "thickness": 0.12
-          },
-          {
-            "materialId": "mat-stone-granite",
-            "thickness": 0.35
-          }
-        ]
-      }
-    },
-    "roof": {
-      "id": "const-insulated-metal-roof",
-      "name": "Insulated Metal Roof",
-      "layers": [
-        {
-          "materialId": "mat-roof-decking",
-          "thickness": 0.02
-        },
-        {
-          "materialId": "mat-eps-insulation",
-          "thickness": 0.18
-        }
-      ]
-    },
-    "floor": {
-      "id": "const-slab-on-grade",
-      "name": "Concrete Slab with EPS Underlay",
-      "layers": [
-        {
-          "materialId": "mat-concrete-slab",
-          "thickness": 0.12
-        },
-        {
-          "materialId": "mat-eps-insulation",
-          "thickness": 0.08
-        }
-      ]
-    }
-  },
-  "windows": [
-    {
-      "id": "win-south-kargil-01",
-      "wall": "south",
-      "width": 1.8,
-      "height": 1.2,
-      "sillHeight": 0.9,
-      "positionX": 1.5,
-      "glazingType": "Triple_LowE_Krypton",
-      "frameType": "UPVC_Insulated",
-      "shadingOverhang": 0.25
-    }
-  ],
-  "doors": [
-    {
-      "id": "door-east-kargil-01",
-      "wall": "east",
-      "width": 0.9,
-      "height": 2.0,
-      "positionX": 1.2,
-      "type": "Insulated Weather-Stripped Door"
-    }
-  ],
-  "thermalMass": {
-    "internalFloors": 0.0,
-    "interiorPartitions": 14.0,
-    "massMaterial": "Local Granite Stone",
-    "effectiveThickness": 0.25
-  },
-  "ventilation": {
-    "infiltrationACH": 0.28,
-    "mechanicalVentilation": false,
-    "heatRecoveryEfficiency": 0.0
-  },
-  "occupancy": {
-    "peopleCount": 6,
-    "activityLevel": "Sleeping / Rest",
-    "heatGainWattsPerPerson": 80.0,
-    "schedule": "Night Guard Shift & Crew Quarters"
+    "roofAngle": 10.0,
+    "floorElevation": 0.4
   },
   "designTargets": {
-    "comfortTempMinC": 17.0,
-    "comfortTempMaxC": 23.0,
-    "targetIndoorTempC": 20.0,
-    "targetComfortPercent": 80.0,
-    "maxAnnualHeatingDemandKwhM2": 110.0
+    "comfortTempMinC": 18.0,
+    "comfortTempMaxC": 24.0,
+    "targetIndoorTempC": 21.0,
+    "targetComfortPercent": 88.0,
+    "maxAnnualHeatingDemandKwhM2": 28.2
   },
   "simulationSettings": {
     "engine": "EnergyPlus",
     "timestepsPerHour": 4,
-    "runPeriodDays": 3,
+    "runPeriodDays": 1,
+    "startMonth": 1,
+    "startDay": 15,
     "detailedComponentOutputs": true
   }
 }

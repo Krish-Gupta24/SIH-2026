@@ -70,15 +70,19 @@ export function Shelter3DDesigner({ model, step, onStepChange, onUpdate, onSimul
   const activeSim = useMemo(() => {
     return (
       simulations.find(
-        (s) => s.projectId === model.project.id && s.status === "completed"
-      ) ||
-      simulations.find((s) => s.status === "completed") ||
-      null
+        (s) =>
+          (s.projectId === model.project.id ||
+            s.projectId === model.id ||
+            s.shelterModel?.id === model.id ||
+            s.shelterModel?.project?.id === model.project.id) &&
+          s.status === "completed" &&
+          Boolean(s.results)
+      ) || null
     );
-  }, [simulations, model.project.id]);
+  }, [simulations, model.project.id, model.id]);
 
   const hourlyStep = useMemo(() => {
-    if (settings.visualization === "model") return null;
+    if (settings.visualization === "model" || !activeSim) return null;
     return calculateHourlyThermalStep(
       model,
       selectedHour,
@@ -165,7 +169,18 @@ export function Shelter3DDesigner({ model, step, onStepChange, onUpdate, onSimul
             <span className="hidden sm:inline">✨ 24h Thermal Field Ready</span>
             <span className="sm:hidden">✨ 24h Ready</span>
           </button>
-        ) : null}
+        ) : (
+          <button
+            type="button"
+            onClick={onSimulate}
+            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/35 hover:bg-amber-500/25 transition-all shadow-xs cursor-pointer mr-1"
+            title="Simulation required to view 24-hour diurnal thermal heat flow"
+          >
+            <Clock className="size-3 text-amber-500" />
+            <span className="hidden sm:inline">Simulation Required for 24h View</span>
+            <span className="sm:hidden">Sim Required</span>
+          </button>
+        )}
         <button aria-label="Undo" disabled={!history.current.length} onClick={undo}><Undo2 /></button>
         <button aria-label="Redo" disabled={!future.current.length} onClick={redo}><Redo2 /></button>
         <button data-active={settings.showGrid} aria-label="Toggle grid" onClick={() => setSetting("showGrid", !settings.showGrid)}><Grid3X3 /></button>
@@ -184,7 +199,7 @@ export function Shelter3DDesigner({ model, step, onStepChange, onUpdate, onSimul
         <div className="cad-stage-progress"><span style={{ width: `${((step + 1) / stages.length) * 100}%` }} /></div>
       </aside>
 
-      <main className="cad-canvas-region">
+      <main className="cad-canvas-region relative">
         <div className="cad-floating-tools">
           <button aria-label="Toggle workflow panel" onClick={() => setLeftOpen(!leftOpen)}>
             <PanelLeft />
@@ -244,10 +259,46 @@ export function Shelter3DDesigner({ model, step, onStepChange, onUpdate, onSimul
           hasSimResults={Boolean(activeSim)}
         />
 
-        {hourlyStep &&
+        {!activeSim &&
           (settings.visualization === "thermal" ||
             settings.visualization === "heat-flow" ||
             settings.visualization === "solar") && (
+            <div className="absolute inset-0 z-20 flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-xs">
+              <div className="w-full max-w-md rounded-3xl border border-border bg-card p-6 shadow-2xl text-center space-y-4">
+                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-500/15 text-amber-600 dark:text-amber-400">
+                  <Clock className="h-6 w-6" />
+                </div>
+                <div className="space-y-1.5">
+                  <h3 className="text-base font-bold text-foreground">Simulation Required for 24h Thermal View</h3>
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    The 24-hour diurnal thermal heat map, surface thermography, and flux vectors require at least one completed physical EnergyPlus simulation run for <strong>{model.project.name}</strong>.
+                  </p>
+                </div>
+                <div className="flex items-center justify-center gap-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setSetting("visualization", "model")}
+                    className="px-4 py-1.5 rounded-full border border-border bg-secondary hover:bg-secondary/80 text-xs font-semibold text-foreground transition-all cursor-pointer"
+                  >
+                    Return to 3D Model
+                  </button>
+                  <button
+                    type="button"
+                    onClick={onSimulate}
+                    className="px-4 py-1.5 rounded-full bg-amber-500 hover:bg-amber-600 text-black font-bold text-xs flex items-center gap-1.5 shadow-md transition-all cursor-pointer"
+                  >
+                    <Play className="size-3.5 fill-black" /> Run Simulation Now
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+        {activeSim &&
+          hourlyStep &&
+          (settings.visualization === "thermal" ||
+            settings.visualization === "heat-flow" ||
+            settings.visualization === "solar") ? (
             <div
               className="cad-timeline-scrubber"
               role="region"
@@ -369,7 +420,7 @@ export function Shelter3DDesigner({ model, step, onStepChange, onUpdate, onSimul
                 </div>
               </div>
             </div>
-          )}
+          ) : null}
         <div className="cad-mode-label"><span>{settings.visualization === "model" ? "Geometry model" : `${settings.visualization.toUpperCase()} preview`}</span><strong>{settings.visualization === "thermal" ? "FLIR false-color IR thermography · Stefan-Boltzmann radiation emission" : settings.visualization === "solar" ? "Direct winter solar irradiance & glazing penetration (Leh Ladakh 34°N)" : settings.visualization === "heat-flow" ? "Envelope thermal bridges & convective currents" : "Editable canonical geometry"}</strong></div>
         <div className="cad-metrics"><span><small>Floor area</small><strong>{area.toFixed(1)} m²</strong></span><span><small>Volume</small><strong>{volume.toFixed(1)} m³</strong></span><span><small>South Glazing</small><strong>{southGlazingRatio.toFixed(1)}% WWR</strong></span><span><small>Solar Harvest</small><strong>~{estDailySolarGainKwh} kWh/d</strong></span><span><small>Openings</small><strong>{model.windows.length}W / {model.doors.length}D</strong></span></div>
         <button className="cad-inspector-toggle" aria-label="Toggle properties panel" onClick={() => setRightOpen(!rightOpen)}><PanelRight /></button>

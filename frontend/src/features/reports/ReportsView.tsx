@@ -331,10 +331,20 @@ export function ReportsView() {
               tone="primary"
               onClick={handleExportPdf}
               disabled={downloadingFormat === "pdf"}
-              className="rounded-full text-xs font-bold"
+              className="rounded-full text-xs font-bold shadow-xs cursor-pointer"
             >
               <Download className="size-3.5" />
-              <span>{downloadingFormat === "pdf" ? "Compiling..." : "Print / PDF (24 Sec)"}</span>
+              <span>{downloadingFormat === "pdf" ? "Compiling PDF..." : "Export PDF Report (24 Sections)"}</span>
+            </ActionButton>
+
+            <ActionButton
+              tone="secondary"
+              onClick={() => window.print()}
+              className="rounded-full text-xs font-semibold cursor-pointer"
+              title="Instant browser print or Save as PDF (< 1 sec)"
+            >
+              <Printer className="size-3.5" />
+              <span>Instant Print / PDF</span>
             </ActionButton>
 
             <ActionButton

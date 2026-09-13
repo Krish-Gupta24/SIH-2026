@@ -175,27 +175,69 @@ export function toBackendPayload(values: ShelterFormValues): Record<string, any>
   const lightingWpm2 = values.internalLoads?.lightingPowerDensityWpm2 ?? 3;
   const equipmentW = values.internalLoads?.equipmentPowerWatts ?? 150;
 
+  const designTargetsObj = {
+    ...values.designTargets,
+    comfortTargetMinC: values.designTargets?.comfortTempMinC ?? 18,
+    comfortTargetMaxC: values.designTargets?.comfortTempMaxC ?? 26,
+    targetIndoorTempC: values.designTargets?.targetIndoorTempC ?? 21,
+    comfortTempMinC: values.designTargets?.comfortTempMinC ?? 18,
+    comfortTempMaxC: values.designTargets?.comfortTempMaxC ?? 26,
+    targetComfortPercent: values.designTargets?.targetComfortPercent ?? 85,
+    comfort_temp_min_c: values.designTargets?.comfortTempMinC ?? 18,
+    comfort_temp_max_c: values.designTargets?.comfortTempMaxC ?? 26,
+    target_indoor_temp_c: values.designTargets?.targetIndoorTempC ?? 21,
+    target_comfort_percent: values.designTargets?.targetComfortPercent ?? 85,
+  };
+
+  const simulationSettingsObj = {
+    ...values.simulationSettings,
+    runPeriodDays: values.simulationSettings?.runPeriodDays ?? 1,
+    run_period_days: values.simulationSettings?.runPeriodDays ?? 1,
+    startMonth: values.simulationSettings?.startMonth ?? 1,
+    start_month: values.simulationSettings?.startMonth ?? 1,
+    startDay: values.simulationSettings?.startDay ?? 15,
+    start_day: values.simulationSettings?.startDay ?? 15,
+    timestepsPerHour: values.simulationSettings?.timestepsPerHour ?? 4,
+    timesteps_per_hour: values.simulationSettings?.timestepsPerHour ?? 4,
+  };
+
+  const internalLoadsObj = {
+    ...values.internalLoads,
+    occupancy: {
+      peopleCount: occupants,
+      sensibleGainWattsPerPerson: activityW,
+      totalWatts: occupants * activityW,
+    },
+    lighting: {
+      totalWatts: lightingWpm2 * floorArea,
+      powerDensityWpm2: lightingWpm2,
+    },
+    equipment: {
+      totalWatts: equipmentW,
+    },
+    occupantsCount: occupants,
+    activityLevelWatts: activityW,
+    lightingPowerDensityWpm2: lightingWpm2,
+    equipmentPowerWatts: equipmentW,
+  };
+
   return {
     id: values.project?.id || "shelter-model",
     project: values.project,
     location: values.location,
     geometry: {
       ...values.geometry,
-      // IDF generator reads roof_type (snake_case) with capitalize() — also send roofType
       roof_type: values.geometry?.roofType,
       roof_angle: values.geometry?.roofAngle,
       floorArea: floorArea,
       volume: floorArea * (values.geometry?.height ?? 3),
     },
-    // IDF generator checks: shelter.envelope.walls OR shelter.envelopeWalls
     envelope: {
       walls: values.envelopeWalls,
       roof: values.roof,
       floor: values.floor,
     },
-    // Also provide top-level envelopeWalls for the fallback chain
     envelopeWalls: values.envelopeWalls,
-    // IDF generator checks: shelter.windows[] OR shelter.openings.windows[]
     windows: values.windows || [],
     doors: values.doors || [],
     openings: {
@@ -203,36 +245,13 @@ export function toBackendPayload(values: ShelterFormValues): Record<string, any>
       doors: values.doors || [],
     },
     thermalMass: values.thermalMass || [],
+    thermal_mass: values.thermalMass || [],
     ventilation: values.ventilation,
-    // IDF generator's VentilationValidator reads both camelCase and snake_case
-    internalLoads: {
-      ...values.internalLoads,
-      // Also provide the nested format the demo case uses
-      occupancy: {
-        peopleCount: occupants,
-        sensibleGainWattsPerPerson: activityW,
-        totalWatts: occupants * activityW,
-      },
-      lighting: {
-        totalWatts: lightingWpm2 * floorArea,
-        powerDensityWpm2: lightingWpm2,
-      },
-      equipment: {
-        totalWatts: equipmentW,
-      },
-      // Keep the flat keys too for the IDF generator fallbacks
-      occupantsCount: occupants,
-      activityLevelWatts: activityW,
-      lightingPowerDensityWpm2: lightingWpm2,
-      equipmentPowerWatts: equipmentW,
-    },
-    designTargets: {
-      ...values.designTargets,
-      // Also provide the backend demo case field names
-      comfortTargetMinC: values.designTargets?.comfortTempMinC ?? 18,
-      comfortTargetMaxC: values.designTargets?.comfortTempMaxC ?? 26,
-      targetIndoorTempC: values.designTargets?.targetIndoorTempC ?? 21,
-    },
-    simulationSettings: values.simulationSettings,
+    internalLoads: internalLoadsObj,
+    internal_loads: internalLoadsObj,
+    designTargets: designTargetsObj,
+    design_targets: designTargetsObj,
+    simulationSettings: simulationSettingsObj,
+    simulation_settings: simulationSettingsObj,
   };
 }

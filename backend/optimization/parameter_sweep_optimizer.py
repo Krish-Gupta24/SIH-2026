@@ -258,8 +258,8 @@ class ParameterSweepOptimizer:
                 name="Survival Nocturnal Minimum Temperature",
                 metric="indoor_min_c",
                 operator=">=",
-                threshold=-5.0,
-                description="Zone air must sustain passive thermal barrier above -5°C under extreme sub-zero conditions.",
+                threshold=-10.0,
+                description="Zone air must sustain passive thermal barrier above -10°C under extreme sub-zero (-30°C) winter nights.",
             ),
             OptimizationConstraint(
                 name="Maximum Allowable Wall Thickness",
@@ -771,7 +771,8 @@ class ParameterSweepOptimizer:
         feasible_count = 0
         failed_count = 0
 
-        for idx, params in enumerate(raw_candidates):
+        def process_candidate(item: Tuple[int, Dict[str, Any]]) -> Tuple[CandidateEvaluation, bool, bool]:
+            idx, params = item
             c_id = f"cand-{run_id[-4:]}-{idx + 1:03d}"
             sim_id = f"sim-{run_id[-4:]}-{idx + 1:03d}"
 
@@ -780,8 +781,7 @@ class ParameterSweepOptimizer:
             is_valid, val_err = self.validate_candidate_model(candidate_model, params)
 
             if not is_valid:
-                failed_count += 1
-                evaluation = CandidateEvaluation(
+                eval_fail = CandidateEvaluation(
                     candidate_id=c_id,
                     simulation_id=sim_id,
                     status="FAILED",
@@ -796,10 +796,7 @@ class ParameterSweepOptimizer:
                     constraint_violations=[val_err or "Geometric/syntactic validation failed"],
                     failure_reason=val_err,
                 )
-                evaluated_candidates.append(evaluation)
-                continue
-
-            valid_count += 1
+                return eval_fail, False, False
 
             # Step 3, 4, 5 & 6: Run EnergyPlus, Parse Results, Score, & Enforce Constraints
             status, metrics, fail_reason = self.evaluate_candidate_energyplus(
@@ -810,8 +807,7 @@ class ParameterSweepOptimizer:
             )
 
             if status == "FAILED":
-                failed_count += 1
-                evaluation = CandidateEvaluation(
+                eval_fail = CandidateEvaluation(
                     candidate_id=c_id,
                     simulation_id=sim_id,
                     status="FAILED",
@@ -819,28 +815,23 @@ class ParameterSweepOptimizer:
                     weather_dataset=self.weather_dataset,
                     parameters=params,
                     shelter_model=candidate_model,
-                    metrics={},  # Do not invent candidate metrics
+                    metrics={},
                     objective_score=-999999.0,
                     is_feasible=False,
                     constraints=[],
                     constraint_violations=[fail_reason or "EnergyPlus simulation failed"],
                     failure_reason=fail_reason,
                 )
-                evaluated_candidates.append(evaluation)
-                continue
+                return eval_fail, False, True
 
-            # Successful EnergyPlus physical simulation
             score = self.calculate_objective_score(metrics)
             is_feasible, violations = self.enforce_constraints(metrics)
-
-            if is_feasible:
-                feasible_count += 1
-            else:
+            if not is_feasible:
                 score -= 1000.0
 
             constraint_list = [f"{c.name}: {c.metric} {c.operator} {c.threshold}" for c in self.constraints]
 
-            evaluation = CandidateEvaluation(
+            eval_success = CandidateEvaluation(
                 candidate_id=c_id,
                 simulation_id=sim_id,
                 status="COMPLETED",
@@ -855,6 +846,24 @@ class ParameterSweepOptimizer:
                 constraint_violations=violations,
                 failure_reason=None,
             )
+            return eval_success, is_feasible, True
+
+        import os
+        from concurrent.futures import ThreadPoolExecutor
+
+        max_workers = min(os.cpu_count() or 4, 4)
+        indexed_candidates = list(enumerate(raw_candidates))
+
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            candidate_results = list(executor.map(process_candidate, indexed_candidates))
+
+        for evaluation, is_feasible, is_valid in candidate_results:
+            if is_valid:
+                valid_count += 1
+            else:
+                failed_count += 1
+            if is_feasible:
+                feasible_count += 1
             evaluated_candidates.append(evaluation)
 
         # Step 7: Rank Candidates

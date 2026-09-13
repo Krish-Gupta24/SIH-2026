@@ -161,5 +161,52 @@ describe("Shelter Zustand Store Unit Tests", () => {
     expect(afterState.comparisonJobIds.length).toBe(0);
     expect(afterState.activeProjectId).toBe("keep-test-2");
   });
+
+  it("deletes a weather dataset and re-points activeWeatherId", () => {
+    const store = useShelterStore.getState();
+    store.resetWeatherDatasetsToDefault();
+
+    const customStation = {
+      id: "wx-custom-upload-99",
+      name: "Custom Field EPW",
+      region: "Custom Post",
+      latitude: 34.0,
+      longitude: 77.0,
+      elevationM: 3800,
+      climateZone: "Alpine",
+      sourceType: "EPW",
+      provenanceStatus: "REAL_DATA",
+      isTestData: false,
+      designWinterMinC: -25,
+      designSummerMaxC: 22,
+      annualHDD18: 5200,
+      epwFileName: "custom.epw",
+    };
+
+    store.addWeatherDataset(customStation);
+    expect(useShelterStore.getState().weatherDatasets.some((w) => w.id === "wx-custom-upload-99")).toBe(true);
+    expect(useShelterStore.getState().activeWeatherId).toBe("wx-custom-upload-99");
+
+    // Delete custom station
+    useShelterStore.getState().deleteWeatherDataset("wx-custom-upload-99");
+    const afterDelete = useShelterStore.getState();
+    expect(afterDelete.weatherDatasets.some((w) => w.id === "wx-custom-upload-99")).toBe(false);
+    expect(afterDelete.activeWeatherId).not.toBe("wx-custom-upload-99");
+  });
+
+  it("resets projects to clean demo presets with 4 regional solutions + baseline", () => {
+    const store = useShelterStore.getState();
+    store.resetProjectsToDefault();
+
+    const currentProjects = useShelterStore.getState().projects;
+    expect(currentProjects.length).toBe(5);
+    const ids = currentProjects.map((p) => p.id);
+    expect(ids).toContain("shelter-ladakh-01");
+    expect(ids).toContain("shelter-kargil-02");
+    expect(ids).toContain("shelter-spiti-03");
+    expect(ids).toContain("shelter-tawang-04");
+    expect(ids).toContain("shelter-baseline-tin");
+    expect(useShelterStore.getState().activeProjectId).toBe("shelter-ladakh-01");
+  });
 });
 

@@ -7,6 +7,8 @@ import {
   DEFAULT_LADAKH_PROJECT,
   DEFAULT_BASELINE_TIN_PROJECT,
   DEFAULT_KARGIL_PROJECT,
+  DEFAULT_SPITI_PROJECT,
+  DEFAULT_TAWANG_PROJECT,
 } from "@/lib/store/use-shelter-store";
 import { Badge } from "@/components/ui/badge";
 
@@ -15,29 +17,48 @@ export function DesignPresetsDropdown() {
 
   const presets = [
     {
-      id: "shelter-baseline-tin",
-      name: "Conventional CGI Tin Barrack (Baseline)",
-      tag: "Uninsulated Baseline",
-      tagTone: "rose",
-      desc: "Standard uninsulated corrugated steel with drafty single glazing. Freezes at -15°C at night demanding continuous Bukhari fuel burning.",
-    },
-    {
       id: "shelter-ladakh-01",
-      name: "Ladakh Passive Solar Outpost (Our Solution)",
-      tag: "Area-Specific Optimum",
+      name: "Leh Ladakh Outpost",
+      comfort: "92% Comfort",
+      tag: "Passive Solar",
       tagTone: "emerald",
       desc: "Engineered passive solar design with 300mm rammed earth Trombe wall, 150mm EPS composite envelope, and Low-E solar aperture.",
     },
     {
-      id: "shelter-siachen-03",
-      name: "Siachen Super-Insulated Pod (Arctic Extreme)",
-      tag: "Vacuum Aerogel",
+      id: "shelter-kargil-02",
+      name: "Dras-Kargil Bunkhouse",
+      comfort: "88% Comfort",
+      tag: "VIP Sub-Zero",
       tagTone: "cyan",
-      desc: "Vacuum aerogel blanket insulation with triple krypton glazing and airtight heat recovery for extreme alpine glacier environments.",
+      desc: "Sub-zero -35°C fortress with local granite bedrock thermal mass, 120mm PIR and VIP panels, triple Low-E krypton glazing, and 88% heat recovery.",
+    },
+    {
+      id: "shelter-spiti-03",
+      name: "Spiti Clerestory",
+      comfort: "91% Comfort",
+      tag: "PCM Latent",
+      tagTone: "purple",
+      desc: "Cold desert high-altitude shelter with 22° south clerestory solar roof, 150mm PIR insulation, and PCM Salt Hydrate 21°C latent thermal storage.",
+    },
+    {
+      id: "shelter-tawang-04",
+      name: "Tawang Timber Cabin",
+      comfort: "93% Comfort",
+      tag: "Mass Timber",
+      tagTone: "amber",
+      desc: "Himalayan Cedar mass timber frame with 160mm hydrophobic rockwool & aerogel blanket, 30° snow-shedding gable roof, and elevated deck.",
+    },
+    {
+      id: "shelter-baseline-tin",
+      name: "CGI Tin Barrack",
+      comfort: "15% Comfort",
+      tag: "Baseline",
+      tagTone: "rose",
+      desc: "Standard uninsulated corrugated steel with drafty single glazing. Freezes at -15°C at night demanding continuous Bukhari fuel burning.",
     },
   ];
 
-  const currentPreset = presets.find((p) => p.id === activeProjectId) || presets[1];
+  const currentPreset = presets.find((p) => p.id === activeProjectId) || presets[0];
 
   const handleSelect = (id: string) => {
     // Check if project exists in store; if deleted/missing, re-instantiate preset archetype
@@ -45,12 +66,14 @@ export function DesignPresetsDropdown() {
     if (existing) {
       setActiveProject(id);
     } else {
-      const presetModel =
-        id === "shelter-baseline-tin"
-          ? DEFAULT_BASELINE_TIN_PROJECT
-          : id === "shelter-siachen-03"
-          ? DEFAULT_KARGIL_PROJECT
-          : DEFAULT_LADAKH_PROJECT;
+      const presetMap: Record<string, typeof DEFAULT_LADAKH_PROJECT> = {
+        "shelter-ladakh-01": DEFAULT_LADAKH_PROJECT,
+        "shelter-kargil-02": DEFAULT_KARGIL_PROJECT,
+        "shelter-spiti-03": DEFAULT_SPITI_PROJECT,
+        "shelter-tawang-04": DEFAULT_TAWANG_PROJECT,
+        "shelter-baseline-tin": DEFAULT_BASELINE_TIN_PROJECT,
+      };
+      const presetModel = presetMap[id] || DEFAULT_LADAKH_PROJECT;
 
       addProject(presetModel);
       setActiveProject(presetModel.id);
@@ -82,15 +105,20 @@ export function DesignPresetsDropdown() {
               title={preset.desc}
             >
               <span
-                className={`h-2 w-2 rounded-full ${
+                className={`h-2 w-2 rounded-full shrink-0 ${
                   preset.tagTone === "rose"
                     ? "bg-rose-500"
                     : preset.tagTone === "emerald"
                     ? "bg-emerald-500"
-                    : "bg-cyan-500"
+                    : preset.tagTone === "cyan"
+                    ? "bg-cyan-500"
+                    : preset.tagTone === "purple"
+                    ? "bg-purple-500"
+                    : "bg-amber-500"
                 }`}
               />
               <span>{preset.name}</span>
+              <span className="text-[10px] opacity-70 font-mono hidden sm:inline">{preset.comfort}</span>
             </button>
           );
         })}

@@ -54,6 +54,7 @@ import { ShelterModel } from "@/types/shelter";
 export function OptimizationView() {
   const {
     projects,
+    simulations,
     activeProjectId,
     setActiveProject,
     updateProject,
@@ -63,6 +64,17 @@ export function OptimizationView() {
   const activeProject = useMemo(() => {
     return projects.find((p) => p.id === activeProjectId) || projects[0] || null;
   }, [projects, activeProjectId]);
+
+  const hasSimulated = useMemo(() => {
+    if (!activeProject) return false;
+    return simulations.some(
+      (s) =>
+        (s.projectId === activeProject.id ||
+          s.shelterModel?.id === activeProject.id ||
+          s.shelterModel?.project?.id === activeProject.id) &&
+        s.status === "completed"
+    );
+  }, [simulations, activeProject]);
 
   // Sweep configuration state
   const [selectedParameters, setSelectedParameters] = useState<SweptParameterId[]>([
@@ -104,20 +116,6 @@ export function OptimizationView() {
       setSweepResult(null);
     }
   }, [activeProject?.id]);
-
-  // Initial auto-sweep on component mount or project update if project exists
-  useEffect(() => {
-    if (activeProject && !sweepResult && !isExecuting) {
-      const initialSweep = runClientParameterSweep(
-        activeProject,
-        selectedParameters,
-        selectedObjective,
-        constraints,
-        25
-      );
-      setSweepResult(initialSweep);
-    }
-  }, [activeProject, sweepResult, isExecuting, selectedParameters, selectedObjective, constraints]);
 
   // Generate Recommendation Report whenever sweepResult or activeProject changes
   const recommendationReport = useMemo(() => {
@@ -312,6 +310,98 @@ export function OptimizationView() {
         onRunSweep={handleRunSweep}
         candidateBudget={candidateBudget}
       />
+
+      {/* Pre-Simulation Guidance: Unsimulated Project Banner */}
+      {!sweepResult && !hasSimulated && (
+        <div className="rounded-[2rem] border border-amber-500/30 bg-amber-500/5 p-8 text-center space-y-4 shadow-sm">
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-500/10 text-amber-600 dark:text-amber-400">
+            <AlertCircle className="h-6 w-6" />
+          </div>
+          <div className="max-w-xl mx-auto space-y-2">
+            <h3 className="text-base font-bold text-foreground">
+              Baseline Simulation Required Before Optimization
+            </h3>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              No completed physical thermal simulations were detected for{" "}
+              <strong className="text-foreground">
+                {activeProject?.project?.name || "this project"}
+              </strong>
+              . Multi-objective optimization algorithms and Pareto frontier rankings require an authentic EnergyPlus physical baseline to calibrate envelope thermal loads and compute comparative delta improvements.
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
+            <Link href="/simulations">
+              <Button
+                size="sm"
+                className="rounded-full bg-primary text-primary-foreground font-semibold px-5 text-xs shadow-sm hover:opacity-90"
+              >
+                <Cpu className="size-3.5 mr-2" />
+                Queue Baseline Simulation
+              </Button>
+            </Link>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleRunSweep}
+              disabled={isExecuting}
+              className="rounded-full border-border bg-card hover:bg-secondary text-foreground text-xs font-semibold px-5"
+            >
+              {isExecuting ? (
+                <>
+                  <RefreshCw className="size-3.5 mr-2 animate-spin" />
+                  Running Sweep...
+                </>
+              ) : (
+                <>
+                  <Sliders className="size-3.5 mr-2" />
+                  Run Direct Exploratory Sweep
+                </>
+              )}
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Baseline Completed: Ready to Sweep Invitation Card */}
+      {!sweepResult && hasSimulated && (
+        <div className="rounded-[2rem] border border-border bg-card/60 p-8 text-center space-y-4 shadow-sm">
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+            <ShieldCheck className="h-6 w-6" />
+          </div>
+          <div className="max-w-xl mx-auto space-y-2">
+            <h3 className="text-base font-bold text-foreground">
+              Baseline Simulation Validated — Ready to Sweep
+            </h3>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              Physical baseline simulation data is available for{" "}
+              <strong className="text-foreground">
+                {activeProject?.project?.name || "this project"}
+              </strong>
+              . Configure your design variables, objective function, and constraints above, then trigger the parameter sweep to generate non-dominated Pareto frontiers and automated engineering recommendations.
+            </p>
+          </div>
+          <div className="flex justify-center pt-2">
+            <Button
+              size="sm"
+              onClick={handleRunSweep}
+              disabled={isExecuting}
+              className="rounded-full bg-primary text-primary-foreground font-bold px-6 text-xs shadow-sm hover:opacity-90"
+            >
+              {isExecuting ? (
+                <>
+                  <RefreshCw className="size-3.5 mr-2 animate-spin" />
+                  Sweeping Candidates...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="size-3.5 mr-2 text-amber-300" />
+                  Run Parameter Sweep ({candidateBudget} Candidates)
+                </>
+              )}
+            </Button>
+          </div>
+        </div>
+      )}
 
       {/* 0 Feasible Guidance Advisory */}
       {sweepResult && sweepResult.feasibleCount === 0 && (

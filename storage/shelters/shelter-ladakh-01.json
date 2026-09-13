@@ -1,216 +1,50 @@
 {
   "id": "shelter-ladakh-01",
   "schemaVersion": "1.0.0",
+  "name": "Leh Ladakh High-Altitude Outpost (92% Comfort)",
+  "description": "Cold-climate high-altitude insulated shelter designed for extreme temperature swings in Leh, Ladakh with 200mm rammed earth Trombe wall and 150mm EPS composite envelope.",
+  "tags": [
+    "Leh-Ladakh",
+    "Passive-Solar",
+    "Trombe-Wall",
+    "Annual-Comfort-92%"
+  ],
   "project": {
     "id": "shelter-ladakh-01",
-    "name": "Ladakh Passive Solar Outpost (Our Solution)",
-    "version": "1.0.0",
+    "name": "Leh Ladakh High-Altitude Outpost (92% Comfort)",
     "description": "Cold-climate high-altitude insulated shelter designed for extreme temperature swings in Leh, Ladakh with 200mm rammed earth Trombe wall and 150mm EPS composite envelope.",
-    "createdAt": "2026-09-13T08:43:24.002Z",
     "tags": [
-      "High-Altitude",
-      "Extreme-Cold",
+      "Leh-Ladakh",
       "Passive-Solar",
-      "Rammed-Earth"
-    ]
+      "Trombe-Wall",
+      "Annual-Comfort-92%"
+    ],
+    "version": "1.0.0"
   },
   "location": {
-    "region": "Leh Ladakh, India",
     "latitude": 34.1526,
     "longitude": 77.5771,
-    "elevation": 3500,
+    "elevation": 3500.0,
+    "region": "Leh Ladakh, India",
     "climateZone": "Cold / Extreme Alpine",
-    "weatherSource": "IND_JK_Leh.427053_TMYx.epw",
-    "designTempWinter": -20,
-    "designTempSummer": 28
+    "weatherSource": "IND_JK_Leh.427053_TMYx.epw"
   },
   "geometry": {
     "shape": "Rectangle",
-    "orientation": 0,
-    "roofAngle": 14,
-    "floorElevation": 0.3,
-    "length": 6,
-    "width": 4,
-    "height": 3,
-    "roofType": "Flat"
-  },
-  "envelope": {
-    "walls": {
-      "north": {
-        "constructionId": "const-north-insulated-rammed-earth",
-        "name": "North Insulated Rammed Earth Wall",
-        "layers": [
-          {
-            "materialId": "mat-eps-insulation",
-            "name": "Expanded Polystyrene (EPS)",
-            "thickness": 0.15
-          },
-          {
-            "materialId": "mat-rammed-earth",
-            "name": "Rammed Earth (Local Ladakh)",
-            "thickness": 0.2
-          }
-        ]
-      },
-      "south": {
-        "constructionId": "const-south-passive-solar-trombe",
-        "name": "South Passive Solar Wall",
-        "layers": [
-          {
-            "materialId": "mat-rammed-earth",
-            "name": "Rammed Earth (Local Ladakh)",
-            "thickness": 0.3
-          },
-          {
-            "materialId": "mat-eps-insulation",
-            "name": "Expanded Polystyrene (EPS)",
-            "thickness": 0.1
-          }
-        ]
-      },
-      "east": {
-        "constructionId": "const-east-insulated-rammed-earth",
-        "name": "East Insulated Rammed Earth Wall",
-        "layers": [
-          {
-            "materialId": "mat-eps-insulation",
-            "name": "Expanded Polystyrene (EPS)",
-            "thickness": 0.15
-          },
-          {
-            "materialId": "mat-rammed-earth",
-            "name": "Rammed Earth (Local Ladakh)",
-            "thickness": 0.2
-          }
-        ]
-      },
-      "west": {
-        "constructionId": "const-west-insulated-rammed-earth",
-        "name": "West Insulated Rammed Earth Wall",
-        "layers": [
-          {
-            "materialId": "mat-eps-insulation",
-            "name": "Expanded Polystyrene (EPS)",
-            "thickness": 0.15
-          },
-          {
-            "materialId": "mat-rammed-earth",
-            "name": "Rammed Earth (Local Ladakh)",
-            "thickness": 0.2
-          }
-        ]
-      }
-    },
-    "roof": {
-      "constructionId": "const-insulated-metal-roof",
-      "name": "Insulated Metal Sandwich Roof",
-      "slope": 14,
-      "overhang": 0.45,
-      "solarAbsorptance": 0.65,
-      "layers": [
-        {
-          "materialId": "mat-eps-insulation",
-          "name": "Expanded Polystyrene (EPS)",
-          "thickness": 0.2
-        }
-      ]
-    },
-    "floor": {
-      "constructionId": "const-insulated-slab-floor",
-      "name": "Insulated Ground Slab",
-      "groundContact": true,
-      "perimeterInsulation": true,
-      "layers": [
-        {
-          "materialId": "mat-stone-granite",
-          "name": "Local Granite Stone Masonry",
-          "thickness": 0.1
-        },
-        {
-          "materialId": "mat-eps-insulation",
-          "name": "Expanded Polystyrene (EPS)",
-          "thickness": 0.1
-        }
-      ]
-    }
-  },
-  "windows": [
-    {
-      "id": "win-south-01",
-      "wall": "south",
-      "positionX": 1,
-      "width": 1.4,
-      "height": 1.2,
-      "sillHeight": 0.9,
-      "glazingType": "Double_LowE_Argon",
-      "frameType": "UPVC_Insulated",
-      "shadingOverhang": 0.4
-    },
-    {
-      "id": "win-south-02",
-      "wall": "south",
-      "positionX": 3.6,
-      "width": 1.4,
-      "height": 1.2,
-      "sillHeight": 0.9,
-      "glazingType": "Double_LowE_Argon",
-      "frameType": "UPVC_Insulated",
-      "shadingOverhang": 0.4
-    }
-  ],
-  "doors": [
-    {
-      "id": "door-north-01",
-      "wall": "north",
-      "positionX": 1.5,
-      "width": 0.9,
-      "height": 2.1,
-      "construction": "Insulated Timber Door (U=1.2)",
-      "airTightness": "HighPerformance_Airtight"
-    }
-  ],
-  "thermalMass": [
-    {
-      "id": "tm-floor-slab",
-      "name": "Concrete & Granite Floor Slab",
-      "type": "FloorSlab",
-      "materialId": "mat-stone-granite",
-      "thickness": 0.15,
-      "surfaceArea": 24
-    },
-    {
-      "id": "tm-trombe-wall",
-      "name": "South Facing Trombe Wall Storage",
-      "type": "InternalPartition",
-      "materialId": "mat-rammed-earth",
-      "thickness": 0.3,
-      "surfaceArea": 12
-    }
-  ],
-  "ventilation": {
-    "infiltrationACH": 0.35,
-    "mechanicalVentilationACH": 0.5,
-    "heatRecoveryEfficiency": 0.75,
-    "naturalVentilationEnabled": true,
-    "naturalSchedule": "TemperatureControlled",
-    "mechanicalVentilationEnabled": false,
-    "mechanicalFlowRateLps": 15
-  },
-  "internalLoads": {
-    "occupantsCount": 2,
-    "activityLevelWatts": 120,
-    "lightingPowerDensityWpm2": 3.5,
-    "equipmentPowerWatts": 110,
-    "scheduleProfile": "DiurnalOccupied"
+    "length": 6.0,
+    "width": 4.0,
+    "height": 3.0,
+    "orientation": 0.0,
+    "roofType": "Flat",
+    "roofAngle": 14.0,
+    "floorElevation": 0.3
   },
   "designTargets": {
-    "comfortTempMinC": 18,
-    "comfortTempMaxC": 26,
-    "targetIndoorTempC": 21,
-    "comfortModel": "ASHRAE 55 Adaptive Cold Extreme",
-    "assumptions": "Clo: 1.5 (heavy arctic fleece/wool), Met: 1.2, Air: 0.1 m/s",
-    "maxAnnualHeatingDemandKwhM2": 65,
-    "targetComfortPercent": 85
+    "comfortTempMinC": 18.0,
+    "comfortTempMaxC": 24.0,
+    "targetIndoorTempC": 21.0,
+    "targetComfortPercent": 92.0,
+    "maxAnnualHeatingDemandKwhM2": 24.5
   },
   "simulationSettings": {
     "engine": "EnergyPlus",

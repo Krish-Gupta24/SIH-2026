@@ -11,7 +11,15 @@ import {
   ArrowLeft,
   Building,
 } from "lucide-react";
-import { useShelterStore } from "@/lib/store/use-shelter-store";
+import {
+  useShelterStore,
+  DEFAULT_LADAKH_PROJECT,
+  DEFAULT_KARGIL_PROJECT,
+  DEFAULT_SPITI_PROJECT,
+  DEFAULT_TAWANG_PROJECT,
+  DEFAULT_BASELINE_TIN_PROJECT,
+} from "@/lib/store/use-shelter-store";
+import { ShelterModel } from "@/types/shelter";
 import { OpenFreeMapPicker } from "@/features/weather/components/OpenFreeMapPicker";
 import { ActionButton } from "@/components/v0/platform-components";
 
@@ -22,44 +30,59 @@ interface NewProjectModalProps {
 
 const ARCHETYPE_PRESETS = [
   {
-    id: "preset-siachen-aerogel",
-    name: "Siachen Glacial Aerogel Pod (5400m)",
-    climate: "Extreme Alpine Glacial (-50°C)",
-    description: "Vacuum insulated glazing, 200mm aerogel core envelope, passive solar thermal mass buffer floor.",
-    dimensions: "6.0m × 3.5m × 2.8m",
-    insulation: "200mm Aerogel (R=14.2)",
-    glazing: "Triple Low-E Argon (U=0.78)",
-    weatherSource: "IND_JK_Leh.427053_TMYx.epw",
-  },
-  {
-    id: "preset-leh-outpost",
-    name: "Leh High-Altitude Passive Solar (3500m)",
-    climate: "Cold Desert Alpine",
-    description: "Stabilized rammed earth thermal flywheel with south-facing solar gain fenestration.",
-    dimensions: "6.0m × 4.0m × 3.0m",
+    id: "shelter-ladakh-01",
+    name: "Leh Ladakh High-Altitude Outpost (92% Comfort)",
+    climate: "Cold Desert Alpine (3,500m)",
+    description: "300mm rammed earth Trombe wall + 150mm EPS composite envelope, double Low-E argon solar aperture, 85% HRV.",
+    dimensions: "6.0m × 4.0m × 3.0m (24 m²)",
     insulation: "150mm EPS (R=4.54)",
-    glazing: "Double Low-E (U=1.4)",
+    glazing: "Double Low-E Argon (U=1.4)",
     weatherSource: "IND_JK_Leh.427053_TMYx.epw",
+    baseModel: DEFAULT_LADAKH_PROJECT,
   },
   {
-    id: "preset-dras-arctic",
-    name: "Dras Sub-Arctic Defense Post (3280m)",
-    climate: "Sub-Arctic Continental (-35°C)",
-    description: "High-density thermal mass floor slab, airtight vestibule air-lock door, quad-layer thermal envelope.",
-    dimensions: "7.0m × 4.5m × 2.8m",
-    insulation: "200mm XPS (R=6.90)",
-    glazing: "Triple Glazed Argon (U=0.8)",
+    id: "shelter-kargil-02",
+    name: "Dras-Kargil Extreme Cold Bunkhouse (88% Comfort)",
+    climate: "Sub-Arctic Continental (-35°C, 3,230m)",
+    description: "250mm local granite mass core, 120mm PIR & VIP vacuum panels, triple Low-E krypton glazing, permafrost barrier.",
+    dimensions: "6.0m × 4.0m × 2.8m (24 m²)",
+    insulation: "120mm PIR & VIP (R=6.90)",
+    glazing: "Triple Low-E Krypton (U=0.78)",
     weatherSource: "dras_kargil.epw",
+    baseModel: DEFAULT_KARGIL_PROJECT,
   },
   {
-    id: "preset-custom",
-    name: "Custom Blank Parametric Archetype",
-    climate: "User-Defined Extreme Climate",
-    description: "Start from a clean slate and configure all 13 envelope and HVAC steps manually in the designer.",
-    dimensions: "6.0m × 4.0m × 2.8m",
-    insulation: "100mm XPS Baseline",
-    glazing: "Double Clear (U=2.6)",
+    id: "shelter-spiti-03",
+    name: "Spiti Valley High-Solar Clerestory (91% Comfort)",
+    climate: "High-Altitude Cold Desert (3,800m)",
+    description: "22° south high-gain clerestory shed roof, 150mm PIR rigid insulation, PCM Salt Hydrate 21°C latent thermal panels.",
+    dimensions: "6.5m × 4.0m × 3.2m (26 m²)",
+    insulation: "150mm PIR Foam (R=6.25)",
+    glazing: "Double Low-E Argon (U=1.3)",
+    weatherSource: "spiti_valley.epw",
+    baseModel: DEFAULT_SPITI_PROJECT,
+  },
+  {
+    id: "shelter-tawang-04",
+    name: "Tawang Eastern Himalaya Timber Cabin (93% Comfort)",
+    climate: "Montane Temperate Alpine (3,048m)",
+    description: "Himalayan Cedar mass timber frame with 160mm hydrophobic rockwool & aerogel blanket, 30° snow-shedding gable roof.",
+    dimensions: "7.0m × 4.5m × 3.0m (31.5 m²)",
+    insulation: "160mm Mineral Wool + Aerogel (R=5.8)",
+    glazing: "Triple Low-E Krypton (U=0.8)",
+    weatherSource: "tawang.epw",
+    baseModel: DEFAULT_TAWANG_PROJECT,
+  },
+  {
+    id: "shelter-baseline-tin",
+    name: "CGI Tin Barrack (Baseline Uninsulated - 15% Comfort)",
+    climate: "Uninsulated Benchmark (Freezes at -15°C)",
+    description: "Standard corrugated galvanized iron with drafty single glazing. Demands continuous Bukhari fuel burning.",
+    dimensions: "6.0m × 4.0m × 2.6m (24 m²)",
+    insulation: "0mm (Uninsulated Bare Sheet)",
+    glazing: "Single Clear 4mm (U=5.8)",
     weatherSource: "IND_JK_Leh.427053_TMYx.epw",
+    baseModel: DEFAULT_BASELINE_TIN_PROJECT,
   },
 ];
 
@@ -88,7 +111,7 @@ export function NewProjectModal({ isOpen, onClose }: NewProjectModalProps) {
 
   if (!isOpen) return null;
 
-  const handleLocationChange = (loc: {
+  const handleLocationSelected = (loc: {
     latitude: number;
     longitude: number;
     elevation: number;
@@ -107,113 +130,27 @@ export function NewProjectModal({ isOpen, onClose }: NewProjectModalProps) {
 
   const handleCreateProject = () => {
     const archetype = ARCHETYPE_PRESETS.find((a) => a.id === selectedArchetype) || ARCHETYPE_PRESETS[0];
+    const base = archetype.baseModel;
 
-    const newModel: any = {
+    const newModel: ShelterModel = {
+      ...base,
       id: projectId,
       project: {
+        ...base.project,
         id: projectId,
         name: projectName,
         description,
         version: "1.0.0",
         createdAt: new Date().toISOString(),
-        tags: ["high-altitude", "defense", locationName.split(",")[0].toLowerCase().trim()],
+        updatedAt: new Date().toISOString(),
       },
       location: {
+        ...base.location,
         latitude,
         longitude,
         elevation,
         region: locationName,
-        climateZone: elevation > 4500 ? "Extreme Cold Alpine (ASHRAE 8)" : "Cold / Sub-Arctic",
         weatherSource: weatherSource || archetype.weatherSource,
-        designTempWinter: elevation > 4500 ? -35.0 : -20.0,
-        designTempSummer: 22.0,
-      },
-      geometry: {
-        lengthM: 6.0,
-        widthM: 4.0,
-        wallHeightM: 2.8,
-        orientationDeg: 0,
-        roofType: "shed",
-        roofPitchDeg: 15.0,
-        overhangM: 0.5,
-        foundationType: "slab_on_grade",
-        permafrostProtection: elevation > 4000,
-        internalPartitionsCount: 1,
-      },
-      walls: {
-        constructionType: "mass_composite",
-        exteriorFinish: "weather_resistant_render",
-        structuralCore: "stabilized_rammed_earth",
-        structuralThicknessMm: 200,
-        insulationMaterial: selectedArchetype.includes("aerogel") ? "aerogel_blanket" : "extruded_polystyrene",
-        insulationThicknessMm: selectedArchetype.includes("aerogel") ? 200 : 150,
-        interiorFinish: "gypsum_board",
-        cavityAirGapMm: 25,
-      },
-      roof: {
-        roofCovering: "standing_seam_metal",
-        insulationMaterial: "extruded_polystyrene",
-        insulationThicknessMm: 200,
-        ceilingFinish: "gypsum_board",
-        snowLoadDesignKnM2: elevation > 4000 ? 5.0 : 3.5,
-        solarReflectanceRooftop: 0.3,
-      },
-      floor: {
-        slabThicknessMm: 150,
-        subSlabInsulationMaterial: "extruded_polystyrene",
-        subSlabInsulationThicknessMm: 150,
-        perimeterInsulationDepthM: 1.0,
-        finishedFloorType: "insulated_timber_deck",
-      },
-      windows: {
-        glazingType: selectedArchetype.includes("aerogel") ? "triple_low_e_argon" : "double_low_e_argon",
-        frameType: "thermally_broken_upvc",
-        windowToWallRatioSouth: 0.25,
-        windowToWallRatioNorth: 0.05,
-        windowToWallRatioEast: 0.1,
-        windowToWallRatioWest: 0.1,
-        shadingType: "automated_insulated_shutter",
-        overhangDepthM: 0.4,
-      },
-      doors: {
-        doorsCount: 1,
-        doorType: "insulated_steel",
-        doorAreaM2: 2.1,
-        airlockVestibule: true,
-        weatherStrippingQuality: "high_performance_military",
-      },
-      thermalMass: {
-        internalMassType: "phase_change_material",
-        massSurfaceAreaM2: 25.0,
-        massThicknessMm: 30,
-        trombeWall: true,
-        trombeWallAreaM2: 8.0,
-      },
-      ventilation: {
-        infiltrationRateAch: 0.08,
-        mechanicalVentilation: true,
-        heatRecoveryEfficiency: 0.85,
-        minimumFreshAirLpsPerPerson: 10,
-        ventilationControlStrategy: "demand_controlled_co2",
-      },
-      internalLoads: {
-        occupantsCount: 4,
-        activityLevelW: 120,
-        lightingPowerDensityWPerM2: 5,
-        equipmentPowerDensityWPerM2: 3,
-      },
-      designTargets: {
-        comfortTempMinC: 18,
-        comfortTempMaxC: 24,
-        targetComfortPercent: 85,
-        maxAnnualHeatingDemandKwhM2: 35,
-      },
-      simulationSettings: {
-        engine: "EnergyPlus",
-        simulationType: "Annual",
-        timestepsPerHour: 4,
-        solarDistribution: "FullInteriorAndExterior",
-        terrainType: "Country",
       },
     };
 
@@ -360,7 +297,7 @@ export function NewProjectModal({ isOpen, onClose }: NewProjectModalProps) {
                 initialLongitude={longitude}
                 initialElevation={elevation}
                 initialLocationName={locationName}
-                onLocationChange={handleLocationChange}
+                onLocationChange={handleLocationSelected}
                 onEpwGenerated={handleEpwGenerated}
                 height="370px"
               />

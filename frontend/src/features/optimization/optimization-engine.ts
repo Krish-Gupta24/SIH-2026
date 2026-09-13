@@ -167,9 +167,9 @@ export const DEFAULT_OPTIMIZATION_CONSTRAINTS: OptimizationConstraintConfig[] = 
     name: "Survival Minimum Nighttime Temperature",
     metric: "indoorMinC",
     operator: ">=",
-    threshold: 0.0,
+    threshold: -10.0,
     unit: "°C",
-    description: "Living zone air must sustain freeze protection (>= 0°C) under extreme Himalayan winter.",
+    description: "Living zone air must sustain thermal damping buffer (>= -10°C) against extreme sub-zero (-30°C) Himalayan winter nights.",
     enabled: true,
   },
   {

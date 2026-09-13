@@ -538,3 +538,56 @@ def reverse_geocode_location(latitude: float, longitude: float) -> Dict[str, Any
     }
 
 
+PROTECTED_CANONICAL_EPWS = {
+    "ind_jk_leh.420270_ishrae.epw",
+    "ind_jk_leh.427053_tmyx.epw",
+    "dras_kargil.epw",
+    "spiti_valley.epw",
+    "tawang.epw",
+    "siachen_glacier.epw",
+    "test_weather.epw",
+}
+
+
+@router.delete("/datasets/{filename}", summary="Delete user-uploaded or synthesized weather dataset")
+@router.delete("/{filename}", summary="Delete user-uploaded or synthesized weather dataset", include_in_schema=False)
+async def delete_weather_dataset(filename: str) -> Dict[str, Any]:
+    """Permanently delete user-uploaded or synthesized EPW dataset while protecting canonical benchmarks."""
+    clean_name = sanitize_filename(filename)
+    if clean_name.lower() in PROTECTED_CANONICAL_EPWS:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Cannot delete protected canonical benchmark dataset '{clean_name}'.",
+        )
+
+    deleted_paths = []
+    for wdir in WEATHER_DIRS:
+        target = (wdir / clean_name).resolve()
+        # Security check: ensure target is inside allowed directory
+        try:
+            target.relative_to(wdir)
+        except ValueError:
+            continue
+        if target.exists() and target.is_file():
+            try:
+                target.unlink()
+                deleted_paths.append(str(target))
+            except Exception as e:
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail=f"Failed to delete {target.name}: {str(e)}",
+                )
+
+    if not deleted_paths:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Weather dataset '{clean_name}' not found or already deleted.",
+        )
+
+    return {
+        "success": True,
+        "message": f"Successfully deleted weather dataset '{clean_name}'.",
+        "deleted_paths": deleted_paths,
+    }
+
+

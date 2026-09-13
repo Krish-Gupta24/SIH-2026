@@ -73,7 +73,7 @@ export const WIZARD_STEPS = [
   { id: 13, name: "Simulation", description: "Engine & Execution", icon: Cpu },
 ];
 
-import { modelToFormValues, formValuesToModel, step2dTo3d } from "@/lib/store/shelter-model-adapter";
+import { modelToFormValues, formValuesToModel, toBackendPayload, step2dTo3d } from "@/lib/store/shelter-model-adapter";
 
 export function ShelterDesignerWizard() {
   const {
@@ -278,72 +278,16 @@ export function ShelterDesignerWizard() {
     setIsSubmitting(true);
     setSubmissionError(null);
     try {
-      // Map form values to canonical ShelterModel payload expected by simulation API
+      // Map form values to canonical ShelterModel payload expected by simulation API (all 13 steps)
+      const backendShelter = toBackendPayload(values);
       const payload = {
-        shelter_model: {
-          id: values.project.id,
-          name: values.project.name,
-          version: values.project.version,
-          description: values.project.description,
-          tags: values.project.tags,
-          location: {
-            latitude: values.location.latitude,
-            longitude: values.location.longitude,
-            elevation: values.location.elevation,
-            region: values.location.region,
-            climate_zone: values.location.climateZone,
-            weather_source: values.location.weatherSource,
-          },
-          geometry: {
-            shape: values.geometry.shape,
-            length: values.geometry.length,
-            width: values.geometry.width,
-            height: values.geometry.height,
-            orientation: values.geometry.orientation,
-            roof_type: values.geometry.roofType,
-            roof_angle: values.geometry.roofAngle,
-            floor_elevation: values.geometry.floorElevation,
-          },
-          envelope: {
-            walls: {
-              north: {
-                layers: values.envelopeWalls.north.layers.map((l) => ({ material_id: l.materialId, thickness: l.thickness })),
-              },
-              south: {
-                layers: values.envelopeWalls.south.layers.map((l) => ({ material_id: l.materialId, thickness: l.thickness })),
-              },
-              east: {
-                layers: values.envelopeWalls.east.layers.map((l) => ({ material_id: l.materialId, thickness: l.thickness })),
-              },
-              west: {
-                layers: values.envelopeWalls.west.layers.map((l) => ({ material_id: l.materialId, thickness: l.thickness })),
-              },
-            },
-            roof: {
-              layers: values.roof.layers.map((l) => ({ material_id: l.materialId, thickness: l.thickness })),
-            },
-            floor: {
-              layers: values.floor.layers.map((l) => ({ material_id: l.materialId, thickness: l.thickness })),
-            },
-            windows: values.windows.map((w) => ({
-              id: w.id,
-              wall: w.wall,
-              width: w.width,
-              height: w.height,
-              sill_height: w.sillHeight,
-              position_x: w.positionX,
-            })),
-            doors: values.doors.map((d) => ({
-              id: d.id,
-              wall: d.wall,
-              width: d.width,
-              height: d.height,
-              position_x: d.positionX,
-            })),
-          },
-        },
+        shelter_model: backendShelter,
         weather_file: values.location.weatherSource || "IND_JK_Leh.427053_TMYx.epw",
-        run_period_days: values.simulationSettings.runPeriodDays,
+        run_period_days: values.simulationSettings?.runPeriodDays ?? 1,
+        start_month: values.simulationSettings?.startMonth ?? 1,
+        start_day: values.simulationSettings?.startDay ?? 15,
+        timestep: values.simulationSettings?.timestepsPerHour ?? 4,
+        is_annual: Boolean(values.simulationSettings?.runPeriodDays === 365),
         timeout_seconds: 600,
         allow_test_data: Boolean(allowTestDataOverride),
       };

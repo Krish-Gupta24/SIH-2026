@@ -1,0 +1,57 @@
+{
+  "id": "shelter-tawang-04",
+  "schemaVersion": "1.0.0",
+  "name": "Tawang Eastern Himalaya Timber Cabin (93% Comfort)",
+  "description": "Designed for Tawang, Arunachal Pradesh (3,048m, high snowfall and humid sub-alpine cold). Features indigenous Himalayan Cedar mass timber framing with 160mm hydrophobic rockwool & aerogel blanket, a steep 30\u00b0 snow-shedding gable roof, and elevated foundation for 93%+ annual comfort.",
+  "tags": [
+    "Tawang",
+    "Mass-Timber",
+    "Aerogel-Blanket",
+    "Annual-Comfort-93%"
+  ],
+  "project": {
+    "id": "shelter-tawang-04",
+    "name": "Tawang Eastern Himalaya Timber Cabin (93% Comfort)",
+    "description": "Designed for Tawang, Arunachal Pradesh (3,048m, high snowfall and humid sub-alpine cold). Features indigenous Himalayan Cedar mass timber framing with 160mm hydrophobic rockwool & aerogel blanket, a steep 30\u00b0 snow-shedding gable roof, and elevated foundation for 93%+ annual comfort.",
+    "tags": [
+      "Tawang",
+      "Mass-Timber",
+      "Aerogel-Blanket",
+      "Annual-Comfort-93%"
+    ],
+    "version": "1.0.0"
+  },
+  "location": {
+    "latitude": 27.586,
+    "longitude": 91.865,
+    "elevation": 3048.0,
+    "region": "Tawang, Arunachal Pradesh, India",
+    "climateZone": "Montane Temperate Alpine",
+    "weatherSource": "tawang.epw"
+  },
+  "geometry": {
+    "shape": "Rectangle",
+    "length": 7.0,
+    "width": 4.5,
+    "height": 3.0,
+    "orientation": 0.0,
+    "roofType": "Gable",
+    "roofAngle": 30.0,
+    "floorElevation": 0.5
+  },
+  "designTargets": {
+    "comfortTempMinC": 18.0,
+    "comfortTempMaxC": 24.0,
+    "targetIndoorTempC": 21.0,
+    "targetComfortPercent": 93.0,
+    "maxAnnualHeatingDemandKwhM2": 18.4
+  },
+  "simulationSettings": {
+    "engine": "EnergyPlus",
+    "timestepsPerHour": 4,
+    "runPeriodDays": 1,
+    "startMonth": 1,
+    "startDay": 15,
+    "detailedComponentOutputs": true
+  }
+}

@@ -359,11 +359,29 @@ export function SimulationsView() {
     }
   };
 
+  const [filterTab, setFilterTab] = useState<"all" | "active" | "completed" | "failed">("all");
+
   const totalRuns = simulations.length;
   const completedRuns = simulations.filter((s) => s.status === "completed").length;
   const activeRuns = simulations.filter(
     (s) => s.status === "running" || s.status === "queued" || s.status === "preparing"
   ).length;
+  const failedRuns = simulations.filter((s) => s.status === "failed").length;
+
+  const filteredSimulations = React.useMemo(() => {
+    switch (filterTab) {
+      case "active":
+        return simulations.filter(
+          (s) => s.status === "running" || s.status === "queued" || s.status === "preparing"
+        );
+      case "completed":
+        return simulations.filter((s) => s.status === "completed");
+      case "failed":
+        return simulations.filter((s) => s.status === "failed");
+      default:
+        return simulations;
+    }
+  }, [simulations, filterTab]);
 
   const renderStatusBadge = (status: string, error?: string) => {
     switch (status) {
@@ -834,17 +852,36 @@ export function SimulationsView() {
 
       {/* Queue Stat Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <div className="rounded-[2rem] border border-border bg-card p-6 shadow-[0_20px_55px_rgba(0,0,0,.04)]">
-          <div className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Active Queue</div>
-          <div className="text-3xl font-bold tracking-tight text-foreground mt-2">{activeRuns}</div>
+        <button
+          type="button"
+          onClick={() => setFilterTab("active")}
+          className={`rounded-[2rem] border text-left p-6 shadow-[0_20px_55px_rgba(0,0,0,.04)] transition-all cursor-pointer ${
+            filterTab === "active"
+              ? "border-sky-500 bg-sky-500/10 ring-2 ring-sky-500/20"
+              : "border-border bg-card hover:border-sky-500/50"
+          }`}
+        >
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Active Queue</span>
+            {activeRuns > 0 && <RotateCw className="size-3.5 text-sky-500 animate-spin" />}
+          </div>
+          <div className="text-3xl font-bold tracking-tight text-sky-600 dark:text-sky-400 mt-2">{activeRuns}</div>
           <p className="text-[10px] text-muted-foreground mt-1">Executing in background</p>
-        </div>
+        </button>
 
-        <div className="rounded-[2rem] border border-border bg-card p-6 shadow-[0_20px_55px_rgba(0,0,0,.04)]">
+        <button
+          type="button"
+          onClick={() => setFilterTab("completed")}
+          className={`rounded-[2rem] border text-left p-6 shadow-[0_20px_55px_rgba(0,0,0,.04)] transition-all cursor-pointer ${
+            filterTab === "completed"
+              ? "border-emerald-500 bg-emerald-500/10 ring-2 ring-emerald-500/20"
+              : "border-border bg-card hover:border-emerald-500/50"
+          }`}
+        >
           <div className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Completed Runs</div>
           <div className="text-3xl font-bold tracking-tight text-emerald-600 dark:text-emerald-400 mt-2">{completedRuns}</div>
           <p className="text-[10px] text-muted-foreground mt-1">Validated thermal records</p>
-        </div>
+        </button>
 
         <div className="rounded-[2rem] border border-border bg-card p-6 shadow-[0_20px_55px_rgba(0,0,0,.04)]">
           <div className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Engine In Use</div>
@@ -859,6 +896,59 @@ export function SimulationsView() {
             Open Comparison &rarr;
           </Link>
         </div>
+      </div>
+
+      {/* Active Queue Live Progress Banner */}
+      {activeRuns > 0 && (
+        <div className="rounded-2xl border border-sky-500/30 bg-sky-500/10 p-4 flex items-center justify-between gap-3 text-xs">
+          <div className="flex items-center gap-2.5">
+            <RotateCw className="size-4 text-sky-500 animate-spin shrink-0" />
+            <div>
+              <span className="font-bold text-foreground">
+                {activeRuns} {activeRuns === 1 ? "simulation is" : "simulations are"} currently active in the execution queue.
+              </span>
+              <p className="text-[11px] text-muted-foreground mt-0.5">
+                EnergyPlus thermodynamic balance equations are executing in isolated processes. Results will auto-update upon convergence.
+              </p>
+            </div>
+          </div>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => setFilterTab("active")}
+            className="rounded-full text-xs font-semibold shrink-0 cursor-pointer"
+          >
+            View Active Queue ({activeRuns})
+          </Button>
+        </div>
+      )}
+
+      {/* Filter Tabs */}
+      <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
+        <div className="flex items-center gap-1.5 rounded-full border border-border bg-secondary/40 p-1">
+          {[
+            { id: "all", label: `All Jobs (${totalRuns})` },
+            { id: "active", label: `Active Queue (${activeRuns})` },
+            { id: "completed", label: `Completed (${completedRuns})` },
+            { id: "failed", label: `Failed (${failedRuns})` },
+          ].map((tab) => (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => setFilterTab(tab.id as any)}
+              className={`rounded-full px-3.5 py-1 text-xs font-semibold transition-all cursor-pointer ${
+                filterTab === tab.id
+                  ? "bg-foreground text-background shadow-xs"
+                  : "text-muted-foreground hover:text-foreground hover:bg-secondary"
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+        <span className="text-xs text-muted-foreground">
+          Showing {filteredSimulations.length} of {totalRuns} jobs
+        </span>
       </div>
 
       {/* Simulations Table */}
@@ -878,14 +968,20 @@ export function SimulationsView() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {simulations.length === 0 ? (
+              {filteredSimulations.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={8} className="text-center py-8 text-slate-500">
-                    No simulation jobs found. Launch one from the Designer or Project Details.
+                    {filterTab === "active"
+                      ? "No active simulations in queue. Dispatch one above or from the 3D Designer."
+                      : filterTab === "completed"
+                      ? "No completed simulation runs found."
+                      : filterTab === "failed"
+                      ? "No failed simulation runs."
+                      : "No simulation jobs found. Launch one from the Designer or Project Details."}
                   </TableCell>
                 </TableRow>
               ) : (
-                simulations.map((sim) => {
+                filteredSimulations.map((sim) => {
                   const isCompared = comparisonJobIds.includes(sim.id);
                   return (
                     <TableRow key={sim.id}>
