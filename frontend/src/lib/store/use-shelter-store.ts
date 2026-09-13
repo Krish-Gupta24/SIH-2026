@@ -1908,21 +1908,48 @@ export const useShelterStore = create<ShelterStoreState>()(
 
           // 1. Sync persistent projects from backend (storage/shelters & DB)
           const backendShelters = await api.projects.list().catch(() => null);
-          if (Array.isArray(backendShelters) && backendShelters.length > 0) {
+          if (Array.isArray(backendShelters)) {
             const normalizedShelters: ShelterModel[] = backendShelters
               .filter((s: any) => s && s.id)
               .map((s: any) => normalizeShelterModel(s));
+            const backendIds = new Set(normalizedShelters.map((s) => s.id));
 
             set((state) => {
               const deletedIds = new Set(state.deletedProjectIds || []);
-              const existingIds = new Set(state.projects.map((p) => p.id));
-              const additions = normalizedShelters.filter(
-                (ns) => !existingIds.has(ns.id) && !deletedIds.has(ns.id)
+
+              // The backend is the single source of truth across all devices.
+              // Keep projects that exist on backend and haven't been deleted locally.
+              const validBackendProjects = normalizedShelters.filter((ns) => !deletedIds.has(ns.id));
+              // Keep any purely local drafts that start with 'draft-'
+              const localDrafts = state.projects.filter(
+                (p) => !backendIds.has(p.id) && !deletedIds.has(p.id) && p.id.startsWith("draft-")
               );
-              if (additions.length > 0) {
-                return { projects: [...state.projects, ...additions] };
+              const nextProjects = [...validBackendProjects, ...localDrafts];
+
+              // Check if project list actually changed to avoid spurious state updates
+              const currentIds = state.projects.map((p) => p.id).join(",");
+              const nextIds = nextProjects.map((p) => p.id).join(",");
+              if (currentIds === nextIds && state.projects.length === nextProjects.length) {
+                return state;
               }
-              return state;
+
+              let nextActiveId = state.activeProjectId;
+              if (!nextProjects.some((p) => p.id === nextActiveId)) {
+                nextActiveId = nextProjects[0]?.id || "";
+              }
+
+              // Purge simulations belonging to projects that no longer exist
+              const remainingIds = new Set(nextProjects.map((p) => p.id));
+              const nextSimulations = state.simulations.filter((s) => remainingIds.has(s.projectId));
+              const nextJobIds = new Set(nextSimulations.map((s) => s.id));
+              const nextComparisons = state.comparisonJobIds.filter((cid) => nextJobIds.has(cid));
+
+              return {
+                projects: nextProjects,
+                activeProjectId: nextActiveId,
+                simulations: nextSimulations,
+                comparisonJobIds: nextComparisons,
+              };
             });
           }
 
