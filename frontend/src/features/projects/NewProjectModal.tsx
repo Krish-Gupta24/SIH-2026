@@ -88,7 +88,7 @@ const ARCHETYPE_PRESETS = [
 
 export function NewProjectModal({ isOpen, onClose }: NewProjectModalProps) {
   const router = useRouter();
-  const { addProject, setActiveProject } = useShelterStore();
+  const { addProject, setActiveProject, setActiveWeather, weatherDatasets } = useShelterStore();
 
   const [step, setStep] = useState<1 | 2 | 3>(1);
 
@@ -104,7 +104,7 @@ export function NewProjectModal({ isOpen, onClose }: NewProjectModalProps) {
   const [longitude, setLongitude] = useState(77.5771);
   const [elevation, setElevation] = useState(3500.0);
   const [locationName, setLocationName] = useState("Leh, Ladakh, India");
-  const [weatherSource, setWeatherSource] = useState("IND_JK_Leh.427053_TMYx.epw");
+  const [weatherSource, setWeatherSource] = useState<string | null>(null);
 
   // Step 3: Archetype Choice
   const [selectedArchetype, setSelectedArchetype] = useState(ARCHETYPE_PRESETS[0].id);
@@ -122,6 +122,17 @@ export function NewProjectModal({ isOpen, onClose }: NewProjectModalProps) {
     setLongitude(loc.longitude);
     setElevation(loc.elevation);
     setLocationName(loc.locality);
+
+    // Automatic regional weather mapping based on proximity
+    if (Math.abs(loc.latitude - 34.43) < 0.8 && Math.abs(loc.longitude - 75.75) < 1.0) {
+      setWeatherSource("dras_kargil.epw");
+    } else if (Math.abs(loc.latitude - 32.25) < 0.8 && Math.abs(loc.longitude - 78.03) < 1.0) {
+      setWeatherSource("spiti_valley.epw");
+    } else if (Math.abs(loc.latitude - 27.59) < 1.0 && Math.abs(loc.longitude - 91.87) < 1.5) {
+      setWeatherSource("tawang.epw");
+    } else if (Math.abs(loc.latitude - 34.15) < 0.8 && Math.abs(loc.longitude - 77.58) < 1.0) {
+      setWeatherSource("IND_JK_Leh.427053_TMYx.epw");
+    }
   };
 
   const handleEpwGenerated = (epwFile: string) => {
@@ -131,6 +142,7 @@ export function NewProjectModal({ isOpen, onClose }: NewProjectModalProps) {
   const handleCreateProject = () => {
     const archetype = ARCHETYPE_PRESETS.find((a) => a.id === selectedArchetype) || ARCHETYPE_PRESETS[0];
     const base = archetype.baseModel;
+    const finalWeather = weatherSource || archetype.weatherSource;
 
     const newModel: ShelterModel = {
       ...base,
@@ -150,12 +162,19 @@ export function NewProjectModal({ isOpen, onClose }: NewProjectModalProps) {
         longitude,
         elevation,
         region: locationName,
-        weatherSource: weatherSource || archetype.weatherSource,
+        weatherSource: finalWeather,
       },
     };
 
     addProject(newModel);
     setActiveProject(projectId);
+
+    // Synchronize active weather station in the global store
+    const matched = weatherDatasets.find((w) => w.epwFileName === finalWeather);
+    if (matched) {
+      setActiveWeather(matched.id);
+    }
+
     onClose();
     router.push("/designer");
   };

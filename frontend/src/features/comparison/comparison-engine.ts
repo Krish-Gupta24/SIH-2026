@@ -90,10 +90,12 @@ export function evaluateObjectiveWinner(
 
     switch (objectiveId) {
       case "passive-resilience": {
-        // Score primarily on Min Indoor Temp (°C), with bonus for damping ratio
+        // Score primarily on Min Indoor Temp (°C) mapped to 0-75 pts base, with up to 25 pts for damping
         const minTemp = summary.indoorMinC;
         const damping = summary.diurnalSwingDampingPct ?? 0;
-        scoresByJobId[job.id] = Number((minTemp * 3.5 + damping * 0.4).toFixed(2));
+        const tempBase = Math.min(75, Math.max(0, (minTemp + 30) * (75 / 45)));
+        const dampBonus = Math.min(25, Math.max(0, damping * 0.25));
+        scoresByJobId[job.id] = Number((tempBase + dampBonus).toFixed(1));
         break;
       }
       case "minimize-energy": {
@@ -135,8 +137,8 @@ export function evaluateObjectiveWinner(
   const winScore = scoresByJobId[winner?.id] ?? 0;
   const runnerScore = scoresByJobId[runnerUp?.id] ?? 0;
   const marginPct =
-    runnerScore > 0
-      ? Math.round(((winScore - runnerScore) / runnerScore) * 100)
+    runnerScore > 0.1
+      ? Math.max(0, Math.round(((winScore - runnerScore) / runnerScore) * 100))
       : 0;
 
   const winSummary = winner?.results?.summary;
@@ -157,8 +159,11 @@ export function evaluateObjectiveWinner(
         `Zero reliance on auxiliary electrical heaters or diesel gensets under freeze-up risks.`
       );
     } else if (objectiveId === "minimize-energy") {
+      const fuelReduction = runnerSummary.heatingDemandKwhM2 > 0.01
+        ? `${Math.max(0, Math.round(((runnerSummary.heatingDemandKwhM2 - winSummary.heatingDemandKwhM2) / runnerSummary.heatingDemandKwhM2) * 100))}%`
+        : "significant";
       rationalePoints.push(
-        `Consumes only ${winSummary.heatingDemandKwhM2} kWh/m²·a space heating demand, reducing fuel requirements by ${Math.round(((runnerSummary.heatingDemandKwhM2 - winSummary.heatingDemandKwhM2) / runnerSummary.heatingDemandKwhM2) * 100)}%.`
+        `Consumes only ${winSummary.heatingDemandKwhM2} kWh/m²·a space heating demand, reducing fuel requirements by ${fuelReduction}.`
       );
       rationalePoints.push(
         `Maintains compliance with winter comfort targets with ${winSummary.comfortHoursPct}% hours inside the comfort boundary.`

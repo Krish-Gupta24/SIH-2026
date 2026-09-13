@@ -94,6 +94,18 @@ class GlazingDatabase:
                 status=MaterialStatus.VERIFIED,
                 notes="Ultra-low heat loss assembly optimized for sub-zero alpine Ladakh shelters.",
             ),
+            GlazingDefinition(
+                id="Vacuum_Insulated_Glazing",
+                name="Vacuum Insulated Glazing (VIG - 8.3mm Slim Profile)",
+                u_value=0.60,
+                shgc=0.35,
+                visible_transmittance=0.65,
+                cost_per_m2=320.0,
+                source="ISO 19916-1 / NFRC 100 / JIS R 3209",
+                provenance="4mm Low-E tempered glass + 0.3mm vacuum cavity (<0.1 Pa) with micro-pillar array + 4mm clear float",
+                status=MaterialStatus.VERIFIED,
+                notes="State-of-the-art slim profile vacuum insulated glazing with ultra-low thermal transmittance (U=0.60 W/m²K) for severe arctic/alpine outposts.",
+            ),
         ]
 
         for g in assemblies:
@@ -112,6 +124,11 @@ class GlazingDatabase:
             "triple_lowe_krypton": "Triple_LowE_Krypton",
             "triplelowekrypton": "Triple_LowE_Krypton",
             "triple_low_e": "Triple_LowE_Krypton",
+            "vacuum": "Vacuum_Insulated_Glazing",
+            "vacuum_insulated_glazing": "Vacuum_Insulated_Glazing",
+            "vacuum_glazing": "Vacuum_Insulated_Glazing",
+            "vacuuminsulatedglazing": "Vacuum_Insulated_Glazing",
+            "vig": "Vacuum_Insulated_Glazing",
         }
 
         frames = [
@@ -167,6 +184,9 @@ class GlazingDatabase:
             f"Unrecognized glazing system '{key_or_id}'. "
             f"Available canonical assemblies: {list(self._glazing.keys())}"
         )
+
+    get = get_glazing
+    __getitem__ = get_glazing
 
     def get_frame(self, key_or_id: Optional[str]) -> Optional[FrameDefinition]:
         """Resolve a window frame specification if provided."""

@@ -55,80 +55,71 @@ class EnergyPlusRunner:
         """Return True if a valid EnergyPlus binary was resolved on host."""
         return self.executable_path is not None and Path(self.executable_path).is_file()
 
+    _CACHED_RESOLUTION: Optional[Tuple[Optional[str], Optional[str]]] = None
+
     @classmethod
     def _resolve_binary(cls, custom_path: Optional[str] = None) -> Tuple[Optional[str], Optional[str]]:
-        """Locate EnergyPlus executable across environment variables and standard installation paths."""
+        """Locate EnergyPlus executable across environment variables and standard installation paths (no recursive disk scans)."""
+        if custom_path:
+            validated_custom = BinaryAllowlist.validate_executable(custom_path)
+            version = cls._probe_version(validated_custom)
+            if version:
+                return validated_custom, version
+
+        if cls._CACHED_RESOLUTION and cls._CACHED_RESOLUTION[0] and Path(cls._CACHED_RESOLUTION[0]).is_file():
+            return cls._CACHED_RESOLUTION
+
         candidates = []
 
-        if custom_path:
-            # Strictly validate custom candidate path against security allowlist
-            validated_custom = BinaryAllowlist.validate_executable(custom_path)
-            candidates.append(validated_custom)
-
+        # 1. Explicit environment variable ENERGYPLUS_EXE
         env_exe = os.environ.get("ENERGYPLUS_EXE")
         if env_exe and Path(env_exe).is_file():
             if BinaryAllowlist.is_binary_name_allowed(env_exe) and BinaryAllowlist.is_path_in_approved_directory(env_exe):
                 candidates.append(env_exe)
 
+        # 2. Explicit environment variable ENERGYPLUS_DIR
+        env_dir = os.environ.get("ENERGYPLUS_DIR")
+        if env_dir:
+            p_dir = Path(env_dir) / ("energyplus.exe" if os.name == "nt" else "energyplus")
+            if p_dir.is_file() and BinaryAllowlist.is_binary_name_allowed(str(p_dir)) and BinaryAllowlist.is_path_in_approved_directory(str(p_dir)):
+                candidates.append(str(p_dir))
+
+        # 3. Standard user profile installation paths (deterministic without recursive glob)
         user_profile = os.environ.get("USERPROFILE", "")
         if user_profile:
-            # Check user profile installation recursively and directly
-            p1 = Path(user_profile) / "EnergyPlusV24-1-0" / "energyplus.exe"
-            p2 = Path(user_profile) / "EnergyPlusV24-1-0" / "EnergyPlus-24.1.0-9d7789a3ac-Windows-x86_64" / "energyplus.exe"
-            if p2.is_file() and BinaryAllowlist.is_binary_name_allowed(str(p2)):
-                candidates.append(str(p2))
-            if p1.is_file() and BinaryAllowlist.is_binary_name_allowed(str(p1)):
-                candidates.append(str(p1))
-            try:
-                for match in Path(user_profile).glob("**/EnergyPlus*/energyplus.exe"):
-                    if match.is_file() and BinaryAllowlist.is_binary_name_allowed(str(match)):
-                        candidates.append(str(match))
-            except Exception:
-                pass
+            known_user_paths = [
+                Path(user_profile) / "EnergyPlusV24-1-0" / "EnergyPlus-24.1.0-9d7789a3ac-Windows-x86_64" / "energyplus.exe",
+                Path(user_profile) / "EnergyPlusV24-1-0" / "energyplus.exe",
+                Path(user_profile) / "EnergyPlusV26-1-0" / "energyplus.exe",
+            ]
+            for kp in known_user_paths:
+                if kp.is_file() and BinaryAllowlist.is_binary_name_allowed(str(kp)):
+                    candidates.append(str(kp))
 
-        # Standard Windows paths
+        # 4. Standard Windows system paths (deterministic, non-recursive)
         std_paths = [
-            r"C:\EnergyPlusV26-1-0\energyplus.exe",
             r"C:\EnergyPlusV24-1-0\energyplus.exe",
+            r"C:\EnergyPlusV26-1-0\energyplus.exe",
             r"C:\EnergyPlusV23-2-0\energyplus.exe",
-            r"C:\Program Files\EnergyPlusV26-1-0\energyplus.exe",
             r"C:\Program Files\EnergyPlusV24-1-0\energyplus.exe",
+            r"C:\Program Files\EnergyPlusV26-1-0\energyplus.exe",
         ]
-        # Dynamic discovery on C: root
-        try:
-            for ep_dir in Path("C:/").glob("EnergyPlus*/energyplus.exe"):
-                if ep_dir.is_file():
-                    std_paths.insert(0, str(ep_dir))
-            for ep_dir in Path("C:/").glob("**/EnergyPlus*/energyplus.exe"):
-                if ep_dir.is_file():
-                    std_paths.append(str(ep_dir))
-        except Exception:
-            pass
-
         for sp in std_paths:
             if Path(sp).is_file() and BinaryAllowlist.is_binary_name_allowed(sp):
                 candidates.append(sp)
 
-        # Standard Linux paths (Docker / Cloud Deployments)
+        # 5. Standard Linux paths (Docker / Cloud Deployments)
         linux_paths = [
             "/usr/local/bin/energyplus",
             "/usr/bin/energyplus",
+            "/usr/local/EnergyPlus-24-1-0/energyplus",
+            "/usr/local/EnergyPlusV24-1-0/energyplus",
         ]
-        try:
-            for ep_dir in Path("/usr/local").glob("*EnergyPlus*/**/energyplus"):
-                if ep_dir.is_file():
-                    linux_paths.append(str(ep_dir))
-            for ep_dir in Path("/opt").glob("*EnergyPlus*/**/energyplus"):
-                if ep_dir.is_file():
-                    linux_paths.append(str(ep_dir))
-        except Exception:
-            pass
-
         for lp in linux_paths:
             if Path(lp).is_file() and BinaryAllowlist.is_binary_name_allowed(lp):
                 candidates.append(lp)
 
-        # In PATH
+        # 6. Check system PATH
         which_path = shutil.which("energyplus")
         if which_path and BinaryAllowlist.is_binary_name_allowed(which_path):
             candidates.append(which_path)
@@ -136,6 +127,7 @@ class EnergyPlusRunner:
         for exe in candidates:
             version = cls._probe_version(exe)
             if version:
+                cls._CACHED_RESOLUTION = (exe, version)
                 return exe, version
 
         return None, None

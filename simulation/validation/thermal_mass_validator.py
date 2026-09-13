@@ -285,22 +285,44 @@ class ThermalMassValidator:
         for idx, item in enumerate(raw_list):
             if not isinstance(item, dict):
                 continue
-            item_id = item.get("id") or item.get("name") or f"tmass_{idx + 1}"
-            mat_id = (
-                item.get("materialId")
-                or item.get("material_id")
-                or item.get("material")
-                or item.get("materialName")
-                or "mat-concrete-slab"
-            )
-            thickness = float(item.get("thickness") or 0.15)
-            area = float(
+            item_type = str(item.get("type") or item.get("location") or "").upper()
+            if item_type in ("NONE", "NO_MASS", "UNINSULATED"):
+                continue
+
+            raw_t = float(item.get("thickness") or item.get("thickness_m") or 0.15)
+            if raw_t <= 0.0:
+                continue
+
+            raw_a = float(
                 item.get("surfaceArea")
                 or item.get("surface_area")
                 or item.get("area_m2")
                 or item.get("area")
                 or floor_area
             )
+            if raw_a <= 0.0:
+                continue
+
+            # Resolve material_id by explicit key or by thermal mass type
+            mat_id = (
+                item.get("materialId")
+                or item.get("material_id")
+                or item.get("material")
+                or item.get("materialName")
+            )
+            if not mat_id:
+                if item_type in ("PHASE_CHANGE_MATERIAL", "PCM", "PHASE_CHANGE"):
+                    mat_id = "mat-pcm-salt-hydrate"
+                elif item_type in ("WATER_WALL", "WATER"):
+                    mat_id = "mat-water-wall"
+                elif item_type in ("HIGH_DENSITY_CONCRETE", "CONCRETE", "CONCRETE_SLAB"):
+                    mat_id = "mat-concrete-slab"
+                elif item_type in ("RAMMED_EARTH", "EARTH"):
+                    mat_id = "mat-rammed-earth"
+                else:
+                    mat_id = "mat-concrete-slab"
+
+            item_id = item.get("id") or item.get("name") or f"tmass_{idx + 1}"
             exp_frac = float(item.get("exposed_fraction") or 1.0)
             mtype = item.get("type") or item.get("location") or "InternalPartition"
 
@@ -309,8 +331,8 @@ class ThermalMassValidator:
                 "name": item.get("name") or f"Thermal Mass #{idx + 1}",
                 "type": str(mtype),
                 "material_id": mat_id,
-                "thickness": thickness,
-                "surface_area": area,
+                "thickness": raw_t,
+                "surface_area": raw_a,
                 "exposed_fraction": exp_frac,
             })
 

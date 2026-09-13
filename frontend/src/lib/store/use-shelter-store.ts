@@ -2224,9 +2224,6 @@ export const useShelterStore = create<ShelterStoreState>()(
       comparisonJobIds: [
         "sim-ladakh-authentic-benchmark",
         "sim-kargil-benchmark",
-        "sim-spiti-benchmark",
-        "sim-tawang-benchmark",
-        "sim-tin-benchmark",
       ],
 
       // Settings
@@ -2342,27 +2339,73 @@ export const useShelterStore = create<ShelterStoreState>()(
 
       applyAICandidate: (candidateModel: any) => {
         const normalized = normalizeShelterModel(candidateModel);
-        if (!normalized.id || normalized.id === "default") {
-          normalized.id = `shelter-ai-${Date.now().toString(36)}`;
+        
+        // Scan all projects in store to find highest ThermoShelter_AI_OPT_XXX
+        const stateProjects = get().projects || [];
+        const existingNums: number[] = [];
+
+        const extractNum = (str?: string) => {
+          if (!str) return;
+          const match = str.match(/(?:ThermoShelter_AI_OPT_|shelter[-_]ai[-_]opt[-_])(\d+)/i);
+          if (match) {
+            const parsed = parseInt(match[1], 10);
+            if (!isNaN(parsed)) existingNums.push(parsed);
+          }
+        };
+
+        stateProjects.forEach((p) => {
+          extractNum(p.name);
+          extractNum(p.id);
+          extractNum(p.project?.name);
+          extractNum(p.project?.id);
+        });
+
+        // Determine if candidateModel already has an incremented name from backend
+        const incomingNumMatch = (normalized.name || normalized.project?.name || "").match(/ThermoShelter_AI_OPT_(\d+)/i);
+        const incomingNum = incomingNumMatch ? parseInt(incomingNumMatch[1], 10) : null;
+
+        let nextNum: number;
+        if (incomingNum !== null && !existingNums.includes(incomingNum) && incomingNum > 1) {
+          // Backend already assigned a unique incremented sequence number not present in client state
+          nextNum = incomingNum;
+        } else {
+          // If incoming is 001 or already taken, increment beyond highest existing in store (or at least 2)
+          const maxExisting = existingNums.length > 0 ? Math.max(...existingNums) : 1;
+          nextNum = maxExisting >= 1 ? maxExisting + 1 : 2;
         }
+
+        const nextTag = String(nextNum).padStart(3, "0");
+        const finalName = `ThermoShelter_AI_OPT_${nextTag}`;
+        let finalId = `shelter-ai-opt-${nextTag}`;
+        if (stateProjects.some((p) => p.id === finalId)) {
+          finalId = `${finalId}-${Date.now().toString(36).slice(-4)}`;
+        }
+
+        normalized.id = finalId;
+        normalized.name = finalName;
         if (!normalized.project) {
           normalized.project = {} as any;
         }
-        if (!normalized.project.name) {
-          normalized.project.name = `AI Generated Optimal Shelter (${normalized.id.slice(-6)})`;
-        }
-        normalized.project.id = normalized.id;
+        normalized.project.id = finalId;
+        normalized.project.name = finalName;
+        normalized.project.version = "1.0.0";
+        normalized.project.description = "AI generative inverse-designed shelter optimized for extreme high-altitude thermal performance.";
+        normalized.project.createdAt = new Date().toISOString();
+        normalized.project.tags = Array.from(new Set([...(normalized.project.tags || []), "AI-Generative", "Pareto-Optimal", "High-Altitude"]));
 
+        // Register as a brand-new project and switch active project
         set((state) => ({
-          deletedProjectIds: (state.deletedProjectIds || []).filter((did) => did !== normalized.id),
-          projects: [...state.projects.filter((p) => p.id !== normalized.id), normalized],
-          activeProjectId: normalized.id,
+          deletedProjectIds: (state.deletedProjectIds || []).filter((did) => did !== finalId),
+          projects: [...state.projects.filter((p) => p.id !== finalId), normalized],
+          activeProjectId: finalId,
+          activeWizardStep: 1,
         }));
 
         api.projects.create(normalized).catch((err) => {
           console.warn("Backend project create sync note:", err);
         });
-        return normalized.id;
+
+        return finalId;
       },
 
       setActiveWizardStep: (step: number) => {
@@ -2412,15 +2455,43 @@ export const useShelterStore = create<ShelterStoreState>()(
 
       deleteWeatherDataset: (id: string) => {
         set((state) => {
+          const targetStation = state.weatherDatasets.find((w) => w.id === id);
+          const epwToDelete = targetStation?.epwFileName;
           const remaining = state.weatherDatasets.filter((w) => w.id !== id);
           const nextStations = remaining.length > 0 ? remaining : DEFAULT_WEATHER_STATIONS;
           let nextActiveId = state.activeWeatherId;
           if (nextActiveId === id) {
             nextActiveId = nextStations[0].id;
           }
+          const fallbackStation = nextStations[0];
+
+          // Re-point any project referencing the deleted weather station/epw to fallback certified station
+          const updatedProjects = state.projects.map((p) => {
+            const isUsingDeleted =
+              (epwToDelete && p.location?.weatherSource === epwToDelete) ||
+              p.location?.weatherSource === id;
+            if (isUsingDeleted) {
+              return {
+                ...p,
+                location: {
+                  ...p.location,
+                  weatherSource: fallbackStation.epwFileName,
+                  region: fallbackStation.region || p.location?.region,
+                  latitude: fallbackStation.latitude ?? p.location?.latitude,
+                  longitude: fallbackStation.longitude ?? p.location?.longitude,
+                  elevation: fallbackStation.elevationM ?? p.location?.elevation,
+                  designTempWinter: fallbackStation.designWinterMinC ?? p.location?.designTempWinter,
+                  designTempSummer: fallbackStation.designSummerMaxC ?? p.location?.designTempSummer,
+                },
+              };
+            }
+            return p;
+          });
+
           return {
             weatherDatasets: nextStations,
             activeWeatherId: nextActiveId,
+            projects: updatedProjects,
           };
         });
       },

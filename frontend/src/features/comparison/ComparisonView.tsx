@@ -47,23 +47,36 @@ export function ComparisonView() {
     toggleComparisonJobId,
     clearComparison,
     saveProjectVersion,
+    addSimulationJob,
+    weatherDatasets,
+    activeWeatherId,
   } = useShelterStore();
 
   const [selectedObjectiveId, setSelectedObjectiveId] =
     useState<ComparisonObjectiveId>("passive-resilience");
   const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
+  const [selectionNotice, setSelectionNotice] = useState<string | null>(null);
 
   // All completed simulation jobs with valid results
   const completedJobs = useMemo(() => {
     return simulations.filter((s) => s.status === "completed" && s.results);
   }, [simulations]);
 
-  // Active compared jobs based on store IDs or fallback to first 2 or 3 completed jobs
+  // Active compared jobs based directly on store selection
   const comparedJobs = useMemo(() => {
-    const selected = completedJobs.filter((s) => comparisonJobIds.includes(s.id));
-    if (selected.length >= 2) return selected;
-    return completedJobs.slice(0, 3);
+    return completedJobs.filter((s) => comparisonJobIds.includes(s.id));
   }, [completedJobs, comparisonJobIds]);
+
+  const handleToggleJob = (jobId: string) => {
+    const isSelected = comparisonJobIds.includes(jobId);
+    if (!isSelected && comparisonJobIds.length >= 3) {
+      setSelectionNotice("Maximum 3 cases can be compared simultaneously. Deselect a case to add another.");
+      setTimeout(() => setSelectionNotice(null), 3500);
+      return;
+    }
+    setSelectionNotice(null);
+    toggleComparisonJobId(jobId);
+  };
 
   // Compute objective winner
   const evaluationResult = useMemo(() => {
@@ -78,7 +91,24 @@ export function ComparisonView() {
   }, [comparedJobs]);
 
   const handleSaveVersion = (sourceId: string, versionName: string, description: string) => {
-    saveProjectVersion(sourceId, versionName, description);
+    const newVersion = saveProjectVersion(sourceId, versionName, description);
+    if (newVersion) {
+      const simId = `sim-${Date.now().toString(36)}`;
+      const activeWeather = weatherDatasets.find((w) => w.id === activeWeatherId) || weatherDatasets[0];
+      addSimulationJob({
+        id: simId,
+        projectId: newVersion.id,
+        projectName: newVersion.project?.name || newVersion.id,
+        shelterModel: newVersion,
+        weatherDatasetId: activeWeather?.id || "wx-leh-427053",
+        weatherDatasetName: activeWeather?.name || "Leh Airport Station (3500m)",
+        engine: "EnergyPlus",
+        engineVersion: "v24.1.0",
+        status: "queued",
+        queuedAt: new Date().toISOString(),
+      });
+      toggleComparisonJobId(simId);
+    }
   };
 
   if (completedJobs.length < 2) {
@@ -136,16 +166,22 @@ export function ComparisonView() {
         }
       />
 
-      {/* V0 Candidate Selection Cards Grid */}
+      {/* Candidate Selection Cards Grid */}
       <div>
         <div className="mb-3 flex items-center justify-between text-xs">
           <span className="micro-label">
-            Select Cases to Compare ({comparedJobs.length} of {completedJobs.length} active)
+            Select Cases to Compare ({comparedJobs.length} of {completedJobs.length} selected · max 3)
           </span>
           <span className="text-[11px] text-muted-foreground">
             First selected serves as Baseline reference
           </span>
         </div>
+
+        {selectionNotice && (
+          <div className="mb-3 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-2 text-xs font-medium text-amber-600 dark:text-amber-400 animate-in fade-in slide-in-from-top-1">
+            {selectionNotice}
+          </div>
+        )}
 
         <div className="comparison-grid grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {completedJobs.map((job) => {
@@ -155,7 +191,7 @@ export function ComparisonView() {
             return (
               <button
                 key={job.id}
-                onClick={() => toggleComparisonJobId(job.id)}
+                onClick={() => handleToggleJob(job.id)}
                 className={`comparison-card flex min-h-32 flex-col justify-between rounded-2xl border p-5 text-left transition-all ${
                   isSelected
                     ? "border-[#6E818F] bg-[#CBDCE6] shadow-[0_15px_35px_rgba(0,0,0,.08)] text-black"
@@ -194,8 +230,22 @@ export function ComparisonView() {
         </div>
       </div>
 
+      {/* When fewer than 2 cases are selected */}
+      {comparedJobs.length < 2 && (
+        <div className="rounded-2xl border border-dashed border-border bg-secondary/20 p-8 text-center space-y-2">
+          <p className="text-sm font-semibold text-foreground">
+            {comparedJobs.length === 0
+              ? "Select at least 2 simulation runs above to compare performance deltas"
+              : `1 case selected (${comparedJobs[0].projectName}). Select at least 1 more candidate above to compare against baseline.`}
+          </p>
+          <p className="text-xs text-muted-foreground max-w-lg mx-auto">
+            Multi-design comparison evaluates thermal trade-offs, calculates delta percentages across envelope losses, and provides objective-constrained rankings.
+          </p>
+        </div>
+      )}
+
       {/* 3. Objective-Constrained Decision Winner Card */}
-      {evaluationResult && (
+      {comparedJobs.length >= 2 && evaluationResult && (
         <ObjectiveWinnerCard
           evaluation={evaluationResult}
           selectedObjectiveId={selectedObjectiveId}
@@ -204,13 +254,13 @@ export function ComparisonView() {
       )}
 
       {/* 4. Side-by-Side Parametric Metric Table with Difference Percentages */}
-      <SideBySideTable jobs={comparedJobs} />
+      {comparedJobs.length >= 2 && <SideBySideTable jobs={comparedJobs} />}
 
       {/* 5. Comparative Visual Charts */}
-      <ComparisonCharts jobs={comparedJobs} />
+      {comparedJobs.length >= 2 && <ComparisonCharts jobs={comparedJobs} />}
 
       {/* 6. Engineering Scientific Reproducibility Manifest */}
-      {reproducibilityManifest && (
+      {comparedJobs.length >= 2 && reproducibilityManifest && (
         <ReproducibilityManifestCard manifest={reproducibilityManifest} />
       )}
 

@@ -249,7 +249,64 @@ class AIDesignService:
         return report.to_dict()
 
     def candidate_to_shelter_model(self, candidate: Dict[str, Any]) -> Dict[str, Any]:
-        """Converts candidate design parameters to full ShelterModel for 3D Designer."""
+        """Converts candidate design parameters to full ShelterModel for 3D Designer.
+        
+        Inspects existing shelter models across persistent disk and in-memory registry.
+        Detects highest ThermoShelter_AI_OPT_XXX sequence number and increments it to
+        ensure each AI candidate becomes a brand new sequentially numbered project
+        (e.g., ThermoShelter_AI_OPT_001 -> ThermoShelter_AI_OPT_002 -> 003).
+        """
+        import re
+        from backend.services.shelter_service import shelter_service
+
         params = candidate.get("parameters", candidate)
-        cand_id = candidate.get("candidate_id", "AI_Opt_Candidate")
-        return design_dict_to_shelter_model(params, base_name=f"ThermoShelter_{cand_id}")
+        cand_id = candidate.get("candidate_id", "AI_OPT_001")
+
+        # Collect existing project names & IDs from persistent storage
+        existing_names: List[str] = []
+        try:
+            for s in shelter_service.list_shelters():
+                n = s.get("name") or s.get("project", {}).get("name") or ""
+                if n:
+                    existing_names.append(n)
+                sid = s.get("id") or ""
+                if sid:
+                    existing_names.append(sid)
+        except Exception as e:
+            print(f"Warning loading existing shelters for sequence resolution: {e}")
+
+        # Incorporate any client-supplied existing names
+        client_names = candidate.get("existing_names") or []
+        if isinstance(client_names, list):
+            existing_names.extend(str(item) for item in client_names if item)
+
+        # Extract sequence numbers matching ThermoShelter_AI_OPT_XXX or shelter_ai_opt_XXX
+        seq_nums: List[int] = []
+        for name in existing_names:
+            m = re.search(r"(?:ThermoShelter_AI_OPT_|shelter[-_]ai[-_]opt[-_])(\d+)", name, re.IGNORECASE)
+            if m:
+                try:
+                    seq_nums.append(int(m.group(1)))
+                except ValueError:
+                    pass
+
+        # Check candidate's own candidate_id (e.g. AI_OPT_001 -> 1)
+        cand_num_match = re.search(r"(\d+)", str(cand_id))
+        cand_num = int(cand_num_match.group(1)) if cand_num_match else 1
+
+        # The user's specification:
+        # Every time an AI generative designer is called and loaded, check the last name
+        # ThermoShelter_AI_OPT_001 and increase it like naming is wrong and make it as a new project.
+        if seq_nums:
+            max_num = max(seq_nums)
+            next_num = max_num + 1
+        else:
+            # Baseline is considered 001; increment to 002 if 001 was requested, otherwise start fresh
+            next_num = cand_num + 1 if cand_num == 1 else cand_num
+
+        tag = f"{next_num:03d}"
+        model_name = f"ThermoShelter_AI_OPT_{tag}"
+        model_id = f"shelter-ai-opt-{tag}"
+
+        return design_dict_to_shelter_model(params, base_name=model_name, base_id=model_id)
+

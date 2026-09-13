@@ -207,10 +207,15 @@ export function AIDesignerView() {
     }
   };
 
-  // Apply candidate to 3D CAD designer
+  // Apply candidate to 3D CAD designer as a new project
   const handleApplyToDesigner = async (cand: AICandidate) => {
     try {
-      const res = await aiApi.applyCandidate(cand);
+      const { projects } = useShelterStore.getState();
+      const existingNames = projects.map((p) => p.project?.name || p.name || "");
+      const res = await aiApi.applyCandidate({
+        ...cand,
+        existing_names: existingNames,
+      });
       if (res.success && res.shelter_model) {
         const newProjId = applyAICandidate(res.shelter_model);
         router.push("/designer");

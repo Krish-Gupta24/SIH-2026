@@ -763,7 +763,7 @@ class EnergyPlusIDFGenerator:
             f"GlobalGeometryRules,",
             f"  UpperLeftCorner,                !- Starting Vertex Position",
             f"  CounterClockWise,               !- Vertex Entry Direction",
-            f"  World;                          !- Coordinate System",
+            f"  Relative;                       !- Coordinate System (Enables full 3D building rotation & orientation solar response)",
             f"",
         ])
 
@@ -828,6 +828,50 @@ class EnergyPlusIDFGenerator:
             f"  {infil_ach:.4f};                !- Air Changes per Hour {{1/hr}} (User Defined)",
             f"",
         ])
+
+        # Occupant internal heat gains (Sensible and latent gains from occupants)
+        raw_occupants = (
+            shelter.get("occupants")
+            or shelter.get("occupancy", {}).get("count")
+            or shelter.get("occupancy", {}).get("occupants")
+            or shelter.get("internalLoads", {}).get("occupantsCount")
+            or shelter.get("internal_loads", {}).get("occupants_count")
+            or 0
+        )
+        try:
+            occupant_count = max(0, int(round(float(raw_occupants))))
+        except (ValueError, TypeError):
+            occupant_count = 0
+
+        activity_watts = float(
+            shelter.get("internalLoads", {}).get("activityLevelWatts")
+            or shelter.get("internal_loads", {}).get("activity_level_watts")
+            or shelter.get("occupancy", {}).get("activity_watts")
+            or 120.0
+        )
+
+        if occupant_count > 0:
+            idf_lines.extend([
+                f"Schedule:Compact,",
+                f"  OccupantActivitySchedule,       !- Name",
+                f"  AnyNumber,                      !- Schedule Type Limits Name",
+                f"  Through: 12/31,                 !- Field 1",
+                f"  For: AllDays,                   !- Field 2",
+                f"  Until: 24:00, {activity_watts:.1f}; !- Field 3 (Metabolic Activity Level {{W/person}})",
+                f"",
+                f"People,",
+                f"  MainZone_Occupants,             !- Name",
+                f"  MainZone,                       !- Zone Name",
+                f"  AlwaysOnSchedule,               !- Number of People Schedule Name",
+                f"  people,                         !- Number of People Calculation Method",
+                f"  {occupant_count},               !- Number of People",
+                f"  ,                               !- People per Floor Area {{person/m2}}",
+                f"  ,                               !- Floor Area per Person {{m2/person}}",
+                f"  0.30,                           !- Fraction Radiant",
+                f"  AutoCalculate,                  !- Sensible Heat Fraction",
+                f"  OccupantActivitySchedule;       !- Activity Level Schedule Name",
+                f"",
+            ])
 
         # Optional Natural Ventilation
         if vent_params["natural_ventilation_enabled"]:

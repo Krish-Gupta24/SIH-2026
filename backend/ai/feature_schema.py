@@ -315,7 +315,11 @@ def shelter_model_to_design_dict(shelter: Dict[str, Any]) -> Dict[str, Any]:
     return params
 
 
-def design_dict_to_shelter_model(params: Dict[str, Any], base_name: str = "AI_Generated_Shelter") -> Dict[str, Any]:
+def design_dict_to_shelter_model(
+    params: Dict[str, Any],
+    base_name: str = "AI_Generated_Shelter",
+    base_id: Optional[str] = None,
+) -> Dict[str, Any]:
     """Decodes design parameters back into a canonical ShelterModel dictionary."""
     length = float(params["length"])
     width = float(params["width"])
@@ -392,8 +396,31 @@ def design_dict_to_shelter_model(params: Dict[str, Any], base_name: str = "AI_Ge
     }
     roof_mat_id = roof_mat_map.get(roof_type, "mat-polyurethane-foam")
 
+    # Map thermal mass type to authentic material IDs from material_db
+    tm_mat_map = {
+        "HIGH_DENSITY_CONCRETE": "mat-concrete-slab",
+        "PHASE_CHANGE_MATERIAL": "mat-pcm-salt-hydrate",
+        "WATER_WALL": "mat-water-wall",
+        "RAMMED_EARTH": "mat-rammed-earth",
+        "NONE": None,
+    }
+    tm_mat_id = tm_mat_map.get(tm_type)
+    thermal_mass_spec = None
+    if tm_type != "NONE" and tm_thick > 0.0 and tm_mat_id:
+        thermal_mass_spec = {
+            "id": f"tm_{tm_type.lower()}",
+            "name": f"{tm_type.replace('_', ' ').title()} Thermal Mass",
+            "type": tm_type,
+            "material_id": tm_mat_id,
+            "thickness": tm_thick,
+            "surface_area": round(length * width * 0.8, 2),
+            "exposed_fraction": 1.0,
+            "surface": "floor",
+        }
+
+    shelter_id = base_id or f"shelter_{abs(hash(str(params))) % 1000000}"
     shelter_model = {
-        "id": f"shelter_{abs(hash(str(params))) % 1000000}",
+        "id": shelter_id,
         "name": base_name,
         "geometry": {
             "length": length,
@@ -436,11 +463,7 @@ def design_dict_to_shelter_model(params: Dict[str, Any], base_name: str = "AI_Ge
             "roof_construction": roof_type,
             "glazing_type": glazing_type,
         },
-        "thermal_mass": {
-            "type": tm_type,
-            "thickness": tm_thick,
-            "surface": "floor",
-        },
+        "thermal_mass": thermal_mass_spec,
         "windows": windows,
         "doors": [
             {
@@ -457,10 +480,25 @@ def design_dict_to_shelter_model(params: Dict[str, Any], base_name: str = "AI_Ge
             "natural_ventilation_enabled": False,
             "mechanical_ventilation_enabled": False,
         },
+        "occupants": occupants,
         "occupancy": {
             "count": occupants,
-            "activity": "Sedentary",
+            "activity_watts": 120.0,
         },
+        "internalLoads": {
+            "occupantsCount": occupants,
+            "activityLevelWatts": 120.0,
+        },
+    }
+
+    from datetime import datetime, timezone
+    shelter_model["project"] = {
+        "id": shelter_id,
+        "name": base_name,
+        "version": "1.0.0",
+        "description": "AI generative inverse-designed shelter optimized for extreme high-altitude thermal performance.",
+        "createdAt": datetime.now(timezone.utc).isoformat(),
+        "tags": ["AI-Generative", "Pareto-Optimal", "High-Altitude"],
     }
 
     return shelter_model

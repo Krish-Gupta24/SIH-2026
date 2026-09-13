@@ -1571,9 +1571,10 @@ export function WeatherView() {
                   if (!toDelete) return;
 
                   deleteWeatherDataset(toDelete.id);
-                  if (selectedStationId === toDelete.id) {
-                    const fallback = weatherDatasets.find((w) => w.id !== toDelete.id);
-                    if (fallback) setSelectedStationId(fallback.id);
+                  const fallback = weatherDatasets.find((w) => w.id !== toDelete.id);
+                  if (selectedStationId === toDelete.id && fallback) {
+                    setSelectedStationId(fallback.id);
+                    setActiveWeather(fallback.id);
                   }
 
                   try {

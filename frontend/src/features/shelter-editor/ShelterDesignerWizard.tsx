@@ -85,6 +85,8 @@ export function ShelterDesignerWizard() {
     addProject,
     addSimulationJob,
     updateSimulationJob,
+    weatherDatasets,
+    setActiveWeather,
   } = useShelterStore();
   const activeModel = projects.find((p) => p.id === activeProjectId) || projects[0];
 
@@ -258,6 +260,17 @@ export function ShelterDesignerWizard() {
     // Validate current step before advancing
     const isValid = await form.trigger();
     if (isValid || advancedMode) {
+      const currentVals = form.getValues();
+      if (activeModel) {
+        const patch = formValuesToModel(currentVals, activeModel);
+        updateProject(activeModel.id, patch);
+      }
+      if (currentVals.location?.weatherSource) {
+        const matchingStation = weatherDatasets.find((w) => w.epwFileName === currentVals.location?.weatherSource);
+        if (matchingStation) {
+          setActiveWeather(matchingStation.id);
+        }
+      }
       handleStepSelect(Math.min(currentStep + 1, 13));
     }
   };
@@ -329,6 +342,9 @@ export function ShelterDesignerWizard() {
         <div>
           <div className="flex items-center gap-2">
             <span className="micro-label">Canonical Model · 13-Step Sequence</span>
+            <span className="rounded-full bg-secondary/80 px-2.5 py-0.5 text-xs font-semibold text-foreground border border-border">
+              {activeModel?.project?.name || activeModel?.name || "Untitled Shelter"}
+            </span>
             <span className="text-xs text-muted-foreground">Stage {currentStep} of 13</span>
           </div>
           <h1 className="font-editorial mt-2 text-3xl sm:text-4xl font-medium tracking-tight text-foreground">
@@ -692,7 +708,7 @@ export function ShelterDesignerWizard() {
       )}
 
       {/* Connected Linear Workflow Footer */}
-      <WorkflowFooter customNextLabel="Inspect in 3D CAD" customNextHref="/designer/3d" />
+      <WorkflowFooter customNextLabel="Inspect in 3D CAD" customNextHref={`/designer/3d?stage=${step2dTo3d(currentStep)}`} />
     </div>
   );
 }

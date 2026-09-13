@@ -86,6 +86,30 @@ export const WORKFLOW_PIPELINE: WorkflowStep[] = [
   },
 ];
 
+/**
+ * Determines the exact matching pipeline step index for a given URL path.
+ * Avoids prefix collisions (such as /designer matching /designer/3d).
+ */
+export function getWorkflowStepIndex(pathname: string): number {
+  if (pathname === "/dashboard" || pathname === "/") return 0;
+  // Match exact path first
+  const exactIdx = WORKFLOW_PIPELINE.findIndex((s) => s.href === pathname);
+  if (exactIdx !== -1) return exactIdx;
+
+  // Otherwise, match longest prefix (e.g. /designer/3d matches before /designer)
+  let bestIdx = -1;
+  let maxLen = 0;
+  WORKFLOW_PIPELINE.forEach((step, idx) => {
+    if (step.href !== "/dashboard" && (pathname === step.href || pathname.startsWith(step.href + "/"))) {
+      if (step.href.length > maxLen) {
+        maxLen = step.href.length;
+        bestIdx = idx;
+      }
+    }
+  });
+  return bestIdx !== -1 ? bestIdx : 0;
+}
+
 interface WorkflowFooterProps {
   customNextHref?: string;
   customNextLabel?: string;
@@ -107,13 +131,8 @@ export function WorkflowFooter({
     (s) => s.projectId === activeProject?.id && s.status === "completed"
   );
 
-  // Determine current step index
-  const currentIndex = WORKFLOW_PIPELINE.findIndex((step) => {
-    if (step.href === "/dashboard") {
-      return pathname === "/dashboard" || pathname === "/";
-    }
-    return pathname === step.href || pathname.startsWith(step.href);
-  });
+  // Determine current step index accurately
+  const currentIndex = getWorkflowStepIndex(pathname);
 
   const currentStep = currentIndex !== -1 ? WORKFLOW_PIPELINE[currentIndex] : WORKFLOW_PIPELINE[0];
   const prevStep = currentIndex > 0 ? WORKFLOW_PIPELINE[currentIndex - 1] : null;

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import React, { useState, useEffect, useCallback, Suspense } from "react";
 import dynamic from "next/dynamic";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Box, Loader2 } from "lucide-react";
@@ -80,13 +80,29 @@ function Shelter3DPageContent() {
     addProject,
   } = useShelterStore();
 
-  const stageParam = searchParams.get("stage") ?? searchParams.get("step");
-
-  const [step, setStep] = useState<number>(() => {
-    if (stageParam !== null) {
-      const parsed = parseInt(stageParam, 10);
+  // Safely resolve initial 0-indexed stage from ?stage= (0..12) or ?step= (1..13 from 2D wizard)
+  const resolveStageFromParams = React.useCallback((): number | null => {
+    const stageQuery = searchParams.get("stage");
+    if (stageQuery !== null) {
+      const parsed = parseInt(stageQuery, 10);
       if (!isNaN(parsed) && parsed >= 0 && parsed <= 12) return parsed;
     }
+    const stepQuery = searchParams.get("step");
+    if (stepQuery !== null) {
+      const parsed = parseInt(stepQuery, 10);
+      if (!isNaN(parsed)) {
+        // If 1-indexed (1..13) coming from 2D designer, convert to 0-indexed stage (0..12)
+        if (parsed >= 1 && parsed <= 13) return step2dTo3d(parsed);
+        // If already 0-indexed
+        if (parsed >= 0 && parsed <= 12) return parsed;
+      }
+    }
+    return null;
+  }, [searchParams]);
+
+  const [step, setStep] = useState<number>(() => {
+    const fromParams = resolveStageFromParams();
+    if (fromParams !== null) return fromParams;
     return step2dTo3d(activeWizardStep || 1);
   });
 
@@ -97,19 +113,17 @@ function Shelter3DPageContent() {
 
   // Sync step if store or query param changes
   useEffect(() => {
-    if (stageParam !== null) {
-      const parsed = parseInt(stageParam, 10);
-      if (!isNaN(parsed) && parsed >= 0 && parsed <= 12) {
-        setStep(parsed);
-        setActiveWizardStep(step3dTo2d(parsed));
-        return;
-      }
+    const fromParams = resolveStageFromParams();
+    if (fromParams !== null) {
+      setStep(fromParams);
+      setActiveWizardStep(step3dTo2d(fromParams));
+      return;
     }
     if (activeWizardStep) {
       const step3d = step2dTo3d(activeWizardStep);
       setStep(step3d);
     }
-  }, [stageParam, activeWizardStep, setActiveWizardStep]);
+  }, [resolveStageFromParams, activeWizardStep, setActiveWizardStep]);
 
   const handleStepChange = (newStep: number) => {
     const validStep = Math.min(Math.max(0, newStep), 12);
@@ -137,6 +151,9 @@ function Shelter3DPageContent() {
           <div>
             <div className="flex items-center gap-2">
               <span className="micro-label">Canonical Model · 13-Step Sequence</span>
+              <span className="rounded-full bg-secondary/80 px-2.5 py-0.5 text-xs font-semibold text-foreground border border-border">
+                {activeModel?.project?.name || activeModel?.name || "Untitled Shelter"}
+              </span>
               <span className="text-xs text-muted-foreground">
                 Stage {step + 1} of {UNIFIED_13_STEPS.length}
               </span>

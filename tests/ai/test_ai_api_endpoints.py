@@ -93,7 +93,7 @@ def test_generate_designs_and_poll_job(client):
     assert "predicted_value" in shap_data
     assert "top_contributors" in shap_data
 
-    # 5. Test apply candidate to 3D designer format
+    # 5. Test apply candidate to 3D designer format with sequential naming
     apply_res = client.post("/api/v1/ai/design/apply", json=top_candidate)
     assert apply_res.status_code == 200
     apply_data = apply_res.json()
@@ -103,3 +103,17 @@ def test_generate_designs_and_poll_job(client):
     assert "envelope" in shelter
     assert "windows" in shelter
     assert "doors" in shelter
+    assert shelter.get("name", "").startswith("ThermoShelter_AI_OPT_")
+    assert shelter.get("id", "").startswith("shelter-ai-opt-")
+    assert shelter.get("project", {}).get("name") == shelter.get("name")
+
+    # Verify sequential increment when existing project exists
+    second_apply = client.post("/api/v1/ai/design/apply", json={
+        **top_candidate,
+        "existing_names": [shelter["name"]],
+    })
+    assert second_apply.status_code == 200
+    second_shelter = second_apply.json().get("shelter_model")
+    assert second_shelter["name"] != shelter["name"]
+    assert second_shelter["id"] != shelter["id"]
+    assert second_shelter["name"].startswith("ThermoShelter_AI_OPT_")

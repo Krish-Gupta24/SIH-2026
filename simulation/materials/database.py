@@ -60,6 +60,24 @@ INITIAL_TEST_MATERIALS: List[Material] = [
         notes="Ultra-low thermal conductivity for critical space-constrained thermal breaks.",
         cost_per_m3=850.0,
     ),
+    # 3b. Water Wall Thermal Storage Container
+    Material(
+        id="mat-water-wall",
+        name="Water Wall Thermal Storage Container",
+        category="Mass / Masonry",
+        density=1000.0,                # kg/m³
+        thermal_conductivity=0.60,     # W/(m·K)
+        specific_heat=4184.0,          # J/(kg·K)
+        thermal_absorptance=0.95,
+        solar_absorptance=0.90,
+        visible_absorptance=0.90,
+        roughness="Smooth",
+        source="ASHRAE Fundamentals Handbook / Passive Solar Design Handbook (Vol 2)",
+        provenance="Water thermal storage container with 4.18 MJ/m³K volumetric heat capacity",
+        status=MaterialStatus.VERIFIED,
+        notes="High-capacity passive solar internal water storage wall for damping extreme nocturnal freezing.",
+        cost_per_m3=120.0,
+    ),
     # 4. Local Rammed Earth (Ladakh Traditional)
     Material(
         id="mat-rammed-earth",

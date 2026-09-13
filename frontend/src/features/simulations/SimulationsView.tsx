@@ -163,15 +163,12 @@ export function SimulationsView() {
   const availableStations = React.useMemo(() => {
     const list = [...weatherDatasets];
     const projEpw = targetProject?.location?.weatherSource;
-    if (projEpw && !list.some((w) => w.epwFileName === projEpw)) {
+    if (projEpw && !list.some((w) => w.epwFileName === projEpw) && projEpw.startsWith("MICROCLIMATE_")) {
       const elev = targetProject?.location?.elevation || 3500;
       const reg = targetProject?.location?.region || targetProject?.project?.name || "Custom Himalayan Outpost";
-      const isMicro = projEpw.startsWith("MICROCLIMATE_");
       list.unshift({
         id: `wx-proj-custom-${targetProject.id}`,
-        name: isMicro
-          ? `${reg.split(",")[0]} (${Math.round(elev)}m · Synthesized ML EPW)`
-          : `${reg.split(",")[0]} (${Math.round(elev)}m · Custom EPW)`,
+        name: `${reg.split(",")[0]} (${Math.round(elev)}m · Synthesized ML EPW)`,
         region: `${reg} (Project Weather Source)`,
         latitude: targetProject?.location?.latitude || 34.15,
         longitude: targetProject?.location?.longitude || 77.58,

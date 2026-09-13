@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 import { useShelterStore } from "@/lib/store/use-shelter-store";
 import { BrandMark, Status } from "@/components/v0/platform-components";
-import { WORKFLOW_PIPELINE } from "@/components/layout/WorkflowFooter";
+import { WORKFLOW_PIPELINE, getWorkflowStepIndex } from "@/components/layout/WorkflowFooter";
 import { usePlatformInit } from "@/hooks/use-platform-init";
 
 interface NavItem {
@@ -58,17 +58,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }, [projects, activeProjectId, setActiveProject]);
 
   // Determine if this is a project-specific workflow view
-  const isProjectView = WORKFLOW_PIPELINE.some(
-    (tab) => pathname === tab.href || (tab.href !== "/" && pathname.startsWith(tab.href))
-  );
-
-  // Determine current active step in pipeline
-  const currentStepIndex = WORKFLOW_PIPELINE.findIndex((step) => {
-    if (step.href === "/dashboard") {
-      return pathname === "/dashboard" || pathname === "/";
-    }
-    return pathname === step.href || pathname.startsWith(step.href);
-  });
+  const currentStepIndex = getWorkflowStepIndex(pathname);
+  const isProjectView = currentStepIndex !== -1;
 
   const nextRecommendedStep =
     currentStepIndex !== -1 && currentStepIndex < WORKFLOW_PIPELINE.length - 1
@@ -311,10 +302,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 aria-label="Connected engineering workflow"
               >
                 {WORKFLOW_PIPELINE.map((item, idx) => {
-                  const isActive =
-                    item.href === "/dashboard"
-                      ? pathname === "/dashboard" || pathname === "/"
-                      : pathname === item.href || pathname.startsWith(item.href);
+                  const isActive = idx === currentStepIndex;
                   const isDone = getStepStatus(item.id);
 
                   return (

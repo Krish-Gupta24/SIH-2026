@@ -536,15 +536,17 @@ export async function runBackendEnergyPlusSweep(
       threshold: c.threshold,
       description: c.description,
     })),
+    weather_dataset: model.location?.weatherSource,
+    weather_file_path: model.location?.weatherSource,
     max_candidates: maxCandidates,
     run_period_days: runPeriodDays,
   };
 
   const apiBase =
     process.env.NEXT_PUBLIC_API_URL ||
-    (typeof window !== "undefined" && window.location.hostname === "localhost"
-      ? "http://localhost:8000/api/v1"
-      : "/api/v1");
+    (typeof window !== "undefined"
+      ? "/api/v1"
+      : (process.env.BACKEND_INTERNAL_URL ? `${process.env.BACKEND_INTERNAL_URL}/api/v1` : "http://127.0.0.1:8000/api/v1"));
   const endpoint = `${apiBase.replace(/\/$/, "")}/optimization/sweep`;
 
   const response = await fetch(endpoint, {

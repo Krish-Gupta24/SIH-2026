@@ -61,11 +61,12 @@ import { useShelterStore } from "@/lib/store/use-shelter-store";
 
 export function Step2Location({ form, advancedMode }: StepProps) {
   const { register, formState: { errors }, setValue, watch } = form;
-  const { addWeatherDataset, setActiveWeather } = useShelterStore();
+  const { addWeatherDataset, setActiveWeather, updateProject, activeProjectId, weatherDatasets } = useShelterStore();
   const currentElevation = watch("location.elevation") || 3500;
   const currentLatitude = watch("location.latitude") || 34.1526;
   const currentLongitude = watch("location.longitude") || 77.5771;
   const currentRegion = watch("location.region") || "Leh Ladakh, India";
+  const currentClimateZone = watch("location.climateZone") || "Cold / Extreme Alpine";
 
   const [isFetchingWeather, setIsFetchingWeather] = React.useState(false);
   const [liveFetchStatus, setLiveFetchStatus] = React.useState<{ type: "success" | "error"; message: string } | null>(null);
@@ -110,6 +111,21 @@ export function Step2Location({ form, advancedMode }: StepProps) {
       sha256: `piml-synth-${Date.now()}`,
     });
     setActiveWeather(stationId);
+
+    if (activeProjectId) {
+      updateProject(activeProjectId, {
+        location: {
+          latitude: summary?.latitude ?? currentLatitude,
+          longitude: summary?.longitude ?? currentLongitude,
+          elevation: elev,
+          region: `${currentRegion} (Downscaled Microclimate)`,
+          climateZone: elev > 4500 ? "Extreme Cold Alpine (ASHRAE 8)" : "Cold Alpine Continental",
+          weatherSource: epwFile,
+          designTempWinter: summary?.min_temperature_c ?? (elev > 4500 ? -35.0 : -20.0),
+          designTempSummer: summary?.max_temperature_c ?? 22.0,
+        },
+      });
+    }
   };
 
   const handleLiveFetchClimate = async () => {
@@ -139,9 +155,27 @@ export function Step2Location({ form, advancedMode }: StepProps) {
 
       if (res && res.epw_file) {
         setValue("location.weatherSource", res.epw_file);
+        const resolvedElev = res.dataset?.header?.elevation_m && (!currentElevation || currentElevation === 0)
+          ? res.dataset.header.elevation_m
+          : currentElevation;
         if (res.dataset?.header?.elevation_m && (!currentElevation || currentElevation === 0)) {
           setValue("location.elevation", res.dataset.header.elevation_m);
         }
+        if (activeProjectId) {
+          updateProject(activeProjectId, {
+            location: {
+              latitude: lat,
+              longitude: lon,
+              elevation: Number(resolvedElev),
+              region: reg,
+              climateZone: Number(resolvedElev) > 4500 ? "Extreme Cold Alpine (ASHRAE 8)" : currentClimateZone,
+              weatherSource: res.epw_file,
+            },
+          });
+        }
+        const matched = weatherDatasets.find((w) => w.epwFileName === res.epw_file);
+        if (matched) setActiveWeather(matched.id);
+
         setLiveFetchStatus({
           type: "success",
           message: `Ingested ${res.dataset?.records_count || 72} hourly observations (${res.provider?.toUpperCase()}). Generated EPW: ${res.epw_file}`,
@@ -168,6 +202,28 @@ export function Step2Location({ form, advancedMode }: StepProps) {
     setValue("location.weatherSource", preset.weatherSource);
     setValue("location.designTempWinter", preset.designWinter);
     setValue("location.designTempSummer", preset.designSummer);
+
+    // Synchronize directly into active project so simulations immediately reflect selected climate
+    if (activeProjectId) {
+      updateProject(activeProjectId, {
+        location: {
+          latitude: preset.latitude,
+          longitude: preset.longitude,
+          elevation: preset.elevation,
+          region: preset.region,
+          climateZone: preset.climateZone,
+          weatherSource: preset.weatherSource,
+          designTempWinter: preset.designWinter,
+          designTempSummer: preset.designSummer,
+        },
+      });
+    }
+
+    // Synchronize active weather station in the global store
+    const matched = weatherDatasets.find((w) => w.epwFileName === preset.weatherSource);
+    if (matched) {
+      setActiveWeather(matched.id);
+    }
   };
 
   return (
