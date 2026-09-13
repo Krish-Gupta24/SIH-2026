@@ -11,6 +11,7 @@ Maps canonical engineering metrics to:
 from dataclasses import dataclass
 from typing import Dict, Any, List, Optional, Union
 from enum import Enum
+from pathlib import Path
 
 
 class OutputCategory(str, Enum):
