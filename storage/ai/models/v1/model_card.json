@@ -1,0 +1,58 @@
+{
+  "model_id": "thermoshelter_surrogate_v1",
+  "version": "1",
+  "created_timestamp": "2026-09-13T17:40:35.423420+00:00",
+  "model_type": "hist_gbr",
+  "approval_status": "APPROVED_FOR_SURROGATE_USE",
+  "simulation_period": "winter_peak_3day",
+  "target_metrics": [
+    "winter_indoor_min_c",
+    "winter_indoor_mean_c",
+    "winter_heating_demand_kwh_m2",
+    "winter_comfort_hours_pct"
+  ],
+  "training_dataset_version": "baseline_v1",
+  "training_dataset_samples": 60,
+  "training_weather_stations": [
+    "IND_JK_Leh.427053_TMYx.epw"
+  ],
+  "in_domain_metrics": {
+    "winter_indoor_min_c": {
+      "mae": 1.434,
+      "rmse": 1.869,
+      "r2": 0.836,
+      "p95_absolute_error": 3.782,
+      "max_absolute_error": 4.371
+    },
+    "winter_indoor_mean_c": {
+      "mae": 1.434,
+      "rmse": 1.869,
+      "r2": 0.836,
+      "p95_absolute_error": 3.782,
+      "max_absolute_error": 4.371
+    },
+    "winter_heating_demand_kwh_m2": {
+      "mae": 5.735,
+      "rmse": 7.475,
+      "r2": 0.836,
+      "p95_absolute_error": 15.128,
+      "max_absolute_error": 17.484
+    },
+    "winter_comfort_hours_pct": {
+      "mae": 5.735,
+      "rmse": 7.475,
+      "r2": 0.836,
+      "p95_absolute_error": 15.128,
+      "max_absolute_error": 17.484
+    }
+  },
+  "leave_one_climate_out_metrics": {},
+  "baseline_comparison": {},
+  "target_engineering_tolerances": {
+    "winter_indoor_min_c": "MAE <= 2.0 C"
+  },
+  "known_limitations": [
+    "Initial surrogate baseline"
+  ],
+  "out_of_domain_behavior": "Conservative uncertainty margin applied"
+}

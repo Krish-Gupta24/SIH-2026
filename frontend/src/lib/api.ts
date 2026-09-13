@@ -12,4 +12,5 @@ export const weatherApi = api.weather;
 export const materialsApi = api.materials;
 export const projectsApi = api.projects;
 export const ansysApi = api.ansys;
+export const aiApi = api.ai;
 

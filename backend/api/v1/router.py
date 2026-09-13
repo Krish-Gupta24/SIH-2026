@@ -12,6 +12,7 @@ from backend.api.v1.endpoints import (
     auth,
     validation,
     ansys,
+    ai_design,
 )
 
 api_router = APIRouter()
@@ -38,5 +39,6 @@ api_router.include_router(optimization.router, prefix="/optimization", tags=["Mu
 api_router.include_router(reports.router, prefix="/reports", tags=["Reports & Provenance"])
 api_router.include_router(validation.router, prefix="/validation", tags=["Empirical Validation"])
 api_router.include_router(ansys.router, prefix="/ansys", tags=["ANSYS Simulation Deck & Validation"])
+api_router.include_router(ai_design.router, prefix="/ai", tags=["AI Generative Design"])
 
 

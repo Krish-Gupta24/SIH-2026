@@ -144,6 +144,7 @@ export interface ShelterStoreState {
   updateProject: (id: string, updates: Partial<ShelterModel>) => void;
   deleteProject: (id: string) => Promise<void>;
   saveProjectVersion: (sourceId: string, versionName: string, description?: string) => ShelterModel;
+  applyAICandidate: (candidateModel: any) => string;
   setActiveWizardStep: (step: number) => void;
 
   addSimulationJob: (job: SimulationJobItem) => void;
@@ -2337,6 +2338,31 @@ export const useShelterStore = create<ShelterStoreState>()(
         });
 
         return newVersionModel;
+      },
+
+      applyAICandidate: (candidateModel: any) => {
+        const normalized = normalizeShelterModel(candidateModel);
+        if (!normalized.id || normalized.id === "default") {
+          normalized.id = `shelter-ai-${Date.now().toString(36)}`;
+        }
+        if (!normalized.project) {
+          normalized.project = {} as any;
+        }
+        if (!normalized.project.name) {
+          normalized.project.name = `AI Generated Optimal Shelter (${normalized.id.slice(-6)})`;
+        }
+        normalized.project.id = normalized.id;
+
+        set((state) => ({
+          deletedProjectIds: (state.deletedProjectIds || []).filter((did) => did !== normalized.id),
+          projects: [...state.projects.filter((p) => p.id !== normalized.id), normalized],
+          activeProjectId: normalized.id,
+        }));
+
+        api.projects.create(normalized).catch((err) => {
+          console.warn("Backend project create sync note:", err);
+        });
+        return normalized.id;
       },
 
       setActiveWizardStep: (step: number) => {

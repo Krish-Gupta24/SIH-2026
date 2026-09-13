@@ -1,0 +1,227 @@
+{
+  "id": "shelter_829111",
+  "name": "ThermoShelter_AI_OPT_001",
+  "geometry": {
+    "shape": "Rectangle",
+    "orientation": 177.15974358459368,
+    "roofAngle": 15,
+    "floorElevation": 0.1,
+    "length": 9.193705122836363,
+    "width": 6.3028538394146825,
+    "height": 3.1076850169429653,
+    "roof_type": "flat",
+    "roof_angle": 0,
+    "roofType": "Gable"
+  },
+  "envelope": {
+    "walls": {
+      "north": {
+        "constructionId": "const-north-insulated-rammed-earth",
+        "name": "Wall North",
+        "layers": [
+          {
+            "materialId": "mat-eps-insulation",
+            "name": "Expanded Polystyrene (EPS)",
+            "thickness": 0.15
+          },
+          {
+            "materialId": "mat-rammed-earth",
+            "name": "Stabilized Rammed Earth",
+            "thickness": 0.25
+          }
+        ]
+      },
+      "south": {
+        "constructionId": "const-south-passive-solar-trombe",
+        "name": "Wall South",
+        "layers": [
+          {
+            "materialId": "mat-eps-insulation",
+            "name": "Expanded Polystyrene (EPS)",
+            "thickness": 0.15
+          },
+          {
+            "materialId": "mat-rammed-earth",
+            "name": "Stabilized Rammed Earth",
+            "thickness": 0.25
+          }
+        ]
+      },
+      "east": {
+        "constructionId": "const-east-insulated-wall",
+        "name": "Wall East",
+        "layers": [
+          {
+            "materialId": "mat-eps-insulation",
+            "name": "Expanded Polystyrene (EPS)",
+            "thickness": 0.15
+          },
+          {
+            "materialId": "mat-rammed-earth",
+            "name": "Stabilized Rammed Earth",
+            "thickness": 0.25
+          }
+        ]
+      },
+      "west": {
+        "constructionId": "const-west-insulated-wall",
+        "name": "Wall West",
+        "layers": [
+          {
+            "materialId": "mat-eps-insulation",
+            "name": "Expanded Polystyrene (EPS)",
+            "thickness": 0.15
+          },
+          {
+            "materialId": "mat-rammed-earth",
+            "name": "Stabilized Rammed Earth",
+            "thickness": 0.25
+          }
+        ]
+      }
+    },
+    "roof": {
+      "id": "const_roof_heavy_timber_insulated",
+      "name": "HEAVY_TIMBER_INSULATED Roof Construction",
+      "layers": [
+        {
+          "material_id": "mat-galvanized-steel",
+          "thickness": 0.002
+        },
+        {
+          "material_id": "mat-eps-insulation",
+          "thickness": 0.2903796749468259
+        },
+        {
+          "material_id": "mat-timber-deck",
+          "thickness": 0.02
+        }
+      ],
+      "constructionId": "const-insulated-metal-roof",
+      "slope": 15,
+      "overhang": 0.5,
+      "solarAbsorptance": 0.3
+    },
+    "floor": {
+      "id": "const_floor_insulated",
+      "name": "Insulated Foundation Slab",
+      "layers": [
+        {
+          "material_id": "mat-concrete-slab",
+          "thickness": 0.12
+        },
+        {
+          "material_id": "mat-xps-insulation",
+          "thickness": 0.24639491652033818
+        }
+      ],
+      "constructionId": "const-insulated-concrete-floor",
+      "groundContact": true,
+      "perimeterInsulation": true
+    }
+  },
+  "materials": {
+    "wall_construction": "PUF_PANEL",
+    "roof_construction": "HEAVY_TIMBER_INSULATED",
+    "glazing_type": "TRIPLE_LOW_E_KRYPTON"
+  },
+  "thermal_mass": {
+    "type": "HIGH_DENSITY_CONCRETE",
+    "thickness": 0.16670843436012092,
+    "surface": "floor"
+  },
+  "windows": [
+    {
+      "id": "win_south_1",
+      "wall": "south",
+      "width": 1,
+      "height": 1.2,
+      "position_x": 1.34,
+      "sill_height": 0.9,
+      "glazing_type": "TRIPLE_LOW_E_KRYPTON"
+    },
+    {
+      "id": "win_south_2",
+      "wall": "south",
+      "width": 1,
+      "height": 1.2,
+      "position_x": 3.18,
+      "sill_height": 0.9,
+      "glazing_type": "TRIPLE_LOW_E_KRYPTON"
+    },
+    {
+      "id": "win_south_3",
+      "wall": "south",
+      "width": 1,
+      "height": 1.2,
+      "position_x": 5.02,
+      "sill_height": 0.9,
+      "glazing_type": "TRIPLE_LOW_E_KRYPTON"
+    },
+    {
+      "id": "win_south_4",
+      "wall": "south",
+      "width": 1,
+      "height": 1.2,
+      "position_x": 6.85,
+      "sill_height": 0.9,
+      "glazing_type": "TRIPLE_LOW_E_KRYPTON"
+    }
+  ],
+  "doors": [
+    {
+      "id": "door_main",
+      "wall": "east",
+      "width": 0.9,
+      "height": 2,
+      "position_x": 0.5,
+      "construction": "insulated_door"
+    }
+  ],
+  "ventilation": {
+    "infiltrationACH": 0.25,
+    "mechanicalVentilationACH": 0.5,
+    "heatRecoveryEfficiency": 0.85,
+    "infiltration_ach": 0.2136241588327315,
+    "natural_ventilation_enabled": false,
+    "mechanical_ventilation_enabled": false
+  },
+  "occupancy": {
+    "count": 3,
+    "activity": "Sedentary"
+  },
+  "schemaVersion": "1.0.0",
+  "project": {
+    "id": "shelter_829111",
+    "name": "ThermoShelter_AI_OPT_001",
+    "version": "1.0.0",
+    "description": "High-altitude engineering model.",
+    "createdAt": "2026-09-13T18:07:48.880Z",
+    "tags": [
+      "high-altitude"
+    ]
+  },
+  "location": {
+    "region": "Leh Ladakh, India",
+    "latitude": 34.1526,
+    "longitude": 77.5771,
+    "elevation": 3500,
+    "climateZone": "Cold / Extreme Alpine",
+    "weatherSource": "IND_JK_Leh.427053_TMYx.epw",
+    "designTempWinter": -20,
+    "designTempSummer": 28
+  },
+  "thermalMass": [],
+  "internalLoads": {
+    "occupantsCount": 4,
+    "activityLevelW": 120,
+    "lightingPowerDensityWPerM2": 5,
+    "equipmentPowerDensityWPerM2": 3
+  },
+  "designTargets": {
+    "comfortTempMinC": 18,
+    "comfortTempMaxC": 24,
+    "targetComfortPercent": 85,
+    "maxAnnualHeatingDemandKwhM2": 35
+  }
+}

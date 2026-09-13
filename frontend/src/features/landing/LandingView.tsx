@@ -74,6 +74,13 @@ export function PremiumLanding({ onOpen, onContinue, hasProject, summary }: Land
               Simulate
             </Link>
             <Link
+              href="/ai-designer"
+              className="landing-nav-link text-[11px] font-semibold text-black/75 transition-colors hover:text-black flex items-center gap-1"
+            >
+              <span>AI Designer</span>
+              <span className="size-1.5 rounded-full bg-emerald-500 inline-block animate-pulse" />
+            </Link>
+            <Link
               href="/optimization"
               className="landing-nav-link text-[11px] font-semibold text-black/75 transition-colors hover:text-black"
             >

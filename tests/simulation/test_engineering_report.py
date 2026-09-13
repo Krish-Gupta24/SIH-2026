@@ -198,3 +198,51 @@ def test_csv_export_formatting(sample_shelter_model):
     assert "Simulation Engine" in flat_rows
     assert "IND_JK_Leh.420270_ISHRAE.epw" in flat_rows
     assert "Project Version" in flat_rows
+
+
+def test_ai_generative_design_report_integration(sample_shelter_model):
+    """Verify AI Generative Design metadata, SHAP, and EnergyPlus verification integrate into 24-section report."""
+    ai_payload = {
+        "model_version": "v1.2.0",
+        "optimization_mode": "BALANCED_RESILIENCE",
+        "evaluations_count": 4000,
+        "candidates_count": 28,
+        "physics_verified": True,
+        "calibration_error": "±0.45°C",
+        "selected_candidate": {
+            "candidate_id": "AI_CAND_KNEE_042",
+            "parameters": {
+                "length_m": 6.2,
+                "window_wall_ratio_south": 0.28,
+                "glazing_type": "Triple_LowE_Argon",
+            },
+        },
+        "top_shap_attributions": [
+            "South Solar Aperture (+4.2°C)",
+            "Aerogel Thermal Blanket (+3.9°C)",
+        ],
+    }
+
+    report = EngineeringReportCompiler.compile_24_section_report(
+        sample_shelter_model,
+        ai_generative_design=ai_payload,
+    )
+
+    sec20 = report["sections"]["20_optimization"]
+    assert sec20["status"] == "AVAILABLE"
+    assert "NSGA-II" in sec20["algorithm"]
+    assert sec20["evaluated_candidates"] == 4000
+    assert sec20["physics_verification_status"] == "VERIFIED"
+
+    sec21 = report["sections"]["21_recommended_design"]
+    assert sec21["status"] == "AVAILABLE"
+    assert sec21["winner_candidate_id"] == "AI_CAND_KNEE_042"
+    assert "NOT universally optimal" in sec21["non_universal_optimality_notice"]
+
+    # Verify JSON and PDF export still work with AI payload
+    json_str = EngineeringReportCompiler.export_json(report)
+    assert "AI_CAND_KNEE_042" in json_str
+
+    pdf_bytes = EngineeringReportCompiler.export_pdf(report)
+    assert len(pdf_bytes) > 1000
+

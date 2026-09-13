@@ -25,6 +25,7 @@ interface NavItem {
 }
 
 const GLOBAL_NAV: NavItem[] = [
+  { id: "ai-designer", label: "⚡ AI Generative Designer", href: "/ai-designer" },
   { id: "projects", label: "Projects", href: "/projects" },
   { id: "materials", label: "Materials", href: "/materials" },
   { id: "settings", label: "Settings", href: "/settings" },

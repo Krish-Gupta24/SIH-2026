@@ -203,5 +203,91 @@ export const api = {
         body: JSON.stringify(payload),
       }),
   },
+  ai: {
+    getModelStatus: () => fetchApi<{
+      is_surrogate_available: boolean;
+      model_card?: any;
+      message?: string;
+    }>("/ai/models/status"),
+    listModels: () => fetchApi<{ models: any[] }>("/ai/models"),
+    generate: (params: {
+      weather_id?: string;
+      target_indoor_min_c?: number;
+      max_envelope_mass_kg?: number | null;
+      optimization_mode?: string;
+      population_size?: number;
+      generations?: number;
+      occupants?: number;
+    }) =>
+      fetchApi<{
+        job_id: string;
+        status: string;
+        progress_pct: number;
+        current_generation: number;
+        total_generations: number;
+        evaluations_count: number;
+        elapsed_seconds: number;
+        candidates_count: number;
+        error_message?: string | null;
+      }>("/ai/design/generate", {
+        method: "POST",
+        body: JSON.stringify(params),
+      }),
+    getJobStatus: (jobId: string) =>
+      fetchApi<{
+        job_id: string;
+        status: string;
+        progress_pct: number;
+        current_generation: number;
+        total_generations: number;
+        evaluations_count: number;
+        elapsed_seconds: number;
+        candidates_count: number;
+        error_message?: string | null;
+      }>(`/ai/design/jobs/${jobId}`),
+    getCandidates: (jobId: string) =>
+      fetchApi<Array<{
+        candidate_id: string;
+        parameters: Record<string, any>;
+        surrogate_predictions: Record<string, number>;
+        uncertainty_margin_c: number;
+        is_high_uncertainty: boolean;
+        objective_values: number[];
+        is_physics_verified: boolean;
+        verified_physics?: Record<string, number> | null;
+        calibration_error?: Record<string, number> | null;
+        verification_duration_s?: number | null;
+      }>>(`/ai/design/candidates/${jobId}`),
+    verifyCandidates: (jobId: string, options?: { k?: number; period_days?: number }) =>
+      fetchApi<{
+        job_id: string;
+        verified_count: number;
+        candidates: any[];
+      }>(`/ai/design/verify/${jobId}`, {
+        method: "POST",
+        body: JSON.stringify(options || { k: 5, period_days: 3 }),
+      }),
+    explainCandidate: (payload: { candidate: any; target_name?: string; top_k?: number }) =>
+      fetchApi<{
+        candidate_id: string;
+        target_name: string;
+        predicted_value: number;
+        base_value: number;
+        top_positive_features: Array<{ feature: string; shap_value: number; feature_value: any; direction: string }>;
+        top_negative_features: Array<{ feature: string; shap_value: number; feature_value: any; direction: string }>;
+        all_attributions: Record<string, number>;
+      }>("/ai/design/explain", {
+        method: "POST",
+        body: JSON.stringify(payload),
+      }),
+    applyCandidate: (candidate: any) =>
+      fetchApi<{
+        success: boolean;
+        shelter_model: any;
+      }>("/ai/design/apply", {
+        method: "POST",
+        body: JSON.stringify(candidate),
+      }),
+  },
 };
 

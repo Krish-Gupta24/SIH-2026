@@ -15,6 +15,7 @@ import {
   Cpu,
   RefreshCw,
   FolderOpen,
+  ArrowRight,
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -275,6 +276,33 @@ export function OptimizationView() {
           ) : undefined
         }
       />
+
+      {/* AI Generative Designer Flagship Banner */}
+      <div className="rounded-[2rem] border border-border bg-gradient-to-r from-blue-900/10 via-purple-900/10 to-emerald-900/10 p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm">
+        <div className="flex items-center gap-3">
+          <span className="flex size-10 shrink-0 items-center justify-center rounded-2xl bg-foreground text-background">
+            <Sparkles className="size-5 text-emerald-400" />
+          </span>
+          <div>
+            <h3 className="text-sm font-bold tracking-tight flex items-center gap-2">
+              <span>Flagship AI: Generative Inverse Thermal Designer</span>
+              <Badge variant="outline" className="text-[10px] py-0 border-emerald-500/30 text-emerald-600 dark:text-emerald-400">
+                Surrogate ML + NSGA-II
+              </Badge>
+            </h3>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Explore thousands of candidate shelter shapes and envelope assemblies in under 4 seconds with SHAP explainability.
+            </p>
+          </div>
+        </div>
+        <Link
+          href="/ai-designer"
+          className="inline-flex items-center gap-2 rounded-xl bg-foreground text-background px-4 py-2 text-xs font-semibold hover:opacity-90 transition-opacity shrink-0 shadow-md"
+        >
+          <span>Launch AI Designer</span>
+          <ArrowRight className="size-3.5" />
+        </Link>
+      </div>
 
       {/* Notification Banner */}
       {notification && (
