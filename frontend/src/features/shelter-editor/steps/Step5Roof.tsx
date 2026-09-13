@@ -9,11 +9,20 @@ interface StepProps {
 }
 
 const ROOF_MATERIALS = [
-  { id: "mat-galvanized-steel", name: "Corrugated Galvanized Steel", conductivity: 50.0 },
+  { id: "mat-standing-seam-aluminum", name: "Standing Seam Aluminum (High Reflectance)", conductivity: 160.0 },
+  { id: "mat-galvanized-steel", name: "Corrugated Galvanized Steel (CGI)", conductivity: 45.0 },
+  { id: "mat-aerogel-blanket", name: "Silica Aerogel Thermal Blanket", conductivity: 0.015 },
+  { id: "mat-vip-panel", name: "Vacuum Insulation Panel (VIP)", conductivity: 0.007 },
+  { id: "mat-polyurethane-foam", name: "Rigid Polyisocyanurate Foam (PIR)", conductivity: 0.024 },
+  { id: "mat-xps-insulation", name: "Extruded Polystyrene (XPS)", conductivity: 0.029 },
   { id: "mat-eps-insulation", name: "Expanded Polystyrene (EPS)", conductivity: 0.035 },
-  { id: "mat-polyurethane-foam", name: "Rigid Polyurethane Foam (PIR)", conductivity: 0.024 },
-  { id: "mat-timber-deck", name: "Pine Wood Ceiling Deck", conductivity: 0.13 },
+  { id: "mat-mineral-wool", name: "Mineral Wool / Rockwool Roof Board", conductivity: 0.038 },
+  { id: "mat-sheep-wool", name: "Himalayan Sheep Wool Batt", conductivity: 0.039 },
+  { id: "mat-radiant-barrier", name: "Reflective Radiant Barrier Foil", conductivity: 220.0 },
+  { id: "mat-timber-deck", name: "Pine Wood Tongue & Groove Ceiling Deck", conductivity: 0.13 },
+  { id: "mat-clt-panel", name: "Cross-Laminated Timber (CLT) Roof Slab", conductivity: 0.13 },
   { id: "mat-asphalt-shingle", name: "Bitumen Waterproofing Membrane", conductivity: 0.17 },
+  { id: "mat-epdm-membrane", name: "EPDM Cold-Weather Roofing Membrane", conductivity: 0.25 },
 ];
 
 export function Step5Roof({ form, advancedMode }: StepProps) {

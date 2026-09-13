@@ -35,11 +35,20 @@ def create_application() -> FastAPI:
         max_bytes=settings.MAX_REQUEST_BODY_BYTES,
     )
 
-    # CORS configuration
-    if settings.CORS_ORIGINS:
+    # CORS configuration - Allow all web origins (Vercel, Render, Localhost)
+    cors_origins = settings.CORS_ORIGINS
+    if "*" in cors_origins or any("localhost" in o for o in cors_origins) or settings.ENVIRONMENT != "production":
         app.add_middleware(
             CORSMiddleware,
-            allow_origins=settings.CORS_ORIGINS,
+            allow_origin_regex=r"^https?://.*",
+            allow_credentials=True,
+            allow_methods=["*"],
+            allow_headers=["*"],
+        )
+    elif cors_origins:
+        app.add_middleware(
+            CORSMiddleware,
+            allow_origins=cors_origins,
             allow_credentials=True,
             allow_methods=["*"],
             allow_headers=["*"],

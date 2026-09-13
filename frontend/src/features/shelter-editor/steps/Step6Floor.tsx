@@ -9,11 +9,16 @@ interface StepProps {
 }
 
 const FLOOR_MATERIALS = [
-  { id: "mat-concrete-slab", name: "Heavy Concrete Floor Slab", conductivity: 1.40 },
-  { id: "mat-xps-insulation", name: "Extruded Polystyrene (XPS) High Load", conductivity: 0.028 },
+  { id: "mat-concrete-slab", name: "Heavy Reinforced Concrete Slab", conductivity: 1.40 },
+  { id: "mat-granite-stone", name: "Local Granite Stone Bed", conductivity: 2.80 },
+  { id: "mat-xps-insulation", name: "Extruded Polystyrene (XPS) High Load", conductivity: 0.029 },
+  { id: "mat-polyurethane-foam", name: "Rigid Polyurethane Foam (PIR)", conductivity: 0.024 },
+  { id: "mat-aerogel-blanket", name: "Silica Aerogel Thermal Break", conductivity: 0.015 },
   { id: "mat-eps-insulation", name: "Expanded Polystyrene (EPS)", conductivity: 0.035 },
+  { id: "mat-glass-foam-gravel", name: "Foamed Cellular Glass Gravel (Permafrost Break)", conductivity: 0.08 },
   { id: "mat-gravel-bed", name: "Crushed Stone Hardcore Sub-base", conductivity: 0.85 },
-  { id: "mat-timber-flooring", name: "Hardwood / Timber Plank Flooring", conductivity: 0.14 },
+  { id: "mat-timber-flooring", name: "Hardwood Tongue & Groove Plank Flooring", conductivity: 0.14 },
+  { id: "mat-clt-panel", name: "Cross-Laminated Timber (CLT) Floor Panel", conductivity: 0.13 },
 ];
 
 export function Step6Floor({ form, advancedMode }: StepProps) {

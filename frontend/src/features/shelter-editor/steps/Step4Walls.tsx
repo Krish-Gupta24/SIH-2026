@@ -9,14 +9,28 @@ interface StepProps {
 }
 
 const VERIFIED_MATERIALS = [
+  { id: "mat-aerogel-blanket", name: "Silica Aerogel Blanket (Superinsulation)", conductivity: 0.015, density: 160 },
+  { id: "mat-vip-panel", name: "Vacuum Insulation Panel (VIP)", conductivity: 0.007, density: 190 },
+  { id: "mat-polyurethane-foam", name: "Polyisocyanurate / Polyurethane Foam (PIR)", conductivity: 0.024, density: 32 },
+  { id: "mat-xps-insulation", name: "Extruded Polystyrene (XPS)", conductivity: 0.029, density: 35 },
   { id: "mat-eps-insulation", name: "Expanded Polystyrene (EPS)", conductivity: 0.035, density: 25 },
-  { id: "mat-xps-insulation", name: "Extruded Polystyrene (XPS)", conductivity: 0.028, density: 35 },
-  { id: "mat-rammed-earth", name: "Stabilized Rammed Earth", conductivity: 1.25, density: 1950 },
+  { id: "mat-mineral-wool", name: "High-Density Rockwool / Mineral Wool", conductivity: 0.038, density: 60 },
+  { id: "mat-sheep-wool", name: "Himalayan Sheep Wool Batt (Indigenous)", conductivity: 0.039, density: 30 },
+  { id: "mat-glass-wool", name: "Glass Wool Blanket", conductivity: 0.040, density: 24 },
+  { id: "mat-straw-insulation", name: "Compressed Straw Bale Insulation", conductivity: 0.065, density: 110 },
+  { id: "mat-rammed-earth", name: "Stabilized Rammed Earth (Local Ladakh)", conductivity: 1.25, density: 2000 },
+  { id: "mat-granite-stone", name: "Local Granite Stone Masonry", conductivity: 2.80, density: 2600 },
   { id: "mat-stone-masonry", name: "Granite Stone Masonry", conductivity: 2.15, density: 2400 },
-  { id: "mat-concrete-block", name: "Hollow Concrete Block", conductivity: 0.90, density: 1400 },
+  { id: "mat-dense-brick", name: "Dense Kiln Burnt Clay Brick", conductivity: 0.84, density: 1800 },
+  { id: "mat-aac-block", name: "Autoclaved Aerated Concrete (AAC)", conductivity: 0.16, density: 550 },
+  { id: "mat-concrete-block", name: "Hollow Concrete Block (CMU)", conductivity: 0.90, density: 1400 },
+  { id: "mat-pcm-salt-hydrate", name: "Phase Change Material (PCM Salt Hydrate 21°C)", conductivity: 0.54, density: 1500 },
+  { id: "mat-clt-panel", name: "Cross-Laminated Timber (CLT)", conductivity: 0.13, density: 480 },
+  { id: "mat-timber-cedar", name: "Himalayan Cedar (Deodar) Timber", conductivity: 0.12, density: 550 },
   { id: "mat-timber-stud", name: "Softwood Timber Framing", conductivity: 0.13, density: 500 },
-  { id: "mat-lime-plaster", name: "Lime Sand Interior Plaster", conductivity: 0.70, density: 1600 },
-  { id: "mat-mud-straw-plaster", name: "Traditional Mud & Straw Plaster", conductivity: 0.45, density: 1300 },
+  { id: "mat-gypsum-board", name: "Gypsum Wallboard (Drywall)", conductivity: 0.16, density: 800 },
+  { id: "mat-lime-plaster", name: "Hydraulic Lime Sand Plaster", conductivity: 0.70, density: 1600 },
+  { id: "mat-mud-straw-plaster", name: "Traditional Mud & Straw Plaster (Pharka)", conductivity: 0.45, density: 1300 },
 ];
 
 export function Step4Walls({ form, advancedMode }: StepProps) {
