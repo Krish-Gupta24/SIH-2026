@@ -1,7 +1,7 @@
 """Mathematical formulations of multi-objective functions and conservative constraints."""
 
 from enum import Enum
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 import numpy as np
 
 from backend.ai.uncertainty import SurrogateUncertaintyEstimator
