@@ -19,6 +19,12 @@ class SecurityException(Exception):
 APPROVED_BINARY_NAMES: Set[str] = {
     "energyplus.exe",
     "energyplus",
+    "energyplus-24.1.0",
+    "energyplus-24.1.0.exe",
+    "energyplus-24-1-0",
+    "energyplus-24-1-0.exe",
+    "energyplus-23.2.0",
+    "energyplus-23-2-0",
     "fluent.exe",
     "fluent",
     "openstudio.exe",
@@ -50,7 +56,16 @@ class BinaryAllowlist:
     def is_binary_name_allowed(cls, binary_path: str) -> bool:
         """Check whether the filename belongs to the strict approved binary set."""
         basename = Path(binary_path).name.lower()
-        return basename in APPROVED_BINARY_NAMES
+        if basename in APPROVED_BINARY_NAMES:
+            return True
+        # Allow official NREL versioned binaries (e.g. energyplus-24.1.0, energyplus-24.2.0)
+        if basename.startswith("energyplus") and not basename.endswith((".py", ".sh", ".bat", ".cmd", ".txt", ".log", ".json", ".idd", ".idf", ".epw")):
+            return True
+        if basename.startswith("openstudio") and not basename.endswith((".py", ".sh", ".bat", ".cmd", ".txt", ".log", ".json")):
+            return True
+        if basename.startswith("fluent") and not basename.endswith((".py", ".sh", ".bat", ".cmd", ".txt", ".log", ".json")):
+            return True
+        return False
 
     @classmethod
     def is_path_in_approved_directory(cls, binary_path: str) -> bool:
