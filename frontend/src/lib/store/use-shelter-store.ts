@@ -158,6 +158,7 @@ export interface ShelterStoreState {
   addMaterial: (material: MaterialItem) => void;
   updateMaterial: (id: string, updates: Partial<MaterialItem>) => void;
   deleteMaterial: (id: string) => void;
+  resetMaterialsToDefault: () => void;
 
   updateSettings: (updates: Partial<SettingsState>) => void;
   loadAllInitialData: () => Promise<void>;
@@ -1891,6 +1892,10 @@ export const useShelterStore = create<ShelterStoreState>()(
         }));
       },
 
+      resetMaterialsToDefault: () => {
+        set({ materials: DEFAULT_MATERIALS });
+      },
+
       updateSettings: (updates: Partial<SettingsState>) => {
         set((state) => ({
           settings: { ...state.settings, ...updates },
@@ -1974,9 +1979,32 @@ export const useShelterStore = create<ShelterStoreState>()(
       },
     }),
     {
-      name: "shelter_thermal_engineering_store_v1",
+      name: "shelter_thermal_engineering_store_v2",
+      version: 2,
+      migrate: (persistedState: any, version: number) => {
+        const state = persistedState as any;
+        if (!state) return state;
+        const existingIds = new Set((state.materials || []).map((m: any) => m.id));
+        const missing = DEFAULT_MATERIALS.filter((m) => !existingIds.has(m.id));
+        return {
+          ...state,
+          materials: [...(state.materials || []), ...missing],
+        };
+      },
       storage: createJSONStorage(() => {
         if (typeof window !== "undefined" && window.localStorage) {
+          try {
+            const oldV1 = window.localStorage.getItem("shelter_thermal_engineering_store_v1");
+            if (oldV1 && !window.localStorage.getItem("shelter_thermal_engineering_store_v2")) {
+              const parsed = JSON.parse(oldV1);
+              if (parsed?.state) {
+                const existingIds = new Set((parsed.state.materials || []).map((m: any) => m.id));
+                const missing = DEFAULT_MATERIALS.filter((m) => !existingIds.has(m.id));
+                parsed.state.materials = [...(parsed.state.materials || []), ...missing];
+                window.localStorage.setItem("shelter_thermal_engineering_store_v2", JSON.stringify(parsed));
+              }
+            }
+          } catch (_) {}
           return window.localStorage;
         }
         const mem = new Map<string, string>();
@@ -1995,10 +2023,12 @@ export const useShelterStore = create<ShelterStoreState>()(
           if (Array.isArray(state.projects)) {
             state.projects = state.projects.map(normalizeShelterModel);
           }
-          if (!state.materials || state.materials.length < DEFAULT_MATERIALS.length) {
-            const existingIds = new Set((state.materials || []).map((m: any) => m.id));
-            const missing = DEFAULT_MATERIALS.filter((m) => !existingIds.has(m.id));
-            state.materials = [...(state.materials || []), ...missing];
+          const existingIds = new Set((state.materials || []).map((m: any) => m.id));
+          const missing = DEFAULT_MATERIALS.filter((m) => !existingIds.has(m.id));
+          if (missing.length > 0) {
+            const merged = [...(state.materials || []), ...missing];
+            state.materials = merged;
+            useShelterStore.setState({ materials: merged });
           }
         }
       },

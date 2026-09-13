@@ -11,7 +11,7 @@ import {
   ShieldCheck,
   Trash2,
 } from "lucide-react";
-import { useShelterStore, MaterialItem } from "@/lib/store/use-shelter-store";
+import { useShelterStore, MaterialItem, DEFAULT_MATERIALS } from "@/lib/store/use-shelter-store";
 import {
   Dialog,
   DialogHeader,
@@ -27,10 +27,21 @@ import {
 } from "@/components/v0/platform-components";
 
 export function MaterialsView() {
-  const { materials, addMaterial, deleteMaterial } = useShelterStore();
+  const { materials, addMaterial, deleteMaterial, resetMaterialsToDefault } = useShelterStore();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [selectedMaterial, setSelectedMaterial] = useState<MaterialItem | null>(null);
+
+  // Ensure all 36 verified materials are loaded even if old browser cache is present
+  React.useEffect(() => {
+    if (materials.length < DEFAULT_MATERIALS.length) {
+      const existingIds = new Set(materials.map((m) => m.id));
+      const missing = DEFAULT_MATERIALS.filter((m) => !existingIds.has(m.id));
+      if (missing.length > 0) {
+        useShelterStore.setState({ materials: [...materials, ...missing] });
+      }
+    }
+  }, [materials.length]);
 
   // R-value interactive calculator state
   const [calcMaterialId, setCalcMaterialId] = useState(materials[0]?.id || "mat-eps-insulation");
@@ -103,6 +114,15 @@ export function MaterialsView() {
             >
               <Calculator className="size-3.5" />
               {showCalculator ? "Hide R-Value Tool" : "R-Value Calculator"}
+            </ActionButton>
+            <ActionButton
+              tone="secondary"
+              onClick={() => resetMaterialsToDefault()}
+              className="rounded-full text-xs font-semibold"
+              title="Reset catalog to all 36 verified national standard materials"
+            >
+              <ShieldCheck className="size-3.5 text-emerald-500" />
+              Reset Catalog ({DEFAULT_MATERIALS.length})
             </ActionButton>
             <ActionButton
               tone="primary"
