@@ -313,6 +313,46 @@ export function OptimizationView() {
         candidateBudget={candidateBudget}
       />
 
+      {/* 0 Feasible Guidance Advisory */}
+      {sweepResult && sweepResult.feasibleCount === 0 && (
+        <div className="p-6 rounded-[2rem] border-2 border-amber-500/40 bg-amber-500/10 text-xs space-y-3 shadow-sm">
+          <div className="flex items-center gap-2 font-bold text-sm text-amber-800 dark:text-amber-300">
+            <AlertCircle className="h-5 w-5 shrink-0 text-amber-600 dark:text-amber-400" />
+            <span>All {sweepResult.validCount} Candidates Physically Simulated — 0 Met Strict Hard Constraints</span>
+          </div>
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            In sub-zero Himalayan winter (-20°C outdoor ambient), 100% passive unheated shelters naturally dip below standard room comfort (8°C) before dawn while still preventing hypothermia. Because a strict constraint was active, all candidates were marked as violated.
+          </p>
+          <div className="flex flex-wrap items-center gap-3 pt-1">
+            <Button
+              size="sm"
+              onClick={() => {
+                setConstraints((prev) =>
+                  prev.map((c) => (c.id === "c-min-temp" ? { ...c, threshold: 0.0 } : c))
+                );
+                handleRunSweep();
+              }}
+              className="rounded-full bg-amber-600 text-white hover:bg-amber-700 text-xs font-semibold px-4"
+            >
+              Set Survival Minimum to 0°C & Re-Run
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setConstraints((prev) =>
+                  prev.map((c) => (c.id === "c-min-temp" ? { ...c, enabled: false } : c))
+                );
+                handleRunSweep();
+              }}
+              className="rounded-full border-amber-500/40 bg-card hover:bg-secondary text-foreground text-xs font-semibold px-4"
+            >
+              Disable Min-Temp Constraint & Re-Run
+            </Button>
+          </div>
+        </div>
+      )}
+
       {/* 2. Structured Recommendation Report (RECOMMENDED DESIGN) */}
       {recommendationReport && sweepResult?.bestCandidate && (
         <RecommendedDesignReportCard

@@ -4,45 +4,67 @@ import { useEffect, useRef } from "react";
 import { useShelterStore } from "@/lib/store/use-shelter-store";
 
 /**
- * Platform initialization and real-time cross-device synchronization hook.
- * Keeps projects, materials, and weather configurations in sync across all devices and tabs.
+ * Platform initialization and cross-device synchronization hook.
+ * Syncs projects, materials, and benchmarks on initial mount and when returning to the tab.
+ * Uses strict concurrency locking and cooldown throttling to prevent network flooding.
  */
 export function usePlatformInit() {
   const loadAllInitialData = useShelterStore((state) => state.loadAllInitialData);
   const isLoadingApi = useShelterStore((state) => state.isLoadingApi);
   const hasInitialized = useRef(false);
+  const isSyncing = useRef(false);
+  const lastSyncTime = useRef<number>(0);
 
   useEffect(() => {
-    const doSync = () => {
+    const doSync = async (force: boolean = false) => {
+      // Guard against concurrent execution
+      if (isSyncing.current) return;
+
+      const now = Date.now();
+      // Throttle: minimum 60 seconds between syncs unless forced on mount
+      if (!force && now - lastSyncTime.current < 60_000) {
+        return;
+      }
+
       if (typeof loadAllInitialData === "function") {
-        loadAllInitialData().catch((err: unknown) => {
+        isSyncing.current = true;
+        try {
+          await loadAllInitialData();
+          lastSyncTime.current = Date.now();
+        } catch (err: unknown) {
           console.debug("Background sync note:", err);
-        });
+        } finally {
+          isSyncing.current = false;
+        }
       }
     };
 
-    // Initial mount sync
+    // 1. Initial mount sync (force = true)
     if (!hasInitialized.current) {
       hasInitialized.current = true;
-      doSync();
+      doSync(true);
     }
 
-    // 1. Periodic background polling every 3.5 seconds across active sessions
-    const intervalId = setInterval(doSync, 3500);
+    // 2. Gentle background sync: every 3 minutes (180s), ONLY if tab is active/visible
+    const intervalId = setInterval(() => {
+      if (typeof document !== "undefined" && document.visibilityState === "visible") {
+        doSync(false);
+      }
+    }, 180_000);
 
-    // 2. Immediate sync when user focuses the window or switches back to tab
+    // 3. Tab focus / visibility change sync (throttled by 60s cooldown)
     const handleFocus = () => {
       if (typeof document !== "undefined" && document.visibilityState === "visible") {
-        doSync();
+        doSync(false);
       }
     };
     window.addEventListener("focus", handleFocus);
     document.addEventListener("visibilitychange", handleFocus);
 
-    // 3. Cross-tab synchronization on same device
+    // 4. Cross-tab synchronization on same device (when other tab writes to localStorage)
     const handleStorage = (e: StorageEvent) => {
       if (e.key && e.key.includes("shelter_thermal_engineering_store")) {
-        doSync();
+        doSync(false);
       }
     };
     window.addEventListener("storage", handleStorage);

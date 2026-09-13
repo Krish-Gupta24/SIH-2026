@@ -19,6 +19,8 @@ import {
   Calendar,
   ArrowRight,
   FolderKanban,
+  X,
+  Box,
 } from "lucide-react";
 import { useShelterStore, SimulationJobItem, transformBackendJobToItem } from "@/lib/store/use-shelter-store";
 import { simulationApi } from "@/lib/api";
@@ -43,6 +45,7 @@ export function SimulationsView() {
   const {
     projects,
     activeProjectId,
+    setActiveProject,
     simulations,
     addProject,
     addSimulationJob,
@@ -62,6 +65,12 @@ export function SimulationsView() {
   const [confirmTestDataModal, setConfirmTestDataModal] = useState<boolean>(false);
   const [pendingSimProject, setPendingSimProject] = useState<any>(null);
   const [ansysModalOpen, setAnsysModalOpen] = useState(false);
+  const [completedSimModal, setCompletedSimModal] = useState<{
+    simId: string;
+    projectName: string;
+    projectId?: string;
+    durationSeconds?: number;
+  } | null>(null);
 
   // Poll active simulation jobs until completion
   const pollSimulationStatus = React.useCallback(
@@ -94,6 +103,14 @@ export function SimulationsView() {
                 durationSeconds: statusData.duration_seconds,
               });
             }
+
+            // Trigger closeable modal popup to invite user to inspect live 3D thermal field
+            setCompletedSimModal({
+              simId,
+              projectName: proj?.project?.name || "Canonical Shelter",
+              projectId: proj?.id,
+              durationSeconds: statusData.duration_seconds,
+            });
           } else if (statusData.status === "failed" || statusData.status === "cancelled") {
             clearInterval(interval);
             updateSimulationJob(simId, {
@@ -131,6 +148,7 @@ export function SimulationsView() {
   // Simulation Period & Timestep Configuration State
   const [periodPreset, setPeriodPreset] = useState<"quick" | "multi_3" | "multi_7" | "monthly" | "full_year" | "custom">("quick");
   const [selectedMonth, setSelectedMonth] = useState<number>(1);
+  const [selectedDay, setSelectedDay] = useState<number>(15);
   const [startMonth, setStartMonth] = useState<number>(1);
   const [startDay, setStartDay] = useState<number>(1);
   const [endMonth, setEndMonth] = useState<number>(1);
@@ -230,34 +248,36 @@ export function SimulationsView() {
       let eDay = endDay;
       let isAnnual = false;
 
+      const daysInMonth = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+      const maxDaysThisMonth = daysInMonth[selectedMonth - 1] || 31;
+
       if (periodPreset === "quick") {
         periodType = "quick";
         runPeriodDays = 1;
-        sMonth = 1;
-        sDay = 1;
-        eMonth = 1;
-        eDay = 1;
+        sMonth = selectedMonth;
+        sDay = Math.min(maxDaysThisMonth, Math.max(1, selectedDay));
+        eMonth = selectedMonth;
+        eDay = sDay;
       } else if (periodPreset === "multi_3") {
         periodType = "multi_day";
         runPeriodDays = 3;
-        sMonth = 1;
-        sDay = 1;
-        eMonth = 1;
-        eDay = 3;
+        sMonth = selectedMonth;
+        sDay = Math.min(Math.max(1, maxDaysThisMonth - 2), Math.max(1, selectedDay));
+        eMonth = selectedMonth;
+        eDay = sDay + 2;
       } else if (periodPreset === "multi_7") {
         periodType = "multi_day";
         runPeriodDays = 7;
-        sMonth = 1;
-        sDay = 1;
-        eMonth = 1;
-        eDay = 7;
+        sMonth = selectedMonth;
+        sDay = Math.min(Math.max(1, maxDaysThisMonth - 6), Math.max(1, selectedDay));
+        eMonth = selectedMonth;
+        eDay = sDay + 6;
       } else if (periodPreset === "monthly") {
         periodType = "monthly";
         sMonth = selectedMonth;
         sDay = 1;
         eMonth = selectedMonth;
-        const daysInMonth = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
-        eDay = daysInMonth[selectedMonth - 1];
+        eDay = maxDaysThisMonth;
         runPeriodDays = eDay;
       } else if (periodPreset === "full_year") {
         periodType = "full_year";
@@ -545,6 +565,89 @@ export function SimulationsView() {
                 </div>
               </div>
 
+                {/* Sub-inputs for 24h Quick Run */}
+                {periodPreset === "quick" && (
+                  <div className="space-y-2 bg-secondary/50 p-3.5 rounded-2xl border border-border text-xs">
+                    <div className="flex flex-wrap items-center gap-3">
+                      <span className="text-muted-foreground font-medium">24h Simulation Date:</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-muted-foreground text-[11px]">Month:</span>
+                        <select
+                          value={selectedMonth}
+                          onChange={(e) => setSelectedMonth(Number(e.target.value))}
+                          className="bg-card border border-border text-foreground rounded-xl px-3 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-[#6E818F]"
+                        >
+                          {[
+                            "January (Peak Winter Heating)", "February (Late Winter)", "March (Spring Thaw)", "April (Early Spring)",
+                            "May (Spring Transition)", "June (Early Summer)", "July (Peak Summer Solar)", "August (Late Summer)",
+                            "September (Autumn Transition)", "October (Early Cold)", "November (Pre-Winter Freeze)", "December (Deep Winter)"
+                          ].map((mName, idx) => (
+                            <option key={idx + 1} value={idx + 1}>{mName}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-muted-foreground text-[11px]">Day:</span>
+                        <input
+                          type="number"
+                          min={1}
+                          max={[31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][selectedMonth - 1] || 31}
+                          value={selectedDay}
+                          onChange={(e) => setSelectedDay(Math.max(1, Math.min([31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][selectedMonth - 1] || 31, Number(e.target.value))))}
+                          className="w-14 bg-card border border-border rounded-xl px-2.5 py-1 text-center text-foreground text-xs"
+                        />
+                      </div>
+                      <span className="inline-flex items-center gap-1 rounded-full bg-sky-500/10 px-2.5 py-1 font-mono text-[10px] font-semibold text-sky-600 dark:text-sky-400 border border-sky-500/20">
+                        {selectedMonth === 1 ? "❄️ ASHRAE 99.6% Winter Sizing Datum" : selectedMonth === 7 ? "☀️ Peak Summer Solar Check" : "🍃 Shoulder Season"}
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-muted-foreground leading-relaxed">
+                      {selectedMonth === 1 && selectedDay === 15
+                        ? "Default is Jan 15 (standard ASHRAE 99.6% / ISHRAE peak winter heating design day benchmark for Leh/Ladakh). You can switch to July for summer overheating or any other month."
+                        : `Simulating a 24-hour diurnal cycle for Month ${selectedMonth}, Day ${selectedDay}.`}
+                    </p>
+                  </div>
+                )}
+
+                {/* Sub-inputs for Multi-Day (3 or 7 Days) */}
+                {(periodPreset === "multi_3" || periodPreset === "multi_7") && (
+                  <div className="space-y-2 bg-secondary/50 p-3.5 rounded-2xl border border-border text-xs">
+                    <div className="flex flex-wrap items-center gap-3">
+                      <span className="text-muted-foreground font-medium">Start Date:</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-muted-foreground text-[11px]">Month:</span>
+                        <select
+                          value={selectedMonth}
+                          onChange={(e) => setSelectedMonth(Number(e.target.value))}
+                          className="bg-card border border-border text-foreground rounded-xl px-3 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-[#6E818F]"
+                        >
+                          {[
+                            "January", "February", "March", "April",
+                            "May", "June", "July", "August",
+                            "September", "October", "November", "December"
+                          ].map((mName, idx) => (
+                            <option key={idx + 1} value={idx + 1}>{mName}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-muted-foreground text-[11px]">Start Day:</span>
+                        <input
+                          type="number"
+                          min={1}
+                          max={([31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][selectedMonth - 1] || 31) - (periodPreset === "multi_3" ? 2 : 6)}
+                          value={selectedDay}
+                          onChange={(e) => setSelectedDay(Math.max(1, Math.min(28, Number(e.target.value))))}
+                          className="w-14 bg-card border border-border rounded-xl px-2.5 py-1 text-center text-foreground text-xs"
+                        />
+                      </div>
+                      <span className="text-muted-foreground text-[11px]">
+                        ({periodPreset === "multi_3" ? "3 consecutive days" : "7 consecutive days"} starting {["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][selectedMonth - 1]} {selectedDay})
+                      </span>
+                    </div>
+                  </div>
+                )}
+
                 {/* Sub-inputs for Monthly */}
                 {periodPreset === "monthly" && (
                   <div className="flex items-center gap-3 bg-secondary/50 p-3 rounded-2xl border border-border text-xs">
@@ -817,10 +920,10 @@ export function SimulationsView() {
                             {sim.simulationPeriod?.is_annual
                               ? "Full Year (8,760h)"
                               : sim.simulationPeriod?.period_type === "quick"
-                              ? "24 Hours (1 Day)"
+                              ? `24 Hours (${["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][(sim.simulationPeriod.start_month || 1) - 1]} ${sim.simulationPeriod.start_day || 15})`
                               : sim.simulationPeriod?.period_type === "monthly"
-                              ? `1 Month (Month ${sim.simulationPeriod.start_month})`
-                              : `${sim.simulationPeriod?.run_period_days || 3} Days`}
+                              ? `1 Month (${["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][(sim.simulationPeriod.start_month || 1) - 1]})`
+                              : `${sim.simulationPeriod?.run_period_days || 3} Days (${["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][(sim.simulationPeriod?.start_month || 1) - 1]} ${sim.simulationPeriod?.start_day || 1})`}
                           </span>
                           <span className="text-[10px] text-slate-400 font-mono">
                             {sim.simulationPeriod?.timestep_minutes
@@ -967,6 +1070,102 @@ export function SimulationsView() {
 
       {/* ANSYS Validation Deck Export Modal */}
       <AnsysDeckExportModal open={ansysModalOpen} onOpenChange={setAnsysModalOpen} />
+
+      {/* Simulation Completed: Go to 3D Thermal Designer Popup Modal */}
+      {completedSimModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4 backdrop-blur-md animate-in fade-in zoom-in-95 duration-200">
+          <div className="relative w-full max-w-lg rounded-[2.5rem] border border-amber-500/40 bg-card p-8 shadow-[0_25px_70px_rgba(0,0,0,0.5)] space-y-6 text-foreground">
+            {/* Close Button 'X' */}
+            <button
+              type="button"
+              onClick={() => setCompletedSimModal(null)}
+              className="absolute top-6 right-6 h-8 w-8 rounded-full border border-border bg-secondary/80 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary transition-all"
+              aria-label="Close modal"
+            >
+              <X className="h-4 w-4" />
+            </button>
+
+            {/* Header Badge & Icon */}
+            <div className="flex items-start gap-4 pr-8">
+              <div className="size-14 rounded-2xl bg-gradient-to-tr from-amber-500/20 via-orange-500/25 to-red-500/20 border border-amber-500/40 flex items-center justify-center text-amber-500 shadow-inner shrink-0">
+                <Flame className="size-7 text-amber-500 animate-pulse" />
+              </div>
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 px-2.5 py-0.5 text-[10px] font-bold text-emerald-600 dark:text-emerald-400">
+                    <CheckCircle2 className="size-3" />
+                    SIMULATION COMPLETED
+                  </span>
+                  {completedSimModal.durationSeconds && (
+                    <span className="text-[10px] text-muted-foreground font-mono">
+                      {completedSimModal.durationSeconds.toFixed(1)}s
+                    </span>
+                  )}
+                </div>
+                <h3 className="text-xl font-bold text-foreground tracking-tight">
+                  3D Live Thermal Field Ready
+                </h3>
+                <p className="text-xs text-muted-foreground">
+                  Job <span className="font-mono font-bold text-foreground">{completedSimModal.simId}</span> · {completedSimModal.projectName}
+                </p>
+              </div>
+            </div>
+
+            {/* Explanation & Features Card */}
+            <div className="rounded-2xl border border-border bg-secondary/40 p-4 space-y-2.5">
+              <p className="text-xs text-foreground leading-relaxed font-medium">
+                EnergyPlus has finished computing all envelope heat fluxes, solar aperture harvests, and surface temperatures.
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1 text-[11px] text-muted-foreground">
+                <div className="flex items-center gap-2 p-2 rounded-xl bg-background/60 border border-border">
+                  <Eye className="size-3.5 text-orange-500 shrink-0" />
+                  <span>FLIR thermal contour map</span>
+                </div>
+                <div className="flex items-center gap-2 p-2 rounded-xl bg-background/60 border border-border">
+                  <Clock className="size-3.5 text-sky-500 shrink-0" />
+                  <span>24-Hour hourly scrubber</span>
+                </div>
+                <div className="flex items-center gap-2 p-2 rounded-xl bg-background/60 border border-border">
+                  <Box className="size-3.5 text-purple-500 shrink-0" />
+                  <span>ISO 10211 thermal bridge vectors</span>
+                </div>
+                <div className="flex items-center gap-2 p-2 rounded-xl bg-background/60 border border-border">
+                  <Flame className="size-3.5 text-amber-500 shrink-0" />
+                  <span>Real surface temperatures</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex flex-col sm:flex-row items-center justify-end gap-3 pt-2">
+              <Button
+                variant="outline"
+                onClick={() => setCompletedSimModal(null)}
+                className="w-full sm:w-auto rounded-full text-xs font-semibold px-5 h-10 border-border hover:bg-secondary"
+              >
+                Close & Stay Here
+              </Button>
+              <Link
+                href={`/designer/3d?mode=thermal${completedSimModal.projectId ? `&projectId=${completedSimModal.projectId}` : ""}`}
+                onClick={() => {
+                  if (completedSimModal.projectId) {
+                    setActiveProject(completedSimModal.projectId);
+                  }
+                  setCompletedSimModal(null);
+                }}
+                className="w-full sm:w-auto"
+              >
+                <Button
+                  className="w-full rounded-full bg-gradient-to-r from-amber-500 via-orange-500 to-rose-600 text-white font-bold text-xs px-6 h-10 shadow-lg shadow-orange-500/25 hover:from-amber-600 hover:via-orange-600 hover:to-rose-700 gap-2"
+                >
+                  <Box className="size-4" />
+                  Open 3D Thermal Designer &rarr;
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Connected Linear Workflow Footer */}
       <WorkflowFooter customNextLabel="Analyze Thermal Results" customNextHref="/results" />

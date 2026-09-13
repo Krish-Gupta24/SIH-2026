@@ -94,6 +94,17 @@ export function Shelter3DDesigner({ model, step, onStepChange, onUpdate, onSimul
     return () => clearInterval(timer);
   }, [isPlaying]);
 
+  // Sync URL query parameter ?mode=thermal to auto-activate 3D thermal live inspection
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const mode = params.get("mode");
+      if (mode === "thermal" || mode === "solar" || mode === "heat-flow") {
+        setSettings((s) => ({ ...s, visualization: mode as VisualizationMode }));
+      }
+    }
+  }, []);
+
   const history = useRef<ShelterModel[]>([]);
   const future = useRef<ShelterModel[]>([]);
   const update = (patch: Partial<ShelterModel>) => { history.current.push(structuredClone(model)); future.current = []; onUpdate(patch); setSaved(false); };

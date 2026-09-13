@@ -16,6 +16,10 @@ import {
   Loader2,
   ShieldCheck,
   Sparkles,
+  Calendar,
+  Info,
+  Snowflake,
+  Flame,
 } from "lucide-react";
 import { OpenFreeMapPicker } from "@/features/weather/components/OpenFreeMapPicker";
 import {
@@ -42,9 +46,41 @@ import {
 } from "@/components/v0/platform-components";
 import { WorkflowFooter } from "@/components/layout/WorkflowFooter";
 
+interface MonthMeta {
+  index: number;
+  short: string;
+  full: string;
+  season: "Winter" | "Spring" | "Summer" | "Autumn";
+  dayOfYear: number;
+  daysInMonth: number;
+}
+
+const MONTH_METADATA: MonthMeta[] = [
+  { index: 1, short: "Jan", full: "January", season: "Winter", dayOfYear: 15, daysInMonth: 31 },
+  { index: 2, short: "Feb", full: "February", season: "Winter", dayOfYear: 45, daysInMonth: 28 },
+  { index: 3, short: "Mar", full: "March", season: "Spring", dayOfYear: 74, daysInMonth: 31 },
+  { index: 4, short: "Apr", full: "April", season: "Spring", dayOfYear: 105, daysInMonth: 30 },
+  { index: 5, short: "May", full: "May", season: "Spring", dayOfYear: 135, daysInMonth: 31 },
+  { index: 6, short: "Jun", full: "June", season: "Summer", dayOfYear: 166, daysInMonth: 30 },
+  { index: 7, short: "Jul", full: "July", season: "Summer", dayOfYear: 196, daysInMonth: 31 },
+  { index: 8, short: "Aug", full: "August", season: "Summer", dayOfYear: 227, daysInMonth: 31 },
+  { index: 9, short: "Sep", full: "September", season: "Autumn", dayOfYear: 258, daysInMonth: 30 },
+  { index: 10, short: "Oct", full: "October", season: "Autumn", dayOfYear: 288, daysInMonth: 31 },
+  { index: 11, short: "Nov", full: "November", season: "Autumn", dayOfYear: 319, daysInMonth: 30 },
+  { index: 12, short: "Dec", full: "December", season: "Winter", dayOfYear: 349, daysInMonth: 31 },
+];
+
+const formatHourMin = (hourDecimal: number) => {
+  const clamped = Math.max(0, Math.min(24, hourDecimal));
+  const h = Math.floor(clamped);
+  const m = Math.round((clamped - h) * 60);
+  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+};
+
 export function WeatherView() {
   const { weatherDatasets, activeWeatherId, setActiveWeather, addWeatherDataset } = useShelterStore();
   const [selectedStationId, setSelectedStationId] = useState(activeWeatherId);
+  const [selectedMonth, setSelectedMonth] = useState<number>(1);
 
   // Modal States
   const [activeModal, setActiveModal] = useState<"epw" | "csv" | "nasa" | "manual" | "microclimate" | null>(null);
@@ -86,24 +122,91 @@ export function WeatherView() {
   const activeStation =
     weatherDatasets.find((w) => w.id === selectedStationId) || weatherDatasets[0];
 
-  // Synthesize 24-hour diurnal profile for chart display
+  // Physics-based monthly climate and solar synthesis across all 12 calendar months
+  const monthlyClimatology = React.useMemo(() => {
+    const tWinter = activeStation.designWinterMinC; // Peak winter datum, e.g. -20°C in Leh
+    const tSummer = activeStation.designSummerMaxC; // Peak summer max, e.g. 28°C in Leh
+    const lat = activeStation.latitude || 34.15;
+    const elev = activeStation.elevationM || 3500;
+    const latRad = (lat * Math.PI) / 180;
+
+    return MONTH_METADATA.map((m) => {
+      // Annual sinusoidal progression (0 in Jan, 1 in Jul)
+      const seasonalWeight = (1 - Math.cos(((m.index - 1) * Math.PI) / 6)) / 2;
+
+      // Diurnal range: 12°C in winter, up to 15.5°C in clear-sky high solar summer
+      const diurnalSwing = Math.round((12.0 + 3.5 * seasonalWeight) * 10) / 10;
+      const summerMin = tSummer - 15.0;
+      const minTemp = Math.round((tWinter + (summerMin - tWinter) * seasonalWeight) * 10) / 10;
+      const maxTemp = Math.round((minTemp + diurnalSwing) * 10) / 10;
+      const avgTemp = Math.round(((minTemp + maxTemp) / 2) * 10) / 10;
+
+      // Solar declination (Cooper's formula)
+      const declinationDeg = 23.45 * Math.sin(((360 / 365) * (284 + m.dayOfYear) * Math.PI) / 180);
+      const declRad = (declinationDeg * Math.PI) / 180;
+
+      // Sunset/sunrise hour angle
+      const cosOmega = -Math.tan(latRad) * Math.tan(declRad);
+      const clampedCos = Math.max(-1, Math.min(1, cosOmega));
+      const omegaDeg = (Math.acos(clampedCos) * 180) / Math.PI;
+
+      const sunriseHour = Math.round((12 - omegaDeg / 15) * 10) / 10;
+      const sunsetHour = Math.round((12 + omegaDeg / 15) * 10) / 10;
+      const daylightHours = Math.round((sunsetHour - sunriseHour) * 10) / 10;
+
+      // Solar noon elevation & peak high-altitude clear-sky DNI irradiance
+      const noonAltDeg = Math.round(Math.max(10, Math.min(90, 90 - lat + declinationDeg)) * 10) / 10;
+      const sinAlt = Math.sin((noonAltDeg * Math.PI) / 180);
+      const elevBoost = Math.min(1.22, 1 + (elev / 10000) * 0.35);
+      const peakSolar = Math.round((680 + 260 * sinAlt) * elevBoost);
+
+      return {
+        ...m,
+        minTemp,
+        maxTemp,
+        avgTemp,
+        diurnalSwing,
+        declinationDeg: Math.round(declinationDeg * 10) / 10,
+        noonAltDeg,
+        sunriseHour,
+        sunsetHour,
+        daylightHours,
+        peakSolar,
+      };
+    });
+  }, [activeStation]);
+
+  const activeMonthData = monthlyClimatology[selectedMonth - 1] || monthlyClimatology[0];
+
+  // Synthesize 24-hour diurnal profile for selected month chart display
   const hourlyData = React.useMemo(() => {
     const data = [];
-    const minT = activeStation.designWinterMinC;
-    const maxT = minT + 12;
+    const { minTemp, maxTemp, sunriseHour, sunsetHour, peakSolar } = activeMonthData;
+    const meanTemp = (minTemp + maxTemp) / 2;
+    const halfSwing = (maxTemp - minTemp) / 2;
 
     for (let h = 0; h < 24; h++) {
-      const temp = minT + ((maxT - minT) / 2) * (1 + Math.sin(((h - 8) / 24) * 2 * Math.PI));
-      const solar = h >= 7 && h <= 17 ? Math.sin(((h - 7) / 10) * Math.PI) * 820 : 0;
+      // Temperature phase: trough at sunrise (~h_rise), peak around 14:00
+      const phase = ((h - 14) / 24) * 2 * Math.PI;
+      const temp = meanTemp + halfSwing * Math.cos(phase);
+
+      // Solar profile active during daylight hours
+      let solar = 0;
+      if (h >= Math.floor(sunriseHour) && h <= Math.ceil(sunsetHour)) {
+        const dayProgress = (h - sunriseHour) / (sunsetHour - sunriseHour);
+        if (dayProgress >= 0 && dayProgress <= 1) {
+          solar = Math.sin(dayProgress * Math.PI) * peakSolar;
+        }
+      }
 
       data.push({
         hour: `${String(h).padStart(2, "0")}:00`,
         temperatureC: Math.round(temp * 10) / 10,
-        solarRadiationWm2: Math.round(solar),
+        solarRadiationWm2: Math.max(0, Math.round(solar)),
       });
     }
     return data;
-  }, [activeStation]);
+  }, [activeMonthData]);
 
   const handleUploadEpw = async () => {
     if (!epwFile) return;
@@ -525,23 +628,81 @@ export function WeatherView() {
           </div>
         </div>
 
-        {/* Right Column: 24-Hour Design Day Diurnal Temperature & Solar Irradiance Charts */}
+        {/* Right Column: Dynamic 12-Month Weather Profiles & Charts */}
         <div className="lg:col-span-2 space-y-6">
-          {/* 1. Diurnal Temperature Curve */}
-          <div className="rounded-[2rem] border border-border bg-card p-7 shadow-[0_20px_55px_rgba(0,0,0,.04)]">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-6">
+          {/* 1. Interactive 12-Month Selector Strip */}
+          <div className="rounded-[2rem] border border-border bg-card p-6 shadow-[0_20px_55px_rgba(0,0,0,.04)] space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
               <div>
-                <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-                  <ThermometerSnowflake className="h-4 w-4 text-sky-500" />
-                  Extreme Winter Design Day Dry-Bulb Profile (°C)
-                </h3>
+                <span className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                  <Calendar className="h-4 w-4 text-[#6E818F]" />
+                  Select Meteorological Month (Diurnal & Solar Cycle)
+                </span>
                 <p className="text-[11px] text-muted-foreground mt-0.5">
-                  24-hour diurnal ambient temperature variation for {activeStation.name}
+                  Click any month to recalculate diurnal ambient dry-bulb temperatures, daylight hours, and solar irradiance.
                 </p>
               </div>
               <div className="flex items-center gap-2">
-                <span className="inline-flex items-center gap-1 rounded-full bg-sky-500/10 px-3 py-1 font-mono text-xs font-semibold text-sky-600 dark:text-sky-400 border border-sky-500/20">
-                  Min {activeStation.designWinterMinC}°C
+                <span className="inline-flex items-center gap-1 rounded-full bg-sky-500/10 px-2.5 py-1 font-mono text-[10px] font-semibold text-sky-600 dark:text-sky-400 border border-sky-500/20">
+                  {selectedMonth === 1 ? "❄️ Peak Winter Baseline" : selectedMonth === 7 ? "☀️ Peak Summer Solar" : `${activeMonthData.season} Season`}
+                </span>
+              </div>
+            </div>
+
+            {/* 12-Month Grid Buttons */}
+            <div className="grid grid-cols-3 sm:grid-cols-6 lg:grid-cols-12 gap-1.5 pt-1">
+              {monthlyClimatology.map((m) => {
+                const isSelected = selectedMonth === m.index;
+                return (
+                  <button
+                    key={m.index}
+                    type="button"
+                    onClick={() => setSelectedMonth(m.index)}
+                    className={`flex flex-col items-center justify-center p-2 rounded-xl text-xs transition-all border ${
+                      isSelected
+                        ? "bg-foreground text-background font-bold border-foreground shadow-md scale-105"
+                        : "bg-secondary/40 border-border text-foreground hover:bg-secondary hover:border-[#6E818F]"
+                    }`}
+                  >
+                    <span className="text-xs">{m.short}</span>
+                    <span className={`text-[10px] font-mono mt-0.5 ${isSelected ? "text-background/80 font-bold" : "text-muted-foreground"}`}>
+                      {m.avgTemp > 0 ? `+${m.avgTemp}` : m.avgTemp}°
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Engineering Standard Advisory Callout */}
+            <div className="flex items-start gap-2.5 bg-secondary/30 rounded-xl p-3 border border-border text-[11px] text-muted-foreground">
+              <Info className="h-4 w-4 text-sky-500 shrink-0 mt-0.5" />
+              <div className="leading-relaxed">
+                <strong className="text-foreground">Why January was the initial default:</strong> Under ASHRAE 99.6% / ISHRAE building design standards for high-altitude cold climates (Ladakh, Siachen, Spiti), outpost shelters are benchmarked against <strong>January</strong> (the extreme cold month) to size life-critical freeze protection and thermal storage. You can select any month above or in simulations to analyze summer passive overheating (e.g. July) or shoulder-season heating transitions.
+              </div>
+            </div>
+          </div>
+
+          {/* 2. Diurnal Temperature Curve for Selected Month */}
+          <div className="rounded-[2rem] border border-border bg-card p-7 shadow-[0_20px_55px_rgba(0,0,0,.04)]">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
+              <div>
+                <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                  <ThermometerSnowflake className="h-4 w-4 text-sky-500" />
+                  {activeMonthData.full} Diurnal Dry-Bulb Profile (°C) — {activeMonthData.season}
+                </h3>
+                <p className="text-[11px] text-muted-foreground mt-0.5">
+                  24-hour diurnal ambient temperature variation for {activeStation.name} (Month {activeMonthData.index} of 12)
+                </p>
+              </div>
+              <div className="flex flex-wrap items-center gap-1.5">
+                <span className="inline-flex items-center gap-1 rounded-full bg-sky-500/10 px-2.5 py-0.5 font-mono text-xs font-semibold text-sky-600 dark:text-sky-400 border border-sky-500/20">
+                  Min {activeMonthData.minTemp}°C
+                </span>
+                <span className="inline-flex items-center gap-1 rounded-full bg-secondary px-2.5 py-0.5 font-mono text-xs font-medium text-foreground border border-border">
+                  Mean {activeMonthData.avgTemp}°C
+                </span>
+                <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-2.5 py-0.5 font-mono text-xs font-semibold text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                  Max {activeMonthData.maxTemp}°C
                 </span>
               </div>
             </div>
@@ -563,10 +724,10 @@ export function WeatherView() {
                       if (!active || !payload || !payload.length) return null;
                       const d = payload[0]?.payload;
                       return (
-                        <div className="rounded-2xl border border-border bg-card/95 p-3.5 shadow-2xl backdrop-blur-md text-xs space-y-1.5 min-w-[170px]">
+                        <div className="rounded-2xl border border-border bg-card/95 p-3.5 shadow-2xl backdrop-blur-md text-xs space-y-1.5 min-w-[180px]">
                           <div className="flex items-center justify-between border-b border-border/60 pb-1 font-semibold">
-                            <span>{label}</span>
-                            <span className="text-[10px] uppercase tracking-wider text-muted-foreground">Alpine Met</span>
+                            <span>{label} ({activeMonthData.short})</span>
+                            <span className="text-[10px] uppercase tracking-wider text-muted-foreground">{activeMonthData.season}</span>
                           </div>
                           <div className="flex items-center justify-between">
                             <span className="flex items-center gap-1.5 text-sky-500 font-medium">
@@ -574,6 +735,10 @@ export function WeatherView() {
                               Dry-Bulb Temp:
                             </span>
                             <span className="font-mono font-bold text-sky-600 dark:text-sky-400">{d.temperatureC} °C</span>
+                          </div>
+                          <div className="flex items-center justify-between text-[11px] text-muted-foreground pt-0.5">
+                            <span>Diurnal Range:</span>
+                            <span className="font-mono">Δ{activeMonthData.diurnalSwing}°C</span>
                           </div>
                         </div>
                       );
@@ -593,21 +758,23 @@ export function WeatherView() {
             </div>
           </div>
 
-          {/* 2. Direct Solar Radiation Curve */}
+          {/* 3. Direct Solar Radiation Curve for Selected Month */}
           <div className="rounded-[2rem] border border-border bg-card p-7 shadow-[0_20px_55px_rgba(0,0,0,.04)]">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-6">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
               <div>
                 <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
                   <Sun className="h-4 w-4 text-amber-500" />
-                  Direct Normal Solar Radiation (W/m²)
+                  {activeMonthData.full} Direct Normal Solar Radiation (W/m²)
                 </h3>
                 <p className="text-[11px] text-muted-foreground mt-0.5">
-                  Clear-sky high-altitude winter solar radiation curve
+                  Daylight {activeMonthData.daylightHours}h ({formatHourMin(activeMonthData.sunriseHour)} sunrise - {formatHourMin(activeMonthData.sunsetHour)} sunset) · Noon Solar Altitude {activeMonthData.noonAltDeg}°
                 </p>
               </div>
-              <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-3 py-1 font-mono text-xs font-semibold text-amber-600 dark:text-amber-400 border border-amber-500/20">
-                Peak 820 W/m²
-              </span>
+              <div className="flex items-center gap-2">
+                <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-3 py-1 font-mono text-xs font-semibold text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                  Peak {activeMonthData.peakSolar} W/m²
+                </span>
+              </div>
             </div>
 
             <div className="h-48 w-full">
@@ -627,10 +794,10 @@ export function WeatherView() {
                       if (!active || !payload || !payload.length) return null;
                       const d = payload[0]?.payload;
                       return (
-                        <div className="rounded-2xl border border-border bg-card/95 p-3.5 shadow-2xl backdrop-blur-md text-xs space-y-1.5 min-w-[170px]">
+                        <div className="rounded-2xl border border-border bg-card/95 p-3.5 shadow-2xl backdrop-blur-md text-xs space-y-1.5 min-w-[180px]">
                           <div className="flex items-center justify-between border-b border-border/60 pb-1 font-semibold">
-                            <span>{label}</span>
-                            <span className="text-[10px] uppercase tracking-wider text-muted-foreground">Radiation</span>
+                            <span>{label} ({activeMonthData.short})</span>
+                            <span className="text-[10px] uppercase tracking-wider text-muted-foreground">Clear-Sky Solar</span>
                           </div>
                           <div className="flex items-center justify-between">
                             <span className="flex items-center gap-1.5 text-amber-500 font-medium">
@@ -638,6 +805,10 @@ export function WeatherView() {
                               Solar Flux:
                             </span>
                             <span className="font-mono font-bold text-amber-600 dark:text-amber-400">{d.solarRadiationWm2} W/m²</span>
+                          </div>
+                          <div className="flex items-center justify-between text-[11px] text-muted-foreground pt-0.5">
+                            <span>Daylight Window:</span>
+                            <span className="font-mono">{activeMonthData.daylightHours}h total</span>
                           </div>
                         </div>
                       );
@@ -654,6 +825,94 @@ export function WeatherView() {
                   />
                 </AreaChart>
               </ResponsiveContainer>
+            </div>
+          </div>
+
+          {/* 4. Comprehensive Annual 12-Month Climatology Benchmark Table */}
+          <div className="rounded-[2rem] border border-border bg-card p-7 shadow-[0_20px_55px_rgba(0,0,0,.04)] space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div>
+                <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                  <Activity className="h-4 w-4 text-emerald-500" />
+                  Annual 12-Month Climate Benchmark ({activeStation.name})
+                </h3>
+                <p className="text-[11px] text-muted-foreground mt-0.5">
+                  Seasonal temperature progression, diurnal swings, daylight duration, and solar potential across the entire year
+                </p>
+              </div>
+              <span className="text-[10px] text-muted-foreground font-mono">
+                Elev: {activeStation.elevationM}m MSL · Lat: {activeStation.latitude.toFixed(2)}°N
+              </span>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs border-collapse">
+                <thead>
+                  <tr className="border-b border-border/60 text-[11px] text-muted-foreground">
+                    <th className="py-2.5 px-3 font-medium">Month</th>
+                    <th className="py-2.5 px-3 font-medium">Season</th>
+                    <th className="py-2.5 px-3 font-medium">Min Temp</th>
+                    <th className="py-2.5 px-3 font-medium">Mean Temp</th>
+                    <th className="py-2.5 px-3 font-medium">Max Temp</th>
+                    <th className="py-2.5 px-3 font-medium">Diurnal Δ</th>
+                    <th className="py-2.5 px-3 font-medium">Daylight</th>
+                    <th className="py-2.5 px-3 font-medium">Peak Solar</th>
+                    <th className="py-2.5 px-3 font-medium text-right">Action</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border/40">
+                  {monthlyClimatology.map((m) => {
+                    const isSel = selectedMonth === m.index;
+                    return (
+                      <tr
+                        key={m.index}
+                        onClick={() => setSelectedMonth(m.index)}
+                        className={`cursor-pointer transition-colors ${
+                          isSel ? "bg-secondary/70 font-semibold" : "hover:bg-secondary/30"
+                        }`}
+                      >
+                        <td className="py-2.5 px-3 flex items-center gap-2">
+                          <span className={`size-2 rounded-full ${isSel ? "bg-sky-500" : "bg-muted-foreground/30"}`} />
+                          <span className="text-foreground">{m.full}</span>
+                        </td>
+                        <td className="py-2.5 px-3">
+                          <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${
+                            m.season === "Winter"
+                              ? "bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-500/20"
+                              : m.season === "Summer"
+                              ? "bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20"
+                              : "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20"
+                          }`}>
+                            {m.season}
+                          </span>
+                        </td>
+                        <td className="py-2.5 px-3 font-mono text-sky-500">{m.minTemp}°C</td>
+                        <td className="py-2.5 px-3 font-mono">{m.avgTemp}°C</td>
+                        <td className="py-2.5 px-3 font-mono text-amber-500">{m.maxTemp}°C</td>
+                        <td className="py-2.5 px-3 font-mono text-muted-foreground">Δ{m.diurnalSwing}°C</td>
+                        <td className="py-2.5 px-3 font-mono">{m.daylightHours}h</td>
+                        <td className="py-2.5 px-3 font-mono text-amber-600 dark:text-amber-400">{m.peakSolar} W/m²</td>
+                        <td className="py-2.5 px-3 text-right">
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedMonth(m.index);
+                            }}
+                            className={`text-[10px] px-2.5 py-1 rounded-lg border transition ${
+                              isSel
+                                ? "bg-foreground text-background border-foreground font-bold shadow-sm"
+                                : "bg-card border-border hover:bg-secondary text-muted-foreground hover:text-foreground"
+                            }`}
+                          >
+                            {isSel ? "Active" : "Inspect"}
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
             </div>
           </div>
         </div>
