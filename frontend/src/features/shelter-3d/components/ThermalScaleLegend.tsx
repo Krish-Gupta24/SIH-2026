@@ -15,14 +15,20 @@ import {
 } from "lucide-react";
 import type { VisualizationMode } from "../types";
 import type { ShelterModel } from "@/types/shelter";
-import { calculateThermalMetrics, type DynamicThermalCalculations } from "../thermal-physics";
+import {
+  calculateThermalMetrics,
+  type DynamicThermalCalculations,
+  type HourlyThermalStep,
+} from "../thermal-physics";
 
 interface Props {
   mode: VisualizationMode;
   model?: ShelterModel;
+  hourlyStep?: HourlyThermalStep | null;
+  hasSimResults?: boolean;
 }
 
-export function ThermalScaleLegend({ mode, model }: Props) {
+export function ThermalScaleLegend({ mode, model, hourlyStep, hasSimResults }: Props) {
   const [collapsed, setCollapsed] = useState(false);
 
   if (mode === "model") return null;
@@ -68,19 +74,42 @@ export function ThermalScaleLegend({ mode, model }: Props) {
               {config.icon}
             </span>
             <div>
-              <span
-                style={{
-                  display: "block",
-                  fontSize: "9px",
-                  fontWeight: 700,
-                  letterSpacing: "0.12em",
-                  textTransform: "uppercase" as const,
-                  color: "#6e818f",
-                  lineHeight: 1.4,
-                }}
-              >
-                {config.label}
-              </span>
+              <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                <span
+                  style={{
+                    display: "block",
+                    fontSize: "9px",
+                    fontWeight: 700,
+                    letterSpacing: "0.12em",
+                    textTransform: "uppercase" as const,
+                    color: "#6e818f",
+                    lineHeight: 1.4,
+                  }}
+                >
+                  {config.label}
+                </span>
+                {hourlyStep && (
+                  <span
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      fontSize: "8.5px",
+                      fontWeight: 700,
+                      padding: "1px 5px",
+                      borderRadius: "4px",
+                      background: hasSimResults
+                        ? "rgba(16, 185, 129, 0.15)"
+                        : "rgba(59, 130, 246, 0.12)",
+                      color: hasSimResults ? "#059669" : "#2563eb",
+                      border: `1px solid ${
+                        hasSimResults ? "rgba(16, 185, 129, 0.3)" : "rgba(59, 130, 246, 0.25)"
+                      }`,
+                    }}
+                  >
+                    {hasSimResults ? "⚡ EnergyPlus 24h" : "ISO 6946"}
+                  </span>
+                )}
+              </div>
               <span
                 style={{
                   display: "block",
@@ -90,7 +119,7 @@ export function ThermalScaleLegend({ mode, model }: Props) {
                   letterSpacing: "-0.02em",
                 }}
               >
-                {config.title}
+                {hourlyStep ? `${config.title} · ${hourlyStep.timeLabel}` : config.title}
               </span>
             </div>
           </div>
@@ -111,9 +140,9 @@ export function ThermalScaleLegend({ mode, model }: Props) {
         {/* ── Expandable Content ────────────────── */}
         {!collapsed && (
           <div style={{ marginTop: "10px" }}>
-            {mode === "thermal" && <ThermalContent metrics={metrics} />}
-            {mode === "solar" && <SolarContent metrics={metrics} />}
-            {mode === "heat-flow" && <HeatFlowContent metrics={metrics} />}
+            {mode === "thermal" && <ThermalContent metrics={metrics} hourlyStep={hourlyStep} />}
+            {mode === "solar" && <SolarContent metrics={metrics} hourlyStep={hourlyStep} />}
+            {mode === "heat-flow" && <HeatFlowContent metrics={metrics} hourlyStep={hourlyStep} />}
           </div>
         )}
       </div>
@@ -121,11 +150,23 @@ export function ThermalScaleLegend({ mode, model }: Props) {
   );
 }
 
-function ThermalContent({ metrics }: { metrics?: DynamicThermalCalculations | null }) {
-  const southSign = (metrics?.tSurfaceSouth ?? 21.5) >= 0 ? "+" : "";
-  const northSign = (metrics?.tSurfaceNorth ?? -12.0) >= 0 ? "+" : "";
-  const glazingSign = (metrics?.tGlazing ?? 26.5) >= 0 ? "+" : "";
-  const floorSign = (metrics?.tFloorMass ?? 19.0) >= 0 ? "+" : "";
+function ThermalContent({
+  metrics,
+  hourlyStep,
+}: {
+  metrics?: DynamicThermalCalculations | null;
+  hourlyStep?: HourlyThermalStep | null;
+}) {
+  const southTemp = hourlyStep ? hourlyStep.tSurfaceSouth : (metrics?.tSurfaceSouth ?? 21.5);
+  const northTemp = hourlyStep ? hourlyStep.tSurfaceNorth : (metrics?.tSurfaceNorth ?? -12.0);
+  const glazingTemp = hourlyStep ? hourlyStep.tGlazing : (metrics?.tGlazing ?? 26.5);
+  const floorTemp = hourlyStep ? hourlyStep.tFloorMass : (metrics?.tFloorMass ?? 19.0);
+  const outdoorTemp = hourlyStep ? hourlyStep.outdoorTemp : (metrics?.tOutdoor ?? -15.0);
+
+  const southSign = southTemp >= 0 ? "+" : "";
+  const northSign = northTemp >= 0 ? "+" : "";
+  const glazingSign = glazingTemp >= 0 ? "+" : "";
+  const floorSign = floorTemp >= 0 ? "+" : "";
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
@@ -151,7 +192,7 @@ function ThermalContent({ metrics }: { metrics?: DynamicThermalCalculations | nu
             color: "#6e818f",
           }}
         >
-          <span>{metrics?.tOutdoor !== undefined ? `${metrics.tOutdoor}°C` : "-15°C"}</span>
+          <span>{`${outdoorTemp}°C`}</span>
           <span>0°C</span>
           <span>+10°C</span>
           <span>+25°C</span>
@@ -171,29 +212,47 @@ function ThermalContent({ metrics }: { metrics?: DynamicThermalCalculations | nu
         <MetricCell
           icon={<ArrowUpRight className="size-3" style={{ color: "#ef4444" }} />}
           label="South Wall"
-          value={`${southSign}${(metrics?.tSurfaceSouth ?? 21.5).toFixed(1)}°C`}
-          sub={`+${metrics?.iSouthIncident ?? 410} W/m²`}
+          value={`${southSign}${southTemp.toFixed(1)}°C`}
+          sub={
+            hourlyStep
+              ? `${hourlyStep.qSouthFlux >= 0 ? "+" : ""}${hourlyStep.qSouthFlux} W/m² sol-air`
+              : `+${metrics?.iSouthIncident ?? 410} W/m²`
+          }
           color="#ef4444"
         />
         <MetricCell
           icon={<ArrowDownRight className="size-3" style={{ color: "#3b82f6" }} />}
           label="North Wall"
-          value={`${northSign}${(metrics?.tSurfaceNorth ?? -12.0).toFixed(1)}°C`}
-          sub={`${metrics?.qNorthFlux ?? -88} W/m² loss`}
+          value={`${northSign}${northTemp.toFixed(1)}°C`}
+          sub={
+            hourlyStep
+              ? `${hourlyStep.qNorthFlux} W/m² loss`
+              : `${metrics?.qNorthFlux ?? -88} W/m² loss`
+          }
           color="#3b82f6"
         />
         <MetricCell
           icon={<Zap className="size-3" style={{ color: "#ea580c" }} />}
           label="Glazing Peak"
-          value={`${glazingSign}${(metrics?.tGlazing ?? 26.5).toFixed(1)}°C`}
-          sub={`${metrics?.qGlazingTransmitted ?? 480} W/m²`}
+          value={`${glazingSign}${glazingTemp.toFixed(1)}°C`}
+          sub={
+            hourlyStep
+              ? `${hourlyStep.solarGainW} W solar harvest`
+              : `${metrics?.qGlazingTransmitted ?? 480} W/m²`
+          }
           color="#ea580c"
         />
         <MetricCell
           icon={<Thermometer className="size-3" style={{ color: "#d97706" }} />}
           label="Floor Mass"
-          value={`${floorSign}${(metrics?.tFloorMass ?? 19.0).toFixed(1)}°C`}
-          sub="Thermal storage"
+          value={`${floorSign}${floorTemp.toFixed(1)}°C`}
+          sub={
+            hourlyStep
+              ? hourlyStep.hour >= 19 || hourlyStep.hour <= 5
+                ? "Discharging heat"
+                : "Absorbing radiation"
+              : "Thermal storage"
+          }
           color="#d97706"
         />
       </div>
@@ -201,7 +260,19 @@ function ThermalContent({ metrics }: { metrics?: DynamicThermalCalculations | nu
   );
 }
 
-function SolarContent({ metrics }: { metrics?: DynamicThermalCalculations | null }) {
+function SolarContent({
+  metrics,
+  hourlyStep,
+}: {
+  metrics?: DynamicThermalCalculations | null;
+  hourlyStep?: HourlyThermalStep | null;
+}) {
+  const dniVal = hourlyStep ? hourlyStep.dni : (metrics?.dniNoon ?? 950);
+  const gainVal =
+    hourlyStep && hourlyStep.solarGainW !== undefined
+      ? `${hourlyStep.solarGainW} W instantaneous`
+      : `${metrics?.estDailySolarKwh ?? 8.0} kWh/d harvest`;
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
       {/* Irradiance gradient bar */}
@@ -226,9 +297,9 @@ function SolarContent({ metrics }: { metrics?: DynamicThermalCalculations | null
             color: "#6e818f",
           }}
         >
-          <span>65 W/m²</span>
-          <span>450 W/m²</span>
-          <span>{metrics?.dniNoon ?? 950} W/m²</span>
+          <span>{hourlyStep && hourlyStep.hour < 6 ? "0 W/m²" : "65 W/m²"}</span>
+          <span>{Math.round(dniVal * 0.5)} W/m²</span>
+          <span>{dniVal} W/m²</span>
         </div>
       </div>
 
@@ -243,25 +314,43 @@ function SolarContent({ metrics }: { metrics?: DynamicThermalCalculations | null
         }}
       >
         <DataRow
-          label="Solar Altitude"
-          value={`${(metrics?.solarAltitudeDeg ?? 32.0).toFixed(1)}° @ winter noon`}
+          label="Direct Normal Irradiance"
+          value={`${dniVal} W/m² DNI`}
         />
-        <DataRow label="Direct Irradiance" value={`${metrics?.dniNoon ?? 950} W/m² DNI`} />
         <DataRow
-          label="Aperture Solar Gain"
-          value={`${metrics?.estDailySolarKwh ?? 8.0} kWh/d harvest`}
+          label="Solar Altitude"
+          value={
+            hourlyStep
+              ? hourlyStep.hour >= 7 && hourlyStep.hour <= 17
+                ? `${((metrics?.solarAltitudeDeg ?? 32.0) * Math.sin(Math.PI * ((hourlyStep.hour - 7) / 10))).toFixed(1)}° elevation`
+                : "0.0° (Below horizon)"
+              : `${(metrics?.solarAltitudeDeg ?? 32.0).toFixed(1)}° @ winter noon`
+          }
+        />
+        <DataRow
+          label="Aperture Solar Harvest"
+          value={gainVal}
           highlight
         />
         <DataRow
           label="North Facade"
-          value={`Diffuse only (${metrics?.iNorthIncident ?? 65} W/m²)`}
+          value={`Diffuse only (${hourlyStep && (hourlyStep.hour < 7 || hourlyStep.hour > 17) ? "0" : (metrics?.iNorthIncident ?? 65)} W/m²)`}
         />
       </div>
     </div>
   );
 }
 
-function HeatFlowContent({ metrics }: { metrics?: DynamicThermalCalculations | null }) {
+function HeatFlowContent({
+  metrics,
+  hourlyStep,
+}: {
+  metrics?: DynamicThermalCalculations | null;
+  hourlyStep?: HourlyThermalStep | null;
+}) {
+  const southFlux = hourlyStep ? hourlyStep.qSouthFlux : (metrics?.iSouthIncident ?? 410);
+  const northFlux = hourlyStep ? hourlyStep.qNorthFlux : (metrics?.qNorthFlux ?? -88);
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
       {/* Legend items */}
@@ -273,12 +362,32 @@ function HeatFlowContent({ metrics }: { metrics?: DynamicThermalCalculations | n
           paddingTop: "2px",
         }}
       >
-        <LegendRow color="#dc2626" label="South sol-air gain" arrow={`+${metrics?.iSouthIncident ?? 410} W/m²`} />
-        <LegendRow color="#2563eb" label="North conduction loss" arrow={`${metrics?.qNorthFlux ?? -88} W/m²`} />
-        <LegendRow color="#a855f7" label="Roof stack & sky loss" arrow={`U ${metrics?.uRoof.toFixed(2) ?? "0.32"}`} />
+        <LegendRow
+          color="#dc2626"
+          label="South sol-air flux"
+          arrow={`${southFlux >= 0 ? "+" : ""}${southFlux} W/m²`}
+        />
+        <LegendRow
+          color="#2563eb"
+          label="North conduction loss"
+          arrow={`${northFlux} W/m²`}
+        />
+        <LegendRow
+          color="#a855f7"
+          label="Roof stack & sky loss"
+          arrow={`U ${metrics?.uRoof.toFixed(2) ?? "0.32"}`}
+        />
         <LegendRow color="#14b8a6" label="Internal convection" arrow="↻ Loop" />
-        <LegendRow color="#38bdf8" label="Air infiltration" arrow={`❄ ${metrics?.infiltrationACH.toFixed(2) ?? "0.35"} ACH`} />
-        <LegendRow color="#ef4444" label="Thermal bridges" arrow={`● Ψ ${(metrics?.psiBridge ?? 0.15).toFixed(2)}`} />
+        <LegendRow
+          color="#38bdf8"
+          label="Air infiltration"
+          arrow={`❄ ${metrics?.infiltrationACH.toFixed(2) ?? "0.35"} ACH`}
+        />
+        <LegendRow
+          color="#ef4444"
+          label="Corner thermal bridges"
+          arrow={`● Ψ ${(hourlyStep?.psiBridge ?? metrics?.psiBridge ?? 0.15).toFixed(2)}`}
+        />
       </div>
 
       {/* Key values */}
@@ -297,7 +406,7 @@ function HeatFlowContent({ metrics }: { metrics?: DynamicThermalCalculations | n
         />
         <DataRow
           label="Thermal Bridges"
-          value={`Ψ = ${(metrics?.psiBridge ?? 0.15).toFixed(2)} W/(m·K)`}
+          value={`Ψ = ${(hourlyStep?.psiBridge ?? metrics?.psiBridge ?? 0.15).toFixed(2)} W/(m·K)`}
           highlight
         />
         <DataRow

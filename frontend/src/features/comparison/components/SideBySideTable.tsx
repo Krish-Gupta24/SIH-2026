@@ -35,11 +35,29 @@ export function SideBySideTable({ jobs }: SideBySideTableProps) {
   const baseline = jobs[0];
   const candidates = jobs.slice(1);
 
+  const normalizeWeather = (name?: string) => {
+    if (!name) return "leh_427053";
+    const lower = name.toLowerCase();
+    if (lower.includes("leh") || lower.includes("427053")) return "leh_427053";
+    if (lower.includes("dras") || lower.includes("kargil")) return "dras";
+    if (lower.includes("spiti")) return "spiti";
+    if (lower.includes("tawang")) return "tawang";
+    return lower.replace(/\.epw$/, "").trim();
+  };
+
+  const normalizeEngine = (engine?: string) => {
+    if (!engine) return "energyplus";
+    const lower = engine.toLowerCase();
+    if (lower.includes("energyplus") || lower.includes("eplus")) return "energyplus";
+    if (lower.includes("rc") || lower.includes("lumped")) return "rc_network";
+    return lower.trim();
+  };
+
   const weatherNames = jobs.map((j) => j.weatherDatasetName || "Leh WMO 427053 EPW");
-  const sameWeather = new Set(weatherNames).size <= 1;
+  const sameWeather = new Set(jobs.map((j) => normalizeWeather(j.weatherDatasetName))).size <= 1;
 
   const engines = jobs.map((j) => j.engine || "EnergyPlus");
-  const sameEngine = new Set(engines).size <= 1;
+  const sameEngine = new Set(jobs.map((j) => normalizeEngine(j.engine))).size <= 1;
 
   const METRIC_ROWS: MetricRowConfig[] = [
     // 1. Thermal Performance

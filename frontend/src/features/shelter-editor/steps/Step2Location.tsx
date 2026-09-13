@@ -57,9 +57,11 @@ const REGION_PRESETS = [
 ];
 
 import { api } from "@/lib/api-client";
+import { useShelterStore } from "@/lib/store/use-shelter-store";
 
 export function Step2Location({ form, advancedMode }: StepProps) {
   const { register, formState: { errors }, setValue, watch } = form;
+  const { addWeatherDataset, setActiveWeather } = useShelterStore();
   const currentElevation = watch("location.elevation") || 3500;
   const currentLatitude = watch("location.latitude") || 34.1526;
   const currentLongitude = watch("location.longitude") || 77.5771;
@@ -85,8 +87,29 @@ export function Step2Location({ form, advancedMode }: StepProps) {
     }
   };
 
-  const handleEpwGenerated = (epwFile: string) => {
+  const handleEpwGenerated = (epwFile: string, summary?: any) => {
     setValue("location.weatherSource", epwFile);
+    const stationId = `wx-micro-${Date.now().toString().slice(-6)}`;
+    const locName = summary?.location_name || currentRegion.split(",")[0] || "Custom Outpost";
+    const elev = summary?.elevation_m || currentElevation;
+    addWeatherDataset({
+      id: stationId,
+      name: `${locName} (${Math.round(elev)}m · ML Synthesized EPW)`,
+      region: `${currentRegion} (Downscaled Microclimate)`,
+      latitude: summary?.latitude ?? currentLatitude,
+      longitude: summary?.longitude ?? currentLongitude,
+      elevationM: elev,
+      climateZone: elev > 4500 ? "Extreme Cold Alpine (ASHRAE 8)" : "Cold Alpine Continental",
+      sourceType: "EPW",
+      provenanceStatus: "REAL_DATA",
+      isTestData: false,
+      designWinterMinC: summary?.min_temperature_c ?? (elev > 4500 ? -35.0 : -20.0),
+      designSummerMaxC: summary?.max_temperature_c ?? 22.0,
+      annualHDD18: 5800,
+      epwFileName: epwFile,
+      sha256: `piml-synth-${Date.now()}`,
+    });
+    setActiveWeather(stationId);
   };
 
   const handleLiveFetchClimate = async () => {

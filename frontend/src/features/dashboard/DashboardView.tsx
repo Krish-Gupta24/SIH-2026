@@ -41,8 +41,7 @@ export function DashboardView() {
     (s) => s.projectId === activeProject?.id
   );
   const latestRun =
-    projectRuns.find((s) => s.status === "completed" && s.results) ||
-    simulations.find((s) => s.status === "completed" && s.results);
+    projectRuns.find((s) => s.status === "completed" && s.results) || null;
   const summary = latestRun?.results?.summary;
 
   if (!activeProject) {

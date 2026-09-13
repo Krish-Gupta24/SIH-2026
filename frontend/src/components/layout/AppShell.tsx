@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
@@ -48,6 +48,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   } = useShelterStore();
 
   const activeProject = projects.find((p) => p.id === activeProjectId) || projects[0];
+
+  // Self-heal activeProjectId if deleted across tabs or devices
+  useEffect(() => {
+    if (projects.length > 0 && (!activeProjectId || !projects.some((p) => p.id === activeProjectId))) {
+      setActiveProject(projects[0].id);
+    }
+  }, [projects, activeProjectId, setActiveProject]);
 
   // Determine if this is a project-specific workflow view
   const isProjectView = WORKFLOW_PIPELINE.some(
@@ -243,23 +250,27 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                     {projectPickerOpen && (
                       <div className="absolute left-0 top-full z-50 mt-2 w-72 rounded-2xl border border-border bg-card p-2 shadow-2xl animate-in zoom-in-95">
                         <p className="micro-label px-3 py-2">Switch Project</p>
-                        {projects.map((p) => (
-                          <button
-                            key={p.id}
-                            onClick={() => {
-                              setActiveProject(p.id);
-                              setProjectPickerOpen(false);
-                            }}
-                            className={`flex w-full flex-col rounded-xl px-3 py-2 text-left text-xs transition-colors ${
-                              p.id === activeProject.id
-                                ? "bg-secondary font-semibold"
-                                : "hover:bg-black/5"
-                            }`}
-                          >
-                            <span>{p.project.name}</span>
-                            <span className="text-[10px] text-muted-foreground">{p.location.region}</span>
-                          </button>
-                        ))}
+                        {projects.length > 0 ? (
+                          projects.map((p) => (
+                            <button
+                              key={p.id}
+                              onClick={() => {
+                                setActiveProject(p.id);
+                                setProjectPickerOpen(false);
+                              }}
+                              className={`flex w-full flex-col rounded-xl px-3 py-2 text-left text-xs transition-colors ${
+                                p.id === activeProject?.id
+                                  ? "bg-secondary font-semibold"
+                                  : "hover:bg-black/5"
+                              }`}
+                            >
+                              <span>{p.project.name}</span>
+                              <span className="text-[10px] text-muted-foreground">{p.location.region}</span>
+                            </button>
+                          ))
+                        ) : (
+                          <p className="px-3 py-2 text-xs text-muted-foreground">No projects found</p>
+                        )}
                         <div className="mt-1 border-t border-border pt-1">
                           <Link
                             href="/projects"

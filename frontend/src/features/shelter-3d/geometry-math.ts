@@ -18,6 +18,11 @@ export interface Roof3DGeometry {
   rotation: [number, number, number];
   area: number;
   peakHeight: number;
+  deltaH: number;
+  overhang: number;
+  slopeDepth: number;
+  rafterLength?: number;
+  ridgeHeight?: number;
 }
 
 export interface Floor3DGeometry {
@@ -98,7 +103,59 @@ export function deriveShelter3DGeometry(model: ShelterModel): Shelter3DRepresent
     area: L * W,
   };
 
-  // 2. Four Walls
+  // 2. Roof Pitch Geometry & Wall Extensions
+  const rad = (roofAngle * Math.PI) / 180;
+  const overhang = typeof model.envelope?.roof?.overhang === "number" ? model.envelope.roof.overhang : 0.4;
+  let roofCenterY = H + roofThickness / 2;
+  let peakHeight = H;
+  let roofRotX = 0;
+  let roofArea = (L + overhang * 2) * (W + overhang * 2);
+  let deltaH = 0;
+  let slopeDepth = W + overhang * 2;
+  let rafterLength = (0.5 * W + overhang) / Math.cos(rad || 0.001);
+  let extendedSouthWallArea = 0;
+  let extendedEastWallArea = 0;
+  let extendedWestWallArea = 0;
+  let atticVolume = 0;
+
+  if (roofType === "Shed" && roofAngle > 0) {
+    deltaH = W * Math.tan(rad);
+    roofCenterY = H + deltaH / 2 + (roofThickness / 2) / Math.cos(rad);
+    peakHeight = H + deltaH;
+    roofRotX = -rad; // South (+Z) is high (solar clerestory), North (-Z) is low (wind/snow deflection)
+    slopeDepth = (W + overhang * 2) / Math.cos(rad);
+    roofArea = (L + overhang * 2) * slopeDepth;
+    extendedSouthWallArea = L * deltaH; // South clerestory upper wall
+    extendedEastWallArea = 0.5 * W * deltaH; // East triangular wedge
+    extendedWestWallArea = 0.5 * W * deltaH; // West triangular wedge
+    atticVolume = 0.5 * L * W * deltaH; // Volume under monopitch roof
+  } else if (roofType === "Gable" && roofAngle > 0) {
+    deltaH = 0.5 * W * Math.tan(rad);
+    roofCenterY = H + deltaH / 2;
+    peakHeight = H + deltaH;
+    rafterLength = (0.5 * W + overhang) / Math.cos(rad);
+    roofArea = 2 * ((L + overhang * 2) * rafterLength);
+    extendedEastWallArea = 0.5 * W * deltaH; // East triangular gable end
+    extendedWestWallArea = 0.5 * W * deltaH; // West triangular gable end
+    atticVolume = 0.5 * L * W * deltaH; // Volume under dual-pitch gable roof
+  }
+
+  const roof: Roof3DGeometry = {
+    type: roofType,
+    center: [0, roofCenterY, 0],
+    dimensions: [L + overhang * 2, roofThickness, slopeDepth],
+    slopeDeg: roofAngle,
+    rotation: [roofRotX, 0, 0],
+    area: roofArea,
+    peakHeight,
+    deltaH,
+    overhang,
+    slopeDepth,
+    rafterLength,
+    ridgeHeight: peakHeight,
+  };
+
+  // 3. Four Walls (incorporating extended clerestory and gable end wall areas)
   // South Wall: faces +Z (towards South), spans along X
   const southWall: Wall3DGeometry = {
     id: "south",
@@ -106,7 +163,7 @@ export function deriveShelter3DGeometry(model: ShelterModel): Shelter3DRepresent
     position: [0, halfH, halfW + wallThickness / 2],
     rotation: [0, 0, 0],
     dimensions: [L, H, wallThickness],
-    area: L * H,
+    area: L * H + extendedSouthWallArea,
     normal: [0, 0, 1],
   };
 
@@ -128,7 +185,7 @@ export function deriveShelter3DGeometry(model: ShelterModel): Shelter3DRepresent
     position: [halfL + wallThickness / 2, halfH, 0],
     rotation: [0, Math.PI / 2, 0],
     dimensions: [W, H, wallThickness],
-    area: W * H,
+    area: W * H + extendedEastWallArea,
     normal: [1, 0, 0],
   };
 
@@ -139,42 +196,11 @@ export function deriveShelter3DGeometry(model: ShelterModel): Shelter3DRepresent
     position: [-(halfL + wallThickness / 2), halfH, 0],
     rotation: [0, -Math.PI / 2, 0],
     dimensions: [W, H, wallThickness],
-    area: W * H,
+    area: W * H + extendedWestWallArea,
     normal: [-1, 0, 0],
   };
 
   const walls = { north: northWall, south: southWall, east: eastWall, west: westWall };
-
-  // 3. Roof Geometry
-  const rad = (roofAngle * Math.PI) / 180;
-  let roofCenterY = H + roofThickness / 2;
-  let peakHeight = H;
-  let roofRotX = 0;
-  let roofArea = L * W;
-
-  if (roofType === "Shed" && roofAngle > 0) {
-    const deltaH = W * Math.tan(rad);
-    roofCenterY = H + deltaH / 2;
-    peakHeight = H + deltaH;
-    roofRotX = rad;
-    roofArea = L * (W / Math.cos(rad));
-  } else if (roofType === "Gable" && roofAngle > 0) {
-    const deltaH = 0.5 * W * Math.tan(rad);
-    roofCenterY = H + deltaH / 2;
-    peakHeight = H + deltaH;
-    roofArea = 2 * (L * ((0.5 * W) / Math.cos(rad)));
-  }
-
-  const overhang = model.envelope.roof.overhang || 0.4;
-  const roof: Roof3DGeometry = {
-    type: roofType,
-    center: [0, roofCenterY, 0],
-    dimensions: [L + overhang * 2, roofThickness, W + overhang * 2],
-    slopeDeg: roofAngle,
-    rotation: [roofRotX, 0, 0],
-    area: roofArea,
-    peakHeight,
-  };
 
   // Assembly depth spans through the host wall thickness with a 4cm outer/inner architectural protrusion
   const windowDepth = wallThickness + 0.06;
@@ -309,9 +335,9 @@ export function deriveShelter3DGeometry(model: ShelterModel): Shelter3DRepresent
     };
   });
 
-  const totalWallArea = 2 * (L * H) + 2 * (W * H);
-  const totalArea = L * W + roofArea + totalWallArea;
-  const volume = L * W * H;
+  const totalWallArea = northWall.area + southWall.area + eastWall.area + westWall.area;
+  const totalArea = floor.area + roofArea + totalWallArea;
+  const volume = L * W * H + atticVolume;
 
   return {
     floor,

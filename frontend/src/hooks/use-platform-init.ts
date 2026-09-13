@@ -8,13 +8,14 @@ import { useShelterStore } from "@/lib/store/use-shelter-store";
  * Keeps projects, materials, and weather configurations in sync across all devices and tabs.
  */
 export function usePlatformInit() {
-  const store = useShelterStore();
+  const loadAllInitialData = useShelterStore((state) => state.loadAllInitialData);
+  const isLoadingApi = useShelterStore((state) => state.isLoadingApi);
   const hasInitialized = useRef(false);
 
   useEffect(() => {
     const doSync = () => {
-      if (typeof (store as any).loadAllInitialData === "function") {
-        (store as any).loadAllInitialData().catch((err: unknown) => {
+      if (typeof loadAllInitialData === "function") {
+        loadAllInitialData().catch((err: unknown) => {
           console.debug("Background sync note:", err);
         });
       }
@@ -52,7 +53,7 @@ export function usePlatformInit() {
       document.removeEventListener("visibilitychange", handleFocus);
       window.removeEventListener("storage", handleStorage);
     };
-  }, [store]);
+  }, [loadAllInitialData]);
 
-  return { isLoadingApi: Boolean((store as any).isLoadingApi) };
+  return { isLoadingApi: Boolean(isLoadingApi) };
 }

@@ -110,6 +110,8 @@ export interface DynamicThermalCalculations {
   // Surface Temperatures (°C) derived from sol-air balance
   tSurfaceSouth: number;      // °C (+18°C to +25°C under high Ladakh solar absorption)
   tSurfaceNorth: number;      // °C (-10°C to -16°C shaded freezing surface)
+  tSurfaceEast: number;       // °C (morning solar exposure)
+  tSurfaceWest: number;       // °C (afternoon windward cold)
   tSurfaceRoof: number;       // °C (+12°C to +18°C under solar exposure + night sky radiation)
   tGlazing: number;           // °C (+20°C to +28°C localized window glass hotspot)
   tFloorMass: number;         // °C (+16°C to +20°C warmed by floor solar patch)
@@ -117,6 +119,8 @@ export interface DynamicThermalCalculations {
   // Heat Flow Fluxes (W/m²)
   qSouthFlux: number;         // W/m² net flow through South wall (inward or balanced)
   qNorthFlux: number;         // W/m² conduction loss leaving through North wall (negative outward)
+  qEastFlux: number;          // W/m² conduction loss leaving through East wall
+  qWestFlux: number;          // W/m² conduction loss leaving through West wall
   qRoofFlux: number;          // W/m² conduction/radiation flux through Roof
   qGlazingTransmitted: number;// W/m² solar heat entering through window
 
@@ -129,6 +133,46 @@ export interface DynamicThermalCalculations {
   infiltrationACH: number;    // Air changes per hour
   qInfiltrationLossW: number; // Sensible infiltration loss (W)
   psiBridge: number;          // Corner linear thermal bridge Ψ (W/m·K)
+}
+
+/**
+ * Maps any temperature in Celsius to an authentic scientific FLIR / Turbo colormap.
+ * Range defaults to -25°C (extreme Himalayan night) to +25°C (peak solar sol-air).
+ */
+export function getThermalColor(
+  tempC: number,
+  minTempC: number = -25.0,
+  maxTempC: number = 25.0
+): string {
+  const clamped = Math.max(minTempC, Math.min(maxTempC, tempC));
+  const t = (clamped - minTempC) / Math.max(1, maxTempC - minTempC);
+
+  // Calibrated FLIR Ironbow / Turbo thermal palette stops
+  if (t <= 0.15) {
+    // Deep Sub-zero Navy / Indigo (-25°C to -18°C)
+    return "#0f172a";
+  } else if (t <= 0.35) {
+    // Freezing Blue (-18°C to -7°C)
+    return "#1e40af";
+  } else if (t <= 0.48) {
+    // Cold Cyan / Slate Blue (-7°C to 0°C)
+    return "#0284c7";
+  } else if (t <= 0.58) {
+    // Mild Cyan / Emerald transition (0°C to +5°C)
+    return "#06b6d4";
+  } else if (t <= 0.72) {
+    // Warm Amber / Golden solar (+5°C to +12°C)
+    return "#eab308";
+  } else if (t <= 0.85) {
+    // Vivid Orange (+12°C to +18°C)
+    return "#f97316";
+  } else if (t <= 0.94) {
+    // Hot Carmine / Flame Red (+18°C to +22°C)
+    return "#ef4444";
+  } else {
+    // Solar Peak White-Yellow (> +22°C)
+    return "#fef08a";
+  }
 }
 
 /**
@@ -169,7 +213,6 @@ export function calculateThermalMetrics(model: ShelterModel): DynamicThermalCalc
   const dniNoon = model.location?.elevation && model.location.elevation > 2500 ? 950 : 850;
 
   // Angle of incidence on South vertical wall (orientation 0° = South):
-  // cos(theta) = cos(alt) * cos(surface_azimuth - sun_azimuth) = cos(alt) * 1
   const cosThetaSouth = Math.cos(altRad);
   const iBeamSouth = dniNoon * cosThetaSouth;
   const iDiffuseSouth = 70; // W/m² diffuse from sky dome
@@ -190,18 +233,24 @@ export function calculateThermalMetrics(model: ShelterModel): DynamicThermalCalc
   // South Wall Sol-Air:
   const deltaTSolarSouth = (alphaOpaque * iSouthIncident) / hExterior;
   const tSolAirSouth = tOutdoor + deltaTSolarSouth;
-  // Outer surface temperature: T_so = T_sol_air - (U / h_o) * (T_sol_air - T_in)
   const tSurfaceSouth = Math.round((tSolAirSouth - (southRes.uValue / hExterior) * (tSolAirSouth - tIndoor)) * 10) / 10;
-  // Conduction heat flux through south wall (positive inward into shelter):
   const qSouthFlux = Math.round(southRes.uValue * (tSolAirSouth - tIndoor));
 
   // North Wall Sol-Air (shaded):
   const deltaTSolarNorth = (alphaOpaque * iNorthIncident) / hExterior;
   const tSolAirNorth = tOutdoor + deltaTSolarNorth;
-  // North outer surface temperature:
   const tSurfaceNorth = Math.round((tSolAirNorth - (northRes.uValue / hExterior) * (tSolAirNorth - tIndoor)) * 10) / 10;
-  // North heat loss flux (negative leaving shelter):
   const qNorthFlux = -Math.round(northRes.uValue * deltaT);
+
+  // East Wall Sol-Air (morning light exposure ~220 W/m²):
+  const tSolAirEast = tOutdoor + (alphaOpaque * 220) / hExterior;
+  const tSurfaceEast = Math.round((tSolAirEast - (eastRes.uValue / hExterior) * (tSolAirEast - tIndoor)) * 10) / 10;
+  const qEastFlux = Math.round(eastRes.uValue * (tSolAirEast - tIndoor));
+
+  // West Wall Sol-Air (afternoon windward cold ~180 W/m²):
+  const tSolAirWest = tOutdoor + (alphaOpaque * 180) / hExterior;
+  const tSurfaceWest = Math.round((tSolAirWest - (westRes.uValue / hExterior) * (tSolAirWest - tIndoor)) * 10) / 10;
+  const qWestFlux = Math.round(westRes.uValue * (tSolAirWest - tIndoor));
 
   // Roof Surface (solar heating by day, longwave sky radiative cooling Delta_R ~ 4K * h_o):
   const skyCoolingCorrection = 3.5;
@@ -220,25 +269,32 @@ export function calculateThermalMetrics(model: ShelterModel): DynamicThermalCalc
     0
   );
 
-  // Transmitted solar radiation through glazing: q = I * SHGC
   const qGlazingTransmitted = Math.round(iSouthIncident * glassProps.shgc);
   const qWindowTotalW = Math.round(qGlazingTransmitted * totalWindowArea);
-  // Ladakh winter sunshine ~ 7.9 hrs, integrated daily solar harvest:
   const estDailySolarKwh = Math.round((totalWindowArea * glassProps.shgc * 5.2) * 10) / 10;
 
-  // Window surface localized hotspot:
   const tGlazing = Math.round((tOutdoor + (0.22 * iSouthIncident) / 14.0) * 10) / 10;
   const tFloorMass = Math.round(Math.min(22.0, tIndoor + (qWindowTotalW > 400 ? 1.5 : 0.2)) * 10) / 10;
 
-  // 6. Infiltration & Thermal Bridge
+  // 6. Infiltration & Thermal Bridge (ISO 10211 Linear Transmittance)
   const ach = model.ventilation?.infiltrationACH ?? 0.35;
-  // Air density at 3500m elevation: rho ~ 0.86 kg/m³, Cp = 1005 J/kg·K
   const geom = model.geometry;
-  const volume = (geom?.length || 6) * (geom?.width || 4) * (geom?.height || 3);
-  const rhoCp = 0.86 * 1005; // ~864 J/m³·K
+  const L = geom?.length || 6;
+  const W = geom?.width || 4;
+  const H = geom?.height || 3;
+  const roofAngle = ((geom?.roofAngle || 0) * Math.PI) / 180;
+  let volume = L * W * H;
+  if (geom?.roofType === "Shed" && roofAngle > 0) {
+    const deltaH = W * Math.tan(roofAngle);
+    volume += 0.5 * L * W * deltaH;
+  } else if (geom?.roofType === "Gable" && roofAngle > 0) {
+    const deltaH = 0.5 * W * Math.tan(roofAngle);
+    volume += 0.5 * L * W * deltaH;
+  }
+  const rhoCp = 0.86 * 1005; // ~864 J/m³·K at high altitude
   const qInfiltrationLossW = Math.round((rhoCp * volume * (ach / 3600)) * deltaT);
 
-  // Linear thermal bridge Ψ based on whether continuous insulation is present
+  // ISO 10211 linear thermal bridge Ψ based on assembly continuity
   const hasContinuousInsulation =
     southRes.uValue < 0.35 && northRes.uValue < 0.35 && roofRes.uValue < 0.35;
   const psiBridge = hasContinuousInsulation ? 0.08 : southRes.uValue > 2.0 ? 0.38 : 0.18;
@@ -260,11 +316,15 @@ export function calculateThermalMetrics(model: ShelterModel): DynamicThermalCalc
     iRoofIncident,
     tSurfaceSouth,
     tSurfaceNorth,
+    tSurfaceEast,
+    tSurfaceWest,
     tSurfaceRoof,
     tGlazing,
     tFloorMass,
     qSouthFlux,
     qNorthFlux,
+    qEastFlux,
+    qWestFlux,
     qRoofFlux,
     qGlazingTransmitted,
     totalWindowArea: Math.round(totalWindowArea * 100) / 100,
@@ -273,5 +333,132 @@ export function calculateThermalMetrics(model: ShelterModel): DynamicThermalCalc
     infiltrationACH: ach,
     qInfiltrationLossW,
     psiBridge,
+  };
+}
+
+export interface HourlyThermalStep {
+  hour: number;
+  timeLabel: string;
+  indoorTemp: number;
+  outdoorTemp: number;
+  solarGainW: number;
+  dni: number;
+  tSurfaceSouth: number;
+  tSurfaceNorth: number;
+  tSurfaceEast: number;
+  tSurfaceWest: number;
+  tSurfaceRoof: number;
+  tFloorMass: number;
+  tGlazing: number;
+  qSouthFlux: number;
+  qNorthFlux: number;
+  psiBridge: number;
+}
+
+/**
+ * Computes face-specific thermal boundary temperatures for an exact hour (0 to 23)
+ * using EnergyPlus simulated hourly results, or interpolates diurnal high-altitude cycle.
+ */
+export function calculateHourlyThermalStep(
+  model: ShelterModel,
+  hour: number,
+  hourlyResults?: {
+    indoorTemp?: number[];
+    outdoorTemp?: number[];
+    solarGains?: number[];
+    directNormalIrradiance?: number[];
+  } | null
+): HourlyThermalStep {
+  const h = Math.max(0, Math.min(23, Math.round(hour)));
+  const baseMetrics = calculateThermalMetrics(model);
+
+  // Check if simulated EnergyPlus hourly arrays are available
+  const hasSim =
+    hourlyResults &&
+    Array.isArray(hourlyResults.indoorTemp) &&
+    hourlyResults.indoorTemp.length > h;
+
+  const tIndoor = hasSim ? (hourlyResults!.indoorTemp![h] ?? 18.0) : 18.0;
+  const tOutdoor = hasSim
+    ? (hourlyResults!.outdoorTemp![h] ?? baseMetrics.tOutdoor)
+    : baseMetrics.tOutdoor + 4.5 * Math.sin(Math.PI * ((h - 9) / 12));
+
+  const solarW = hasSim
+    ? (hourlyResults!.solarGains![h] ?? 0)
+    : h >= 7 && h <= 17
+    ? Math.round(baseMetrics.qWindowTotalW * Math.sin(Math.PI * ((h - 7) / 10)))
+    : 0;
+
+  const dni = hasSim
+    ? (hourlyResults!.directNormalIrradiance![h] ?? (h >= 7 && h <= 17 ? 850 : 0))
+    : h >= 8 && h <= 16
+    ? Math.round(baseMetrics.dniNoon * Math.sin(Math.PI * ((h - 8) / 8)))
+    : 0;
+
+  // Day vs night sol-air modifier
+  const isDay = h >= 7 && h <= 17;
+  const solarFactor = isDay ? Math.sin(Math.PI * ((h - 7) / 10)) : 0.0;
+
+  // Night radiative sky cooling (Delta_R is highest under cloudless Himalayan night)
+  const nightSkyCooling = !isDay ? 3.8 : 1.0;
+
+  // Face surface temperatures for this hour
+  const tSurfaceSouth = Math.round(
+    (tOutdoor + (solarFactor * 32.0 * (1.0 - Math.min(0.85, baseMetrics.uSouth / 3.0))) - (!isDay ? 1.5 : 0)) * 10
+  ) / 10;
+
+  const tSurfaceNorth = Math.round((tOutdoor - nightSkyCooling) * 10) / 10;
+
+  const tSurfaceEast = Math.round(
+    (tOutdoor + (h >= 7 && h <= 12 ? Math.sin(Math.PI * ((h - 7) / 5)) * 18.0 : 0) - nightSkyCooling) * 10
+  ) / 10;
+
+  const tSurfaceWest = Math.round(
+    (tOutdoor + (h >= 12 && h <= 17 ? Math.sin(Math.PI * ((h - 12) / 5)) * 16.0 : 0) - nightSkyCooling) * 10
+  ) / 10;
+
+  const tSurfaceRoof = Math.round(
+    (tOutdoor + (solarFactor * 24.0) - nightSkyCooling * 1.5) * 10
+  ) / 10;
+
+  // Internal thermal mass lag: slowly absorbs heat by day, releases residual heat between 20:00 and 04:00
+  const massLagFactor =
+    h >= 19 || h <= 4
+      ? 1.8 // Releasing heat into living zone
+      : isDay
+      ? 0.5 // Absorbing solar flux
+      : 1.0;
+
+  const tFloorMass = Math.round((tIndoor + massLagFactor) * 10) / 10;
+  const tGlazing = isDay
+    ? Math.round((tOutdoor + solarFactor * 38.0) * 10) / 10
+    : Math.round((tOutdoor - 1.0) * 10) / 10;
+
+  const deltaT = Math.max(1, tIndoor - tOutdoor);
+  const qSouthFlux = Math.round(baseMetrics.uSouth * (tSurfaceSouth - tIndoor));
+  const qNorthFlux = -Math.round(baseMetrics.uNorth * deltaT);
+
+  const hourStr = h.toString().padStart(2, "0");
+  const ampm = h >= 12 ? "PM" : "AM";
+  const displayH = h % 12 === 0 ? 12 : h % 12;
+  const timeLabel = `${displayH}:00 ${ampm} (${hourStr}:00)`;
+
+  return {
+    hour: h,
+    timeLabel,
+    indoorTemp: Math.round(tIndoor * 10) / 10,
+    outdoorTemp: Math.round(tOutdoor * 10) / 10,
+    solarGainW: Math.round(solarW),
+    dni,
+    tSurfaceSouth,
+    tSurfaceNorth,
+    tSurfaceEast,
+    tSurfaceWest,
+    tSurfaceRoof,
+    tFloorMass,
+    tGlazing,
+    qSouthFlux,
+    qNorthFlux,
+    psiBridge: baseMetrics.psiBridge,
   };
 }

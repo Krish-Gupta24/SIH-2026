@@ -157,5 +157,45 @@ export const api = {
       }),
     downloadUrl: `${API_BASE_URL}/ansys/download`,
   },
+  reports: {
+    compile: (payload: any) =>
+      fetchApi<any>("/reports/compile", {
+        method: "POST",
+        body: JSON.stringify(payload),
+      }),
+    exportPdf: async (payload: any): Promise<Blob> => {
+      const urlsToTry = [
+        `${API_BASE_URL}/reports/export/pdf`,
+        "/api/v1/reports/export/pdf",
+        "http://localhost:8000/api/v1/reports/export/pdf",
+      ];
+      let lastErr: any = null;
+      for (const url of urlsToTry) {
+        try {
+          const res = await fetch(url, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          });
+          if (res.ok) {
+            return await res.blob();
+          }
+        } catch (e) {
+          lastErr = e;
+        }
+      }
+      throw lastErr || new Error("Failed to export PDF from reports service.");
+    },
+    exportCsv: (payload: any) =>
+      fetchApi<string>("/reports/export/csv", {
+        method: "POST",
+        body: JSON.stringify(payload),
+      }),
+    exportJson: (payload: any) =>
+      fetchApi<any>("/reports/export/json", {
+        method: "POST",
+        body: JSON.stringify(payload),
+      }),
+  },
 };
 

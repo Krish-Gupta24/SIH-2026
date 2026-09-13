@@ -208,6 +208,8 @@ export function AnsysDeckExportModal({ open, onOpenChange }: AnsysDeckExportModa
     }
   };
 
+  if (!activeProject) return null;
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange} contentClassName="max-w-4xl p-0 overflow-hidden bg-card border border-border rounded-2xl shadow-2xl">
       {/* Modal Top Header */}

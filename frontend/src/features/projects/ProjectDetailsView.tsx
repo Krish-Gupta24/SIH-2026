@@ -17,6 +17,7 @@ import {
   ShieldCheck,
   ArrowLeft,
   CheckCircle2,
+  Trash2,
 } from "lucide-react";
 import { useShelterStore } from "@/lib/store/use-shelter-store";
 import { simulationApi } from "@/lib/api";
@@ -24,21 +25,32 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table";
+import { DeleteProjectModal } from "./DeleteProjectModal";
 
 export function ProjectDetailsView({ projectId }: { projectId: string }) {
   const router = useRouter();
-  const { projects, weatherDatasets, addSimulationJob } = useShelterStore();
+  const { projects, weatherDatasets, addSimulationJob, deleteProject } = useShelterStore();
   const [isSimulating, setIsSimulating] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
-  const project = projects.find((p) => p.id === projectId) || projects[0];
+  // Strict lookup: never silently fallback to projects[0] when viewing a deleted or non-existent project
+  const project = projects.find((p) => p.id === projectId);
   const activeWeather = weatherDatasets[0];
 
   if (!project) {
     return (
-      <div className="text-center py-16 space-y-4">
-        <p className="text-slate-400">Project not found.</p>
+      <div className="flex flex-col items-center justify-center py-24 px-4 text-center space-y-4 max-w-md mx-auto">
+        <div className="w-14 h-14 rounded-2xl bg-slate-900 border border-slate-800 flex items-center justify-center text-amber-400 shadow-xl">
+          <Layers className="w-7 h-7" />
+        </div>
+        <h2 className="text-xl font-bold text-white">Project Not Found</h2>
+        <p className="text-sm text-slate-400">
+          This project does not exist or was deleted on another device or tab.
+        </p>
         <Link href="/projects">
-          <Button variant="outline">Return to Projects</Button>
+          <Button variant="default" className="mt-2 font-semibold">
+            Return to Projects
+          </Button>
         </Link>
       </div>
     );
@@ -118,6 +130,16 @@ export function ProjectDetailsView({ projectId }: { projectId: string }) {
               Edit in Wizard
             </Button>
           </Link>
+
+          <Button
+            variant="outline"
+            onClick={() => setIsDeleteModalOpen(true)}
+            className="gap-1.5 font-semibold text-red-400 hover:text-red-300 hover:bg-red-950/30 border-red-900/50"
+            title="Delete Project"
+          >
+            <Trash2 className="h-4 w-4" />
+            Delete
+          </Button>
 
           <Button
             onClick={handleRunSimulation}
@@ -286,6 +308,16 @@ export function ProjectDetailsView({ projectId }: { projectId: string }) {
           </CardContent>
         </Card>
       </div>
+
+      <DeleteProjectModal
+        isOpen={isDeleteModalOpen}
+        project={project}
+        onClose={() => setIsDeleteModalOpen(false)}
+        onConfirm={async (id) => {
+          await deleteProject(id);
+          router.push("/projects");
+        }}
+      />
     </div>
   );
 }

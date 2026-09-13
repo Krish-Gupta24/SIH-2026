@@ -540,7 +540,14 @@ export async function runBackendEnergyPlusSweep(
     run_period_days: runPeriodDays,
   };
 
-  const response = await fetch("/api/v1/optimization/sweep", {
+  const apiBase =
+    process.env.NEXT_PUBLIC_API_URL ||
+    (typeof window !== "undefined" && window.location.hostname === "localhost"
+      ? "http://localhost:8000/api/v1"
+      : "/api/v1");
+  const endpoint = `${apiBase.replace(/\/$/, "")}/optimization/sweep`;
+
+  const response = await fetch(endpoint, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),

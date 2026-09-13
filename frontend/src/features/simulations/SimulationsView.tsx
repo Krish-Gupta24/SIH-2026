@@ -141,19 +141,53 @@ export function SimulationsView() {
     ? projects.find((p) => p.id === newWithId || p.project?.id === newWithId)
     : projects.find((p) => p.id === activeProjectId) || projects[0] || null;
 
+  // Build unified station catalog including any synthesized microclimate EPW associated with current project
+  const availableStations = React.useMemo(() => {
+    const list = [...weatherDatasets];
+    const projEpw = targetProject?.location?.weatherSource;
+    if (projEpw && !list.some((w) => w.epwFileName === projEpw)) {
+      const elev = targetProject?.location?.elevation || 3500;
+      const reg = targetProject?.location?.region || targetProject?.project?.name || "Custom Himalayan Outpost";
+      const isMicro = projEpw.startsWith("MICROCLIMATE_");
+      list.unshift({
+        id: `wx-proj-custom-${targetProject.id}`,
+        name: isMicro
+          ? `${reg.split(",")[0]} (${Math.round(elev)}m · Synthesized ML EPW)`
+          : `${reg.split(",")[0]} (${Math.round(elev)}m · Custom EPW)`,
+        region: `${reg} (Project Weather Source)`,
+        latitude: targetProject?.location?.latitude || 34.15,
+        longitude: targetProject?.location?.longitude || 77.58,
+        elevationM: elev,
+        climateZone: elev > 4500 ? "Extreme Cold Alpine (ASHRAE 8)" : "Cold / Sub-Arctic",
+        sourceType: "EPW",
+        provenanceStatus: "REAL_DATA",
+        isTestData: false,
+        designWinterMinC: targetProject?.location?.designTempWinter || -25.0,
+        designSummerMaxC: targetProject?.location?.designTempSummer || 22.0,
+        annualHDD18: 5500,
+        epwFileName: projEpw,
+      });
+    }
+    return list;
+  }, [weatherDatasets, targetProject]);
+
   const [selectedStationId, setSelectedStationId] = useState<string>(activeWeatherId || "wx-leh-427053");
 
-  // Keep selected station in sync when target project changes or specifies a weather source
+  // Keep selected station in sync when target project changes or specifies a custom weather source
   React.useEffect(() => {
     if (targetProject?.location?.weatherSource) {
-      const match = weatherDatasets.find((w) => w.epwFileName === targetProject.location?.weatherSource);
+      const match = availableStations.find((w) => w.epwFileName === targetProject.location?.weatherSource);
       if (match) {
         setSelectedStationId(match.id);
+        return;
       }
-    } else if (activeWeatherId) {
-      setSelectedStationId(activeWeatherId);
     }
-  }, [targetProject, activeWeatherId, weatherDatasets]);
+    if (activeWeatherId && availableStations.some((w) => w.id === activeWeatherId)) {
+      setSelectedStationId(activeWeatherId);
+    } else if (availableStations[0]) {
+      setSelectedStationId(availableStations[0].id);
+    }
+  }, [targetProject, activeWeatherId, availableStations]);
 
   const handleQueueSimulation = async (
     projToSim = targetProject || projects[0],
@@ -164,9 +198,9 @@ export function SimulationsView() {
 
     const stationIdToUse = overrideStationId || selectedStationId || activeWeatherId;
     const matchedStation =
-      weatherDatasets.find((w) => w.id === stationIdToUse) ||
-      weatherDatasets.find((w) => w.epwFileName === projToSim.location?.weatherSource) ||
-      weatherDatasets[0];
+      availableStations.find((w) => w.id === stationIdToUse) ||
+      availableStations.find((w) => w.epwFileName === projToSim.location?.weatherSource) ||
+      availableStations[0];
 
     const weatherFileName =
       matchedStation?.epwFileName ||
@@ -458,7 +492,7 @@ export function SimulationsView() {
                   {targetProject.project?.name || targetProject.id}
                 </h2>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  Geometry: {targetProject.geometry?.length}m × {targetProject.geometry?.width}m × {targetProject.geometry?.height}m · Weather: {weatherDatasets.find((w) => w.id === selectedStationId)?.name || targetProject.location?.weatherSource || "Leh WMO Station 427053 (TMYx)"}
+                  Geometry: {targetProject.geometry?.length}m × {targetProject.geometry?.width}m × {targetProject.geometry?.height}m · Weather: {availableStations.find((w) => w.id === selectedStationId)?.name || targetProject.location?.weatherSource || "Leh WMO Station 427053 (TMYx)"}
                 </p>
               </div>
 
@@ -606,27 +640,59 @@ export function SimulationsView() {
 
                 {/* Weather Station selection */}
                 <div className="pt-2 border-t border-border/50">
-                  <span className="micro-label block mb-2">Target Climate & Weather Station</span>
+                  <div className="flex flex-wrap items-center justify-between gap-1.5 mb-2">
+                    <span className="micro-label block">Target Climate & Weather Station</span>
+                    {targetProject?.location?.weatherSource?.startsWith("MICROCLIMATE_") && (
+                      <span className="text-[11px] font-semibold text-sky-600 dark:text-sky-400 bg-sky-500/10 border border-sky-500/25 px-2.5 py-0.5 rounded-full flex items-center gap-1.5">
+                        <Sparkles className="size-3 text-sky-500 animate-pulse" />
+                        Custom Physics-Informed Microclimate EPW Active
+                      </span>
+                    )}
+                  </div>
                   <div className="flex flex-wrap items-center gap-2">
-                    {weatherDatasets.map((ws) => (
-                      <button
-                        key={ws.id}
-                        type="button"
-                        onClick={() => setSelectedStationId(ws.id)}
-                        className={`rounded-full px-3.5 py-1.5 text-xs font-semibold transition-all flex items-center gap-2 ${
-                          selectedStationId === ws.id
-                            ? "bg-foreground text-background shadow-sm"
-                            : "border border-border bg-card text-muted-foreground hover:bg-secondary hover:text-foreground"
-                        }`}
-                      >
-                        <span
-                          className={`inline-block size-2 rounded-full ${
-                            ws.isTestData ? "bg-amber-400" : "bg-emerald-400"
+                    {availableStations.map((ws) => {
+                      const isCustomEpw =
+                        ws.epwFileName?.startsWith("MICROCLIMATE_") ||
+                        ws.id.startsWith("wx-proj-custom-") ||
+                        ws.id.startsWith("wx-micro-") ||
+                        ws.sourceType === "MICROCLIMATE_PIML";
+                      const isSelected = selectedStationId === ws.id;
+                      return (
+                        <button
+                          key={ws.id}
+                          type="button"
+                          onClick={() => setSelectedStationId(ws.id)}
+                          className={`rounded-full px-3.5 py-1.5 text-xs font-semibold transition-all flex items-center gap-2 ${
+                            isSelected
+                              ? isCustomEpw
+                                ? "bg-sky-600 text-white shadow-md ring-2 ring-sky-400/40 font-bold"
+                                : "bg-foreground text-background shadow-sm"
+                              : isCustomEpw
+                              ? "border border-sky-400/50 bg-sky-500/10 text-sky-700 dark:text-sky-300 hover:bg-sky-500/20"
+                              : "border border-border bg-card text-muted-foreground hover:bg-secondary hover:text-foreground"
                           }`}
-                        />
-                        <span>{ws.name}</span>
-                      </button>
-                    ))}
+                        >
+                          <span
+                            className={`inline-block size-2 rounded-full ${
+                              ws.isTestData ? "bg-amber-400" : isCustomEpw ? "bg-cyan-400 animate-pulse" : "bg-emerald-400"
+                            }`}
+                          />
+                          {isCustomEpw && <Sparkles className="size-3 text-cyan-300 shrink-0" />}
+                          <span>{ws.name}</span>
+                          {isCustomEpw && (
+                            <span
+                              className={`text-[9px] px-1.5 py-0.5 rounded-full font-mono uppercase tracking-wider font-bold ${
+                                isSelected
+                                  ? "bg-white/25 text-white"
+                                  : "bg-sky-200 dark:bg-sky-900 text-sky-800 dark:text-sky-200"
+                              }`}
+                            >
+                              Synthesized
+                            </span>
+                          )}
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
               </div>

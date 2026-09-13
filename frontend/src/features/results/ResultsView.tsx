@@ -83,7 +83,18 @@ export function ResultsView() {
     setTraceVisibility((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
-  const activeJob = completedJobs.find((j) => j.id === selectedJobId) || initialJob;
+  const activeJob =
+    completedJobs.find((j) => j.id === selectedJobId) ||
+    (urlJobId && completedJobs.find((j) => j.id === urlJobId)) ||
+    completedJobs[0] ||
+    null;
+
+  // Keep selectedJobId synchronized with the active job across cross-device updates
+  useEffect(() => {
+    if (activeJob && selectedJobId !== activeJob.id) {
+      setSelectedJobId(activeJob.id);
+    }
+  }, [activeJob?.id, selectedJobId]);
 
   if (!activeJob || !activeJob.results) {
     return (
@@ -229,7 +240,7 @@ export function ResultsView() {
           <div className="flex flex-wrap items-center gap-3">
             {/* Active Job Selector */}
             <select
-              value={selectedJobId}
+              value={activeJob.id}
               onChange={(e) => setSelectedJobId(e.target.value)}
               className="rounded-full border border-border bg-card px-4 py-2 text-xs font-semibold text-foreground focus:outline-none focus:ring-1 focus:ring-ring shadow-sm cursor-pointer"
             >

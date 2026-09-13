@@ -6,6 +6,7 @@ import { Grid, OrbitControls } from "@react-three/drei";
 import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
 import type { ShelterModel } from "@/types/shelter";
 import type { CameraPreset, SelectedElement, ViewerSettings } from "../types";
+import type { HourlyThermalStep } from "../thermal-physics";
 import { ShelterMesh } from "./ShelterMesh";
 import { DimensionLines } from "./DimensionLines";
 import { CompassRose } from "./CompassRose";
@@ -17,6 +18,8 @@ interface ShelterCanvasProps {
   onSelect: (element: SelectedElement) => void;
   settings: ViewerSettings;
   activePreset: CameraPreset;
+  hourlyStep?: HourlyThermalStep | null;
+  hasSimResults?: boolean;
 }
 
 function CameraController({
@@ -58,6 +61,8 @@ export function ShelterCanvas({
   onSelect,
   settings,
   activePreset,
+  hourlyStep,
+  hasSimResults,
 }: ShelterCanvasProps) {
   const controlsRef = useRef<OrbitControlsImpl>(null);
   const compassRadius = Math.max(4.5, Math.max(model.geometry.length, model.geometry.width) * 0.72);
@@ -147,11 +152,22 @@ export function ShelterCanvas({
         {settings.showDimensions ? <DimensionLines model={model} selected={selected} /> : null}
 
         {/* 3D Shelter Mesh with Architectural Assemblies & Visualizers */}
-        <ShelterMesh model={model} selected={selected} onSelect={onSelect} settings={settings} />
+        <ShelterMesh
+          model={model}
+          selected={selected}
+          onSelect={onSelect}
+          settings={settings}
+          hourlyStep={hourlyStep}
+        />
       </Canvas>
 
       {/* Thermographic & Solar Scale Legend HUD */}
-      <ThermalScaleLegend mode={settings.visualization} model={model} />
+      <ThermalScaleLegend
+        mode={settings.visualization}
+        model={model}
+        hourlyStep={hourlyStep}
+        hasSimResults={hasSimResults}
+      />
     </div>
   );
 }

@@ -8,12 +8,18 @@ import type { ShelterModel } from "@/types/shelter";
 import type { SelectedElement, ViewerSettings, WallOrientation } from "../types";
 import { deriveShelter3DGeometry, type Opening3DPlacement } from "../geometry-math";
 import { ThermalRadiationOverlay } from "./ThermalRadiationOverlay";
+import {
+  getThermalColor,
+  calculateThermalMetrics,
+  type HourlyThermalStep,
+} from "../thermal-physics";
 
 interface Props {
   model: ShelterModel;
   selected: SelectedElement;
   onSelect: (element: SelectedElement) => void;
   settings: ViewerSettings;
+  hourlyStep?: HourlyThermalStep | null;
 }
 
 const palette = {
@@ -69,7 +75,16 @@ function getWallMaterialColor(
   return side === "south" ? "#ded9cb" : palette.paper;
 }
 
-function createThermalTexture(type: "south" | "north" | "east" | "west" | "roof" | "floor"): THREE.CanvasTexture | null {
+interface ThermalTextureParams {
+  type: "south" | "north" | "east" | "west" | "roof" | "floor";
+  surfaceTemp: number;
+  outdoorTemp: number;
+  indoorTemp: number;
+  uValue: number;
+  psiBridge: number;
+}
+
+function createThermalTexture(params: ThermalTextureParams): THREE.CanvasTexture | null {
   if (typeof document === "undefined") return null;
   const canvas = document.createElement("canvas");
   canvas.width = 256;
@@ -77,57 +92,65 @@ function createThermalTexture(type: "south" | "north" | "east" | "west" | "roof"
   const ctx = canvas.getContext("2d");
   if (!ctx) return null;
 
-  if (type === "south") {
-    // FLIR Ironbow solar absorption gradient
-    const grad = ctx.createRadialGradient(128, 100, 20, 128, 128, 160);
-    grad.addColorStop(0, "#ffffff");
-    grad.addColorStop(0.2, "#fde047");
-    grad.addColorStop(0.45, "#f97316");
-    grad.addColorStop(0.75, "#ef4444");
-    grad.addColorStop(0.92, "#a855f7");
-    grad.addColorStop(1, "#1e3a8a");
+  const { type, surfaceTemp, outdoorTemp, indoorTemp, uValue, psiBridge } = params;
+  const deltaT = Math.max(1, indoorTemp - outdoorTemp);
+
+  // ISO 10211 Corner Thermal Bridging:
+  // At exterior corners where 2 faces meet, temperature dips cooler
+  const cornerDrop = psiBridge * (deltaT / 2.0) * Math.min(1.0, uValue / 1.5);
+  const cornerTemp = surfaceTemp - cornerDrop;
+
+  const coreColor = getThermalColor(surfaceTemp);
+  const cornerColor = getThermalColor(cornerTemp);
+  const midColor = getThermalColor((surfaceTemp + cornerTemp) / 2);
+
+  if (type === "south" || type === "roof") {
+    // Solar exposed surface with central absorption and cooler ISO 10211 edges
+    const grad = ctx.createRadialGradient(128, 110, 15, 128, 128, 150);
+    grad.addColorStop(0, coreColor);
+    grad.addColorStop(0.5, midColor);
+    grad.addColorStop(1, cornerColor);
     ctx.fillStyle = grad;
     ctx.fillRect(0, 0, 256, 256);
   } else if (type === "north") {
-    // Cold convective sub-zero gradient
+    // Cold convective sub-zero gradient with vertical thermal stratification
     const grad = ctx.createLinearGradient(0, 0, 0, 256);
-    grad.addColorStop(0, "#1e3a8a");
-    grad.addColorStop(0.35, "#2563eb");
-    grad.addColorStop(0.7, "#06b6d4");
-    grad.addColorStop(1, "#0f172a");
+    grad.addColorStop(0, cornerColor);
+    grad.addColorStop(0.5, coreColor);
+    grad.addColorStop(1, cornerColor);
     ctx.fillStyle = grad;
     ctx.fillRect(0, 0, 256, 256);
-  } else if (type === "east") {
+  } else if (type === "east" || type === "west") {
+    // Lateral convective gradient
     const grad = ctx.createLinearGradient(0, 0, 256, 256);
-    grad.addColorStop(0, "#eab308");
-    grad.addColorStop(0.5, "#d97706");
-    grad.addColorStop(1, "#0284c7");
-    ctx.fillStyle = grad;
-    ctx.fillRect(0, 0, 256, 256);
-  } else if (type === "west") {
-    const grad = ctx.createLinearGradient(256, 0, 0, 256);
-    grad.addColorStop(0, "#f97316");
-    grad.addColorStop(0.4, "#06b6d4");
-    grad.addColorStop(1, "#1e40af");
-    ctx.fillStyle = grad;
-    ctx.fillRect(0, 0, 256, 256);
-  } else if (type === "roof") {
-    const grad = ctx.createRadialGradient(128, 128, 30, 128, 128, 140);
-    grad.addColorStop(0, "#fef08a");
-    grad.addColorStop(0.4, "#f97316");
-    grad.addColorStop(0.85, "#dc2626");
-    grad.addColorStop(1, "#7c3aed");
+    grad.addColorStop(0, cornerColor);
+    grad.addColorStop(0.5, coreColor);
+    grad.addColorStop(1, cornerColor);
     ctx.fillStyle = grad;
     ctx.fillRect(0, 0, 256, 256);
   } else {
-    // floor mass
-    const grad = ctx.createRadialGradient(128, 128, 10, 128, 128, 130);
-    grad.addColorStop(0, "#fbbf24");
-    grad.addColorStop(0.6, "#d97706");
-    grad.addColorStop(1, "#0369a1");
+    // Floor mass
+    const grad = ctx.createRadialGradient(128, 128, 20, 128, 128, 130);
+    grad.addColorStop(0, coreColor);
+    grad.addColorStop(0.7, midColor);
+    grad.addColorStop(1, cornerColor);
     ctx.fillStyle = grad;
     ctx.fillRect(0, 0, 256, 256);
   }
+
+  // Draw subtle ANSYS FEA Isothermal Contour Bands (Fine concentric/linear isobar lines)
+  ctx.save();
+  ctx.strokeStyle = "rgba(255, 255, 255, 0.12)";
+  ctx.lineWidth = 1;
+  for (let r = 35; r <= 130; r += 28) {
+    ctx.beginPath();
+    ctx.arc(128, 120, r, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+  // Subtle vertical corner bridge border indicator (ISO 10211)
+  ctx.strokeStyle = "rgba(0, 0, 0, 0.15)";
+  ctx.strokeRect(10, 10, 236, 236);
+  ctx.restore();
 
   const texture = new THREE.CanvasTexture(canvas);
   texture.wrapS = THREE.ClampToEdgeWrapping;
@@ -193,10 +216,78 @@ function createWallGeometryWithOpenings(
   return geom;
 }
 
-export function ShelterMesh({ model, selected, onSelect, settings }: Props) {
+/**
+ * Creates an extruded triangular gable end wall (tympanum)
+ * Spans width W along base and rises to height H at apex
+ */
+function createGableEndGeometry(width: number, height: number, thickness: number): THREE.BufferGeometry {
+  const shape = new THREE.Shape();
+  const hw = width / 2;
+  shape.moveTo(-hw, 0);
+  shape.lineTo(hw, 0);
+  shape.lineTo(0, height);
+  shape.closePath();
+
+  const g = new THREE.ExtrudeGeometry(shape, {
+    depth: thickness,
+    bevelEnabled: false,
+  });
+  g.translate(0, 0, -thickness / 2);
+  g.computeVertexNormals();
+  return g;
+}
+
+/**
+ * Creates an extruded right-triangular wedge for East wall under Shed roof
+ * In East local coordinates (+90deg around Y):
+ * Local -X points to world +Z (South, height = H)
+ * Local +X points to world -Z (North, height = 0)
+ */
+function createEastShedWedgeGeometry(depth: number, height: number, thickness: number): THREE.BufferGeometry {
+  const shape = new THREE.Shape();
+  const hd = depth / 2;
+  shape.moveTo(-hd, 0);
+  shape.lineTo(hd, 0);
+  shape.lineTo(-hd, height);
+  shape.closePath();
+
+  const g = new THREE.ExtrudeGeometry(shape, {
+    depth: thickness,
+    bevelEnabled: false,
+  });
+  g.translate(0, 0, -thickness / 2);
+  g.computeVertexNormals();
+  return g;
+}
+
+/**
+ * Creates an extruded right-triangular wedge for West wall under Shed roof
+ * In West local coordinates (-90deg around Y):
+ * Local +X points to world +Z (South, height = H)
+ * Local -X points to world -Z (North, height = 0)
+ */
+function createWestShedWedgeGeometry(depth: number, height: number, thickness: number): THREE.BufferGeometry {
+  const shape = new THREE.Shape();
+  const hd = depth / 2;
+  shape.moveTo(-hd, 0);
+  shape.lineTo(hd, 0);
+  shape.lineTo(hd, height);
+  shape.closePath();
+
+  const g = new THREE.ExtrudeGeometry(shape, {
+    depth: thickness,
+    bevelEnabled: false,
+  });
+  g.translate(0, 0, -thickness / 2);
+  g.computeVertexNormals();
+  return g;
+}
+
+export function ShelterMesh({ model, selected, onSelect, settings, hourlyStep }: Props) {
   const [hovered, setHovered] = useState<string | null>(null);
   const geom = useMemo(() => deriveShelter3DGeometry(model), [model]);
   const orientation = -(model.geometry.orientation * Math.PI) / 180;
+  const modelMetrics = useMemo(() => calculateThermalMetrics(model), [model]);
 
   const isActive = (id: string) =>
     hovered === id ||
@@ -208,11 +299,33 @@ export function ShelterMesh({ model, selected, onSelect, settings }: Props) {
     setHovered(id);
   };
 
-  const roofAngle = THREE.MathUtils.degToRad(model.geometry.roofAngle);
-  const overhang = model.envelope.roof.overhang;
-  const roofDepth = model.geometry.width + overhang * 2;
+  const roofAngle = THREE.MathUtils.degToRad(model.geometry.roofAngle || 0);
+  const overhang = typeof model.envelope?.roof?.overhang === "number" ? model.envelope.roof.overhang : 0.4;
   const roofSpan = model.geometry.length + overhang * 2;
-  const gableHalf = roofDepth / 2 / Math.cos(roofAngle || 0.001);
+  const wallThickness = geom.walls.south.dimensions[2];
+  const roofThickness = Math.max(0.12, geom.roof.dimensions[1]);
+
+  const deltaHGable = 0.5 * model.geometry.width * Math.tan(roofAngle);
+  const halfRunGable = 0.5 * model.geometry.width + overhang;
+  const rafterLengthGable = halfRunGable / Math.cos(roofAngle || 0.001);
+
+  const deltaHShed = model.geometry.width * Math.tan(roofAngle);
+  const slopeDepthShed = (model.geometry.width + overhang * 2) / Math.cos(roofAngle || 0.001);
+
+  const gableEndGeom = useMemo(() => {
+    if (model.geometry.roofType !== "Gable" || model.geometry.roofAngle <= 0) return null;
+    return createGableEndGeometry(model.geometry.width, deltaHGable, wallThickness);
+  }, [model.geometry.roofType, model.geometry.roofAngle, model.geometry.width, deltaHGable, wallThickness]);
+
+  const eastShedWedgeGeom = useMemo(() => {
+    if (model.geometry.roofType !== "Shed" || model.geometry.roofAngle <= 0) return null;
+    return createEastShedWedgeGeometry(model.geometry.width, deltaHShed, wallThickness);
+  }, [model.geometry.roofType, model.geometry.roofAngle, model.geometry.width, deltaHShed, wallThickness]);
+
+  const westShedWedgeGeom = useMemo(() => {
+    if (model.geometry.roofType !== "Shed" || model.geometry.roofAngle <= 0) return null;
+    return createWestShedWedgeGeometry(model.geometry.width, deltaHShed, wallThickness);
+  }, [model.geometry.roofType, model.geometry.roofAngle, model.geometry.width, deltaHShed, wallThickness]);
 
   // Group openings by wall for cutout geometry generation
   const openingsByWall = useMemo(() => {
@@ -263,18 +376,97 @@ export function ShelterMesh({ model, selected, onSelect, settings }: Props) {
   const xrayWallOpacity = 0.14;
   const xrayEdgeOpacity = 0.88;
 
-  // Procedural FLIR thermal gradient maps for surfaces
+  // Dynamically calibrated FLIR / Turbo thermal gradient maps for surfaces (ISO 6946 / ISO 10211)
   const thermalTextures = useMemo(() => {
     if (typeof window === "undefined") return null;
+
+    const effMetrics = hourlyStep
+      ? {
+          tSurfaceSouth: hourlyStep.tSurfaceSouth,
+          tSurfaceNorth: hourlyStep.tSurfaceNorth,
+          tSurfaceEast: hourlyStep.tSurfaceEast,
+          tSurfaceWest: hourlyStep.tSurfaceWest,
+          tSurfaceRoof: hourlyStep.tSurfaceRoof,
+          tFloorMass: hourlyStep.tFloorMass,
+          tOutdoor: hourlyStep.outdoorTemp,
+          tIndoor: hourlyStep.indoorTemp,
+          uSouth: modelMetrics.uSouth,
+          uNorth: modelMetrics.uNorth,
+          uEast: modelMetrics.uEast,
+          uWest: modelMetrics.uWest,
+          uRoof: modelMetrics.uRoof,
+          uFloor: modelMetrics.uFloor,
+          psiBridge: hourlyStep.psiBridge,
+        }
+      : {
+          tSurfaceSouth: modelMetrics.tSurfaceSouth,
+          tSurfaceNorth: modelMetrics.tSurfaceNorth,
+          tSurfaceEast: modelMetrics.tSurfaceEast,
+          tSurfaceWest: modelMetrics.tSurfaceWest,
+          tSurfaceRoof: modelMetrics.tSurfaceRoof,
+          tFloorMass: modelMetrics.tFloorMass,
+          tOutdoor: modelMetrics.tOutdoor,
+          tIndoor: modelMetrics.tIndoor,
+          uSouth: modelMetrics.uSouth,
+          uNorth: modelMetrics.uNorth,
+          uEast: modelMetrics.uEast,
+          uWest: modelMetrics.uWest,
+          uRoof: modelMetrics.uRoof,
+          uFloor: modelMetrics.uFloor,
+          psiBridge: modelMetrics.psiBridge,
+        };
+
     return {
-      south: createThermalTexture("south"),
-      north: createThermalTexture("north"),
-      east: createThermalTexture("east"),
-      west: createThermalTexture("west"),
-      roof: createThermalTexture("roof"),
-      floor: createThermalTexture("floor"),
+      south: createThermalTexture({
+        type: "south",
+        surfaceTemp: effMetrics.tSurfaceSouth,
+        outdoorTemp: effMetrics.tOutdoor,
+        indoorTemp: effMetrics.tIndoor,
+        uValue: effMetrics.uSouth,
+        psiBridge: effMetrics.psiBridge,
+      }),
+      north: createThermalTexture({
+        type: "north",
+        surfaceTemp: effMetrics.tSurfaceNorth,
+        outdoorTemp: effMetrics.tOutdoor,
+        indoorTemp: effMetrics.tIndoor,
+        uValue: effMetrics.uNorth,
+        psiBridge: effMetrics.psiBridge,
+      }),
+      east: createThermalTexture({
+        type: "east",
+        surfaceTemp: effMetrics.tSurfaceEast,
+        outdoorTemp: effMetrics.tOutdoor,
+        indoorTemp: effMetrics.tIndoor,
+        uValue: effMetrics.uEast,
+        psiBridge: effMetrics.psiBridge,
+      }),
+      west: createThermalTexture({
+        type: "west",
+        surfaceTemp: effMetrics.tSurfaceWest,
+        outdoorTemp: effMetrics.tOutdoor,
+        indoorTemp: effMetrics.tIndoor,
+        uValue: effMetrics.uWest,
+        psiBridge: effMetrics.psiBridge,
+      }),
+      roof: createThermalTexture({
+        type: "roof",
+        surfaceTemp: effMetrics.tSurfaceRoof,
+        outdoorTemp: effMetrics.tOutdoor,
+        indoorTemp: effMetrics.tIndoor,
+        uValue: effMetrics.uRoof,
+        psiBridge: effMetrics.psiBridge,
+      }),
+      floor: createThermalTexture({
+        type: "floor",
+        surfaceTemp: effMetrics.tFloorMass,
+        outdoorTemp: effMetrics.tOutdoor,
+        indoorTemp: effMetrics.tIndoor,
+        uValue: effMetrics.uFloor,
+        psiBridge: effMetrics.psiBridge,
+      }),
     };
-  }, []);
+  }, [model, hourlyStep, modelMetrics]);
 
   return (
     <group rotation={[0, orientation, 0]}>
@@ -420,63 +612,367 @@ export function ShelterMesh({ model, selected, onSelect, settings }: Props) {
         );
       })}
 
-      {/* 3. Roof System (Gable or Flat/Shed) with proper X-Ray Transparency */}
+      {/* 3. Roof System (Gable, Shed, or Flat) with full architectural accuracy */}
       {model.geometry.roofType === "Gable" && model.geometry.roofAngle > 0 ? (
         <group>
-          {[-1, 1].map((direction) => {
-            const gableDimensions: [number, number, number] = [roofSpan, 0.14, gableHalf + 0.15];
-            return (
-              <group
-                key={direction}
-                position={[0, model.geometry.height + (Math.sin(roofAngle) * gableHalf) / 2 + 0.04, (direction * roofDepth) / 4]}
-                rotation={[direction * -roofAngle, 0, 0]}
+          {/* Pitch 1: South facing panel */}
+          <group
+            position={[
+              0,
+              model.geometry.height + deltaHGable / 2 + 0.02,
+              halfRunGable / 2,
+            ]}
+            rotation={[roofAngle, 0, 0]}
+          >
+            <mesh
+              castShadow={!isXRay}
+              receiveShadow
+              onClick={(e) => {
+                e.stopPropagation();
+                onSelect({ type: "roof" });
+              }}
+              onPointerOver={(e) => pointer(e, "roof")}
+              onPointerOut={(e) => pointer(e, null)}
+            >
+              <boxGeometry args={[roofSpan, roofThickness, rafterLengthGable]} />
+              <meshStandardMaterial
+                color={
+                  isXRay
+                    ? palette.xrayTint
+                    : isActive("roof")
+                    ? palette.solar
+                    : isThermal
+                    ? "#ffffff"
+                    : palette.charcoal
+                }
+                map={!isXRay && isThermal ? thermalTextures?.roof : null}
+                emissiveMap={!isXRay && isThermal ? thermalTextures?.roof : null}
+                emissive={!isXRay && isThermal ? "#ffffff" : "#000000"}
+                emissiveIntensity={!isXRay && isThermal ? 0.55 : 0}
+                roughness={isXRay ? 0.15 : 0.48}
+                metalness={isXRay ? 0.08 : 0.22}
+                wireframe={settings.wireframe}
+                transparent={isXRay}
+                opacity={isXRay ? xrayWallOpacity : 1}
+                depthWrite={!isXRay}
+                side={isXRay ? THREE.DoubleSide : THREE.FrontSide}
+              />
+            </mesh>
+            {isXRay && (
+              <lineSegments>
+                <edgesGeometry args={[new THREE.BoxGeometry(roofSpan, roofThickness, rafterLengthGable)]} />
+                <lineBasicMaterial color="#38bdf8" transparent opacity={xrayEdgeOpacity} />
+              </lineSegments>
+            )}
+          </group>
+
+          {/* Pitch 2: North facing panel */}
+          <group
+            position={[
+              0,
+              model.geometry.height + deltaHGable / 2 + 0.02,
+              -halfRunGable / 2,
+            ]}
+            rotation={[-roofAngle, 0, 0]}
+          >
+            <mesh
+              castShadow={!isXRay}
+              receiveShadow
+              onClick={(e) => {
+                e.stopPropagation();
+                onSelect({ type: "roof" });
+              }}
+              onPointerOver={(e) => pointer(e, "roof")}
+              onPointerOut={(e) => pointer(e, null)}
+            >
+              <boxGeometry args={[roofSpan, roofThickness, rafterLengthGable]} />
+              <meshStandardMaterial
+                color={
+                  isXRay
+                    ? palette.xrayTint
+                    : isActive("roof")
+                    ? palette.solar
+                    : isThermal
+                    ? "#ffffff"
+                    : palette.charcoal
+                }
+                map={!isXRay && isThermal ? thermalTextures?.roof : null}
+                emissiveMap={!isXRay && isThermal ? thermalTextures?.roof : null}
+                emissive={!isXRay && isThermal ? "#ffffff" : "#000000"}
+                emissiveIntensity={!isXRay && isThermal ? 0.55 : 0}
+                roughness={isXRay ? 0.15 : 0.48}
+                metalness={isXRay ? 0.08 : 0.22}
+                wireframe={settings.wireframe}
+                transparent={isXRay}
+                opacity={isXRay ? xrayWallOpacity : 1}
+                depthWrite={!isXRay}
+                side={isXRay ? THREE.DoubleSide : THREE.FrontSide}
+              />
+            </mesh>
+            {isXRay && (
+              <lineSegments>
+                <edgesGeometry args={[new THREE.BoxGeometry(roofSpan, roofThickness, rafterLengthGable)]} />
+                <lineBasicMaterial color="#38bdf8" transparent opacity={xrayEdgeOpacity} />
+              </lineSegments>
+            )}
+          </group>
+
+          {/* Architectural Ridge Capping Flashing */}
+          <mesh
+            position={[
+              0,
+              model.geometry.height + deltaHGable + roofThickness / 2 + 0.01,
+              0,
+            ]}
+            castShadow={!isXRay}
+          >
+            <boxGeometry args={[roofSpan + 0.02, 0.06, 0.24]} />
+            <meshStandardMaterial
+              color={isActive("roof") ? palette.solar : palette.slate}
+              metalness={0.4}
+              roughness={0.4}
+            />
+          </mesh>
+
+          {/* Triangular Gable End Walls (East & West) Closing the Attic */}
+          {gableEndGeom && (
+            <>
+              {/* East Gable Wall */}
+              <mesh
+                geometry={gableEndGeom}
+                position={[model.geometry.length / 2, model.geometry.height, 0]}
+                rotation={[0, Math.PI / 2, 0]}
+                castShadow={!isXRay}
+                receiveShadow
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onSelect({ type: "wall", orientation: "east" });
+                }}
               >
-                <mesh
-                  castShadow={!isXRay}
-                  receiveShadow
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onSelect({ type: "roof" });
-                  }}
-                  onPointerOver={(e) => pointer(e, "roof")}
-                  onPointerOut={(e) => pointer(e, null)}
-                >
-                  <boxGeometry args={gableDimensions} />
-                  <meshStandardMaterial
-                    color={
-                      isXRay
-                        ? palette.xrayTint
-                        : isActive("roof")
-                        ? palette.solar
-                        : isThermal
-                        ? "#ffffff"
-                        : palette.charcoal
-                    }
-                    map={!isXRay && isThermal ? thermalTextures?.roof : null}
-                    emissiveMap={!isXRay && isThermal ? thermalTextures?.roof : null}
-                    emissive={!isXRay && isThermal ? "#ffffff" : "#000000"}
-                    emissiveIntensity={!isXRay && isThermal ? 0.55 : 0}
-                    roughness={isXRay ? 0.15 : 0.48}
-                    metalness={isXRay ? 0.08 : 0.22}
-                    wireframe={settings.wireframe}
-                    transparent={isXRay}
-                    opacity={isXRay ? xrayWallOpacity : 1}
-                    depthWrite={!isXRay}
-                    side={isXRay ? THREE.DoubleSide : THREE.FrontSide}
-                  />
-                </mesh>
-                {isXRay && (
-                  <lineSegments>
-                    <edgesGeometry args={[new THREE.BoxGeometry(...gableDimensions)]} />
-                    <lineBasicMaterial color="#38bdf8" transparent opacity={xrayEdgeOpacity} />
-                  </lineSegments>
-                )}
-              </group>
-            );
-          })}
+                <meshStandardMaterial
+                  color={
+                    isXRay
+                      ? palette.xrayTint
+                      : isThermal
+                      ? "#ffffff"
+                      : getWallMaterialColor(settings.visualization, "east", isActive("wall-east"))
+                  }
+                  map={!isXRay && isThermal ? thermalTextures?.east : null}
+                  emissiveMap={!isXRay && isThermal ? thermalTextures?.east : null}
+                  emissive={!isXRay && isThermal ? "#ffffff" : "#000000"}
+                  emissiveIntensity={!isXRay && isThermal ? 0.6 : 0}
+                  roughness={isXRay ? 0.15 : isThermal ? 0.45 : 0.7}
+                  metalness={isXRay ? 0.08 : 0.04}
+                  wireframe={settings.wireframe}
+                  transparent={isXRay}
+                  opacity={isXRay ? xrayWallOpacity : 1}
+                  depthWrite={!isXRay}
+                  side={isXRay ? THREE.DoubleSide : THREE.FrontSide}
+                />
+              </mesh>
+
+              {/* West Gable Wall */}
+              <mesh
+                geometry={gableEndGeom}
+                position={[-model.geometry.length / 2, model.geometry.height, 0]}
+                rotation={[0, -Math.PI / 2, 0]}
+                castShadow={!isXRay}
+                receiveShadow
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onSelect({ type: "wall", orientation: "west" });
+                }}
+              >
+                <meshStandardMaterial
+                  color={
+                    isXRay
+                      ? palette.xrayTint
+                      : isThermal
+                      ? "#ffffff"
+                      : getWallMaterialColor(settings.visualization, "west", isActive("wall-west"))
+                  }
+                  map={!isXRay && isThermal ? thermalTextures?.west : null}
+                  emissiveMap={!isXRay && isThermal ? thermalTextures?.west : null}
+                  emissive={!isXRay && isThermal ? "#ffffff" : "#000000"}
+                  emissiveIntensity={!isXRay && isThermal ? 0.6 : 0}
+                  roughness={isXRay ? 0.15 : isThermal ? 0.45 : 0.7}
+                  metalness={isXRay ? 0.08 : 0.04}
+                  wireframe={settings.wireframe}
+                  transparent={isXRay}
+                  opacity={isXRay ? xrayWallOpacity : 1}
+                  depthWrite={!isXRay}
+                  side={isXRay ? THREE.DoubleSide : THREE.FrontSide}
+                />
+              </mesh>
+            </>
+          )}
+        </group>
+      ) : model.geometry.roofType === "Shed" && model.geometry.roofAngle > 0 ? (
+        <group>
+          {/* Sloping Monopitch Shed Roof Slab */}
+          <group
+            position={[
+              0,
+              model.geometry.height + deltaHShed / 2 + (roofThickness / 2) / Math.cos(roofAngle),
+              0,
+            ]}
+            rotation={[-roofAngle, 0, 0]}
+          >
+            <mesh
+              castShadow={!isXRay}
+              receiveShadow
+              onClick={(e) => {
+                e.stopPropagation();
+                onSelect({ type: "roof" });
+              }}
+              onPointerOver={(e) => pointer(e, "roof")}
+              onPointerOut={(e) => pointer(e, null)}
+            >
+              <boxGeometry args={[roofSpan, roofThickness, slopeDepthShed]} />
+              <meshStandardMaterial
+                color={
+                  isXRay
+                    ? palette.xrayTint
+                    : isActive("roof")
+                    ? palette.solar
+                    : isThermal
+                    ? "#ffffff"
+                    : palette.charcoal
+                }
+                map={!isXRay && isThermal ? thermalTextures?.roof : null}
+                emissiveMap={!isXRay && isThermal ? thermalTextures?.roof : null}
+                emissive={!isXRay && isThermal ? "#ffffff" : "#000000"}
+                emissiveIntensity={!isXRay && isThermal ? 0.55 : 0}
+                roughness={isXRay ? 0.15 : 0.48}
+                metalness={isXRay ? 0.08 : 0.22}
+                wireframe={settings.wireframe}
+                transparent={isXRay}
+                opacity={isXRay ? xrayWallOpacity : 1}
+                depthWrite={!isXRay}
+                side={isXRay ? THREE.DoubleSide : THREE.FrontSide}
+              />
+            </mesh>
+            {isXRay && (
+              <lineSegments>
+                <edgesGeometry args={[new THREE.BoxGeometry(roofSpan, roofThickness, slopeDepthShed)]} />
+                <lineBasicMaterial color="#38bdf8" transparent opacity={xrayEdgeOpacity} />
+              </lineSegments>
+            )}
+          </group>
+
+          {/* High Wall (South) Clerestory Upper Wall Extension */}
+          <mesh
+            position={[
+              0,
+              model.geometry.height + deltaHShed / 2,
+              model.geometry.width / 2 + wallThickness / 2,
+            ]}
+            castShadow={!isXRay}
+            receiveShadow
+            onClick={(e) => {
+              e.stopPropagation();
+              onSelect({ type: "wall", orientation: "south" });
+            }}
+          >
+            <boxGeometry args={[model.geometry.length, deltaHShed, wallThickness]} />
+            <meshStandardMaterial
+              color={
+                isXRay
+                  ? palette.xrayTint
+                  : isThermal
+                  ? "#ffffff"
+                  : getWallMaterialColor(settings.visualization, "south", isActive("wall-south"))
+              }
+              map={!isXRay && isThermal ? thermalTextures?.south : null}
+              emissiveMap={!isXRay && isThermal ? thermalTextures?.south : null}
+              emissive={!isXRay && isThermal ? "#ffffff" : "#000000"}
+              emissiveIntensity={!isXRay && isThermal ? 0.6 : 0}
+              roughness={isXRay ? 0.15 : isThermal ? 0.45 : 0.7}
+              metalness={isXRay ? 0.08 : 0.04}
+              wireframe={settings.wireframe}
+              transparent={isXRay}
+              opacity={isXRay ? xrayWallOpacity : 1}
+              depthWrite={!isXRay}
+              side={isXRay ? THREE.DoubleSide : THREE.FrontSide}
+            />
+          </mesh>
+
+          {/* East Shed Triangular Wedge Wall */}
+          {eastShedWedgeGeom && (
+            <mesh
+              geometry={eastShedWedgeGeom}
+              position={[model.geometry.length / 2 + wallThickness / 2, model.geometry.height, 0]}
+              rotation={[0, Math.PI / 2, 0]}
+              castShadow={!isXRay}
+              receiveShadow
+              onClick={(e) => {
+                e.stopPropagation();
+                onSelect({ type: "wall", orientation: "east" });
+              }}
+            >
+              <meshStandardMaterial
+                color={
+                  isXRay
+                    ? palette.xrayTint
+                    : isThermal
+                    ? "#ffffff"
+                    : getWallMaterialColor(settings.visualization, "east", isActive("wall-east"))
+                }
+                map={!isXRay && isThermal ? thermalTextures?.east : null}
+                emissiveMap={!isXRay && isThermal ? thermalTextures?.east : null}
+                emissive={!isXRay && isThermal ? "#ffffff" : "#000000"}
+                emissiveIntensity={!isXRay && isThermal ? 0.6 : 0}
+                roughness={isXRay ? 0.15 : isThermal ? 0.45 : 0.7}
+                metalness={isXRay ? 0.08 : 0.04}
+                wireframe={settings.wireframe}
+                transparent={isXRay}
+                opacity={isXRay ? xrayWallOpacity : 1}
+                depthWrite={!isXRay}
+                side={isXRay ? THREE.DoubleSide : THREE.FrontSide}
+              />
+            </mesh>
+          )}
+
+          {/* West Shed Triangular Wedge Wall */}
+          {westShedWedgeGeom && (
+            <mesh
+              geometry={westShedWedgeGeom}
+              position={[-model.geometry.length / 2 - wallThickness / 2, model.geometry.height, 0]}
+              rotation={[0, -Math.PI / 2, 0]}
+              castShadow={!isXRay}
+              receiveShadow
+              onClick={(e) => {
+                e.stopPropagation();
+                onSelect({ type: "wall", orientation: "west" });
+              }}
+            >
+              <meshStandardMaterial
+                color={
+                  isXRay
+                    ? palette.xrayTint
+                    : isThermal
+                    ? "#ffffff"
+                    : getWallMaterialColor(settings.visualization, "west", isActive("wall-west"))
+                }
+                map={!isXRay && isThermal ? thermalTextures?.west : null}
+                emissiveMap={!isXRay && isThermal ? thermalTextures?.west : null}
+                emissive={!isXRay && isThermal ? "#ffffff" : "#000000"}
+                emissiveIntensity={!isXRay && isThermal ? 0.6 : 0}
+                roughness={isXRay ? 0.15 : isThermal ? 0.45 : 0.7}
+                metalness={isXRay ? 0.08 : 0.04}
+                wireframe={settings.wireframe}
+                transparent={isXRay}
+                opacity={isXRay ? xrayWallOpacity : 1}
+                depthWrite={!isXRay}
+                side={isXRay ? THREE.DoubleSide : THREE.FrontSide}
+              />
+            </mesh>
+          )}
         </group>
       ) : (
-        <group position={geom.roof.center} rotation={geom.roof.rotation}>
+        /* Flat Roof System with Architectural Eaves & Parapet Rim */
+        <group position={[0, model.geometry.height + roofThickness / 2, 0]}>
+          {/* Insulated Roof Deck */}
           <mesh
             castShadow={!isXRay}
             receiveShadow
@@ -487,7 +983,7 @@ export function ShelterMesh({ model, selected, onSelect, settings }: Props) {
             onPointerOver={(e) => pointer(e, "roof")}
             onPointerOut={(e) => pointer(e, null)}
           >
-            <boxGeometry args={geom.roof.dimensions} />
+            <boxGeometry args={[roofSpan, roofThickness, model.geometry.width + overhang * 2]} />
             <meshStandardMaterial
               color={
                 isXRay
@@ -511,11 +1007,37 @@ export function ShelterMesh({ model, selected, onSelect, settings }: Props) {
               side={isXRay ? THREE.DoubleSide : THREE.FrontSide}
             />
           </mesh>
-          {isXRay && (
-            <lineSegments>
-              <edgesGeometry args={[new THREE.BoxGeometry(...geom.roof.dimensions)]} />
-              <lineBasicMaterial color="#38bdf8" transparent opacity={xrayEdgeOpacity} />
-            </lineSegments>
+
+          {/* Architectural Perimeter Fascia Trim (Drip edge) */}
+          <lineSegments>
+            <edgesGeometry args={[new THREE.BoxGeometry(roofSpan, roofThickness, model.geometry.width + overhang * 2)]} />
+            <lineBasicMaterial color={isXRay ? "#38bdf8" : "#94a3b8"} transparent opacity={0.6} />
+          </lineSegments>
+
+          {/* Vernacular Ladakhi Parapet Wall Rim (when overhang <= 0.15m) */}
+          {overhang <= 0.15 && !isXRay && (
+            <group position={[0, roofThickness / 2 + 0.10, 0]}>
+              {/* South parapet */}
+              <mesh position={[0, 0, model.geometry.width / 2]}>
+                <boxGeometry args={[model.geometry.length + wallThickness * 2, 0.20, 0.14]} />
+                <meshStandardMaterial color={palette.slate} roughness={0.8} />
+              </mesh>
+              {/* North parapet */}
+              <mesh position={[0, 0, -model.geometry.width / 2]}>
+                <boxGeometry args={[model.geometry.length + wallThickness * 2, 0.20, 0.14]} />
+                <meshStandardMaterial color={palette.slate} roughness={0.8} />
+              </mesh>
+              {/* East parapet */}
+              <mesh position={[model.geometry.length / 2, 0, 0]}>
+                <boxGeometry args={[0.14, 0.20, model.geometry.width]} />
+                <meshStandardMaterial color={palette.slate} roughness={0.8} />
+              </mesh>
+              {/* West parapet */}
+              <mesh position={[-model.geometry.length / 2, 0, 0]}>
+                <boxGeometry args={[0.14, 0.20, model.geometry.width]} />
+                <meshStandardMaterial color={palette.slate} roughness={0.8} />
+              </mesh>
+            </group>
           )}
         </group>
       )}
@@ -867,7 +1389,12 @@ export function ShelterMesh({ model, selected, onSelect, settings }: Props) {
       ))}
 
       {/* 7. Solar Beams & Heat Flow Streamlines */}
-      <ThermalRadiationOverlay model={model} geom={geom} mode={settings.visualization} />
+      <ThermalRadiationOverlay
+        model={model}
+        geom={geom}
+        mode={settings.visualization}
+        hourlyStep={hourlyStep}
+      />
     </group>
   );
 }

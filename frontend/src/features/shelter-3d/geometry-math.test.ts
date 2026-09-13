@@ -196,5 +196,98 @@ describe("Shelter 3D Geometry Math Unit Tests", () => {
     expect(distributed[0].positionX).toBeCloseTo(1.2, 1);
     expect(distributed[1].positionX).toBeCloseTo(3.6, 1);
   });
+
+  it("accurately derives Flat roof 3D geometry with perimeter overhang", () => {
+    const flatModel: ShelterModel = {
+      ...sampleModel,
+      geometry: { ...sampleModel.geometry, roofType: "Flat", roofAngle: 0 },
+      envelope: { ...sampleModel.envelope, roof: { ...sampleModel.envelope.roof, overhang: 0.4 } },
+    };
+    const rep = deriveShelter3DGeometry(flatModel);
+    expect(rep.roof.type).toBe("Flat");
+    expect(rep.roof.slopeDeg).toBe(0);
+    expect(rep.roof.peakHeight).toBe(3.0);
+    // Span = 6.0 + 0.4 * 2 = 6.8m; Depth = 4.0 + 0.4 * 2 = 4.8m
+    expect(rep.roof.dimensions[0]).toBeCloseTo(6.8, 2);
+    expect(rep.roof.dimensions[2]).toBeCloseTo(4.8, 2);
+    expect(rep.roof.rotation[0]).toBe(0);
+  });
+
+  it("accurately derives Shed (Monopitch) roof 3D geometry with true slope depth", () => {
+    const shedModel: ShelterModel = {
+      ...sampleModel,
+      geometry: { ...sampleModel.geometry, roofType: "Shed", roofAngle: 25 },
+      envelope: { ...sampleModel.envelope, roof: { ...sampleModel.envelope.roof, overhang: 0.3 } },
+    };
+    const rep = deriveShelter3DGeometry(shedModel);
+    expect(rep.roof.type).toBe("Shed");
+    expect(rep.roof.slopeDeg).toBe(25);
+    const rad = (25 * Math.PI) / 180;
+    const expectedDeltaH = 4.0 * Math.tan(rad);
+    expect(rep.roof.deltaH).toBeCloseTo(expectedDeltaH, 2);
+    expect(rep.roof.peakHeight).toBeCloseTo(3.0 + expectedDeltaH, 2);
+    // True slope depth = (4.0 + 0.3 * 2) / cos(25°)
+    const expectedSlopeDepth = 4.6 / Math.cos(rad);
+    expect(rep.roof.dimensions[2]).toBeCloseTo(expectedSlopeDepth, 2);
+    expect(rep.roof.rotation[0]).toBeCloseTo(-rad, 3);
+  });
+
+  it("accurately derives Gable (Dual-Pitch) roof 3D geometry with triangular apex rafter length", () => {
+    const gableModel: ShelterModel = {
+      ...sampleModel,
+      geometry: { ...sampleModel.geometry, roofType: "Gable", roofAngle: 30 },
+      envelope: { ...sampleModel.envelope, roof: { ...sampleModel.envelope.roof, overhang: 0.3 } },
+    };
+    const rep = deriveShelter3DGeometry(gableModel);
+    expect(rep.roof.type).toBe("Gable");
+    expect(rep.roof.slopeDeg).toBe(30);
+    const rad = (30 * Math.PI) / 180;
+    const expectedDeltaH = 0.5 * 4.0 * Math.tan(rad);
+    expect(rep.roof.deltaH).toBeCloseTo(expectedDeltaH, 2);
+    expect(rep.roof.peakHeight).toBeCloseTo(3.0 + expectedDeltaH, 2);
+    // True rafter length = (0.5 * 4.0 + 0.3) / cos(30°) = 2.3 / cos(30°)
+    const expectedRafterLength = 2.3 / Math.cos(rad);
+    expect(rep.roof.rafterLength).toBeCloseTo(expectedRafterLength, 2);
+  });
+
+  it("adds extended clerestory and wedge wall areas and volume under Shed roof", () => {
+    const shedModel: ShelterModel = {
+      ...sampleModel,
+      geometry: { ...sampleModel.geometry, length: 6.0, width: 4.0, height: 3.0, roofType: "Shed", roofAngle: 20 },
+    };
+    const rep = deriveShelter3DGeometry(shedModel);
+    const rad = (20 * Math.PI) / 180;
+    const deltaH = 4.0 * Math.tan(rad);
+    const expectedClerestory = 6.0 * deltaH;
+    const expectedWedge = 0.5 * 4.0 * deltaH;
+
+    expect(rep.walls.south.area).toBeCloseTo(6.0 * 3.0 + expectedClerestory, 2);
+    expect(rep.walls.east.area).toBeCloseTo(4.0 * 3.0 + expectedWedge, 2);
+    expect(rep.walls.west.area).toBeCloseTo(4.0 * 3.0 + expectedWedge, 2);
+    expect(rep.walls.north.area).toBeCloseTo(6.0 * 3.0, 2);
+
+    // Interior conditioned volume includes 0.5 * L * W * deltaH
+    const expectedVolume = 6.0 * 4.0 * 3.0 + 0.5 * 6.0 * 4.0 * deltaH;
+    expect(rep.volume).toBeCloseTo(expectedVolume, 2);
+  });
+
+  it("adds triangular gable end wall areas and attic volume under Gable roof", () => {
+    const gableModel: ShelterModel = {
+      ...sampleModel,
+      geometry: { ...sampleModel.geometry, length: 6.0, width: 4.0, height: 3.0, roofType: "Gable", roofAngle: 25 },
+    };
+    const rep = deriveShelter3DGeometry(gableModel);
+    const rad = (25 * Math.PI) / 180;
+    const deltaH = 0.5 * 4.0 * Math.tan(rad);
+    const expectedGableEnd = 0.5 * 4.0 * deltaH;
+
+    expect(rep.walls.east.area).toBeCloseTo(4.0 * 3.0 + expectedGableEnd, 2);
+    expect(rep.walls.west.area).toBeCloseTo(4.0 * 3.0 + expectedGableEnd, 2);
+    expect(rep.walls.south.area).toBeCloseTo(6.0 * 3.0, 2);
+    expect(rep.walls.north.area).toBeCloseTo(6.0 * 3.0, 2);
+
+    const expectedVolume = 6.0 * 4.0 * 3.0 + 0.5 * 6.0 * 4.0 * deltaH;
+    expect(rep.volume).toBeCloseTo(expectedVolume, 2);
+  });
 });
 

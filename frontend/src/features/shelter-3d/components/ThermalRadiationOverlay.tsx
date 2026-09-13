@@ -6,12 +6,17 @@ import * as THREE from "three";
 import type { ShelterModel } from "@/types/shelter";
 import type { VisualizationMode } from "../types";
 import type { Shelter3DRepresentation } from "../geometry-math";
-import { calculateThermalMetrics, type DynamicThermalCalculations } from "../thermal-physics";
+import {
+  calculateThermalMetrics,
+  type DynamicThermalCalculations,
+  type HourlyThermalStep,
+} from "../thermal-physics";
 
 interface Props {
   model: ShelterModel;
   geom: Shelter3DRepresentation;
   mode: VisualizationMode;
+  hourlyStep?: HourlyThermalStep | null;
 }
 
 /* ─────────────────────────────────────────────────────────────
@@ -624,11 +629,31 @@ function SolarAnnotations({
 }
 
 /* ── Main Overlay Component ─────────────────────────────────── */
-export function ThermalRadiationOverlay({ model, geom, mode }: Props) {
-  const metrics = useMemo(() => calculateThermalMetrics(model), [model]);
+export function ThermalRadiationOverlay({ model, geom, mode, hourlyStep }: Props) {
+  const modelMetrics = useMemo(() => calculateThermalMetrics(model), [model]);
 
-  if (mode === "thermal") return <ThermalAnnotations model={model} geom={geom} metrics={metrics} />;
-  if (mode === "heat-flow") return <HeatFlowAnnotations model={model} geom={geom} metrics={metrics} />;
-  if (mode === "solar") return <SolarAnnotations model={model} geom={geom} metrics={metrics} />;
+  const effectiveMetrics: DynamicThermalCalculations = useMemo(() => {
+    if (!hourlyStep) return modelMetrics;
+    return {
+      ...modelMetrics,
+      tOutdoor: hourlyStep.outdoorTemp,
+      tIndoor: hourlyStep.indoorTemp,
+      tSurfaceSouth: hourlyStep.tSurfaceSouth,
+      tSurfaceNorth: hourlyStep.tSurfaceNorth,
+      tSurfaceEast: hourlyStep.tSurfaceEast,
+      tSurfaceWest: hourlyStep.tSurfaceWest,
+      tSurfaceRoof: hourlyStep.tSurfaceRoof,
+      tFloorMass: hourlyStep.tFloorMass,
+      tGlazing: hourlyStep.tGlazing,
+      qSouthFlux: hourlyStep.qSouthFlux,
+      qNorthFlux: hourlyStep.qNorthFlux,
+      qWindowTotalW: hourlyStep.solarGainW,
+      psiBridge: hourlyStep.psiBridge,
+    };
+  }, [modelMetrics, hourlyStep]);
+
+  if (mode === "thermal") return <ThermalAnnotations model={model} geom={geom} metrics={effectiveMetrics} />;
+  if (mode === "heat-flow") return <HeatFlowAnnotations model={model} geom={geom} metrics={effectiveMetrics} />;
+  if (mode === "solar") return <SolarAnnotations model={model} geom={geom} metrics={effectiveMetrics} />;
   return null;
 }

@@ -2,11 +2,16 @@
 
 import React from "react";
 import { Sparkles, Shield, AlertTriangle, CheckCircle2, ChevronDown } from "lucide-react";
-import { useShelterStore } from "@/lib/store/use-shelter-store";
+import {
+  useShelterStore,
+  DEFAULT_LADAKH_PROJECT,
+  DEFAULT_BASELINE_TIN_PROJECT,
+  DEFAULT_KARGIL_PROJECT,
+} from "@/lib/store/use-shelter-store";
 import { Badge } from "@/components/ui/badge";
 
 export function DesignPresetsDropdown() {
-  const { projects, activeProjectId, setActiveProject } = useShelterStore();
+  const { projects, activeProjectId, setActiveProject, addProject } = useShelterStore();
 
   const presets = [
     {
@@ -35,12 +40,20 @@ export function DesignPresetsDropdown() {
   const currentPreset = presets.find((p) => p.id === activeProjectId) || presets[1];
 
   const handleSelect = (id: string) => {
-    // Check if project exists in store; if not, add it from predefined
+    // Check if project exists in store; if deleted/missing, re-instantiate preset archetype
     const existing = projects.find((p) => p.id === id);
     if (existing) {
       setActiveProject(id);
     } else {
-      setActiveProject(id);
+      const presetModel =
+        id === "shelter-baseline-tin"
+          ? DEFAULT_BASELINE_TIN_PROJECT
+          : id === "shelter-siachen-03"
+          ? DEFAULT_KARGIL_PROJECT
+          : DEFAULT_LADAKH_PROJECT;
+
+      addProject(presetModel);
+      setActiveProject(presetModel.id);
     }
   };
 

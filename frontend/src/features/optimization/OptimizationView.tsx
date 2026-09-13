@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import Link from "next/link";
 import {
   Sliders,
@@ -96,7 +96,16 @@ export function OptimizationView() {
     return Math.min(count, 25);
   }, [selectedParameters]);
 
-  // Initial auto-sweep on component mount if project exists
+  // Reset sweepResult when activeProject changes or was deleted
+  const lastActiveProjectIdRef = useRef<string | undefined>(activeProject?.id);
+  useEffect(() => {
+    if (activeProject && activeProject.id !== lastActiveProjectIdRef.current) {
+      lastActiveProjectIdRef.current = activeProject.id;
+      setSweepResult(null);
+    }
+  }, [activeProject?.id]);
+
+  // Initial auto-sweep on component mount or project update if project exists
   useEffect(() => {
     if (activeProject && !sweepResult && !isExecuting) {
       const initialSweep = runClientParameterSweep(
@@ -108,7 +117,7 @@ export function OptimizationView() {
       );
       setSweepResult(initialSweep);
     }
-  }, [activeProject]);
+  }, [activeProject, sweepResult, isExecuting, selectedParameters, selectedObjective, constraints]);
 
   // Generate Recommendation Report whenever sweepResult or activeProject changes
   const recommendationReport = useMemo(() => {

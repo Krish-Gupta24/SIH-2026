@@ -1998,6 +1998,43 @@ export const useShelterStore = create<ShelterStoreState>()(
           } catch (benchErr) {
             console.debug("Backend authentic benchmark fetch note:", benchErr);
           }
+
+          // 4. Sync available weather sources from backend (including custom synthesized EPWs in storage/weather)
+          try {
+            const backendWeatherSources = await api.weather.sources().catch(() => null);
+            if (Array.isArray(backendWeatherSources) && backendWeatherSources.length > 0) {
+              set((state) => {
+                const existingEpwFiles = new Set(state.weatherDatasets.map((w) => w.epwFileName));
+                const newStations: WeatherStation[] = [];
+                for (const bws of backendWeatherSources) {
+                  const epwFile = bws.epw_file || bws.epwFileName;
+                  if (!epwFile || existingEpwFiles.has(epwFile)) continue;
+                  const isMicro = epwFile.startsWith("MICROCLIMATE_") || String(bws.source_type || "").includes("SYNTHESIZED");
+                  newStations.push({
+                    id: bws.id || `wx-${bws.sha256 ? bws.sha256.slice(0, 8) : Date.now().toString(36)}`,
+                    name: isMicro ? `${bws.name || "Microclimate"} (Custom ML EPW)` : (bws.name || epwFile),
+                    region: bws.region || "High-Altitude Himalayan Post",
+                    latitude: bws.latitude ?? 34.15,
+                    longitude: bws.longitude ?? 77.58,
+                    elevationM: bws.elevation_m ?? 3500,
+                    climateZone: bws.climate_zone || "Alpine Cold",
+                    sourceType: isMicro ? "EPW" : "EPW",
+                    provenanceStatus: "REAL_DATA",
+                    isTestData: Boolean(bws.is_test_data),
+                    designWinterMinC: bws.design_winter_min_c ?? -25.0,
+                    designSummerMaxC: bws.design_summer_max_c ?? 22.0,
+                    annualHDD18: 5200,
+                    epwFileName: epwFile,
+                    sha256: bws.sha256 || "",
+                  });
+                }
+                if (newStations.length === 0) return state;
+                return { weatherDatasets: [...newStations, ...state.weatherDatasets] };
+              });
+            }
+          } catch (wErr) {
+            console.debug("Backend weather sources fetch note:", wErr);
+          }
         } catch (err) {
           console.warn("Could not sync with backend initial data:", err);
         } finally {
