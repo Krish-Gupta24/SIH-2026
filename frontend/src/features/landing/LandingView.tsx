@@ -51,9 +51,6 @@ export function PremiumLanding({ onOpen, onContinue, hasProject, summary }: Land
         <div className="landing-header-row mx-auto flex h-[72px] max-w-[1500px] items-start justify-between px-6 sm:px-10 lg:px-14">
           <button onClick={() => scroll("home")} aria-label="Go to ThermoShelter home" className="flex items-center gap-3">
             <BrandMark inverse={true} />
-            <span className="hidden lg:inline-flex rounded-full border border-white/20 bg-white/10 px-2.5 py-0.5 text-[10px] font-medium text-white/80 tracking-wide">
-              SIH 2026 · PS 26051
-            </span>
           </button>
 
           {/* Centered Curvature Nav - Aligned with Project Navigation */}
@@ -378,11 +375,6 @@ export function PremiumLanding({ onOpen, onContinue, hasProject, summary }: Land
                     <p className="mt-1 text-[8px] font-semibold uppercase tracking-[0.12em] text-white/60">{label}</p>
                   </div>
                 ))}
-              </div>
-
-              <div className="story-index">
-                <p>01 <span /> 02 <span /> 03</p>
-                <p>Leh, Ladakh Alpine Benchmark</p>
               </div>
             </div>
           </div>

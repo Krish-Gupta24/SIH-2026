@@ -482,7 +482,7 @@
 .cad-stage-progress span { display:block; height:100%; background:var(--cad-ink); transition:width .3s ease; }
 .cad-canvas-region { position:relative; min-width:0; overflow:hidden; background:var(--cad-ice); }
 .cad-viewport { position:absolute; inset:0; }
-.cad-floating-tools { display:flex; align-items:center; position:absolute; top:.75rem; left:.75rem; z-index:2; gap:.2rem; padding:.28rem; border:1px solid rgba(110,129,143,.24); border-radius:.72rem; background:rgba(247,249,250,.9); box-shadow:0 12px 34px rgba(16,24,32,.1); backdrop-filter:blur(12px); }
+.cad-floating-tools { display:flex; align-items:center; position:absolute; top:.75rem; left:.75rem; z-index:2; gap:.2rem; padding:.28rem; border:1px solid rgba(110,129,143,.24); border-radius:.72rem; background:rgba(247,249,250,.9); box-shadow:0 12px 34px rgba(16,24,32,.1); backdrop-filter:blur(12px); flex-wrap:nowrap; max-width:calc(100% - 280px); overflow-x:auto; }
 .cad-floating-tools button { display:flex; min-height:30px; align-items:center; gap:.32rem; padding:0 .55rem; border-radius:.48rem; color:var(--cad-slate); font-size:.58rem; font-weight:750; }
 .cad-floating-tools svg { size:.8rem; }
 .cad-floating-tools button:hover,.cad-floating-tools button[data-active="true"] { background:var(--cad-ink); color:var(--cad-paper); }
@@ -590,95 +590,6 @@
   .material-detail-primary span { min-height:86px; }
   .material-detail-primary span+span { border-top:1px solid rgba(203,220,230,.25); border-left:0; }
   .material-detail-grid>div { min-height:68px; }
-}
-
-/* Material assembly workbench */
-.cad-material-dialog { width:min(1040px,calc(100vw - 2rem))!important; max-width:none!important; max-height:calc(100vh - 2rem); overflow:hidden; padding:0!important; border-color:rgba(110,129,143,.32)!important; border-radius:1.25rem!important; background:var(--cad-paper)!important; color:var(--cad-ink); }
-.cad-material-header { display:grid!important; grid-template-columns:minmax(0,1fr) auto; gap:1.5rem; margin:0!important; padding:1.4rem 4rem 1.2rem 1.5rem; border-bottom:1px solid rgba(110,129,143,.22); background:linear-gradient(110deg,var(--cad-paper),color-mix(in srgb,var(--cad-ice) 50%,var(--cad-paper))); }
-.cad-material-heading { display:flex; align-items:flex-start; gap:.9rem; }
-.cad-material-icon { display:grid; flex:none; width:2.6rem; height:2.6rem; place-items:center; border-radius:.75rem; background:var(--cad-ink); color:var(--cad-paper); }
-.cad-material-icon svg { width:1.1rem; height:1.1rem; }
-.cad-material-heading>div { display:flex; min-width:0; flex-direction:column; align-items:flex-start; }
-.cad-material-heading [class*="rounded-full"] { border-color:rgba(110,129,143,.3); color:var(--cad-slate); font-size:.55rem; letter-spacing:.08em; text-transform:uppercase; }
-.cad-material-heading h2 { margin-top:.5rem; color:var(--cad-ink)!important; font-size:1.35rem!important; letter-spacing:-.04em; }
-.cad-material-heading p { max-width:560px; margin-top:.3rem; color:var(--cad-slate)!important; font-size:.67rem!important; line-height:1.5; }
-.cad-material-score { display:flex; align-self:center; overflow:hidden; border:1px solid rgba(110,129,143,.24); border-radius:.75rem; background:rgba(247,249,250,.74); }
-.cad-material-score span { display:flex; min-width:100px; flex-direction:column; gap:.18rem; padding:.65rem .75rem; border-right:1px solid rgba(110,129,143,.18); }
-.cad-material-score span:last-child { border-right:0; }
-.cad-material-score small { color:var(--cad-slate); font-size:.5rem; font-weight:750; letter-spacing:.04em; text-transform:uppercase; }
-.cad-material-score strong { font-family:var(--font-geist-mono),monospace; font-size:.66rem; }
-.cad-material-tabs { display:flex!important; max-height:calc(100vh - 230px); flex-direction:column; gap:0!important; }
-.cad-material-tabs-list { display:flex!important; width:100%; height:auto!important; justify-content:flex-start!important; gap:0!important; padding:.65rem 1.5rem 0!important; border-radius:0!important; background:var(--cad-paper)!important; }
-.cad-material-tabs-list button { min-height:38px; border-radius:.55rem .55rem 0 0!important; padding-inline:1rem!important; color:var(--cad-slate)!important; }
-.cad-material-tabs-list button:hover { color:var(--cad-ink)!important; }
-.cad-material-content { display:grid!important; min-height:0; grid-template-columns:minmax(0,1.6fr) minmax(270px,.8fr); overflow-y:auto; border-top:1px solid rgba(110,129,143,.2); }
-.cad-assembly-editor,.cad-material-library { min-width:0; padding:1.35rem 1.5rem; }
-.cad-material-library { border-left:1px solid rgba(110,129,143,.2); background:color-mix(in srgb,var(--cad-ice) 32%,var(--cad-paper)); }
-.cad-material-section-heading { display:flex; min-height:42px; align-items:flex-start; justify-content:space-between; gap:1rem; }
-.cad-material-section-heading>div:first-child { display:flex; min-width:0; flex-direction:column; gap:.25rem; }
-.cad-material-section-heading span { color:var(--cad-slate); font-size:.51rem; font-weight:800; letter-spacing:.1em; text-transform:uppercase; }
-.cad-material-section-heading h3 { overflow:hidden; font-size:.86rem; font-weight:750; letter-spacing:-.025em; text-overflow:ellipsis; white-space:nowrap; }
-.cad-material-section-heading>svg { width:.9rem; height:.9rem; color:var(--cad-slate); }
-.cad-wall-selector { display:flex; flex:none; gap:.18rem; padding:.2rem; border:1px solid rgba(110,129,143,.25); border-radius:.55rem; background:var(--cad-paper); }
-.cad-wall-selector button { display:grid; width:28px; height:28px; place-items:center; border-radius:.38rem; color:var(--cad-slate); font-family:var(--font-geist-mono),monospace; font-size:.58rem; font-weight:800; }
-.cad-wall-selector button[data-active="true"] { background:var(--cad-ink); color:var(--cad-paper); }
-.cad-layer-editor,.cad-preset-list { display:flex; flex-direction:column; gap:.45rem; margin-top:.9rem; }
-.cad-layer-axis { display:flex; justify-content:space-between; padding-inline:2.7rem .3rem; color:var(--cad-slate); font-size:.48rem; font-weight:750; letter-spacing:.08em; text-transform:uppercase; }
-.cad-layer-row { display:grid; grid-template-columns:8px 24px minmax(130px,1fr) 104px 78px 30px; align-items:end; gap:.55rem; padding:.65rem; border:1px solid rgba(110,129,143,.2); border-radius:.7rem; background:rgba(247,249,250,.9); transition:border-color .18s ease,transform .18s ease; }
-.cad-layer-row:hover { border-color:rgba(16,24,32,.38); transform:translateX(2px); }
-.cad-material-swatch { align-self:stretch; min-height:42px; border-radius:.25rem; background:var(--cad-slate); }
-.cad-material-swatch[data-tone="ice"],.cad-preset-stack i[data-tone="ice"] { background:var(--cad-ice); }
-.cad-material-swatch[data-tone="blue"],.cad-preset-stack i[data-tone="blue"] { background:color-mix(in srgb,var(--cad-slate) 50%,var(--cad-ice)); }
-.cad-material-swatch[data-tone="earth"],.cad-preset-stack i[data-tone="earth"] { background:var(--cad-solar); }
-.cad-material-swatch[data-tone="stone"],.cad-preset-stack i[data-tone="stone"] { background:var(--cad-slate); }
-.cad-material-swatch[data-tone="wood"],.cad-preset-stack i[data-tone="wood"] { background:color-mix(in srgb,var(--cad-solar) 65%,var(--cad-paper)); }
-.cad-material-swatch[data-tone="metal"],.cad-preset-stack i[data-tone="metal"] { background:var(--cad-ink); }
-.cad-layer-index { align-self:center; color:var(--cad-slate); font-family:var(--font-geist-mono),monospace; font-size:.55rem; }
-.cad-layer-row label { display:flex; min-width:0; flex-direction:column; gap:.28rem; }
-.cad-layer-row label>span,.cad-layer-property small { color:var(--cad-slate); font-size:.49rem; font-weight:750; text-transform:uppercase; }
-.cad-layer-row select,.cad-layer-row input { width:100%; height:32px; border:1px solid rgba(110,129,143,.24); border-radius:.45rem; background:var(--cad-paper); color:var(--cad-ink); font-family:var(--font-geist-mono),monospace; font-size:.59rem; font-weight:700; }
-.cad-layer-row select { padding-inline:.5rem; }
-.cad-thickness-field div { position:relative; }
-.cad-thickness-field input { padding:0 28px 0 .5rem; }
-.cad-thickness-field div small { position:absolute; top:50%; right:.45rem; color:var(--cad-slate); font-size:.48rem; transform:translateY(-50%); }
-.cad-layer-property { display:flex; height:32px; flex-direction:column; justify-content:center; color:var(--cad-ink); font-family:var(--font-geist-mono),monospace; font-size:.51rem; }
-.cad-layer-row>button { display:grid; width:30px; height:32px; place-items:center; border-radius:.45rem; color:var(--cad-slate); }
-.cad-layer-row>button:hover:not(:disabled) { background:var(--cad-ice); color:var(--cad-ink); }
-.cad-layer-row>button:disabled { opacity:.25; }
-.cad-layer-row>button svg,.cad-add-layer svg,.cad-material-note svg,.cad-material-footer svg { width:.75rem; height:.75rem; }
-.cad-add-layer { display:flex; min-height:38px; align-items:center; justify-content:center; gap:.4rem; border:1px dashed rgba(110,129,143,.4); border-radius:.65rem; color:var(--cad-slate); font-size:.59rem; font-weight:750; }
-.cad-add-layer:hover { border-style:solid; background:var(--cad-ice); color:var(--cad-ink); }
-.cad-preset-list>button { display:flex; flex-direction:column; align-items:stretch; gap:.5rem; padding:.85rem; border:1px solid rgba(110,129,143,.2); border-radius:.75rem; background:rgba(247,249,250,.84); text-align:left; transition:border-color .18s ease,transform .18s ease; }
-.cad-preset-list>button:hover { border-color:rgba(16,24,32,.38); transform:translateY(-2px); }
-.cad-preset-title { display:flex!important; align-items:center; justify-content:space-between; color:var(--cad-ink)!important; letter-spacing:normal!important; text-transform:none!important; }
-.cad-preset-title strong { font-size:.66rem; }
-.cad-preset-title [class*="rounded-full"] { background:var(--cad-ice); color:var(--cad-ink); font-family:var(--font-geist-mono),monospace; font-size:.5rem; }
-.cad-preset-list p,.cad-material-note p { color:var(--cad-slate); font-size:.56rem; line-height:1.5; }
-.cad-preset-stack { display:flex!important; height:8px; overflow:hidden; gap:2px; border-radius:1rem; }
-.cad-preset-stack i { min-width:5px; }
-.cad-preset-list>button>small { color:var(--cad-slate); font-family:var(--font-geist-mono),monospace; font-size:.5rem; }
-.cad-material-note { display:flex; gap:.6rem; margin-top:.8rem; padding:.75rem; border-radius:.7rem; background:var(--cad-ink); color:var(--cad-paper); }
-.cad-material-note svg { flex:none; margin-top:.1rem; }
-.cad-material-note div { display:flex; flex-direction:column; gap:.2rem; }
-.cad-material-note strong { font-size:.58rem; }
-.cad-material-note p { color:var(--cad-ice); }
-.cad-material-footer { display:flex!important; justify-content:space-between!important; margin:0!important; padding:.85rem 1.5rem!important; border-color:rgba(110,129,143,.2)!important; }
-.cad-material-footer>span { display:flex; align-items:center; gap:.4rem; color:var(--cad-slate); font-size:.56rem; font-weight:650; }
-.cad-material-footer button { background:var(--cad-ink); color:var(--cad-paper); }
-@media (max-width:760px) {
-  .cad-material-dialog { width:calc(100vw - 1rem)!important; max-height:calc(100vh - 1rem); }
-  .cad-material-header { grid-template-columns:1fr; gap:.75rem; padding:1rem 3rem 1rem 1rem; }
-  .cad-material-score { width:100%; overflow-x:auto; }
-  .cad-material-score span { min-width:92px; flex:1; }
-  .cad-material-tabs-list { overflow-x:auto; padding-inline:1rem!important; }
-  .cad-material-tabs-list button { flex:1; min-width:96px; }
-  .cad-material-content { grid-template-columns:1fr; }
-  .cad-material-library { border-top:1px solid rgba(110,129,143,.2); border-left:0; }
-  .cad-assembly-editor,.cad-material-library { padding:1rem; }
-  .cad-layer-row { grid-template-columns:8px 20px minmax(110px,1fr) 88px 28px; }
-  .cad-layer-property { display:none; }
-  .cad-material-footer>span { display:none; }
-  .cad-material-footer { justify-content:flex-end!important; }
 }
 
 @media (max-width:1279px) {
@@ -804,12 +715,12 @@
 /* Clean Website-Matching Thermal & Solar HUD */
 .cad-thermal-legend-panel {
   position: absolute;
-  top: 4.2rem;
+  top: 4.5rem;
   left: .75rem;
-  z-index: 3;
+  z-index: 5;
   pointer-events: auto;
-  max-width: 280px;
-  width: calc(100% - 1.5rem);
+  width: 310px;
+  max-width: calc(100% - 1.5rem);
   animation: hud-slide-in .3s cubic-bezier(.2,.7,.2,1) both;
 }
 @keyframes hud-slide-in {

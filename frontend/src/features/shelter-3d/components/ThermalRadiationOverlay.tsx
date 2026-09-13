@@ -39,19 +39,19 @@ function PillCallout({
   };
 
   const badgeBg: Record<string, string> = {
-    hot: "rgba(239, 68, 68, 0.15)",
-    cold: "rgba(59, 130, 246, 0.15)",
-    warm: "rgba(245, 158, 11, 0.15)",
-    neutral: "rgba(148, 163, 184, 0.15)",
-    solar: "rgba(251, 191, 36, 0.15)",
+    hot: "rgba(239, 68, 68, 0.18)",
+    cold: "rgba(59, 130, 246, 0.18)",
+    warm: "rgba(245, 158, 11, 0.18)",
+    neutral: "rgba(148, 163, 184, 0.18)",
+    solar: "rgba(251, 191, 36, 0.18)",
   };
 
   const borderColor: Record<string, string> = {
-    hot: "rgba(239, 68, 68, 0.4)",
-    cold: "rgba(59, 130, 246, 0.4)",
-    warm: "rgba(245, 158, 11, 0.4)",
-    neutral: "rgba(148, 163, 184, 0.3)",
-    solar: "rgba(251, 191, 36, 0.45)",
+    hot: "rgba(239, 68, 68, 0.5)",
+    cold: "rgba(59, 130, 246, 0.5)",
+    warm: "rgba(245, 158, 11, 0.5)",
+    neutral: "rgba(148, 163, 184, 0.4)",
+    solar: "rgba(251, 191, 36, 0.5)",
   };
 
   return (
@@ -59,28 +59,27 @@ function PillCallout({
       style={{
         display: "inline-flex",
         alignItems: "center",
-        gap: "8px",
-        padding: "5px 11px",
+        gap: "6px",
+        padding: "4px 9px",
         borderRadius: "9999px",
-        background: "rgba(11, 19, 41, 0.92)",
-        backdropFilter: "blur(10px)",
-        WebkitBackdropFilter: "blur(10px)",
+        background: "rgba(15, 23, 42, 0.9)",
+        backdropFilter: "blur(12px)",
+        WebkitBackdropFilter: "blur(12px)",
         border: `1px solid ${borderColor[status]}`,
-        boxShadow: "0 6px 20px -2px rgba(0, 0, 0, 0.45), 0 0 12px -2px " + badgeBg[status],
+        boxShadow: "0 4px 16px rgba(0, 0, 0, 0.35), 0 0 10px " + badgeBg[status],
         whiteSpace: "nowrap",
         pointerEvents: "none",
-        transform: "translate3d(0, 0, 0)",
         userSelect: "none",
       }}
     >
       {/* Pulsing Status Dot */}
       <span
         style={{
-          width: "7px",
-          height: "7px",
+          width: "6px",
+          height: "6px",
           borderRadius: "50%",
           backgroundColor: dotColor[status],
-          boxShadow: `0 0 8px ${dotColor[status]}`,
+          boxShadow: `0 0 6px ${dotColor[status]}`,
           flexShrink: 0,
         }}
       />
@@ -100,14 +99,14 @@ function PillCallout({
       </span>
 
       {/* Separator */}
-      <span style={{ color: "rgba(255,255,255,0.25)", fontSize: "10px" }}>·</span>
+      <span style={{ color: "rgba(255,255,255,0.3)", fontSize: "9px" }}>·</span>
 
       {/* Label and Flux */}
       <span
         style={{
           fontSize: "10px",
           fontWeight: 600,
-          color: "#cbd5e1",
+          color: "#e2e8f0",
           lineHeight: 1,
         }}
       >
@@ -132,8 +131,7 @@ function PillCallout({
 
 /* ─────────────────────────────────────────────────────────────
    1. Thermal Radiation & Infrared Surface Temperatures
-   Clean, separated callouts with occlude=true to eliminate collisions.
-   Visible radiating thermal wave arcs in front of high-radiation surfaces.
+   Clean, separated callouts with non-colliding coordinates.
    ──────────────────────────────────────────────────────────── */
 function ThermalAnnotations({
   model,
@@ -152,6 +150,14 @@ function ThermalAnnotations({
   const northSign = metrics.tSurfaceNorth >= 0 ? "+" : "";
   const roofSign = metrics.tSurfaceRoof >= 0 ? "+" : "";
   const glazingSign = metrics.tGlazing >= 0 ? "+" : "";
+
+  // Locate primary window on south wall
+  const southWindow = geom.windows.find((w) => w.wall === "south") || geom.windows[0];
+
+  // Separate South Wall Opaque callout safely to the LEFT side
+  const southWallX = -halfL * 0.52;
+  const southWallY = H * 0.65;
+  const southWallZ = halfW + 0.05;
 
   return (
     <group>
@@ -187,113 +193,57 @@ function ThermalAnnotations({
         />
       ))}
 
-      {/* South Facade Callout — positioned cleanly outside South wall with leader line */}
-      <group position={[0, H * 0.7, halfW + 0.05]}>
+      {/* 1. South Facade Callout — positioned safely on LEFT half of facade */}
+      <group position={[southWallX, southWallY, southWallZ]}>
         <Line
           points={[
             [0, 0, 0],
-            [0, 0.45, 0.4],
+            [-0.3, 0.45, 0.4],
           ]}
           color="#ef4444"
           lineWidth={1.2}
           transparent
-          opacity={0.65}
+          opacity={0.7}
         />
         <Html
-          position={[0, 0.5, 0.45]}
+          position={[-0.35, 0.52, 0.45]}
           center
-          distanceFactor={16}
+          distanceFactor={18}
           occlude
           style={{ pointerEvents: "none" }}
         >
           <PillCallout
             value={`${southSign}${metrics.tSurfaceSouth.toFixed(1)}°C`}
-            label="South Absorber"
+            label="South Wall"
             sub={`+${metrics.iSouthIncident} W/m² sol-air`}
             status={metrics.tSurfaceSouth > 15 ? "hot" : "warm"}
           />
         </Html>
       </group>
 
-      {/* North Facade Callout — occluded when looking from the South, zero overlap! */}
-      <group position={[0, H * 0.55, -halfW - 0.05]}>
-        <Line
-          points={[
-            [0, 0, 0],
-            [0, 0.4, -0.4],
-          ]}
-          color="#3b82f6"
-          lineWidth={1.2}
-          transparent
-          opacity={0.65}
-        />
-        <Html
-          position={[0, 0.45, -0.45]}
-          center
-          distanceFactor={16}
-          occlude
-          style={{ pointerEvents: "none" }}
-        >
-          <PillCallout
-            value={`${northSign}${metrics.tSurfaceNorth.toFixed(1)}°C`}
-            label="North Shaded"
-            sub={`${metrics.qNorthFlux} W/m² conduction`}
-            status="cold"
-          />
-        </Html>
-      </group>
-
-      {/* Roof Deck Callout — anchored above the ridge */}
-      <group position={[0, H + 0.4, 0]}>
-        <Line
-          points={[
-            [0, 0, 0],
-            [0, 0.55, 0],
-          ]}
-          color="#f97316"
-          lineWidth={1.2}
-          transparent
-          opacity={0.65}
-        />
-        <Html
-          position={[0, 0.62, 0]}
-          center
-          distanceFactor={16}
-          occlude
-          style={{ pointerEvents: "none" }}
-        >
-          <PillCallout
-            value={`${roofSign}${metrics.tSurfaceRoof.toFixed(1)}°C`}
-            label="Roof Deck"
-            sub={`U ${metrics.uRoof.toFixed(2)} W/m²K`}
-            status={metrics.tSurfaceRoof > 10 ? "warm" : "cold"}
-          />
-        </Html>
-      </group>
-
-      {/* Peak Window Glazing Callout — only for the primary south window */}
-      {geom.windows.length > 0 && (
+      {/* 2. Peak Window Glazing Callout — angled to the RIGHT, cleanly away from south wall callout */}
+      {southWindow && (
         <group
           position={[
-            geom.windows[0].worldPosition[0],
-            geom.windows[0].worldPosition[1] + geom.windows[0].dimensions[1] / 2 + 0.05,
-            geom.windows[0].worldPosition[2],
+            southWindow.worldPosition[0],
+            southWindow.worldPosition[1] + southWindow.dimensions[1] / 2 + 0.05,
+            southWindow.worldPosition[2],
           ]}
         >
           <Line
             points={[
               [0, 0, 0],
-              [0, 0.35, 0.25],
+              [0.3, 0.45, 0.4],
             ]}
             color="#ef4444"
             lineWidth={1.2}
             transparent
-            opacity={0.6}
+            opacity={0.7}
           />
           <Html
-            position={[0, 0.4, 0.28]}
+            position={[0.35, 0.52, 0.45]}
             center
-            distanceFactor={16}
+            distanceFactor={18}
             occlude
             style={{ pointerEvents: "none" }}
           >
@@ -306,6 +256,62 @@ function ThermalAnnotations({
           </Html>
         </group>
       )}
+
+      {/* 3. Roof Deck Callout — elevated high above ridge, offset horizontally to avoid overlap */}
+      <group position={[halfL * 0.25, H + 0.35, 0]}>
+        <Line
+          points={[
+            [0, 0, 0],
+            [0, 0.7, 0],
+          ]}
+          color="#f97316"
+          lineWidth={1.2}
+          transparent
+          opacity={0.7}
+        />
+        <Html
+          position={[0, 0.78, 0]}
+          center
+          distanceFactor={18}
+          occlude
+          style={{ pointerEvents: "none" }}
+        >
+          <PillCallout
+            value={`${roofSign}${metrics.tSurfaceRoof.toFixed(1)}°C`}
+            label="Roof Deck"
+            sub={`U ${metrics.uRoof.toFixed(2)} W/m²K`}
+            status={metrics.tSurfaceRoof > 10 ? "warm" : "cold"}
+          />
+        </Html>
+      </group>
+
+      {/* 4. North Facade Callout — positioned on north side, occluded from south view */}
+      <group position={[0, H * 0.55, -halfW - 0.05]}>
+        <Line
+          points={[
+            [0, 0, 0],
+            [0, 0.45, -0.45],
+          ]}
+          color="#3b82f6"
+          lineWidth={1.2}
+          transparent
+          opacity={0.7}
+        />
+        <Html
+          position={[0, 0.52, -0.5]}
+          center
+          distanceFactor={18}
+          occlude
+          style={{ pointerEvents: "none" }}
+        >
+          <PillCallout
+            value={`${northSign}${metrics.tSurfaceNorth.toFixed(1)}°C`}
+            label="North Shaded"
+            sub={`${metrics.qNorthFlux} W/m² loss`}
+            status="cold"
+          />
+        </Html>
+      </group>
     </group>
   );
 }

@@ -108,6 +108,7 @@ export function DataPair({
         {label}
       </dt>
       <dd
+        suppressHydrationWarning
         className={
           large
             ? "text-2xl font-medium tracking-[-0.04em]"

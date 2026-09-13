@@ -145,7 +145,7 @@ function ThermalContent({ metrics }: { metrics?: DynamicThermalCalculations | nu
           style={{
             display: "flex",
             justifyContent: "space-between",
-            marginTop: "4px",
+            marginTop: "5px",
             fontSize: "9px",
             fontFamily: "var(--font-geist-mono), monospace",
             color: "#6e818f",
@@ -163,23 +163,23 @@ function ThermalContent({ metrics }: { metrics?: DynamicThermalCalculations | nu
         style={{
           display: "grid",
           gridTemplateColumns: "1fr 1fr",
-          gap: "6px",
+          gap: "8px",
           paddingTop: "8px",
-          borderTop: "1px solid rgba(110,129,143,0.18)",
+          borderTop: "1px solid rgba(110,129,143,0.15)",
         }}
       >
         <MetricCell
-          icon={<ArrowUpRight className="size-3" style={{ color: "#d97706" }} />}
-          label="South Absorber"
+          icon={<ArrowUpRight className="size-3" style={{ color: "#ef4444" }} />}
+          label="South Wall"
           value={`${southSign}${(metrics?.tSurfaceSouth ?? 21.5).toFixed(1)}°C`}
           sub={`+${metrics?.iSouthIncident ?? 410} W/m²`}
-          color="#d97706"
+          color="#ef4444"
         />
         <MetricCell
           icon={<ArrowDownRight className="size-3" style={{ color: "#3b82f6" }} />}
-          label="North Shaded"
+          label="North Wall"
           value={`${northSign}${(metrics?.tSurfaceNorth ?? -12.0).toFixed(1)}°C`}
-          sub={`${metrics?.qNorthFlux ?? -88} W/m²`}
+          sub={`${metrics?.qNorthFlux ?? -88} W/m² loss`}
           color="#3b82f6"
         />
         <MetricCell
@@ -190,11 +190,11 @@ function ThermalContent({ metrics }: { metrics?: DynamicThermalCalculations | nu
           color="#ea580c"
         />
         <MetricCell
-          icon={<Thermometer className="size-3" style={{ color: "#b45309" }} />}
+          icon={<Thermometer className="size-3" style={{ color: "#d97706" }} />}
           label="Floor Mass"
           value={`${floorSign}${(metrics?.tFloorMass ?? 19.0).toFixed(1)}°C`}
-          sub="Storage"
-          color="#b45309"
+          sub="Thermal storage"
+          color="#d97706"
         />
       </div>
     </div>
@@ -328,47 +328,55 @@ function MetricCell({
     <div
       style={{
         display: "flex",
-        alignItems: "center",
-        gap: "6px",
-        padding: "6px 8px",
-        borderRadius: "6px",
-        background: "rgba(110,129,143,0.06)",
+        flexDirection: "column",
+        gap: "2px",
+        padding: "7px 9px",
+        borderRadius: "8px",
+        background: "rgba(110,129,143,0.07)",
+        border: "1px solid rgba(110,129,143,0.12)",
+        minWidth: 0,
       }}
     >
-      {icon}
-      <div style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "4px" }}>
         <span
           style={{
-            fontSize: "9px",
+            fontSize: "10px",
             color: "#6e818f",
-            fontWeight: 600,
-            lineHeight: 1.3,
+            fontWeight: 650,
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
           }}
         >
           {label}
         </span>
-        <span
-          style={{
-            fontSize: "11px",
-            fontWeight: 700,
-            fontFamily: "var(--font-geist-mono), monospace",
-            color,
-            lineHeight: 1.3,
-          }}
-        >
-          {value}
-        </span>
-        <span
-          style={{
-            fontSize: "9px",
-            fontFamily: "var(--font-geist-mono), monospace",
-            color: "#94a3b8",
-            lineHeight: 1.3,
-          }}
-        >
-          {sub}
-        </span>
+        {icon}
       </div>
+      <span
+        style={{
+          fontSize: "13px",
+          fontWeight: 750,
+          fontFamily: "var(--font-geist-mono), monospace",
+          color,
+          lineHeight: 1.2,
+          marginTop: "1px",
+        }}
+      >
+        {value}
+      </span>
+      <span
+        style={{
+          fontSize: "9px",
+          fontFamily: "var(--font-geist-mono), monospace",
+          color: "#94a3b8",
+          lineHeight: 1.2,
+          overflow: "hidden",
+          textOverflow: "ellipsis",
+          whiteSpace: "nowrap",
+        }}
+      >
+        {sub}
+      </span>
     </div>
   );
 }
@@ -405,7 +413,7 @@ function DataRow({
           fontSize: "10px",
           fontWeight: 700,
           fontFamily: "var(--font-geist-mono), monospace",
-          color: highlight ? "#d97706" : "#101820",
+          color: highlight ? "#d97706" : "inherit",
         }}
       >
         {value}
@@ -445,7 +453,7 @@ function LegendRow({
           flex: 1,
           fontSize: "10px",
           fontWeight: 600,
-          color: "#101820",
+          color: "inherit",
         }}
       >
         {label}

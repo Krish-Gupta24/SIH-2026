@@ -4,20 +4,21 @@
   "project": {
     "id": "shelter-ladakh-01",
     "name": "Ladakh Passive Solar Outpost (Our Solution)",
+    "version": "1.0.0",
     "description": "Cold-climate high-altitude insulated shelter designed for extreme temperature swings in Leh, Ladakh with 200mm rammed earth Trombe wall and 150mm EPS composite envelope.",
+    "createdAt": "2026-09-13T08:43:24.002Z",
     "tags": [
       "High-Altitude",
       "Extreme-Cold",
       "Passive-Solar",
       "Rammed-Earth"
-    ],
-    "version": "1.0.0"
+    ]
   },
   "location": {
+    "region": "Leh Ladakh, India",
     "latitude": 34.1526,
     "longitude": 77.5771,
     "elevation": 3500,
-    "region": "Leh Ladakh, India",
     "climateZone": "Cold / Extreme Alpine",
     "weatherSource": "IND_JK_Leh.427053_TMYx.epw",
     "designTempWinter": -20,
@@ -25,13 +26,13 @@
   },
   "geometry": {
     "shape": "Rectangle",
+    "orientation": 0,
+    "roofAngle": 14,
+    "floorElevation": 0.3,
     "length": 6,
     "width": 4,
     "height": 3,
-    "orientation": 0,
-    "roofType": "Flat",
-    "roofAngle": 14,
-    "floorElevation": 0.3
+    "roofType": "Flat"
   },
   "envelope": {
     "walls": {
@@ -103,7 +104,7 @@
     "roof": {
       "constructionId": "const-insulated-metal-roof",
       "name": "Insulated Metal Sandwich Roof",
-      "slope": 15,
+      "slope": 14,
       "overhang": 0.45,
       "solarAbsorptance": 0.65,
       "layers": [
@@ -188,11 +189,12 @@
   ],
   "ventilation": {
     "infiltrationACH": 0.35,
+    "mechanicalVentilationACH": 0.5,
+    "heatRecoveryEfficiency": 0.75,
     "naturalVentilationEnabled": true,
     "naturalSchedule": "TemperatureControlled",
     "mechanicalVentilationEnabled": false,
-    "mechanicalFlowRateLps": 15,
-    "heatRecoveryEfficiency": 0.75
+    "mechanicalFlowRateLps": 15
   },
   "internalLoads": {
     "occupantsCount": 2,
@@ -204,12 +206,11 @@
   "designTargets": {
     "comfortTempMinC": 18,
     "comfortTempMaxC": 26,
-    "maxAnnualHeatingDemandKwhM2": 65,
-    "targetComfortPercent": 85,
     "targetIndoorTempC": 21,
     "comfortModel": "ASHRAE 55 Adaptive Cold Extreme",
     "assumptions": "Clo: 1.5 (heavy arctic fleece/wool), Met: 1.2, Air: 0.1 m/s",
-    "applicableConditions": "Unconditioned passive high-altitude shelter"
+    "maxAnnualHeatingDemandKwhM2": 65,
+    "targetComfortPercent": 85
   },
   "simulationSettings": {
     "engine": "EnergyPlus",

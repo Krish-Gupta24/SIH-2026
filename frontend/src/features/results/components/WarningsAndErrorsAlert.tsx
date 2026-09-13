@@ -83,7 +83,11 @@ export function WarningsAndErrorsAlert({
             </div>
             <p className="text-xs text-[#536772] mt-0.5">
               Engine: <strong className="text-foreground">{engineName} v{engineVersion}</strong> · Duration: {durationSeconds}s
-              {completedAt && ` · Timestamp: ${new Date(completedAt).toLocaleTimeString()}`}
+              {completedAt && (
+                <span suppressHydrationWarning>
+                  {` · Timestamp: ${new Date(completedAt).toLocaleTimeString()}`}
+                </span>
+              )}
             </p>
           </div>
         </div>

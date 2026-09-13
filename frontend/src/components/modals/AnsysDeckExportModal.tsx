@@ -209,47 +209,47 @@ export function AnsysDeckExportModal({ open, onOpenChange }: AnsysDeckExportModa
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange} contentClassName="max-w-4xl p-0 overflow-hidden bg-card border-border rounded-2xl">
+    <Dialog open={open} onOpenChange={onOpenChange} contentClassName="max-w-4xl p-0 overflow-hidden bg-card border border-border rounded-2xl shadow-2xl">
       {/* Modal Top Header */}
-      <div className="bg-[#000000] text-white p-6 border-b border-white/10">
+      <div className="bg-muted/20 text-foreground p-6 pr-14 border-b border-border">
         <div className="flex items-start justify-between">
-          <div className="space-y-1">
+          <div className="space-y-1.5">
             <div className="flex items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/20 px-2.5 py-0.5 text-[11px] font-bold text-emerald-400 border border-emerald-500/30">
+              <span className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-500/10 px-2.5 py-0.5 text-[11px] font-bold text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
                 <Cpu className="size-3" /> SIH 26051 Solver Bridge
               </span>
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-cyan-500/20 px-2.5 py-0.5 text-[11px] font-bold text-cyan-300 border border-cyan-500/30">
-                Fluent CFD (TUI) + MAPDL (FEA)
+              <span className="inline-flex items-center gap-1.5 rounded-lg bg-primary/10 px-2.5 py-0.5 text-[11px] font-bold text-primary border border-primary/20">
+                Fluent CFD + MAPDL FEA
               </span>
             </div>
-            <h2 className="text-xl font-bold tracking-tight text-white mt-2">
+            <h2 className="text-lg font-bold tracking-tight text-foreground">
               ANSYS High-Fidelity Validation Deck
             </h2>
-            <p className="text-xs text-white/60">
+            <p className="text-xs text-muted-foreground leading-relaxed">
               Parametric compiler converting your shelter geometry, composite layers, and Ladakh boundary conditions into executable ANSYS code.
             </p>
           </div>
         </div>
 
         {/* Physics & Environment Badges Bar */}
-        <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-3 pt-3 border-t border-white/10 text-xs">
-          <div className="bg-white/5 rounded-lg p-2.5 border border-white/10">
-            <div className="text-white/40 text-[10px] uppercase font-bold tracking-wider">Altitude Derating</div>
-            <div className="text-white font-mono font-semibold mt-0.5">
+        <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-3 pt-3 border-t border-border text-xs">
+          <div className="bg-background rounded-xl p-3 border border-border">
+            <div className="text-muted-foreground text-[10px] uppercase font-bold tracking-wider">Altitude Derating</div>
+            <div className="text-foreground font-mono font-bold mt-0.5">
               {exportData?.preparedPhysics?.fluid_domain?.operating_pressure_pa?.toLocaleString() || "67,500"} Pa (3,500m ASL)
             </div>
           </div>
 
-          <div className="bg-white/5 rounded-lg p-2.5 border border-white/10">
-            <div className="text-white/40 text-[10px] uppercase font-bold tracking-wider">Solar Radiation Model</div>
-            <div className="text-white font-semibold mt-0.5">
+          <div className="bg-background rounded-xl p-3 border border-border">
+            <div className="text-muted-foreground text-[10px] uppercase font-bold tracking-wider">Solar Radiation Model</div>
+            <div className="text-foreground font-semibold mt-0.5">
               Discrete Ordinates (DO) 34.15°N
             </div>
           </div>
 
-          <div className="bg-white/5 rounded-lg p-2.5 border border-white/10">
-            <div className="text-white/40 text-[10px] uppercase font-bold tracking-wider">Execution Pipeline</div>
-            <div className="text-emerald-400 font-semibold mt-0.5 flex items-center gap-1.5">
+          <div className="bg-background rounded-xl p-3 border border-border">
+            <div className="text-muted-foreground text-[10px] uppercase font-bold tracking-wider">Execution Pipeline</div>
+            <div className="text-emerald-600 dark:text-emerald-400 font-semibold mt-0.5 flex items-center gap-1.5">
               <ShieldCheck className="size-3.5" /> HPC Cluster / Batch Ready
             </div>
           </div>
@@ -269,20 +269,20 @@ export function AnsysDeckExportModal({ open, onOpenChange }: AnsysDeckExportModa
             <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-border">
               <div className="flex flex-wrap gap-1.5">
                 {[
-                  { key: "fluent_setup.jou", label: "fluent_setup.jou", desc: "Fluent TUI Journal" },
-                  { key: "mapdl_thermal.mac", label: "mapdl_thermal.mac", desc: "MAPDL FEA Macro" },
-                  { key: "boundary_manifest.json", label: "boundary_manifest.json", desc: "Boundary JSON" },
-                  { key: "run_fluent_batch.bat", label: "run_fluent_batch.bat", desc: "Windows Batch" },
-                  { key: "run_fluent_batch.sh", label: "run_fluent_batch.sh", desc: "Linux Slurm HPC" },
+                  { key: "fluent_setup.jou", label: "fluent_setup.jou" },
+                  { key: "mapdl_thermal.mac", label: "mapdl_thermal.mac" },
+                  { key: "boundary_manifest.json", label: "boundary_manifest.json" },
+                  { key: "run_fluent_batch.bat", label: "run_fluent_batch.bat" },
+                  { key: "run_fluent_batch.sh", label: "run_fluent_batch.sh" },
                 ].map((f) => (
                   <button
                     key={f.key}
                     type="button"
                     onClick={() => setActiveFile(f.key)}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-mono font-medium transition-all ${
+                    className={`px-3 py-1.5 rounded-xl text-xs font-mono font-medium transition-all ${
                       activeFile === f.key
-                        ? "bg-primary text-primary-foreground shadow-sm"
-                        : "bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground"
+                        ? "bg-foreground text-background shadow-xs font-bold"
+                        : "bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground"
                     }`}
                   >
                     {f.label}
@@ -295,10 +295,10 @@ export function AnsysDeckExportModal({ open, onOpenChange }: AnsysDeckExportModa
                 variant="outline"
                 size="sm"
                 onClick={handleCopy}
-                className="rounded-full text-xs font-medium gap-1.5 h-8 px-3"
+                className="rounded-xl text-xs font-semibold gap-1.5 h-8 px-3"
               >
                 {copied ? <Check className="size-3.5 text-emerald-500" /> : <Copy className="size-3.5" />}
-                {copied ? "Copied Script" : "Copy File"}
+                {copied ? "Copied" : "Copy File"}
               </Button>
             </div>
 
@@ -306,18 +306,18 @@ export function AnsysDeckExportModal({ open, onOpenChange }: AnsysDeckExportModa
             <div className="relative rounded-xl border border-border bg-[#0d1117] text-slate-200 font-mono text-xs overflow-hidden shadow-inner">
               <div className="flex items-center justify-between px-4 py-2 border-b border-white/10 bg-black/40 text-[11px] text-white/50">
                 <span>{activeFile}</span>
-                <span>UTF-8 · Ready for ANSYS 2023 R1 - 2024 R2</span>
+                <span>Ready for ANSYS 2023 R1 - 2024 R2</span>
               </div>
-              <pre className="p-4 max-h-[340px] overflow-y-auto leading-relaxed scrollbar-thin scrollbar-thumb-white/10">
+              <pre className="p-4 max-h-[320px] overflow-y-auto leading-relaxed scrollbar-thin scrollbar-thumb-white/10">
                 <code>{exportData?.files[activeFile] || "// File content not available"}</code>
               </pre>
             </div>
 
             {/* Honest Engineering Disclosure Footer */}
-            <div className="rounded-xl bg-amber-500/10 border border-amber-500/20 p-3 flex items-start gap-3 text-xs text-amber-900 dark:text-amber-200">
+            <div className="rounded-xl bg-muted/40 border border-border p-3.5 flex items-start gap-3 text-xs text-muted-foreground">
               <AlertTriangle className="size-4 text-amber-500 shrink-0 mt-0.5" />
-              <div>
-                <span className="font-bold">Honest Engineering Disclosure: </span>
+              <div className="leading-relaxed">
+                <span className="font-bold text-foreground">Honest Engineering Disclosure: </span>
                 Our platform generates authentic, verified ANSYS journal decks. We strictly adhere to academic integrity by refusing to synthesize fake CFD contours. Execution can be launched automatically on a licensed ANSYS workstation or submitted to an HPC cluster using the bundled batch scripts.
               </div>
             </div>
@@ -326,15 +326,15 @@ export function AnsysDeckExportModal({ open, onOpenChange }: AnsysDeckExportModa
       </div>
 
       {/* Modal Bottom Actions */}
-      <div className="p-4 bg-muted/40 border-t border-border flex items-center justify-between">
-        <Button variant="ghost" size="sm" onClick={() => onOpenChange(false)} className="rounded-full text-xs">
+      <div className="p-4 bg-muted/20 border-t border-border flex items-center justify-between">
+        <Button variant="ghost" size="sm" onClick={() => onOpenChange(false)} className="rounded-xl text-xs font-semibold">
           Close
         </Button>
 
         <Button
           onClick={handleDownloadZip}
           disabled={downloading || loading}
-          className="rounded-full text-xs font-semibold gap-2 shadow-md bg-emerald-600 hover:bg-emerald-500 text-white"
+          className="rounded-xl text-xs font-semibold gap-2 shadow-xs bg-primary hover:bg-primary/90 text-primary-foreground"
         >
           {downloading ? (
             <Loader2 className="size-3.5 animate-spin" />

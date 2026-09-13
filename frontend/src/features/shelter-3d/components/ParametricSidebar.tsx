@@ -241,13 +241,13 @@ export function ParametricSidebar({
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-3 text-xs">
+          <div className="space-y-4 text-xs">
             <div>
-              <label className="font-semibold text-slate-300">Host Wall Orientation</label>
+              <label className="text-[11px] font-semibold text-foreground">Host Wall Orientation</label>
               <select
                 value={winWall}
                 onChange={(e) => setWinWall(e.target.value as any)}
-                className="w-full mt-1 rounded-lg border border-slate-800 bg-slate-950 p-2 text-white"
+                className="w-full mt-1.5 rounded-xl border border-border bg-muted/30 px-3 py-2 text-xs font-medium text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
               >
                 <option value="south">South Wall (Recommended for High Solar Gain)</option>
                 <option value="north">North Wall (Minimal Solar)</option>
@@ -258,7 +258,7 @@ export function ParametricSidebar({
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="font-semibold text-slate-300">Width (m)</label>
+                <label className="text-[11px] font-semibold text-foreground">Width (m)</label>
                 <Input
                   type="number"
                   step="0.1"
@@ -266,11 +266,11 @@ export function ParametricSidebar({
                   max="3.0"
                   value={winWidth}
                   onChange={(e) => setWinWidth(parseFloat(e.target.value) || 1.0)}
-                  className="mt-1 bg-slate-950 border-slate-800"
+                  className="mt-1.5 rounded-xl border-border bg-muted/30 text-xs text-foreground focus:ring-2 focus:ring-primary/20"
                 />
               </div>
               <div>
-                <label className="font-semibold text-slate-300">Height (m)</label>
+                <label className="text-[11px] font-semibold text-foreground">Height (m)</label>
                 <Input
                   type="number"
                   step="0.1"
@@ -278,14 +278,14 @@ export function ParametricSidebar({
                   max="2.5"
                   value={winHeight}
                   onChange={(e) => setWinHeight(parseFloat(e.target.value) || 1.0)}
-                  className="mt-1 bg-slate-950 border-slate-800"
+                  className="mt-1.5 rounded-xl border-border bg-muted/30 text-xs text-foreground focus:ring-2 focus:ring-primary/20"
                 />
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="font-semibold text-slate-300">Position X on Wall (m)</label>
+                <label className="text-[11px] font-semibold text-foreground">Position X on Wall (m)</label>
                 <Input
                   type="number"
                   step="0.1"
@@ -293,11 +293,11 @@ export function ParametricSidebar({
                   max="10.0"
                   value={winPosX}
                   onChange={(e) => setWinPosX(parseFloat(e.target.value) || 0.5)}
-                  className="mt-1 bg-slate-950 border-slate-800"
+                  className="mt-1.5 rounded-xl border-border bg-muted/30 text-xs text-foreground focus:ring-2 focus:ring-primary/20"
                 />
               </div>
               <div>
-                <label className="font-semibold text-slate-300">Sill Height (m)</label>
+                <label className="text-[11px] font-semibold text-foreground">Sill Height (m)</label>
                 <Input
                   type="number"
                   step="0.1"
@@ -305,17 +305,17 @@ export function ParametricSidebar({
                   max="1.8"
                   value={winSill}
                   onChange={(e) => setWinSill(parseFloat(e.target.value) || 0.9)}
-                  className="mt-1 bg-slate-950 border-slate-800"
+                  className="mt-1.5 rounded-xl border-border bg-muted/30 text-xs text-foreground focus:ring-2 focus:ring-primary/20"
                 />
               </div>
             </div>
           </div>
 
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => setIsAddWinOpen(false)}>
+            <Button type="button" variant="outline" onClick={() => setIsAddWinOpen(false)} className="rounded-xl text-xs font-semibold">
               Cancel
             </Button>
-            <Button type="submit" className="font-bold bg-amber-600 hover:bg-amber-700">
+            <Button type="submit" className="rounded-xl text-xs font-semibold bg-primary hover:bg-primary/90 text-primary-foreground">
               Insert Window
             </Button>
           </DialogFooter>
@@ -332,13 +332,13 @@ export function ParametricSidebar({
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-3 text-xs">
+          <div className="space-y-4 text-xs">
             <div>
-              <label className="font-semibold text-slate-300">Host Wall</label>
+              <label className="text-[11px] font-semibold text-foreground">Host Wall</label>
               <select
                 value={doorWall}
                 onChange={(e) => setDoorWall(e.target.value as any)}
-                className="w-full mt-1 rounded-lg border border-slate-800 bg-slate-950 p-2 text-white"
+                className="w-full mt-1.5 rounded-xl border border-border bg-muted/30 px-3 py-2 text-xs font-medium text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
               >
                 <option value="east">East Wall (Protected Entrance)</option>
                 <option value="south">South Wall</option>
@@ -349,7 +349,7 @@ export function ParametricSidebar({
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="font-semibold text-slate-300">Width (m)</label>
+                <label className="text-[11px] font-semibold text-foreground">Width (m)</label>
                 <Input
                   type="number"
                   step="0.05"
@@ -357,11 +357,11 @@ export function ParametricSidebar({
                   max="1.5"
                   value={doorWidth}
                   onChange={(e) => setDoorWidth(parseFloat(e.target.value) || 0.95)}
-                  className="mt-1 bg-slate-950 border-slate-800"
+                  className="mt-1.5 rounded-xl border-border bg-muted/30 text-xs text-foreground focus:ring-2 focus:ring-primary/20"
                 />
               </div>
               <div>
-                <label className="font-semibold text-slate-300">Height (m)</label>
+                <label className="text-[11px] font-semibold text-foreground">Height (m)</label>
                 <Input
                   type="number"
                   step="0.05"
@@ -369,13 +369,13 @@ export function ParametricSidebar({
                   max="2.4"
                   value={doorHeight}
                   onChange={(e) => setDoorHeight(parseFloat(e.target.value) || 2.1)}
-                  className="mt-1 bg-slate-950 border-slate-800"
+                  className="mt-1.5 rounded-xl border-border bg-muted/30 text-xs text-foreground focus:ring-2 focus:ring-primary/20"
                 />
               </div>
             </div>
 
             <div>
-              <label className="font-semibold text-slate-300">Position X from Corner (m)</label>
+              <label className="text-[11px] font-semibold text-foreground">Position X from Corner (m)</label>
               <Input
                 type="number"
                 step="0.1"
@@ -383,16 +383,16 @@ export function ParametricSidebar({
                 max="8.0"
                 value={doorPosX}
                 onChange={(e) => setDoorPosX(parseFloat(e.target.value) || 1.0)}
-                className="mt-1 bg-slate-950 border-slate-800"
+                className="mt-1.5 rounded-xl border-border bg-muted/30 text-xs text-foreground focus:ring-2 focus:ring-primary/20"
               />
             </div>
           </div>
 
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => setIsAddDoorOpen(false)}>
+            <Button type="button" variant="outline" onClick={() => setIsAddDoorOpen(false)} className="rounded-xl text-xs font-semibold">
               Cancel
             </Button>
-            <Button type="submit" className="font-bold bg-indigo-600 hover:bg-indigo-700">
+            <Button type="submit" className="rounded-xl text-xs font-semibold bg-primary hover:bg-primary/90 text-primary-foreground">
               Insert Door
             </Button>
           </DialogFooter>

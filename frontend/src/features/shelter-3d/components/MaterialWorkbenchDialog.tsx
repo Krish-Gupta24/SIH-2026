@@ -83,66 +83,259 @@ export function MaterialWorkbenchDialog({ open, model, onOpenChange, onUpdate }:
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange} contentClassName="cad-material-dialog">
-      <DialogHeader className="cad-material-header">
-        <div className="cad-material-heading">
-          <span className="cad-material-icon"><Layers3 /></span>
-          <div>
-            <Badge variant="outline">Envelope specification</Badge>
-            <DialogTitle>Material assembly workbench</DialogTitle>
-            <DialogDescription>Compose build-ups, compare thermal performance, and update the canonical shelter model.</DialogDescription>
+    <Dialog open={open} onOpenChange={onOpenChange} contentClassName="max-w-4xl w-[calc(100vw-2rem)] p-0 overflow-hidden border border-border bg-card rounded-2xl shadow-2xl">
+      {/* Header */}
+      <div className="border-b border-border bg-muted/20 px-6 py-5 pr-14">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="flex items-start gap-3.5">
+            <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+              <Layers3 className="size-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h2 className="text-base font-bold tracking-tight text-foreground">
+                  Material Assembly Workbench
+                </h2>
+                <Badge variant="outline" className="text-[10px] font-semibold text-muted-foreground border-border">
+                  Envelope Spec
+                </Badge>
+              </div>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Configure layered assemblies and inspect thermal resistance across envelope surfaces.
+              </p>
+            </div>
+          </div>
+
+          {/* Quick Metrics Chips */}
+          <div className="flex items-center gap-2 self-start sm:self-auto">
+            <div className="rounded-xl border border-border bg-background px-3 py-1.5 text-center shadow-xs">
+              <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Thickness</div>
+              <div className="text-xs font-mono font-bold text-foreground">{Math.round(metrics.thickness * 1000)} mm</div>
+            </div>
+            <div className="rounded-xl border border-border bg-background px-3 py-1.5 text-center shadow-xs">
+              <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">R-Value</div>
+              <div className="text-xs font-mono font-bold text-foreground">{metrics.resistance.toFixed(2)} m²K/W</div>
+            </div>
+            <div className="rounded-xl border border-border bg-background px-3 py-1.5 text-center shadow-xs">
+              <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">U-Value</div>
+              <div className="text-xs font-mono font-bold text-primary">{metrics.uValue.toFixed(2)} W/m²K</div>
+            </div>
           </div>
         </div>
-        <div className="cad-material-score">
-          <span><small>Assembly</small><strong>{Math.round(metrics.thickness * 1000)} mm</strong></span>
-          <span><small>R-value</small><strong>{metrics.resistance.toFixed(2)} m²K/W</strong></span>
-          <span><small>Est. U-value</small><strong>{metrics.uValue.toFixed(2)} W/m²K</strong></span>
+      </div>
+
+      <Tabs value={target} onValueChange={(value) => setTarget(value as AssemblyTarget)} className="w-full">
+        {/* Assembly Tabs Navigation */}
+        <div className="flex items-center justify-between border-b border-border bg-muted/10 px-6 py-2.5">
+          <TabsList className="h-9 p-1 bg-muted/60 rounded-xl gap-1">
+            <TabsTrigger value="walls" className="rounded-lg text-xs font-semibold px-3.5 py-1">Wall Systems</TabsTrigger>
+            <TabsTrigger value="roof" className="rounded-lg text-xs font-semibold px-3.5 py-1">Roof System</TabsTrigger>
+            <TabsTrigger value="floor" className="rounded-lg text-xs font-semibold px-3.5 py-1">Floor System</TabsTrigger>
+          </TabsList>
+
+          {target === "walls" && (
+            <div className="flex items-center gap-1.5 bg-muted/50 p-1 rounded-xl border border-border text-xs font-semibold">
+              <span className="text-[11px] text-muted-foreground px-2">Orientation:</span>
+              {walls.map((orientation) => (
+                <button
+                  key={orientation}
+                  type="button"
+                  data-active={wall === orientation}
+                  onClick={() => setWall(orientation)}
+                  className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all ${
+                    wall === orientation
+                      ? "bg-foreground text-background shadow-xs"
+                      : "text-muted-foreground hover:text-foreground hover:bg-background/60"
+                  }`}
+                >
+                  {orientation.toUpperCase()}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
-      </DialogHeader>
 
-      <Tabs value={target} onValueChange={(value) => setTarget(value as AssemblyTarget)} className="cad-material-tabs">
-        <TabsList className="cad-material-tabs-list">
-          <TabsTrigger value="walls">Wall systems</TabsTrigger>
-          <TabsTrigger value="roof">Roof system</TabsTrigger>
-          <TabsTrigger value="floor">Floor system</TabsTrigger>
-        </TabsList>
+        <TabsContent value={target} className="m-0 focus-visible:outline-none">
+          <div className="grid grid-cols-1 lg:grid-cols-12 min-h-[380px] max-h-[58vh] overflow-y-auto">
+            {/* Left Side: Layer Stack Editor */}
+            <div className="lg:col-span-7 p-6 border-b lg:border-b-0 lg:border-r border-border space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Active Build-Up Layers</h3>
+                  <div className="text-sm font-semibold text-foreground mt-0.5">{assembly.name || `${target} assembly`}</div>
+                </div>
+                <span className="text-[11px] font-medium text-muted-foreground">Exterior face → Interior face</span>
+              </div>
 
-        <TabsContent value={target} className="cad-material-content">
-          <section className="cad-assembly-editor">
-            <div className="cad-material-section-heading">
-              <div><span>01 · Active build-up</span><h3>{assembly.name || `${target} assembly`}</h3></div>
-              {target === "walls" && <div className="cad-wall-selector" aria-label="Wall orientation">{walls.map((orientation) => <button key={orientation} data-active={wall === orientation} onClick={() => setWall(orientation)}>{orientation[0].toUpperCase()}</button>)}</div>}
+              <div className="space-y-2.5">
+                {assembly.layers.map((layer, index) => {
+                  const material = materialFor(layer.materialId);
+                  const layerResistance = layer.thickness / material.conductivity;
+
+                  return (
+                    <div
+                      key={`${layer.materialId}-${index}`}
+                      className="rounded-xl border border-border bg-background p-3.5 shadow-xs hover:border-primary/40 transition-colors"
+                    >
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <span className="flex size-5 items-center justify-center rounded-md bg-muted text-[10px] font-bold font-mono text-muted-foreground">
+                            {index + 1}
+                          </span>
+                          <span className="text-[11px] font-bold text-foreground">{layer.name}</span>
+                          <Badge variant="secondary" className="text-[9px] py-0 px-1.5 h-4 font-normal text-muted-foreground">
+                            {material.category}
+                          </Badge>
+                        </div>
+
+                        <button
+                          type="button"
+                          aria-label={`Remove layer ${index + 1}`}
+                          disabled={assembly.layers.length === 1}
+                          onClick={() =>
+                            updateAssembly({
+                              ...assembly,
+                              layers: assembly.layers.filter((_, layerIndex) => layerIndex !== index),
+                            })
+                          }
+                          className="size-7 flex items-center justify-center rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors disabled:opacity-20"
+                        >
+                          <Trash2 className="size-3.5" />
+                        </button>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-center text-xs">
+                        {/* Material Selector */}
+                        <div className="sm:col-span-7">
+                          <label className="text-[10px] font-semibold text-muted-foreground block mb-1">Material</label>
+                          <select
+                            aria-label={`Layer ${index + 1} material`}
+                            value={layer.materialId}
+                            onChange={(event) => {
+                              const next = materialFor(event.target.value);
+                              updateLayer(index, { materialId: next.id, name: next.name });
+                            }}
+                            className="w-full rounded-xl border border-border bg-muted/30 px-3 py-1.5 text-xs font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 transition"
+                          >
+                            {materials.map((option) => (
+                              <option value={option.id} key={option.id}>
+                                {option.name} (λ = {option.conductivity} W/mK)
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+
+                        {/* Thickness Input */}
+                        <div className="sm:col-span-5">
+                          <label className="text-[10px] font-semibold text-muted-foreground block mb-1">Thickness (mm)</label>
+                          <div className="relative">
+                            <input
+                              aria-label={`Layer ${index + 1} thickness`}
+                              type="number"
+                              min="1"
+                              max="600"
+                              step="5"
+                              value={Math.round(layer.thickness * 1000)}
+                              onChange={(event) =>
+                                updateLayer(index, {
+                                  thickness: Math.max(0.001, Number(event.target.value) / 1000),
+                                })
+                              }
+                              className="w-full rounded-xl border border-border bg-muted/30 px-3 py-1.5 text-xs font-mono font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 transition"
+                            />
+                            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground font-mono">
+                              R {layerResistance.toFixed(2)}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+
+                <button
+                  type="button"
+                  onClick={() =>
+                    updateAssembly({
+                      ...assembly,
+                      layers: [
+                        ...assembly.layers,
+                        { materialId: materials[1].id, name: materials[1].name, thickness: 0.05 },
+                      ],
+                    })
+                  }
+                  className="w-full py-2.5 flex items-center justify-center gap-2 rounded-xl border border-dashed border-border text-xs font-semibold text-muted-foreground hover:text-foreground hover:border-foreground/30 hover:bg-muted/40 transition"
+                >
+                  <Plus className="size-4" /> Add Construction Layer
+                </button>
+              </div>
             </div>
 
-            <div className="cad-layer-editor">
-              <div className="cad-layer-axis"><span>Exterior</span><span>Interior</span></div>
-              {assembly.layers.map((layer, index) => {
-                const material = materialFor(layer.materialId);
-                return <div className="cad-layer-row" key={`${layer.materialId}-${index}`}>
-                  <span className="cad-material-swatch" data-tone={material.tone} />
-                  <span className="cad-layer-index">{String(index + 1).padStart(2, "0")}</span>
-                  <label><span>Material</span><select aria-label={`Layer ${index + 1} material`} value={layer.materialId} onChange={(event) => { const next = materialFor(event.target.value); updateLayer(index, { materialId: next.id, name: next.name }); }}>{materials.map((option) => <option value={option.id} key={option.id}>{option.name}</option>)}</select></label>
-                  <label className="cad-thickness-field"><span>Thickness</span><div><input aria-label={`Layer ${index + 1} thickness`} type="number" min="1" max="600" step="1" value={Math.round(layer.thickness * 1000)} onChange={(event) => updateLayer(index, { thickness: Math.max(0.001, Number(event.target.value) / 1000) })} /><small>mm</small></div></label>
-                  <span className="cad-layer-property"><small>λ</small>{material.conductivity} W/mK</span>
-                  <button aria-label={`Remove layer ${index + 1}`} disabled={assembly.layers.length === 1} onClick={() => updateAssembly({ ...assembly, layers: assembly.layers.filter((_, layerIndex) => layerIndex !== index) })}><Trash2 /></button>
-                </div>;
-              })}
-              <button className="cad-add-layer" onClick={() => updateAssembly({ ...assembly, layers: [...assembly.layers, { materialId: materials[1].id, name: materials[1].name, thickness: 0.05 }] })}><Plus /> Add construction layer</button>
-            </div>
-          </section>
+            {/* Right Side: Performance Presets */}
+            <div className="lg:col-span-5 p-6 bg-muted/15 space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Curated Presets</h3>
+                  <p className="text-xs text-muted-foreground mt-0.5">High-altitude certified assemblies</p>
+                </div>
+                <Sparkles className="size-4 text-primary" />
+              </div>
 
-          <aside className="cad-material-library">
-            <div className="cad-material-section-heading"><div><span>02 · Curated systems</span><h3>Performance presets</h3></div><Sparkles /></div>
-            <div className="cad-preset-list">{presets[target].map((preset) => { const presetMetrics = assemblyMetrics(preset.layers); return <button key={preset.name} onClick={() => applyPreset(preset)}><span className="cad-preset-title"><strong>{preset.name}</strong><Badge variant="secondary">U {presetMetrics.uValue.toFixed(2)}</Badge></span><p>{preset.description}</p><span className="cad-preset-stack">{preset.layers.map((layer) => <i key={layer.materialId} data-tone={materialFor(layer.materialId).tone} style={{ flex: Math.max(1, layer.thickness * 100) }} />)}</span><small>{Math.round(presetMetrics.thickness * 1000)} mm · {preset.layers.length} layers</small></button>; })}</div>
-            <div className="cad-material-note"><ShieldCheck /><div><strong>Simulation ready</strong><p>Values are synchronized to the model. Final U-values depend on complete material datasets.</p></div></div>
-          </aside>
+              <div className="space-y-2.5">
+                {presets[target].map((preset) => {
+                  const presetMetrics = assemblyMetrics(preset.layers);
+                  return (
+                    <button
+                      key={preset.name}
+                      type="button"
+                      onClick={() => applyPreset(preset)}
+                      className="w-full text-left rounded-xl border border-border bg-background p-3.5 shadow-xs hover:border-primary/50 hover:bg-muted/20 transition group"
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-foreground group-hover:text-primary transition-colors">
+                          {preset.name}
+                        </span>
+                        <Badge variant="secondary" className="text-[10px] font-mono font-bold">
+                          U {presetMetrics.uValue.toFixed(2)}
+                        </Badge>
+                      </div>
+                      <p className="text-[11px] text-muted-foreground mt-1 line-clamp-2 leading-relaxed">
+                        {preset.description}
+                      </p>
+                      <div className="mt-2.5 flex items-center justify-between text-[10px] text-muted-foreground border-t border-border/50 pt-2 font-mono">
+                        <span>{Math.round(presetMetrics.thickness * 1000)} mm depth</span>
+                        <span>{preset.layers.length} layers</span>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div className="rounded-xl border border-border/80 bg-background/60 p-3 flex items-start gap-2.5 text-xs text-muted-foreground">
+                <ShieldCheck className="size-4 text-emerald-600 shrink-0 mt-0.5" />
+                <p className="text-[11px] leading-relaxed">
+                  All layers automatically export to standard EnergyPlus material constructions and thermal conductivity models.
+                </p>
+              </div>
+            </div>
+          </div>
         </TabsContent>
       </Tabs>
 
-      <DialogFooter className="cad-material-footer">
-        <span><Check /> Changes synchronized to {model.project.name}</span>
-        <Button type="button" onClick={() => onOpenChange(false)}>Done</Button>
-      </DialogFooter>
+      {/* Footer */}
+      <div className="border-t border-border bg-muted/20 px-6 py-4 flex items-center justify-between">
+        <span className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
+          <Check className="size-4 text-emerald-600" />
+          Changes synchronized to <strong className="text-foreground font-semibold">{model.project.name}</strong>
+        </span>
+        <Button
+          type="button"
+          onClick={() => onOpenChange(false)}
+          className="rounded-xl px-5 py-2 text-xs font-semibold bg-primary hover:bg-primary/90 text-primary-foreground"
+        >
+          Done
+        </Button>
+      </div>
     </Dialog>
   );
 }

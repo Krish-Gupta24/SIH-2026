@@ -386,25 +386,25 @@ export function MaterialsView() {
             <DialogDescription>Define a new material item in the workspace library.</DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4 py-4 text-xs">
+          <div className="space-y-4 py-2 text-xs">
             <div>
-              <label className="font-semibold block mb-1">Material Name:</label>
+              <label className="text-[11px] font-semibold text-foreground block mb-1.5">Material Name</label>
               <input
                 value={newMatName}
                 onChange={(e) => setNewMatName(e.target.value)}
                 placeholder="e.g. Local Pine Timber Deck"
                 required
-                className="w-full rounded-xl border border-border bg-background p-2.5 outline-none focus:border-foreground"
+                className="w-full rounded-xl border border-border bg-muted/30 px-3.5 py-2 text-xs text-foreground placeholder:text-muted-foreground outline-none focus:ring-2 focus:ring-primary/20 transition"
               />
             </div>
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="font-semibold block mb-1">Category:</label>
+                <label className="text-[11px] font-semibold text-foreground block mb-1.5">Category</label>
                 <select
                   value={newMatCategory}
                   onChange={(e) => setNewMatCategory(e.target.value as any)}
-                  className="w-full rounded-xl border border-border bg-background p-2.5 outline-none"
+                  className="w-full rounded-xl border border-border bg-muted/30 px-3 py-2 text-xs text-foreground outline-none focus:ring-2 focus:ring-primary/20 transition"
                 >
                   <option value="Insulation">Insulation</option>
                   <option value="Thermal Mass">Thermal Mass</option>
@@ -414,46 +414,46 @@ export function MaterialsView() {
                 </select>
               </div>
               <div>
-                <label className="font-semibold block mb-1">Conductivity (W/m·K):</label>
+                <label className="text-[11px] font-semibold text-foreground block mb-1.5">Conductivity (W/m·K)</label>
                 <input
                   type="number"
                   step="0.001"
                   value={newMatConductivity}
                   onChange={(e) => setNewMatConductivity(e.target.value)}
-                  className="w-full rounded-xl border border-border bg-background p-2.5 outline-none"
+                  className="w-full rounded-xl border border-border bg-muted/30 px-3.5 py-2 text-xs text-foreground outline-none focus:ring-2 focus:ring-primary/20 transition"
                 />
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="font-semibold block mb-1">Density (kg/m³):</label>
+                <label className="text-[11px] font-semibold text-foreground block mb-1.5">Density (kg/m³)</label>
                 <input
                   type="number"
                   value={newMatDensity}
                   onChange={(e) => setNewMatDensity(e.target.value)}
-                  className="w-full rounded-xl border border-border bg-background p-2.5 outline-none"
+                  className="w-full rounded-xl border border-border bg-muted/30 px-3.5 py-2 text-xs text-foreground outline-none focus:ring-2 focus:ring-primary/20 transition"
                 />
               </div>
               <div>
-                <label className="font-semibold block mb-1">Specific Heat (J/kg·K):</label>
+                <label className="text-[11px] font-semibold text-foreground block mb-1.5">Specific Heat (J/kg·K)</label>
                 <input
                   type="number"
                   value={newMatSpecificHeat}
                   onChange={(e) => setNewMatSpecificHeat(e.target.value)}
-                  className="w-full rounded-xl border border-border bg-background p-2.5 outline-none"
+                  className="w-full rounded-xl border border-border bg-muted/30 px-3.5 py-2 text-xs text-foreground outline-none focus:ring-2 focus:ring-primary/20 transition"
                 />
               </div>
             </div>
 
             <div>
-              <label className="font-semibold block mb-1">Engineering Notes / Source:</label>
+              <label className="text-[11px] font-semibold text-foreground block mb-1.5">Engineering Notes / Source</label>
               <textarea
                 value={newMatNotes}
                 onChange={(e) => setNewMatNotes(e.target.value)}
                 placeholder="Source documentation or manufacturer datasheet reference."
                 rows={3}
-                className="w-full rounded-xl border border-border bg-background p-2.5 outline-none"
+                className="w-full rounded-xl border border-border bg-muted/30 p-3 text-xs text-foreground placeholder:text-muted-foreground outline-none focus:ring-2 focus:ring-primary/20 transition resize-none"
               />
             </div>
           </div>
