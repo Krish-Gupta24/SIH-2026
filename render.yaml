@@ -1,0 +1,38 @@
+services:
+  # Python FastAPI Backend with EnergyPlus 24.1.0 runtime
+  - type: web
+    name: sih-shelter-backend
+    env: docker
+    dockerfilePath: Dockerfile
+    plan: starter
+    region: oregon
+    healthCheckPath: /api/v1/health
+    envVars:
+      - key: PORT
+        value: 8000
+      - key: ENVIRONMENT
+        value: development
+      - key: DEBUG
+        value: "false"
+      - key: ENABLE_CELERY
+        value: "false"
+      - key: CORS_ORIGINS
+        value: "*"
+      - key: ENERGYPLUS_EXE
+        value: /usr/local/bin/energyplus
+
+  # Next.js 14 Frontend
+  - type: web
+    name: sih-shelter-frontend
+    env: node
+    rootDir: frontend
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    plan: starter
+    region: oregon
+    envVars:
+      - key: NEXT_PUBLIC_API_URL
+        fromService:
+          type: web
+          name: sih-shelter-backend
+          property: host

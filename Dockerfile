@@ -1,4 +1,5 @@
-# Multi-stage Python Backend Dockerfile with EnergyPlus 24.1.0 runtime
+# Production Dockerfile for Railway / Container Deployments
+# Multi-stage Python Backend with EnergyPlus 24.1.0 runtime
 FROM python:3.12-slim AS base
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
@@ -33,6 +34,7 @@ RUN pip install --no-cache-dir --upgrade pip && \
 COPY backend /app/backend
 COPY simulation /app/simulation
 COPY database /app/database
+COPY storage /app/storage
 
 # Ensure required storage directories exist
 RUN mkdir -p /app/storage/simulations /app/storage/weather /app/storage/reports

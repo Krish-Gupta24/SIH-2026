@@ -64,6 +64,24 @@ class Settings(BaseSettings):
     RATE_LIMIT_SIMULATION_PER_MINUTE: int = 15
     RATE_LIMIT_GENERAL_PER_MINUTE: int = 60
 
+    @field_validator("CORS_ORIGINS", mode="before")
+    @classmethod
+    def assemble_cors_origins(cls, v: Union[str, List[str]]) -> List[str]:
+        if isinstance(v, str):
+            v_clean = v.strip()
+            if v_clean == "*":
+                return ["*"]
+            if v_clean.startswith("["):
+                import json
+                try:
+                    return json.loads(v_clean)
+                except Exception:
+                    pass
+            return [i.strip() for i in v_clean.split(",") if i.strip()]
+        elif isinstance(v, list):
+            return v
+        return ["http://localhost:3000", "http://127.0.0.1:3000"]
+
     @field_validator("SECRET_KEY")
     @classmethod
     def validate_production_secret(cls, v: str, info) -> str:
