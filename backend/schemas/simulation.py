@@ -8,7 +8,7 @@ from backend.schemas import CoreSchema
 
 class SimulationRunRequest(CoreSchema):
     shelter_id: str
-    engine: str = Field(default="EnergyPlus", description="EnergyPlus | OpenStudio | ANSYS")
+    engine: str = Field(default="ThermoShelter Core", description="ThermoShelter Core | OpenStudio | ANSYS")
     weather_source: str
     simulation_type: str = Field(default="Annual", description="Annual | DesignDay | MultiDay")
     start_date: Optional[str] = None

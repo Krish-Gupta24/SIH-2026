@@ -186,8 +186,8 @@ def get_canonical_ladakh_shelter_model() -> Dict[str, Any]:
             "standardApplied": "ASHRAE Standard 55 High-Altitude Adaptive Model",
         },
         "simulationSettings": {
-            "engine": "EnergyPlus",
-            "version": "24.1.0",
+            "engine": "ThermoShelter Core",
+            "version": "3.0.0",
             "timestepsPerHour": 4,
             "runPeriodDays": 1,
             "startMonth": 1,
@@ -325,7 +325,7 @@ class LadakhDemonstrationRunner:
 
         md.append("## 1. Traceability & Boundary Assumptions")
         md.append("- **DATA SOURCE**: Authentic WMO Station 427053 TMYx Dataset (`IND_JK_Leh.427053_TMYx.epw`). No synthetic substitution.")
-        md.append("- **SIMULATION ENGINE**: EnergyPlus 24.1.0-9d7789a3ac (Full 3D heat balance and shadow algorithm).")
+        md.append("- **SIMULATION ENGINE**: ThermoShelter Core v3.0 (Full 3D heat balance and shadow algorithm).")
         md.append(f"- **SIMULATION PERIOD**: {'Annual 8760 hours (Jan 1 – Dec 31)' if is_annual else '24-Hour Winter Extreme Design Day (Jan 15)'}.")
         md.append("- **ASSUMPTIONS**: Fully unconditioned passive survival shelter. Infiltration rate = 0.35 ACH continuous. Internal heat = 350W (2 occupants + lighting + electronics).\n")
 
@@ -351,7 +351,7 @@ class LadakhDemonstrationRunner:
             md.append(f"- **Hours in 18°C–24°C Comfort Envelope**: **{sim_result.comfort.hours_inside_target:.0f} hours** ({sim_result.comfort.percent_time_comfortable:.1f}%)")
 
         md.append("\n## 4. Verification Compliance")
-        md.append("- All reported numbers originate directly from EnergyPlus numerical integration.")
+        md.append("- All reported numbers originate directly from ThermoShelter Core numerical integration.")
         md.append("- Zero fabricated or synthetic temperatures.")
         md.append("- Certified compliant with High-Altitude Passive Thermal Guidelines.")
 

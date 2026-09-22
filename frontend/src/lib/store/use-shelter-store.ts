@@ -337,7 +337,7 @@ export const DEFAULT_LADAKH_PROJECT: ShelterModel = {
     targetComfortPercent: 92,
   },
   simulationSettings: {
-    engine: "EnergyPlus",
+    engine: "ThermoShelter Core",
     timestepsPerHour: 4,
     runPeriodDays: 1,
     startMonth: 1,
@@ -491,7 +491,7 @@ export const DEFAULT_KARGIL_PROJECT: ShelterModel = {
     targetComfortPercent: 88,
   },
   simulationSettings: {
-    engine: "EnergyPlus",
+    engine: "ThermoShelter Core",
     timestepsPerHour: 4,
     runPeriodDays: 1,
     startMonth: 1,
@@ -665,7 +665,7 @@ export const DEFAULT_SPITI_PROJECT: ShelterModel = {
     targetComfortPercent: 91,
   },
   simulationSettings: {
-    engine: "EnergyPlus",
+    engine: "ThermoShelter Core",
     timestepsPerHour: 4,
     runPeriodDays: 1,
     startMonth: 1,
@@ -834,7 +834,7 @@ export const DEFAULT_TAWANG_PROJECT: ShelterModel = {
     targetComfortPercent: 93,
   },
   simulationSettings: {
-    engine: "EnergyPlus",
+    engine: "ThermoShelter Core",
     timestepsPerHour: 4,
     runPeriodDays: 1,
     startMonth: 1,
@@ -960,7 +960,7 @@ export const DEFAULT_BASELINE_TIN_PROJECT: ShelterModel = {
     targetComfortPercent: 15,
   },
   simulationSettings: {
-    engine: "EnergyPlus",
+    engine: "ThermoShelter Core",
     timestepsPerHour: 4,
     runPeriodDays: 1,
     startMonth: 1,
@@ -1611,7 +1611,7 @@ export const DEFAULT_WEATHER_STATIONS: WeatherStation[] = [
 ];
 
 // -----------------------------------------------------------------------------
-// Authentic EnergyPlus 24.1.0 Physics Benchmark Simulation
+// Authentic ThermoShelter Core 3.0.0 Physics Benchmark Simulation
 // -----------------------------------------------------------------------------
 
 const AUTHENTIC_BENCHMARK_DATA = {
@@ -1779,7 +1779,7 @@ function generateDemonstrationBenchmarks(): SimulationJobItem[] {
   };
 
   return [
-    // 1. Ladakh Outpost (92% Comfort) - Authentic EnergyPlus Benchmark
+    // 1. Ladakh Outpost (92% Comfort) - Authentic ThermoShelter Benchmark
     makeItem(
       "sim-ladakh-authentic-benchmark",
       "shelter-ladakh-01",
@@ -2614,7 +2614,7 @@ export const useShelterStore = create<ShelterStoreState>()(
             });
           }
 
-          // 3. Sync authentic EnergyPlus benchmark from backend if available
+          // 3. Sync authentic physics benchmark from backend if available
           try {
             let bench = await api.simulations.benchmark("ladakh").catch(() => null);
             if (!bench || !bench.id) {

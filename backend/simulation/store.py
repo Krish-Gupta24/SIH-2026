@@ -39,7 +39,7 @@ class SimulationJobRecord:
     weather_file: str = "test_weather.epw"
     run_period_days: int = 3
     timeout_seconds: int = 600
-    engine: str = "EnergyPlus"
+    engine: str = "ThermoShelter Core"
     engine_version: Optional[str] = None
     created_at: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
     started_at: Optional[str] = None
@@ -97,7 +97,7 @@ class SimulationJobStore:
         version_id: Optional[str] = None,
         run_period_days: int = 3,
         timeout_seconds: int = 600,
-        engine: str = "EnergyPlus",
+        engine: str = "ThermoShelter Core",
         allow_test_data: bool = False,
         weather_provenance: Optional[Dict[str, Any]] = None,
         simulation_period: Optional[Dict[str, Any]] = None,

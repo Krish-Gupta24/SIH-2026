@@ -143,7 +143,7 @@ export interface DesignTargetsModel {
 }
 
 export interface SimulationSettingsModel {
-  engine: "EnergyPlus" | "OpenStudio" | "ANSYS";
+  engine: "ThermoShelter Core" | "EnergyPlus" | "OpenStudio" | "ANSYS";
   timestepsPerHour: number;    // Timesteps per hour (1 to 60)
   runPeriodDays: number;       // Number of days to simulate (1 to 365)
   startMonth: number;          // Start month (1 to 12)

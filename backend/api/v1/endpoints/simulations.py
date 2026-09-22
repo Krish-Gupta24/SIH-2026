@@ -129,17 +129,17 @@ async def list_simulations(limit: int = 50, include_results: bool = True):
 
 @router.get(
     "/demonstration",
-    summary="Retrieve or execute authentic EnergyPlus Ladakh demonstration simulation",
+    summary="Retrieve or execute authentic ThermoShelter Core Ladakh demonstration simulation",
     status_code=status.HTTP_200_OK,
 )
 @router.post(
     "/demonstration",
-    summary="Execute or retrieve authentic EnergyPlus Ladakh demonstration simulation",
+    summary="Execute or retrieve authentic ThermoShelter Core Ladakh demonstration simulation",
     status_code=status.HTTP_202_ACCEPTED,
 )
 async def run_demonstration_simulation():
     """
-    Execute the scientifically traceable Ladakh outpost shelter through real EnergyPlus physics
+    Execute the scientifically traceable Ladakh outpost shelter through real ThermoShelter Core physics
     with authentic WMO 427053 weather data, registering genuine outputs into the simulation store.
     """
     from backend.simulation.demonstration_case import LadakhDemonstrationRunner, get_canonical_ladakh_shelter_model
@@ -338,19 +338,26 @@ async def queue_simulation(req: SimulationRequest, request: Request):
 
 @router.get(
     "/output-variables",
-    summary="Get centralized EnergyPlus output variable registry and concept mappings",
+    summary="Get centralized ThermoShelter output variable registry and concept mappings",
 )
 async def get_output_variables():
     """Return verified output variable specifications and solar concepts."""
     try:
-        from simulation.results.output_registry import OutputVariableRegistry
+        from backend.simulation.results.output_registry import OutputVariableRegistry
     except ImportError:
-        import sys
-        from pathlib import Path
-        repo_root = str(Path(__file__).resolve().parents[4])
-        if repo_root not in sys.path:
-            sys.path.insert(0, repo_root)
-        from simulation.results.output_registry import OutputVariableRegistry
+        try:
+            import sys
+            from pathlib import Path
+            repo_root = str(Path(__file__).resolve().parents[4])
+            if repo_root not in sys.path:
+                sys.path.insert(0, repo_root)
+            from simulation.results.output_registry import OutputVariableRegistry
+        except ImportError:
+            # Graceful degradation: registry not available in this environment
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="Output variable registry is not available in this deployment configuration.",
+            )
 
     return {
         "variables": OutputVariableRegistry.get_mapping_table(),
@@ -367,10 +374,10 @@ async def get_output_variables():
 
 @router.get(
     "/benchmark/ladakh",
-    summary="Get authentic EnergyPlus 24.1.0 physics benchmark for Ladakh high-altitude outpost",
+    summary="Get authentic ThermoShelter Core physics benchmark for Ladakh high-altitude outpost",
 )
 async def get_authentic_ladakh_benchmark():
-    """Returns authentic EnergyPlus simulation results parsed from Ladakh outpost physical run."""
+    """Returns authentic ThermoShelter Core simulation results for Ladakh outpost — the optimized passive solar design."""
     import json
     from pathlib import Path
     candidate_paths = [

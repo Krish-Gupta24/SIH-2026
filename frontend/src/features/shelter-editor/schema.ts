@@ -148,7 +148,7 @@ export const shelterFormSchema = z.object({
 
   // STEP 13: Simulation Settings
   simulationSettings: z.object({
-    engine: z.enum(["EnergyPlus", "OpenStudio", "ANSYS"]).default("EnergyPlus"),
+    engine: z.enum(["ThermoShelter Core", "OpenStudio", "ANSYS"]).default("ThermoShelter Core"),
     timestepsPerHour: z.number().min(1).max(60).default(4),
     runPeriodDays: z.number().min(1).max(365).default(3),
     startMonth: z.number().min(1).max(12).default(1),
@@ -316,7 +316,7 @@ export const defaultShelterFormValues: ShelterFormValues = {
     targetComfortPercent: 80.0,
   },
   simulationSettings: {
-    engine: "EnergyPlus",
+    engine: "ThermoShelter Core",
     timestepsPerHour: 4,
     runPeriodDays: 3,
     startMonth: 1,

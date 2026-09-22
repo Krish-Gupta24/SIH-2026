@@ -163,7 +163,7 @@ CANONICAL_SHELTERS: List[Dict[str, Any]] = [
             "maxAnnualHeatingDemandKwhM2": 95.0,
         },
         "simulationSettings": {
-            "engine": "EnergyPlus",
+            "engine": "ThermoShelter Core",
             "timestepsPerHour": 4,
             "runPeriodDays": 3,
             "detailedComponentOutputs": True,
@@ -304,7 +304,7 @@ CANONICAL_SHELTERS: List[Dict[str, Any]] = [
             "maxAnnualHeatingDemandKwhM2": 110.0,
         },
         "simulationSettings": {
-            "engine": "EnergyPlus",
+            "engine": "ThermoShelter Core",
             "timestepsPerHour": 4,
             "runPeriodDays": 3,
             "detailedComponentOutputs": True,

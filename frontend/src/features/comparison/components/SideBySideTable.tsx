@@ -46,9 +46,9 @@ export function SideBySideTable({ jobs }: SideBySideTableProps) {
   };
 
   const normalizeEngine = (engine?: string) => {
-    if (!engine) return "energyplus";
+    if (!engine) return "thermoshelter_core";
     const lower = engine.toLowerCase();
-    if (lower.includes("energyplus") || lower.includes("eplus")) return "energyplus";
+    if (lower.includes("thermoshelter") || lower.includes("core") || lower.includes("energyplus") || lower.includes("eplus")) return "thermoshelter_core";
     if (lower.includes("rc") || lower.includes("lumped")) return "rc_network";
     return lower.trim();
   };
@@ -56,7 +56,7 @@ export function SideBySideTable({ jobs }: SideBySideTableProps) {
   const weatherNames = jobs.map((j) => j.weatherDatasetName || "Leh WMO 427053 EPW");
   const sameWeather = new Set(jobs.map((j) => normalizeWeather(j.weatherDatasetName))).size <= 1;
 
-  const engines = jobs.map((j) => j.engine || "EnergyPlus");
+  const engines = jobs.map((j) => (j.engine === "EnergyPlus" ? "ThermoShelter Core" : (j.engine || "ThermoShelter Core")));
   const sameEngine = new Set(jobs.map((j) => normalizeEngine(j.engine))).size <= 1;
 
   const METRIC_ROWS: MetricRowConfig[] = [

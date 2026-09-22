@@ -54,7 +54,7 @@ def seed_application_data():
                     version_id="1.0.0",
                     run_period_days=1,
                     timeout_seconds=600,
-                    engine="EnergyPlus",
+                    engine="ThermoShelter Core",
                     allow_test_data=False,
                     weather_provenance={
                         "weather_source": "IND_JK_Leh.427053_TMYx.epw",

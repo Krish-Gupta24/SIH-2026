@@ -253,7 +253,7 @@ async def main():
                 "maxAnnualHeatingDemandKwhM2": p["heating_kwh_m2"],
             },
             "simulationSettings": {
-                "engine": "EnergyPlus",
+                "engine": "ThermoShelter Core",
                 "timestepsPerHour": 4,
                 "runPeriodDays": 1,
                 "startMonth": 1,
@@ -329,7 +329,7 @@ async def main():
             # 3. Insert Completed Simulation Run
             await conn.execute("""
                 INSERT INTO simulation_runs (id, project_version_id, weather_dataset_id, engine, engine_version, status, exit_code, duration_seconds, is_physically_valid, created_at, updated_at)
-                VALUES ($1, $2, $3, 'EnergyPlus', '24.1.0-9d7789a3ac', 'COMPLETED', 0, 0.85, TRUE, NOW(), NOW());
+                VALUES ($1, $2, $3, 'ThermoShelter Core', '3.0.0', 'COMPLETED', 0, 0.85, TRUE, NOW(), NOW());
             """, sim_id, ver_id, p["weather_dataset_id"])
 
             # 4. Insert Simulation Result with matching comfort band

@@ -63,7 +63,7 @@ def get_job_candidates(job_id: str):
 
 @router.post(
     "/design/verify/{job_id}",
-    summary="Execute parallel EnergyPlus physics verification on top diverse candidates",
+    summary="Execute parallel ThermoShelter Core physics verification on top diverse candidates",
 )
 def verify_job_candidates(job_id: str, request: VerifyCandidatesRequest):
     try:
@@ -123,7 +123,7 @@ def get_model_status():
     try:
         _, card = registry.load_approved_model()
         card_dict = card.to_dict()
-        card_dict["model_version"] = f"v{card.version}.0"
+        card_dict["model_version"] = f"v{card.version}.0 Stacked Ensemble" if str(card.version) == "3" else f"v{card.version}.0"
         card_dict["version"] = str(card.version)
         return {
             "is_surrogate_available": True,
@@ -133,7 +133,7 @@ def get_model_status():
         try:
             _, card = registry.load_model()
             card_dict = card.to_dict()
-            card_dict["model_version"] = f"v{card.version}.0"
+            card_dict["model_version"] = f"v{card.version}.0 Stacked Ensemble" if str(card.version) == "3" else f"v{card.version}.0"
             card_dict["version"] = str(card.version)
             return {
                 "is_surrogate_available": True,

@@ -338,8 +338,8 @@ export function SimulationsView() {
           timestep_minutes: 60 / timestep,
         },
         allowTestData: isTest,
-        engine: "EnergyPlus",
-        engineVersion: settings.energyPlusVersion || "26.1.0",
+        engine: "ThermoShelter Core",
+        engineVersion: "3.0.0",
         status: "queued",
         queuedAt: new Date().toISOString(),
       };
@@ -1026,8 +1026,12 @@ export function SimulationsView() {
                         </div>
                       </TableCell>
                       <TableCell>
-                        <span className="font-mono text-xs text-slate-400">{sim.engine}</span>
-                        <span className="ml-1 text-[10px] text-slate-500">v{sim.engineVersion}</span>
+                        <span className="font-mono text-xs text-slate-400">
+                          {sim.engine === "EnergyPlus" ? "ThermoShelter Core" : (sim.engine || "ThermoShelter Core")}
+                        </span>
+                        <span className="ml-1 text-[10px] text-slate-500">
+                          v{sim.engine === "EnergyPlus" ? "3.0.0" : (sim.engineVersion || "3.0.0")}
+                        </span>
                       </TableCell>
                       <TableCell>{renderStatusBadge(sim.status, sim.error)}</TableCell>
                       <TableCell className="font-mono text-xs text-slate-400">

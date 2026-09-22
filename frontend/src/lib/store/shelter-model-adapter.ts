@@ -90,7 +90,7 @@ export function modelToFormValues(model: ShelterModel): ShelterFormValues {
       targetComfortPercent: model.designTargets?.targetComfortPercent ?? 85,
     },
     simulationSettings: {
-      engine: (model.simulationSettings?.engine as any) || "EnergyPlus",
+      engine: (model.simulationSettings?.engine as any) || "ThermoShelter Core",
       timestepsPerHour: model.simulationSettings?.timestepsPerHour ?? 4,
       runPeriodDays: model.simulationSettings?.runPeriodDays ?? 1,
       startMonth: model.simulationSettings?.startMonth ?? 1,

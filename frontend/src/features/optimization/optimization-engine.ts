@@ -510,7 +510,7 @@ export function runClientParameterSweep(
   };
 }
 
-export async function runBackendEnergyPlusSweep(
+export async function runBackendThermalOptimizationSweep(
   model: ShelterModel,
   selectedParameters: SweptParameterId[],
   objective: OptimizationObjectiveId,
@@ -598,7 +598,7 @@ export async function runBackendEnergyPlusSweep(
     runId: meta.run_id || `opt-${Date.now()}`,
     timestamp: meta.timestamp || new Date().toISOString(),
     algorithm: meta.algorithm || "Deterministic Parameter Sweep (ThermoShelter Core Simulation)",
-    engineVersion: meta.engine_version || "26.1.0",
+    engineVersion: meta.engine_version || "3.0.0",
     objective,
     objectiveTitle: OPTIMIZATION_OBJECTIVES.find((o) => o.id === objective)?.label || "Maximize Comfort",
     baseProjectId: meta.base_project_id || model.id,
@@ -614,3 +614,5 @@ export async function runBackendEnergyPlusSweep(
     paretoCandidates: ranked.filter((r) => r.isPareto),
   };
 }
+
+export const runBackendEnergyPlusSweep = runBackendThermalOptimizationSweep;

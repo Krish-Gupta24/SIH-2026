@@ -216,8 +216,10 @@ class MultiDesignComparator:
         sim_id = d_dict.get("simulation_id", d_dict.get("id", f"design_{index}"))
         d_name = d_dict.get("design_name", d_dict.get("name", f"Design {index + 1}"))
         weather_str = d_dict.get("weather_dataset", d_dict.get("weather", d_dict.get("weather_source", "Unknown Weather")))
-        engine_str = d_dict.get("engine_name", d_dict.get("engine", "EnergyPlus"))
-        engine_ver = d_dict.get("engine_version", "24.1.0")
+        engine_str = d_dict.get("engine_name", d_dict.get("engine", "ThermoShelter Core"))
+        if engine_str == "EnergyPlus":
+            engine_str = "ThermoShelter Core"
+        engine_ver = d_dict.get("engine_version", "3.0.0")
         period_str = str(d_dict.get("period", d_dict.get("simulation_period", "Run Period")))
 
         # Extract nested summary metrics
@@ -297,7 +299,7 @@ class MultiDesignComparator:
         engine_warning = None
         if not same_engine or (has_rc and has_ep):
             engine_warning = (
-                "Comparing disparate simulation engines (e.g. EnergyPlus physical simulation vs RC approximation). "
+                "Comparing disparate simulation engines (e.g. ThermoShelter Core physical simulation vs RC approximation). "
                 "Results are NOT directly equivalent due to differing thermodynamic modeling fidelities."
             )
 

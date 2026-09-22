@@ -40,7 +40,7 @@ import {
   OPTIMIZATION_OBJECTIVES,
   DEFAULT_OPTIMIZATION_CONSTRAINTS,
   runClientParameterSweep,
-  runBackendEnergyPlusSweep,
+  runBackendThermalOptimizationSweep,
 } from "./optimization-engine";
 import {
   generateClientRecommendationReport,
@@ -151,7 +151,7 @@ export function OptimizationView() {
     setNotification(null);
 
     try {
-      const result = await runBackendEnergyPlusSweep(
+      const result = await runBackendThermalOptimizationSweep(
         activeProject,
         selectedParameters,
         selectedObjective,

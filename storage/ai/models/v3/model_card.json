@@ -71,7 +71,7 @@
     "Valid only within high-altitude Himalayan climate envelope (2,500m \u2013 5,400m).",
     "Geometry: aspect ratio <= 2.5, WWR <= 0.40.",
     "envelope_ua_value and delta_t_peak_c are physics-derived; thermal_autonomy_hours is model-estimated.",
-    "High-priority candidates should be verified via EnergyPlus forward simulation."
+    "High-priority candidates should be verified via ThermoShelter Core forward simulation."
   ],
   "out_of_domain_behavior": "Inference flags out-of-domain requests and applies a conservative uncertainty margin."
 }

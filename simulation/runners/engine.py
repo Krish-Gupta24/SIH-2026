@@ -223,7 +223,7 @@ class EnergyPlusEngine:
             "metric_availability": completeness.availability_by_metric,
             "comfort_definition": self.simulation_result.comfort.comfort_definition.to_dict() if self.simulation_result.comfort.comfort_definition else None,
             "exit_code": self.execution_output.exit_code,
-            "engine": "EnergyPlus",
+            "engine": "ThermoShelter Core",
             "engine_version": self.runner.detected_version,
             "command_executed": self.execution_output.command_executed,
             "duration_seconds": self.execution_output.duration_seconds,

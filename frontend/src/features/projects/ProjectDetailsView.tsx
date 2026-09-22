@@ -85,8 +85,8 @@ export function ProjectDetailsView({ projectId }: { projectId: string }) {
         shelterModel: project,
         weatherDatasetId: activeWeather?.id || "leh-weather",
         weatherDatasetName: activeWeather?.name || weatherFileName,
-        engine: "EnergyPlus",
-        engineVersion: "26.1.0",
+        engine: "ThermoShelter Core",
+        engineVersion: "3.0.0",
         status: "queued",
         queuedAt: new Date().toISOString(),
       });

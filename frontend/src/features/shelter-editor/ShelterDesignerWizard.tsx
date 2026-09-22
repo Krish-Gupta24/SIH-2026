@@ -320,8 +320,8 @@ export function ShelterDesignerWizard() {
         shelterModel: payload.shelter_model as any,
         weatherDatasetId: isTest ? "synthetic-test" : "leh-airport",
         weatherDatasetName: values.location.weatherSource || "Authentic Leh Climate",
-        engine: "EnergyPlus",
-        engineVersion: "26.1.0",
+        engine: "ThermoShelter Core",
+        engineVersion: "3.0.0",
         status: "queued",
         queuedAt: new Date().toISOString(),
       };

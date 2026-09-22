@@ -4,7 +4,7 @@
 **Model Architecture**: `hist_gbr`  
 **Simulation Regime**: `winter_peak_3day`  
 **Generated**: `2026-09-22T17:14:53.941836+00:00`  
-**Training Dataset**: `stage_a` (120 EnergyPlus runs)  
+**Training Dataset**: `stage_a` (120 ThermoShelter Core physics runs)  
 
 ## 1. Verified Climate Domain Coverage
 `siachen_glacier`, `dras_kargil`, `tawang`, `leh_ladakh_tmyx`, `spiti_valley`
@@ -31,4 +31,4 @@ Inference flags out-of-domain requests and reduces confidence score, prompting f
 ### Limitations:
 - Surrogate is valid only within high-altitude Himalayan climate envelope (2,500m - 5,400m).
 - Geometry must adhere to aspect ratio <= 2.5 and WWR <= 0.35.
-- Surrogate predictions represent fast interpolations; high-priority candidate designs must undergo EnergyPlus verification.
+- Surrogate predictions represent fast interpolations; high-priority candidate designs must undergo ThermoShelter Core verification.

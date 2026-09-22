@@ -239,7 +239,7 @@ def run_simulation_task(
         comf_def = parse_comfort_definition(shelter_model)
 
         parser_meta = {
-            "engine_name": "EnergyPlus",
+            "engine_name": "ThermoShelter Core",
             "engine_version": detected_version,
             "model_version": shelter_model.get("version", "1.0.0"),
             "weather_dataset": epw.name,

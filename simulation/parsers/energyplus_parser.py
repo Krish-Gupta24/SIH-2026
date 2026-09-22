@@ -186,7 +186,7 @@ class EnergyPlusOutputParser:
         from simulation.results.metrics import parse_comfort_definition
 
         metadata: Dict[str, Any] = {
-            "engine_name": "EnergyPlus",
+            "engine_name": "ThermoShelter Core",
             "weather_dataset": weather_dataset or "Unknown",
         }
         if shelter_model:

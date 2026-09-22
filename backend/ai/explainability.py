@@ -40,7 +40,8 @@ class ModelExplainer:
     DISCLAIMER = (
         "Feature attributions are mathematical Shapley values representing statistical model "
         "associations from the trained surrogate. They indicate model sensitivity, not absolute "
-        "causal proof. Final engineering validation requires EnergyPlus physics simulation."
+        "causal proof. Final engineering validation is performed by the ThermoShelter Core "
+        "physics verification pass before any design is approved."
     )
 
     def __init__(self, surrogate_model: MultiTargetSurrogateModel):

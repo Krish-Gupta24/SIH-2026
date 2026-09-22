@@ -102,8 +102,8 @@ export function ComparisonView() {
         shelterModel: newVersion,
         weatherDatasetId: activeWeather?.id || "wx-leh-427053",
         weatherDatasetName: activeWeather?.name || "Leh Airport Station (3500m)",
-        engine: "EnergyPlus",
-        engineVersion: "v24.1.0",
+        engine: "ThermoShelter Core",
+        engineVersion: "3.0.0",
         status: "queued",
         queuedAt: new Date().toISOString(),
       });

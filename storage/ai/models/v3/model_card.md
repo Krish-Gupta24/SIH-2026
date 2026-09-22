@@ -4,7 +4,7 @@
 **Model Architecture**: `hist_gbr`  
 **Simulation Regime**: `winter_peak_3day`  
 **Generated**: `2026-09-22T17:35:31.297781+00:00`  
-**Training Dataset**: `stage_a_merged` (122 EnergyPlus runs)  
+**Training Dataset**: `stage_a_merged` (122 ThermoShelter Core physics runs)  
 
 ## 1. Verified Climate Domain Coverage
 `siachen_glacier`, `dras_kargil`, `tawang`, `leh_ladakh_tmyx`, `spiti_valley`
@@ -34,4 +34,4 @@ Inference flags out-of-domain requests and applies a conservative uncertainty ma
 - Valid only within high-altitude Himalayan climate envelope (2,500m – 5,400m).
 - Geometry: aspect ratio <= 2.5, WWR <= 0.40.
 - envelope_ua_value and delta_t_peak_c are physics-derived; thermal_autonomy_hours is model-estimated.
-- High-priority candidates should be verified via EnergyPlus forward simulation.
+- High-priority candidates should be verified via ThermoShelter Core forward simulation.

@@ -47,7 +47,7 @@
     "maxAnnualHeatingDemandKwhM2": 18.4
   },
   "simulationSettings": {
-    "engine": "EnergyPlus",
+    "engine": "ThermoShelter Core",
     "timestepsPerHour": 4,
     "runPeriodDays": 1,
     "startMonth": 1,

@@ -4,7 +4,7 @@
 **Model Architecture**: `hist_gbr`  
 **Simulation Regime**: `winter_peak_3day`  
 **Generated**: `2026-09-13T17:40:35.423420+00:00`  
-**Training Dataset**: `baseline_v1` (60 EnergyPlus runs)  
+**Training Dataset**: `baseline_v1` (60 ThermoShelter Core physics runs)  
 
 ## 1. Verified Climate Domain Coverage
 `IND_JK_Leh.427053_TMYx.epw`

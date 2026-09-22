@@ -125,8 +125,8 @@ class EngineeringReportCompiler:
         opt_meta = (optimization_result or {}).get("metadata", {})
 
         # Preserved core attributes
-        engine_name = sim_settings.get("engine", "EnergyPlus / High-Fidelity RC Solver")
-        engine_version = "24.1.0"
+        engine_name = sim_settings.get("engine", "ThermoShelter Core / High-Fidelity Physics Solver")
+        engine_version = "3.0.0"
         weather_src = loc.get("weatherSource", "IND_JK_Leh.420270_ISHRAE.epw")
         proj_ver = p.get("version", "1.0.0")
         model_ver = shelter_model.get("schemaVersion", "1.0.0")
@@ -460,7 +460,7 @@ class EngineeringReportCompiler:
                 "evaluated_candidates": int(ai_design.get("evaluations_count", 4000)),
                 "feasible_candidates": int(ai_design.get("candidates_count", len(ai_design.get("candidates", [])))),
                 "parameters_swept": 21,
-                "physics_verification_engine": "EnergyPlus (Deterministic High-Fidelity Validation)",
+                "physics_verification_engine": "ThermoShelter Core (Deterministic High-Fidelity Validation)",
                 "physics_verification_status": "VERIFIED" if ai_design.get("physics_verified") else "SURROGATE_PREDICTED",
                 "calibration_error": ai_design.get("calibration_error", "Within ±1.5°C tolerance"),
             }

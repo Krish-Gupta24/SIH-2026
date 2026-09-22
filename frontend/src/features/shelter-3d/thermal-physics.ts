@@ -357,7 +357,7 @@ export interface HourlyThermalStep {
 
 /**
  * Computes face-specific thermal boundary temperatures for an exact hour (0 to 23)
- * using EnergyPlus simulated hourly results, or interpolates diurnal high-altitude cycle.
+ * using simulated hourly physics results, or interpolates diurnal high-altitude cycle.
  */
 export function calculateHourlyThermalStep(
   model: ShelterModel,
@@ -372,7 +372,7 @@ export function calculateHourlyThermalStep(
   const h = Math.max(0, Math.min(23, Math.round(hour)));
   const baseMetrics = calculateThermalMetrics(model);
 
-  // Check if simulated EnergyPlus hourly arrays are available
+  // Check if simulated hourly physics arrays are available
   const hasSim =
     hourlyResults &&
     Array.isArray(hourlyResults.indoorTemp) &&

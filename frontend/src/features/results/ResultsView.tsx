@@ -281,7 +281,7 @@ export function ResultsView() {
       <PageIntro
         eyebrow={`Run ${activeJob.id} · ${activeJob.projectName}`}
         title="Thermal performance"
-        description={`${activeJob.weatherDatasetName} · ${activeJob.engine} ${activeJob.engineVersion} · Validated simulation record.`}
+        description={`${activeJob.weatherDatasetName} · ${activeJob.engine === "EnergyPlus" ? "ThermoShelter Core" : (activeJob.engine || "ThermoShelter Core")} v${activeJob.engineVersion || "3.0.0"} · Validated simulation record.`}
         action={
           <div className="flex flex-wrap items-center gap-3">
             {/* Active Job Selector */}

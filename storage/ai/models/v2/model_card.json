@@ -239,7 +239,7 @@
   "known_limitations": [
     "Surrogate is valid only within high-altitude Himalayan climate envelope (2,500m - 5,400m).",
     "Geometry must adhere to aspect ratio <= 2.5 and WWR <= 0.35.",
-    "Surrogate predictions represent fast interpolations; high-priority candidate designs must undergo EnergyPlus verification."
+    "Surrogate predictions represent fast interpolations; high-priority candidate designs must undergo ThermoShelter Core verification."
   ],
   "out_of_domain_behavior": "Inference flags out-of-domain requests and reduces confidence score, prompting forward physics simulation."
 }
