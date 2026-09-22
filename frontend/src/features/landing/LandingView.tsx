@@ -256,7 +256,7 @@ export function PremiumLanding({ onOpen, onContinue, hasProject, summary }: Land
                   <span className="size-2 rounded-full bg-emerald-400 animate-pulse" />
                   <span className="font-semibold uppercase tracking-wider">SIH 2026 · DRDO PS 26051</span>
                   <span className="text-white/30">•</span>
-                  <span className="font-mono text-emerald-300">EnergyPlus 26.1.0</span>
+                  <span className="font-mono text-emerald-300">EnergyPlus 24.1.0</span>
                 </div>
 
                 <h1 className="hero-title text-balance mt-4">

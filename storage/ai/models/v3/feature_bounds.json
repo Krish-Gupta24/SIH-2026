@@ -1,0 +1,57 @@
+{
+  "length": [
+    4.0,
+    10.0,
+    6.0
+  ],
+  "width": [
+    3.0,
+    7.0,
+    4.0
+  ],
+  "height": [
+    2.4,
+    3.6,
+    2.8
+  ],
+  "orientation": [
+    0.0,
+    355.0,
+    0.0
+  ],
+  "wall_insulation_thickness": [
+    0.05,
+    0.25,
+    0.12
+  ],
+  "roof_insulation_thickness": [
+    0.05,
+    0.3,
+    0.15
+  ],
+  "floor_insulation_thickness": [
+    0.05,
+    0.25,
+    0.1
+  ],
+  "thermal_mass_thickness": [
+    0.05,
+    0.2,
+    0.1
+  ],
+  "window_area": [
+    1.0,
+    5.0,
+    2.4
+  ],
+  "infiltration_ach": [
+    0.15,
+    0.8,
+    0.35
+  ],
+  "occupants": [
+    2.0,
+    8.0,
+    4.0
+  ]
+}

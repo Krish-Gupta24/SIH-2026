@@ -92,68 +92,47 @@ class AIDesignService:
             try:
                 return self.registry.load_model()
             except Exception:
-                import numpy as np
-                import pandas as pd
-                from backend.ai.dataset_sampler import DesignSpaceSampler
-                from backend.ai.model_card import ModelCard
-                from backend.ai.surrogate_model import MultiTargetSurrogateModel
+                # Check if real physics-simulated datasets exist in storage/ai/datasets
+                datasets_dir = Path("storage/ai/datasets")
+                parquet_files = list(datasets_dir.glob("*.parquet")) if datasets_dir.exists() else []
+                if parquet_files:
+                    from backend.ai.dataset_schema import DatasetSchema
+                    from backend.ai.model_card import ModelCard
+                    from backend.ai.surrogate_model import MultiTargetSurrogateModel
 
-                sampler = DesignSpaceSampler(seed=42)
-                samples = sampler.sample(n_samples=60)
-                df = pd.DataFrame(samples)
+                    # Load the largest physical dataset
+                    chosen_parquet = sorted(parquet_files, key=lambda p: p.stat().st_size, reverse=True)[0]
+                    df, _ = DatasetSchema.load_dataset(chosen_parquet)
+                    
+                    surrogate = MultiTargetSurrogateModel(model_type="hist_gbr", seed=42)
+                    eval_metrics = surrogate.evaluate_splits(df)
+                    surrogate.fit(df)
 
-                df["weather_id"] = "leh_ladakh"
-                df["latitude"] = 34.15
-                df["longitude"] = 77.58
-                df["elevation_m"] = 3500.0
-                df["outdoor_temp_mean_c"] = -2.5
-                df["outdoor_temp_min_c"] = -25.0
-                df["outdoor_temp_max_c"] = 15.0
-                df["outdoor_temp_diurnal_range_c"] = 14.0
-                df["winter_temp_mean_c"] = -12.0
-                df["winter_temp_min_c"] = -25.0
-                df["global_horizontal_solar_mean_w_m2"] = 180.0
-                df["winter_solar_mean_w_m2"] = 120.0
-                df["wind_speed_mean_m_s"] = 3.2
-                df["relative_humidity_mean_pct"] = 45.0
-                df["heating_degree_days_base18"] = 4500.0
-
-                df["winter_indoor_min_c"] = (
-                    2.0
-                    + df["wall_insulation_thickness"] * 45.0
-                    + df["roof_insulation_thickness"] * 35.0
-                    + df["window_to_wall_ratio"] * 20.0
-                    - df["infiltration_ach"] * 10.0
-                )
-                df["winter_indoor_mean_c"] = df["winter_indoor_min_c"] + 6.0
-                df["winter_heating_demand_kwh_m2"] = np.clip(120.0 - (df["winter_indoor_min_c"] - 2.0) * 4.0, 0, 300)
-                df["winter_comfort_hours_pct"] = np.clip((df["winter_indoor_min_c"] + 5.0) * 4.0, 0, 100)
-
-                surrogate = MultiTargetSurrogateModel(model_type="hist_gbr", seed=42)
-                eval_metrics = surrogate.evaluate_splits(df)
-                surrogate.fit(df)
-
-                card = ModelCard(
-                    model_id="thermoshelter_surrogate_v1",
-                    version="1",
-                    created_timestamp=datetime.now(timezone.utc).isoformat(),
-                    model_type="hist_gbr",
-                    approval_status="APPROVED_FOR_SURROGATE_USE",
-                    simulation_period="winter_peak_3day",
-                    target_metrics=surrogate.target_names,
-                    training_dataset_version="baseline_v1",
-                    training_dataset_samples=len(df),
-                    training_weather_stations=["IND_JK_Leh.427053_TMYx.epw"],
-                    in_domain_metrics=eval_metrics.get("in_domain_metrics", {}),
-                    leave_one_climate_out_metrics=eval_metrics.get("cross_station_metrics", {}),
-                    baseline_comparison={},
-                    target_engineering_tolerances={"winter_indoor_min_c": "MAE <= 2.0 C"},
-                    known_limitations=["Initial surrogate baseline"],
-                    out_of_domain_behavior="Conservative uncertainty margin applied",
-                )
-
-                self.registry.save_model(surrogate, card, version="1")
-                return surrogate, card
+                    card = ModelCard(
+                        model_id="thermoshelter_surrogate_v2",
+                        version="2",
+                        created_timestamp=datetime.now(timezone.utc).isoformat(),
+                        model_type="hist_gbr",
+                        approval_status="APPROVED_FOR_SURROGATE_USE",
+                        simulation_period="winter_peak_3day",
+                        target_metrics=surrogate.target_names,
+                        training_dataset_version=chosen_parquet.stem,
+                        training_dataset_samples=len(df),
+                        training_weather_stations=["IND_JK_Leh.427053_TMYx.epw", "dras_kargil.epw", "spiti_valley.epw"],
+                        in_domain_metrics=eval_metrics.get("in_domain_metrics", {}),
+                        leave_one_climate_out_metrics=eval_metrics.get("cross_station_metrics", {}),
+                        baseline_comparison={},
+                        target_engineering_tolerances={"winter_indoor_min_c": "MAE <= 2.5 C"},
+                        known_limitations=["Himalayan high-altitude domain (2500m-5400m)"],
+                        out_of_domain_behavior="Conservative uncertainty margin applied",
+                    )
+                    self.registry.save_model(surrogate, card, version="2")
+                    return surrogate, card
+                else:
+                    raise RuntimeError(
+                        "No pre-trained surrogate model or physical training dataset found. "
+                        "Please run scripts/generate_training_data.py to generate physics-based training data."
+                    )
 
     def _run_optimization_worker(self, job_id: str, req: GenerateDesignRequest) -> None:
         """Background worker executing the optimization."""

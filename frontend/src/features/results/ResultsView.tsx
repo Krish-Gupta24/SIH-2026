@@ -17,6 +17,8 @@ import {
   AlertTriangle,
   CheckCircle2,
   FolderKanban,
+  Flame,
+  Cpu,
 } from "lucide-react";
 import { useShelterStore } from "@/lib/store/use-shelter-store";
 import { Button } from "@/components/ui/button";
@@ -43,6 +45,9 @@ import { ComfortAndEnergyPanel } from "./components/ComfortAndEnergyPanel";
 import { ResultsDataTable } from "./components/ResultsDataTable";
 import { WarningsAndErrorsAlert } from "./components/WarningsAndErrorsAlert";
 import { FossilFuelDisplacementCard } from "./components/FossilFuelDisplacementCard";
+import { HeatFlowDeltaTChart } from "./components/HeatFlowDeltaTChart";
+import { AnsysMaterialComparisonTable } from "./components/AnsysMaterialComparisonTable";
+import { OpeningSensitivityPanel } from "./components/OpeningSensitivityPanel";
 
 export function ResultsView() {
   const searchParams = useSearchParams();
@@ -232,11 +237,38 @@ export function ResultsView() {
   const rawSolarGain = (summary as any)?.totalSolarGainKwh ?? (activeJob.results as any)?.solar?.useful_solar_gain_total_kwh;
   const totalSolarGainsKwh = typeof rawSolarGain === "number" ? rawSolarGain : 0;
 
+  // Geometric & thermal envelope parameters derived from active shelter model
+  const shelterGeom = activeJob.shelterModel?.geometry;
+  const shelterLength = shelterGeom?.length ?? 6.0;
+  const shelterWidth = shelterGeom?.width ?? 4.0;
+  const shelterHeight = shelterGeom?.height ?? 2.8;
+  const computedFloorAreaM2 = Math.round(shelterLength * shelterWidth * 10) / 10;
+  const computedRoofAreaM2 = computedFloorAreaM2;
+  const computedWallAreaM2 = Math.round(2 * (shelterLength + shelterWidth) * shelterHeight * 10) / 10;
+  const computedEnvelopeAreaM2 = Math.round((computedWallAreaM2 + computedRoofAreaM2 + computedFloorAreaM2) * 10) / 10;
+  const computedSouthWallAreaM2 = Math.round(shelterLength * shelterHeight * 10) / 10;
+
+  // Area-weighted average U-Factor or model-derived U-Factor
+  const computedAverageUFactor = useMemo(() => {
+    const modelU = (activeJob.shelterModel as any)?.envelope_u_value ??
+      (activeJob.shelterModel as any)?.wallAssembly?.uFactor ??
+      (activeJob.shelterModel as any)?.walls?.[0]?.uFactor;
+    if (typeof modelU === "number" && modelU > 0) return Number(modelU.toFixed(2));
+
+    const peakLoss = (activeJob.results as any)?.summary?.peakEnvelopeLossW ?? (activeJob.results as any)?.summary?.peak_envelope_loss_w;
+    const maxDeltaT = Math.max(...indoorTemp.map((tin, i) => Math.abs(tin - (outdoorTemp[i] ?? tin))), 1);
+    if (peakLoss && maxDeltaT > 5) {
+      const derivedU = peakLoss / (computedEnvelopeAreaM2 * maxDeltaT);
+      if (derivedU > 0.05 && derivedU < 3.0) return Number(derivedU.toFixed(2));
+    }
+    return 0.28;
+  }, [activeJob.shelterModel, activeJob.results, indoorTemp, outdoorTemp, computedEnvelopeAreaM2]);
+
   // Derive energy metrics
   const energyMetrics = {
-    heatingDemandKwh: typeof summary.heatingDemandKwhM2 === "number" ? summary.heatingDemandKwhM2 * 24 : undefined, // based on 24m² floor
+    heatingDemandKwh: typeof summary.heatingDemandKwhM2 === "number" ? summary.heatingDemandKwhM2 * computedFloorAreaM2 : undefined,
     coolingDemandKwh: 0,
-    netEnergyDemandKwh: typeof summary.heatingDemandKwhM2 === "number" ? summary.heatingDemandKwhM2 * 24 : undefined,
+    netEnergyDemandKwh: typeof summary.heatingDemandKwhM2 === "number" ? summary.heatingDemandKwhM2 * computedFloorAreaM2 : undefined,
     isUnconditioned: true,
     envelopeLossesKwh: envelopeLossesKwh || {},
     envelopeGainsKwh: {},
@@ -460,6 +492,14 @@ export function ResultsView() {
             <ShieldCheck className="h-3.5 w-3.5" />
             <span>Comfort & Energy</span>
           </TabsTrigger>
+          <TabsTrigger value="heatflow" className="gap-2 text-xs font-semibold rounded-full px-4 py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+            <Flame className="h-3.5 w-3.5 text-amber-500" />
+            <span>Heat Flow (ΔT)</span>
+          </TabsTrigger>
+          <TabsTrigger value="ansys" className="gap-2 text-xs font-semibold rounded-full px-4 py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+            <Cpu className="h-3.5 w-3.5 text-blue-500" />
+            <span>ANSYS Material Study</span>
+          </TabsTrigger>
           <TabsTrigger value="table" className="gap-2 text-xs font-semibold rounded-full px-4 py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
             <TableIcon className="h-3.5 w-3.5" />
             <span>Engineering Table</span>
@@ -476,6 +516,12 @@ export function ResultsView() {
             visibility={traceVisibility}
             comfortMinC={18}
             comfortMaxC={24}
+          />
+          <OpeningSensitivityPanel
+            initialSouthAreaM2={activeJob.shelterModel?.windows?.reduce((acc: number, w: any) => acc + (w.width * w.height), 0) || 3.6}
+            southWallAreaM2={computedSouthWallAreaM2}
+            locationName={activeJob.shelterModel?.location?.name || "Ladakh (3,500m ASL)"}
+            designWinterMinC={summary.outdoorMinC ?? -20.5}
           />
         </TabsContent>
 
@@ -519,9 +565,7 @@ export function ResultsView() {
             comfort={comfortMetrics}
             energy={energyMetrics}
             unit={unit}
-            floorAreaM2={activeJob.shelterModel?.geometry?.length && activeJob.shelterModel?.geometry?.width
-              ? activeJob.shelterModel.geometry.length * activeJob.shelterModel.geometry.width
-              : 24.0}
+            floorAreaM2={computedFloorAreaM2}
           />
         </TabsContent>
 
@@ -543,6 +587,23 @@ export function ResultsView() {
             internalGains={internalGains}
             unit={unit}
           />
+        </TabsContent>
+
+        {/* Tab 6: Heat Flow as per Delta-T (DRDO Mandatory Output #3) */}
+        <TabsContent value="heatflow" className="space-y-6">
+          <HeatFlowDeltaTChart
+            timestamps={timestamps}
+            indoorTemp={indoorTemp}
+            outdoorTemp={outdoorTemp}
+            unit={unit}
+            envelopeAreaM2={computedEnvelopeAreaM2}
+            averageUFactor={computedAverageUFactor}
+          />
+        </TabsContent>
+
+        {/* Tab 7: ANSYS Material Comparative Study (DRDO Core PS) */}
+        <TabsContent value="ansys" className="space-y-6">
+          <AnsysMaterialComparisonTable activeProject={activeJob.shelterModel} />
         </TabsContent>
       </Tabs>
 

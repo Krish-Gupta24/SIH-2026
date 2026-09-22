@@ -1,0 +1,81 @@
+{
+  "project_name": "DRDO_High_Altitude_Alpine_Shelter",
+  "location": "Leh, Ladakh (3,500m ASL)",
+  "simulation_environment": "ANSYS Mechanical APDL 2024 R1",
+  "ambient_winter_design_temp_c": -20.5,
+  "convective_heat_transfer_coef_w_m2k": 18.5,
+  "solar_irradiance_peak_w_m2": 480.0,
+  "shelter_dimensions": {
+    "length_m": 6.0,
+    "width_m": 4.0,
+    "height_m": 2.8,
+    "envelope_area_m2": 104.0
+  },
+  "materials_evaluated": [
+    {
+      "rank": 1,
+      "material_id": "mat_vip",
+      "name": "Vacuum Insulation Panel (VIP)",
+      "conductivity_w_m_k": 0.005,
+      "density_kg_m3": 200.0,
+      "specific_heat_j_kg_k": 800.0,
+      "t_min_envelope_c": 11.2,
+      "heat_loss_rate_w": 186.4,
+      "heat_loss_rate_w_m2": 1.79,
+      "fossil_fuel_offset_liters_day": 8.4,
+      "compliance_status": "EXCELLENT - Ultra-low thermal bridge"
+    },
+    {
+      "rank": 2,
+      "material_id": "mat_aerogel",
+      "name": "Aerogel Composite Blanket",
+      "conductivity_w_m_k": 0.015,
+      "density_kg_m3": 160.0,
+      "specific_heat_j_kg_k": 1000.0,
+      "t_min_envelope_c": 7.8,
+      "heat_loss_rate_w": 412.0,
+      "heat_loss_rate_w_m2": 3.96,
+      "fossil_fuel_offset_liters_day": 7.1,
+      "compliance_status": "HIGH - Extreme flexibility & resilience"
+    },
+    {
+      "rank": 3,
+      "material_id": "mat_puf",
+      "name": "Polyurethane Foam (PUF) Sandwich Panel",
+      "conductivity_w_m_k": 0.026,
+      "density_kg_m3": 40.0,
+      "specific_heat_j_kg_k": 1400.0,
+      "t_min_envelope_c": 4.6,
+      "heat_loss_rate_w": 692.5,
+      "heat_loss_rate_w_m2": 6.66,
+      "fossil_fuel_offset_liters_day": 5.9,
+      "compliance_status": "STANDARD MILITARY PREFAB - High structural rigidity"
+    },
+    {
+      "rank": 4,
+      "material_id": "mat_rockwool",
+      "name": "High-Density Rockwool Mineral Fiber",
+      "conductivity_w_m_k": 0.040,
+      "density_kg_m3": 100.0,
+      "specific_heat_j_kg_k": 840.0,
+      "t_min_envelope_c": 1.8,
+      "heat_loss_rate_w": 1045.2,
+      "heat_loss_rate_w_m2": 10.05,
+      "fossil_fuel_offset_liters_day": 4.2,
+      "compliance_status": "ACCEPTABLE - Superior fire resistance class A1"
+    },
+    {
+      "rank": 5,
+      "material_id": "mat_rammed_earth",
+      "name": "Stabilized Rammed Earth (High Thermal Mass)",
+      "conductivity_w_m_k": 1.250,
+      "density_kg_m3": 2000.0,
+      "specific_heat_j_kg_k": 900.0,
+      "t_min_envelope_c": -6.4,
+      "heat_loss_rate_w": 4210.0,
+      "heat_loss_rate_w_m2": 40.48,
+      "fossil_fuel_offset_liters_day": 1.2,
+      "compliance_status": "UNINSULATED BASELINE - Requires external insulation"
+    }
+  ]
+}

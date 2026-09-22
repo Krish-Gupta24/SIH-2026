@@ -1,0 +1,81 @@
+{
+  "total_rows": 2,
+  "has_nulls": false,
+  "null_counts": {},
+  "duplicate_rows": 0,
+  "categorical_distribution": {
+    "wall_construction": {
+      "AEROGEL_BLANKET": 1,
+      "ROCKWOOL_COMPOSITE": 1
+    },
+    "roof_construction": {
+      "COMPOSITE_PITCHED": 1,
+      "INSULATED_SANDWICH": 1
+    },
+    "glazing_type": {
+      "VACUUM_INSULATED_GLAZING": 1,
+      "TRIPLE_LOW_E_KRYPTON": 1
+    },
+    "thermal_mass_type": {
+      "WATER_WALL": 1,
+      "PHASE_CHANGE_MATERIAL": 1
+    },
+    "weather_id": {
+      "leh_ladakh_tmyx": 1,
+      "dras_kargil": 1
+    }
+  },
+  "target_statistics": {
+    "heating_degree_days_base18": {
+      "count": 2,
+      "mean": 7244.1,
+      "std": 0.0,
+      "min": 7244.1,
+      "p25": 7244.1,
+      "median": 7244.1,
+      "p75": 7244.1,
+      "max": 7244.1
+    },
+    "winter_indoor_min_c": {
+      "count": 2,
+      "mean": 3.46,
+      "std": 5.289,
+      "min": -0.28,
+      "p25": 1.59,
+      "median": 3.46,
+      "p75": 5.33,
+      "max": 7.2
+    },
+    "winter_indoor_mean_c": {
+      "count": 2,
+      "mean": 5.085,
+      "std": 5.254,
+      "min": 1.37,
+      "p25": 3.228,
+      "median": 5.085,
+      "p75": 6.943,
+      "max": 8.8
+    },
+    "winter_heating_demand_kwh_m2": {
+      "count": 2,
+      "mean": 0.0,
+      "std": 0.0,
+      "min": 0.0,
+      "p25": 0.0,
+      "median": 0.0,
+      "p75": 0.0,
+      "max": 0.0
+    },
+    "winter_comfort_hours_pct": {
+      "count": 2,
+      "mean": 0.0,
+      "std": 0.0,
+      "min": 0.0,
+      "p25": 0.0,
+      "median": 0.0,
+      "p75": 0.0,
+      "max": 0.0
+    }
+  },
+  "status": "HEALTHY"
+}

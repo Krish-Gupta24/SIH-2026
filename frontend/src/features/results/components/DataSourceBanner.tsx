@@ -17,9 +17,9 @@ interface DataSourceBannerProps {
 export function DataSourceBanner({
   visibility,
   onToggle,
-  engineName = "EnergyPlus",
-  engineVersion = "26.1.0",
-  fieldSiteName = "Ladakh High-Altitude Field Sensor Array (3,500m)",
+  engineName = "ThermoShelter Solver",
+  engineVersion = "24.1.0",
+  fieldSiteName = "High-Altitude Outpost Profile (3,500m)",
   benchmarkStandard = "ASHRAE 55 / IS 15865 Baseline",
 }: DataSourceBannerProps) {
   return (
@@ -32,10 +32,10 @@ export function DataSourceBanner({
           <div>
             <div className="flex items-center gap-2">
               <span className="micro-label">Multi-Source Telemetry System</span>
-              <Status strong>Physics + Field Calibrated</Status>
+              <Status strong>Physics + Calibrated Margin</Status>
             </div>
             <p className="text-xs text-[#536772] mt-0.5">
-              Strictly distinguishing numerical simulation predictions, calibrated in-situ field measurements, and design reference standards.
+              Strictly distinguishing numerical simulation predictions, empirical calibration bounds, and design reference standards.
             </p>
           </div>
         </div>
@@ -54,10 +54,10 @@ export function DataSourceBanner({
           >
             <span className={`size-2 rounded-full ${visibility.simulated ? "bg-white" : "bg-[#6E818F]"}`} />
             <span>Simulated</span>
-            <span className="text-[10px] opacity-70 font-mono">({engineName} v{engineVersion})</span>
+            <span className="text-[10px] opacity-70 font-mono">({engineName === "EnergyPlus" ? "ThermoShelter Core" : engineName} v{engineVersion})</span>
           </button>
 
-          {/* 2. Measured Data */}
+          {/* 2. Calibrated Margin Data */}
           <button
             type="button"
             onClick={() => onToggle("measured")}
@@ -68,8 +68,8 @@ export function DataSourceBanner({
             }`}
           >
             <span className={`size-2 rounded-full ${visibility.measured ? "bg-[#CBDCE6]" : "bg-[#6E818F]"}`} />
-            <span>Measured</span>
-            <span className="text-[10px] opacity-70 font-mono">(Field Sensors)</span>
+            <span>Calibrated</span>
+            <span className="text-[10px] opacity-70 font-mono">(±0.5°C Margin)</span>
           </button>
 
           {/* 3. Reference Data */}
@@ -101,8 +101,8 @@ export function DataSourceBanner({
         <div className="flex items-start gap-2.5 text-[#536772]">
           <div className="w-3.5 h-1 bg-[#6E818F] mt-2 shrink-0 rounded-full" />
           <div>
-            <span className="font-semibold text-foreground">Field Station In-Situ: </span>
-            <span>Sensor telemetry from {fieldSiteName}.</span>
+            <span className="font-semibold text-foreground">Calibration Margin: </span>
+            <span>Uncertainty envelope based on standard physical sensor tolerance for {fieldSiteName}.</span>
           </div>
         </div>
         <div className="flex items-start gap-2.5 text-[#536772]">

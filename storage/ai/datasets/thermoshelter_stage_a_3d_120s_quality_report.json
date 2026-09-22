@@ -1,0 +1,90 @@
+{
+  "total_rows": 120,
+  "has_nulls": false,
+  "null_counts": {},
+  "duplicate_rows": 0,
+  "categorical_distribution": {
+    "wall_construction": {
+      "VACUUM_INSULATION": 34,
+      "ROCKWOOL_COMPOSITE": 30,
+      "AEROGEL_BLANKET": 30,
+      "PUF_PANEL": 26
+    },
+    "roof_construction": {
+      "INSULATED_SANDWICH": 43,
+      "COMPOSITE_PITCHED": 42,
+      "HEAVY_TIMBER_INSULATED": 35
+    },
+    "glazing_type": {
+      "TRIPLE_LOW_E_KRYPTON": 47,
+      "VACUUM_INSULATED_GLAZING": 38,
+      "DOUBLE_LOW_E_ARGON": 35
+    },
+    "thermal_mass_type": {
+      "PHASE_CHANGE_MATERIAL": 37,
+      "NONE": 33,
+      "HIGH_DENSITY_CONCRETE": 25,
+      "WATER_WALL": 25
+    },
+    "weather_id": {
+      "siachen_glacier": 27,
+      "dras_kargil": 25,
+      "leh_ladakh_tmyx": 24,
+      "spiti_valley": 23,
+      "tawang": 21
+    }
+  },
+  "target_statistics": {
+    "heating_degree_days_base18": {
+      "count": 120,
+      "mean": 8510.783,
+      "std": 2360.72,
+      "min": 7244.1,
+      "p25": 7244.1,
+      "median": 7244.1,
+      "p75": 7244.1,
+      "max": 12873.8
+    },
+    "winter_indoor_min_c": {
+      "count": 120,
+      "mean": 2.846,
+      "std": 10.412,
+      "min": -27.42,
+      "p25": -2.027,
+      "median": 4.565,
+      "p75": 9.823,
+      "max": 22.34
+    },
+    "winter_indoor_mean_c": {
+      "count": 120,
+      "mean": 5.582,
+      "std": 9.556,
+      "min": -19.98,
+      "p25": 0.632,
+      "median": 7.16,
+      "p75": 11.663,
+      "max": 23.43
+    },
+    "winter_heating_demand_kwh_m2": {
+      "count": 120,
+      "mean": 0.0,
+      "std": 0.0,
+      "min": 0.0,
+      "p25": 0.0,
+      "median": 0.0,
+      "p75": 0.0,
+      "max": 0.0
+    },
+    "winter_comfort_hours_pct": {
+      "count": 120,
+      "mean": 7.396,
+      "std": 24.238,
+      "min": 0.0,
+      "p25": 0.0,
+      "median": 0.0,
+      "p75": 0.0,
+      "max": 100.0
+    }
+  },
+  "status": "HEALTHY"
+}

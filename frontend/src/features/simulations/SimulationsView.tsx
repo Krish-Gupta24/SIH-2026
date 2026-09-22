@@ -434,7 +434,7 @@ export function SimulationsView() {
     <div className="space-y-10 max-w-7xl mx-auto">
       {/* V0 Page Intro */}
       <PageIntro
-        eyebrow="Validated EnergyPlus 26.1 Dispatch"
+        eyebrow="Validated EnergyPlus 24.1.0 Dispatch"
         title="Run thermal simulation"
         description="Send the canonical model to the physics simulation engine with explicit period, timestep resolution, and authentic weather provenance."
         action={
@@ -492,7 +492,7 @@ export function SimulationsView() {
             <div className="space-y-1.5">
               <div className="flex items-center gap-2">
                 <Status strong>Simulation Validated · Run {latestRun.id}</Status>
-                <span className="text-[10px] text-[#6E818F]">EnergyPlus 26.1</span>
+                <span className="text-[10px] text-[#6E818F]">EnergyPlus 24.1.0</span>
               </div>
               <h3 className="font-editorial text-2xl font-medium tracking-tight text-foreground">
                 Thermal Performance Ready for Analysis
@@ -882,7 +882,7 @@ export function SimulationsView() {
 
         <div className="rounded-[2rem] border border-border bg-card p-6 shadow-[0_20px_55px_rgba(0,0,0,.04)]">
           <div className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Engine In Use</div>
-          <div className="text-base font-bold text-foreground mt-2">EnergyPlus 26.1.0</div>
+          <div className="text-base font-bold text-foreground mt-2">EnergyPlus 24.1.0</div>
           <p className="text-[10px] text-muted-foreground mt-1">RC Solver & heat balance</p>
         </div>
 

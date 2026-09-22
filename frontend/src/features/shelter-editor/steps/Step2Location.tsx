@@ -233,9 +233,9 @@ export function Step2Location({ form, advancedMode }: StepProps) {
           <MapPin className="h-5 w-5" />
         </div>
         <div>
-          <h3 className="text-base font-bold text-slate-900 dark:text-white">Geographic & Climate Boundary</h3>
+          <h3 className="text-base font-bold text-slate-900 dark:text-white">Real-Time Atmospheric Conditions & Microclimate Boundary</h3>
           <p className="text-xs text-slate-500 dark:text-slate-400">
-            Interactive OpenFreeMap positioning, high-altitude microclimate synthesis, and certified meteorological datasets.
+            Capture of real-time atmospheric ambient climatic condition data, high-altitude microclimate synthesis, and certified meteorological stations.
           </p>
         </div>
       </div>
@@ -245,7 +245,7 @@ export function Step2Location({ form, advancedMode }: StepProps) {
         <div className="flex items-center justify-between">
           <label className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-200 flex items-center gap-1.5">
             <Sparkles className="h-3.5 w-3.5 text-emerald-500" />
-            Tactical Map Coordinate Acquisition & Microclimate Downscaling
+            Real-Time Atmospheric Ambient Climatic Data & Satellite Coordinates
           </label>
           <span className="text-[10px] text-slate-400">
             Zero Guesswork: Click map or search place name

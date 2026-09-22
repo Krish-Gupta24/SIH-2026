@@ -157,7 +157,19 @@ export const api = {
         method: "POST",
         body: JSON.stringify({ shelter_model: shelterModel, weather_context: weatherContext }),
       }),
+    materialComparison: () => fetchApi<any>("/ansys/material-comparison"),
     downloadUrl: `${API_BASE_URL}/ansys/download`,
+    downloadZip: async (shelterModel: any, weatherContext?: any): Promise<Blob> => {
+      const res = await fetch(`${API_BASE_URL}/ansys/download`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ shelter_model: shelterModel, weather_context: weatherContext }),
+      });
+      if (!res.ok) {
+        throw new Error(`ANSYS download failed with status ${res.status}`);
+      }
+      return await res.blob();
+    },
   },
   reports: {
     compile: (payload: any) =>
@@ -169,7 +181,6 @@ export const api = {
       const urlsToTry = [
         "/api/v1/reports/export/pdf",
         `${API_BASE_URL}/reports/export/pdf`,
-        "http://localhost:8000/api/v1/reports/export/pdf",
       ];
       let lastErr: any = null;
       for (const url of urlsToTry) {

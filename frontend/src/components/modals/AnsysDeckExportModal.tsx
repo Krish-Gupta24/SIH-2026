@@ -146,6 +146,7 @@ export function AnsysDeckExportModal({ open, onOpenChange }: AnsysDeckExportModa
           files: {
             "fluent_setup.jou": fallbackJou,
             "mapdl_thermal.mac": fallbackMac,
+            "material_comparison.mac": `! ANSYS Mechanical APDL: Comparative Thermal Analysis of 5 Envelope Materials\n! Evaluates VIP, Aerogel, PUF, Rockwool, Rammed Earth under ${loc.elevation}m ASL ambient conditions\n/CLEAR, NOSTART\n/PREP7\n! ... Parametric loop over 5 canonical materials`,
             "boundary_manifest.json": fallbackManifest,
             "run_fluent_batch.bat": "@echo off\nfluent 3ddp -g -t4 -i fluent_setup.jou\npause",
             "run_fluent_batch.sh": "#!/bin/bash\nfluent 3ddp -g -t16 -i fluent_setup.jou",
@@ -171,17 +172,7 @@ export function AnsysDeckExportModal({ open, onOpenChange }: AnsysDeckExportModa
     setDownloading(true);
 
     try {
-      const response = await fetch(api.ansys.downloadUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ shelter_model: activeProject }),
-      });
-
-      if (!response.ok) {
-        throw new Error("Direct zip download endpoint failed");
-      }
-
-      const blob = await response.blob();
+      const blob = await api.ansys.downloadZip(activeProject);
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
@@ -271,8 +262,9 @@ export function AnsysDeckExportModal({ open, onOpenChange }: AnsysDeckExportModa
             <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-border">
               <div className="flex flex-wrap gap-1.5">
                 {[
-                  { key: "fluent_setup.jou", label: "fluent_setup.jou" },
-                  { key: "mapdl_thermal.mac", label: "mapdl_thermal.mac" },
+                  { key: "fluent_setup.jou", label: "fluent_setup.jou (CFD Solar)" },
+                  { key: "mapdl_thermal.mac", label: "mapdl_thermal.mac (FEA Thermal)" },
+                  { key: "material_comparison.mac", label: "material_comparison.mac (5-Material Study)" },
                   { key: "boundary_manifest.json", label: "boundary_manifest.json" },
                   { key: "run_fluent_batch.bat", label: "run_fluent_batch.bat" },
                   { key: "run_fluent_batch.sh", label: "run_fluent_batch.sh" },

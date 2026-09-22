@@ -134,6 +134,10 @@ export function TemperatureTimeSeriesChart({
               Tent Baseline
             </span>
           )}
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-indigo-500/20 bg-indigo-500/10 px-2.5 py-1 text-indigo-600 dark:text-indigo-400 font-semibold">
+            <span className="size-2 rounded-full bg-indigo-500" />
+            After Sunset Passive Retention
+          </span>
         </div>
       </div>
 

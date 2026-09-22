@@ -1,4 +1,10 @@
-"""FastAPI application entrypoint."""
+import sys
+from pathlib import Path
+
+# Ensure repo root is always in sys.path
+_repo_root = str(Path(__file__).resolve().parents[1])
+if _repo_root not in sys.path:
+    sys.path.insert(0, _repo_root)
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware

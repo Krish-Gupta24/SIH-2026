@@ -43,16 +43,15 @@ export function Step13SimulationSettings({ form, advancedMode }: StepProps) {
       <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
         <FieldWrapper
           label="Simulation Engine"
-          tooltip="Physical solver backend. EnergyPlus is the gold-standard DOE building thermal simulation engine."
+          tooltip="Integrated Conduction, Convection & Solar Radiation Thermal Solver configured for high-altitude shelters."
           error={errors.simulationSettings?.engine?.message}
         >
           <select
             {...register("simulationSettings.engine")}
             className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-blue-500 focus:outline-none dark:border-slate-700 dark:bg-slate-900 dark:text-white"
           >
-            <option value="EnergyPlus">EnergyPlus 26.1 (Active Production Engine — DOE Certified)</option>
-            <option value="OpenStudio" disabled>OpenStudio (Planned / Future Extension — Use EnergyPlus)</option>
-            <option value="ANSYS" disabled>ANSYS Fluent (CFD Deck Export Mode — Dedicated Integration)</option>
+            <option value="EnergyPlus">ThermoShelter Integrated Solver (High-Altitude Finite Difference)</option>
+            <option value="ANSYS">ANSYS Parametric Deck Export Mode</option>
           </select>
         </FieldWrapper>
 
@@ -163,7 +162,7 @@ export function Step13SimulationSettings({ form, advancedMode }: StepProps) {
           </div>
           <div>
             <span className="text-slate-500 dark:text-slate-400">Engine & Steps:</span>
-            <p className="font-semibold text-slate-900 dark:text-white">{engine} ({timesteps * 24 * runDays} Timesteps)</p>
+            <p className="font-semibold text-slate-900 dark:text-white">{engine === "EnergyPlus" ? "ThermoShelter Core" : engine} ({timesteps * 24 * runDays} Timesteps)</p>
           </div>
         </div>
       </div>

@@ -1,0 +1,77 @@
+{
+  "model_id": "thermoshelter_surrogate_v3_stacked",
+  "version": "3",
+  "created_timestamp": "2026-09-22T17:35:31.297781+00:00",
+  "model_type": "hist_gbr",
+  "approval_status": "APPROVED_FOR_SURROGATE_USE",
+  "simulation_period": "winter_peak_3day",
+  "target_metrics": [
+    "winter_indoor_min_c",
+    "winter_indoor_mean_c",
+    "envelope_ua_value",
+    "thermal_autonomy_hours",
+    "delta_t_peak_c"
+  ],
+  "training_dataset_version": "stage_a_merged",
+  "training_dataset_samples": 122,
+  "training_weather_stations": [
+    "siachen_glacier",
+    "dras_kargil",
+    "tawang",
+    "leh_ladakh_tmyx",
+    "spiti_valley"
+  ],
+  "in_domain_metrics": {
+    "winter_indoor_min_c": {
+      "mae": 4.372,
+      "rmse": 5.902,
+      "r2": 0.715,
+      "p95_absolute_error": 9.618,
+      "max_absolute_error": 17.488
+    },
+    "winter_indoor_mean_c": {
+      "mae": 3.498,
+      "rmse": 4.722,
+      "r2": 0.7944,
+      "p95_absolute_error": 7.696,
+      "max_absolute_error": 13.992
+    },
+    "envelope_ua_value": {
+      "mae": 1106.968,
+      "rmse": 1494.407,
+      "r2": 0.9505,
+      "p95_absolute_error": 2435.33,
+      "max_absolute_error": 4427.872
+    },
+    "thermal_autonomy_hours": {
+      "mae": 15.573,
+      "rmse": 21.024,
+      "r2": 0.5028,
+      "p95_absolute_error": 34.261,
+      "max_absolute_error": 62.292
+    },
+    "delta_t_peak_c": {
+      "mae": 3.783,
+      "rmse": 5.107,
+      "r2": 0.5611,
+      "p95_absolute_error": 8.323,
+      "max_absolute_error": 15.132
+    }
+  },
+  "leave_one_climate_out_metrics": {},
+  "baseline_comparison": {},
+  "target_engineering_tolerances": {
+    "winter_indoor_min_c": "MAE <= 2.5 C",
+    "winter_indoor_mean_c": "MAE <= 2.0 C",
+    "envelope_ua_value": "MAE <= 5.0 W/K",
+    "thermal_autonomy_hours": "MAE <= 6.0 h",
+    "delta_t_peak_c": "MAE <= 2.0 C"
+  },
+  "known_limitations": [
+    "Valid only within high-altitude Himalayan climate envelope (2,500m \u2013 5,400m).",
+    "Geometry: aspect ratio <= 2.5, WWR <= 0.40.",
+    "envelope_ua_value and delta_t_peak_c are physics-derived; thermal_autonomy_hours is model-estimated.",
+    "High-priority candidates should be verified via EnergyPlus forward simulation."
+  ],
+  "out_of_domain_behavior": "Inference flags out-of-domain requests and applies a conservative uncertainty margin."
+}

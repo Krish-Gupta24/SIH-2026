@@ -1,0 +1,245 @@
+{
+  "model_id": "thermoshelter_surrogate_hist_gbr",
+  "version": "2",
+  "created_timestamp": "2026-09-22T17:14:53.941836+00:00",
+  "model_type": "hist_gbr",
+  "approval_status": "APPROVED_FOR_SURROGATE_USE",
+  "simulation_period": "winter_peak_3day",
+  "target_metrics": [
+    "winter_indoor_min_c",
+    "winter_indoor_mean_c",
+    "winter_heating_demand_kwh_m2",
+    "winter_comfort_hours_pct"
+  ],
+  "training_dataset_version": "stage_a",
+  "training_dataset_samples": 120,
+  "training_weather_stations": [
+    "siachen_glacier",
+    "dras_kargil",
+    "tawang",
+    "leh_ladakh_tmyx",
+    "spiti_valley"
+  ],
+  "in_domain_metrics": {
+    "winter_indoor_min_c": {
+      "mae": 3.876,
+      "rmse": 4.72,
+      "r2": 0.8184,
+      "p95_absolute_error": 8.458,
+      "max_absolute_error": 10.279
+    },
+    "winter_indoor_mean_c": {
+      "mae": 3.077,
+      "rmse": 3.925,
+      "r2": 0.8535,
+      "p95_absolute_error": 6.195,
+      "max_absolute_error": 10.697
+    },
+    "winter_heating_demand_kwh_m2": {
+      "mae": 0.0,
+      "rmse": 0.0,
+      "r2": 1.0,
+      "p95_absolute_error": 0.0,
+      "max_absolute_error": 0.0
+    },
+    "winter_comfort_hours_pct": {
+      "mae": 7.774,
+      "rmse": 19.444,
+      "r2": 0.3086,
+      "p95_absolute_error": 32.182,
+      "max_absolute_error": 86.04
+    }
+  },
+  "leave_one_climate_out_metrics": {
+    "siachen_glacier": {
+      "winter_indoor_min_c": {
+        "mae": 14.827,
+        "rmse": 16.86,
+        "r2": -1.0515,
+        "p95_absolute_error": 27.928,
+        "max_absolute_error": 34.664
+      },
+      "winter_indoor_mean_c": {
+        "mae": 13.95,
+        "rmse": 15.624,
+        "r2": -1.3366,
+        "p95_absolute_error": 25.725,
+        "max_absolute_error": 28.692
+      },
+      "winter_heating_demand_kwh_m2": {
+        "mae": 0.0,
+        "rmse": 0.0,
+        "r2": 1.0,
+        "p95_absolute_error": 0.0,
+        "max_absolute_error": 0.0
+      },
+      "winter_comfort_hours_pct": {
+        "mae": 8.559,
+        "rmse": 19.972,
+        "r2": 0.0,
+        "p95_absolute_error": 31.219,
+        "max_absolute_error": 90.097
+      }
+    },
+    "dras_kargil": {
+      "winter_indoor_min_c": {
+        "mae": 4.776,
+        "rmse": 5.778,
+        "r2": 0.4647,
+        "p95_absolute_error": 9.758,
+        "max_absolute_error": 9.941
+      },
+      "winter_indoor_mean_c": {
+        "mae": 3.696,
+        "rmse": 4.497,
+        "r2": 0.5834,
+        "p95_absolute_error": 7.723,
+        "max_absolute_error": 8.12
+      },
+      "winter_heating_demand_kwh_m2": {
+        "mae": 0.0,
+        "rmse": 0.0,
+        "r2": 1.0,
+        "p95_absolute_error": 0.0,
+        "max_absolute_error": 0.0
+      },
+      "winter_comfort_hours_pct": {
+        "mae": 13.233,
+        "rmse": 25.894,
+        "r2": 0.14,
+        "p95_absolute_error": 44.902,
+        "max_absolute_error": 101.264
+      }
+    },
+    "tawang": {
+      "winter_indoor_min_c": {
+        "mae": 2.298,
+        "rmse": 2.887,
+        "r2": 0.6935,
+        "p95_absolute_error": 4.738,
+        "max_absolute_error": 6.806
+      },
+      "winter_indoor_mean_c": {
+        "mae": 2.155,
+        "rmse": 2.564,
+        "r2": 0.7654,
+        "p95_absolute_error": 4.506,
+        "max_absolute_error": 4.668
+      },
+      "winter_heating_demand_kwh_m2": {
+        "mae": 0.0,
+        "rmse": 0.0,
+        "r2": 1.0,
+        "p95_absolute_error": 0.0,
+        "max_absolute_error": 0.0
+      },
+      "winter_comfort_hours_pct": {
+        "mae": 8.083,
+        "rmse": 13.667,
+        "r2": 0.0,
+        "p95_absolute_error": 29.884,
+        "max_absolute_error": 38.719
+      }
+    },
+    "leh_ladakh_tmyx": {
+      "winter_indoor_min_c": {
+        "mae": 3.121,
+        "rmse": 4.104,
+        "r2": 0.7664,
+        "p95_absolute_error": 7.586,
+        "max_absolute_error": 11.185
+      },
+      "winter_indoor_mean_c": {
+        "mae": 2.975,
+        "rmse": 3.855,
+        "r2": 0.7589,
+        "p95_absolute_error": 6.617,
+        "max_absolute_error": 10.224
+      },
+      "winter_heating_demand_kwh_m2": {
+        "mae": 0.0,
+        "rmse": 0.0,
+        "r2": 1.0,
+        "p95_absolute_error": 0.0,
+        "max_absolute_error": 0.0
+      },
+      "winter_comfort_hours_pct": {
+        "mae": 12.494,
+        "rmse": 23.49,
+        "r2": 0.5647,
+        "p95_absolute_error": 56.642,
+        "max_absolute_error": 65.435
+      }
+    },
+    "spiti_valley": {
+      "winter_indoor_min_c": {
+        "mae": 2.876,
+        "rmse": 3.319,
+        "r2": 0.7058,
+        "p95_absolute_error": 5.911,
+        "max_absolute_error": 6.999
+      },
+      "winter_indoor_mean_c": {
+        "mae": 2.153,
+        "rmse": 2.734,
+        "r2": 0.7642,
+        "p95_absolute_error": 5.073,
+        "max_absolute_error": 6.908
+      },
+      "winter_heating_demand_kwh_m2": {
+        "mae": 0.0,
+        "rmse": 0.0,
+        "r2": 1.0,
+        "p95_absolute_error": 0.0,
+        "max_absolute_error": 0.0
+      },
+      "winter_comfort_hours_pct": {
+        "mae": 10.202,
+        "rmse": 17.025,
+        "r2": 0.5418,
+        "p95_absolute_error": 40.325,
+        "max_absolute_error": 43.489
+      }
+    }
+  },
+  "baseline_comparison": {
+    "winter_indoor_min_c": {
+      "dummy_mae": 8.58,
+      "ridge_mae": 4.315,
+      "surrogate_mae": 3.876,
+      "improvement_pct": "54.8%"
+    },
+    "winter_indoor_mean_c": {
+      "dummy_mae": 8.011,
+      "ridge_mae": 3.56,
+      "surrogate_mae": 3.077,
+      "improvement_pct": "61.6%"
+    },
+    "winter_heating_demand_kwh_m2": {
+      "dummy_mae": 0.0,
+      "ridge_mae": 0.0,
+      "surrogate_mae": 0.0,
+      "improvement_pct": "0.0%"
+    },
+    "winter_comfort_hours_pct": {
+      "dummy_mae": 13.156,
+      "ridge_mae": 15.347,
+      "surrogate_mae": 7.774,
+      "improvement_pct": "40.9%"
+    }
+  },
+  "target_engineering_tolerances": {
+    "winter_indoor_min_c": "MAE <= 2.5 C",
+    "winter_indoor_mean_c": "MAE <= 2.0 C",
+    "winter_heating_demand_kwh_m2": "MAE <= 25.0 kWh/m2",
+    "winter_comfort_hours_pct": "MAE <= 15.0%",
+    "annual_heating_demand_kwh_m2": "MAE <= 30.0 kWh/m2",
+    "annual_comfort_hours_pct": "MAE <= 12.0%"
+  },
+  "known_limitations": [
+    "Surrogate is valid only within high-altitude Himalayan climate envelope (2,500m - 5,400m).",
+    "Geometry must adhere to aspect ratio <= 2.5 and WWR <= 0.35.",
+    "Surrogate predictions represent fast interpolations; high-priority candidate designs must undergo EnergyPlus verification."
+  ],
+  "out_of_domain_behavior": "Inference flags out-of-domain requests and reduces confidence score, prompting forward physics simulation."
+}

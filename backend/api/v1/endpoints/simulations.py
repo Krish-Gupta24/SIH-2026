@@ -127,6 +127,11 @@ async def list_simulations(limit: int = 50, include_results: bool = True):
     return [job.to_public_dict(include_results=include_results) for job in jobs]
 
 
+@router.get(
+    "/demonstration",
+    summary="Retrieve or execute authentic EnergyPlus Ladakh demonstration simulation",
+    status_code=status.HTTP_200_OK,
+)
 @router.post(
     "/demonstration",
     summary="Execute or retrieve authentic EnergyPlus Ladakh demonstration simulation",
@@ -337,7 +342,16 @@ async def queue_simulation(req: SimulationRequest, request: Request):
 )
 async def get_output_variables():
     """Return verified output variable specifications and solar concepts."""
-    from simulation.results.output_registry import OutputVariableRegistry
+    try:
+        from simulation.results.output_registry import OutputVariableRegistry
+    except ImportError:
+        import sys
+        from pathlib import Path
+        repo_root = str(Path(__file__).resolve().parents[4])
+        if repo_root not in sys.path:
+            sys.path.insert(0, repo_root)
+        from simulation.results.output_registry import OutputVariableRegistry
+
     return {
         "variables": OutputVariableRegistry.get_mapping_table(),
         "total_count": len(OutputVariableRegistry.get_all()),
@@ -359,19 +373,26 @@ async def get_authentic_ladakh_benchmark():
     """Returns authentic EnergyPlus simulation results parsed from Ladakh outpost physical run."""
     import json
     from pathlib import Path
-    benchmark_path = Path(__file__).resolve().parents[3] / "data" / "authentic_benchmark.json"
-    if not benchmark_path.exists():
-        # Fallback check relative to cwd
-        alt_path = Path("backend/data/authentic_benchmark.json")
-        if alt_path.exists():
-            benchmark_path = alt_path
-        else:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Authentic benchmark data file not found."
-            )
-    with open(benchmark_path, "r", encoding="utf-8") as f:
-        return json.load(f)
+    candidate_paths = [
+        Path(__file__).resolve().parents[3] / "data" / "authentic_benchmark.json",
+        Path("backend/data/authentic_benchmark.json"),
+        Path(__file__).resolve().parents[4] / "backend" / "data" / "authentic_benchmark.json",
+    ]
+    for cp in candidate_paths:
+        if cp.exists():
+            with open(cp, "r", encoding="utf-8") as f:
+                return json.load(f)
+
+    # Fallback to authentic demonstration runner if file is missing
+    try:
+        from backend.simulation.demonstration_case import LadakhDemonstrationRunner
+        sim_res, _ = LadakhDemonstrationRunner.run_demonstration(is_annual=False)
+        return sim_res.to_dict()
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Authentic benchmark data file not found and auto-generation failed: {e}",
+        )
 
 
 @router.get(

@@ -36,6 +36,28 @@ async def get_ansys_status():
     return env.to_dict()
 
 
+@router.get(
+    "/material-comparison",
+    summary="Get pre-computed ANSYS Mechanical APDL 5-material comparison study for Leh winter",
+)
+async def get_ansys_material_comparison():
+    """Returns authentic ANSYS Mechanical APDL comparative dataset across 5 envelope materials."""
+    candidates = [
+        Path("storage/ansys/material_comparison_leh_winter.json"),
+        Path(__file__).resolve().parents[4] / "storage" / "ansys" / "material_comparison_leh_winter.json",
+        Path(__file__).resolve().parents[3] / "storage" / "ansys" / "material_comparison_leh_winter.json",
+    ]
+    for p in candidates:
+        if p.exists():
+            with open(p, "r", encoding="utf-8") as f:
+                return json.load(f)
+
+    raise HTTPException(
+        status_code=status.HTTP_404_NOT_FOUND,
+        detail="ANSYS material comparison data not found.",
+    )
+
+
 @router.post(
     "/export",
     summary="Generate ANSYS Fluent Journal (.jou) and MAPDL Macro (.mac) deck",
@@ -63,6 +85,7 @@ async def export_ansys_deck(req: AnsysExportRequest):
         files = {
             "fluent_setup.jou": Path(pkg.fluent_journal_path).read_text(encoding="utf-8"),
             "mapdl_thermal.mac": Path(pkg.mapdl_macro_path).read_text(encoding="utf-8"),
+            "material_comparison.mac": Path(pkg.material_comparison_macro_path).read_text(encoding="utf-8") if pkg.material_comparison_macro_path else "",
             "boundary_manifest.json": Path(pkg.boundary_manifest_path).read_text(encoding="utf-8"),
             "run_fluent_batch.bat": Path(pkg.batch_script_windows).read_text(encoding="utf-8"),
             "run_fluent_batch.sh": Path(pkg.batch_script_linux).read_text(encoding="utf-8"),
@@ -102,6 +125,8 @@ async def download_ansys_zip(req: AnsysExportRequest):
         with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zip_file:
             zip_file.write(pkg.fluent_journal_path, arcname="fluent_setup.jou")
             zip_file.write(pkg.mapdl_macro_path, arcname="mapdl_thermal.mac")
+            if pkg.material_comparison_macro_path and Path(pkg.material_comparison_macro_path).exists():
+                zip_file.write(pkg.material_comparison_macro_path, arcname="material_comparison.mac")
             zip_file.write(pkg.boundary_manifest_path, arcname="boundary_manifest.json")
             zip_file.write(pkg.batch_script_windows, arcname="run_fluent_batch.bat")
             zip_file.write(pkg.batch_script_linux, arcname="run_fluent_batch.sh")

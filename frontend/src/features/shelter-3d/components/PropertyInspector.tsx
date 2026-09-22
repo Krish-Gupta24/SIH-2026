@@ -1091,7 +1091,7 @@ export function PropertyInspector({
       </div>
 
       <div className="cad-property-summary mt-2">
-        <span>Engine: EnergyPlus 26.1.0</span>
+        <span>Engine: EnergyPlus 24.1.0</span>
         <span>Ready for Rerun</span>
       </div>
 

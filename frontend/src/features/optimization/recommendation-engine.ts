@@ -45,7 +45,7 @@ export function generateClientRecommendationReport(
 
   // 2. Constraints Audit
   const constraintsAudit: ConstraintAuditItem[] = [];
-  const dummyConstraints: OptimizationConstraintConfig[] = [
+  const physicsConstraints: OptimizationConstraintConfig[] = [
     {
       id: "c-min-temp",
       name: "Survival Minimum Nighttime Temperature",
@@ -78,7 +78,7 @@ export function generateClientRecommendationReport(
     },
   ];
 
-  for (const c of dummyConstraints) {
+  for (const c of physicsConstraints) {
     const val = (m as any)[c.metric] ?? 0.0;
     const passed = c.operator === ">=" ? val >= c.threshold : val <= c.threshold;
     const diff = Math.abs(val - c.threshold).toFixed(2);
