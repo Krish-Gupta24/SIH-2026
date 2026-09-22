@@ -244,6 +244,11 @@ class MultiTargetSurrogateModel:
 
         return predictions
 
+    def predict(self, df_or_dicts: Union[pd.DataFrame, List[Dict[str, Any]], np.ndarray]) -> np.ndarray:
+        """Standard multi-output array prediction interface."""
+        batch_dict = self.predict_batch(df_or_dicts)
+        return np.column_stack([batch_dict[t] for t in self.target_names])
+
     def predict_single(self, params: Dict[str, Any]) -> Dict[str, Any]:
         """Inference for a single candidate dictionary with domain boundary check."""
         is_in_domain, confidence, warnings = check_domain_bounds(params)
