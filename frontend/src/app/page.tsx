@@ -16,7 +16,7 @@ export default function HomePage() {
 
   return (
     <PremiumLanding
-      onOpen={() => router.push("/projects")}
+      onOpen={() => router.push("/dashboard")}
       onContinue={() => router.push("/dashboard")}
       hasProject={Boolean(activeProject)}
       summary={latestCompleted?.results?.summary}

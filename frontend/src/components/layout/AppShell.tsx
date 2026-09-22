@@ -25,6 +25,7 @@ interface NavItem {
 }
 
 const GLOBAL_NAV: NavItem[] = [
+  { id: "dashboard", label: "Dashboard", href: "/dashboard" },
   { id: "ai-designer", label: "⚡ AI Generative Designer", href: "/ai-designer" },
   { id: "projects", label: "Projects", href: "/projects" },
   { id: "materials", label: "Materials", href: "/materials" },
@@ -42,6 +43,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     projects,
     activeProjectId,
     setActiveProject,
+    resetProjectsToDefault,
     simulations,
     comparisonJobIds,
     settings,
@@ -50,12 +52,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   const activeProject = projects.find((p) => p.id === activeProjectId) || projects[0];
 
-  // Self-heal activeProjectId if deleted across tabs or devices
+  // Self-heal projects & activeProjectId if deleted across tabs or empty
   useEffect(() => {
-    if (projects.length > 0 && (!activeProjectId || !projects.some((p) => p.id === activeProjectId))) {
+    if (projects.length === 0) {
+      resetProjectsToDefault();
+    } else if (!activeProjectId || !projects.some((p) => p.id === activeProjectId)) {
       setActiveProject(projects[0].id);
     }
-  }, [projects, activeProjectId, setActiveProject]);
+  }, [projects, activeProjectId, setActiveProject, resetProjectsToDefault]);
 
   // Determine if this is a project-specific workflow view
   const currentStepIndex = getWorkflowStepIndex(pathname);

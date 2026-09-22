@@ -56,6 +56,12 @@ export function PremiumLanding({ onOpen, onContinue, hasProject, summary }: Land
           {/* Centered Curvature Nav - Aligned with Project Navigation */}
           <nav className="landing-nav-curve hidden items-center justify-center gap-7 px-8 text-black md:flex" aria-label="Global navigation">
             <Link
+              href="/dashboard"
+              className="landing-nav-link text-[11px] font-semibold text-black/75 transition-colors hover:text-black"
+            >
+              Dashboard
+            </Link>
+            <Link
               href="/designer/3d"
               className="landing-nav-link text-[11px] font-semibold text-black/75 transition-colors hover:text-black"
             >
@@ -81,10 +87,10 @@ export function PremiumLanding({ onOpen, onContinue, hasProject, summary }: Land
               <span className="size-1.5 rounded-full bg-emerald-500 inline-block animate-pulse" />
             </Link>
             <Link
-              href="/optimization"
+              href="/projects"
               className="landing-nav-link text-[11px] font-semibold text-black/75 transition-colors hover:text-black"
             >
-              Optimize
+              Projects
             </Link>
             <Link
               href="/reports"
@@ -267,16 +273,17 @@ export function PremiumLanding({ onOpen, onContinue, hasProject, summary }: Land
                 </p>
 
                 <div className="mt-7 flex flex-wrap items-center gap-3.5 sm:mt-8">
-                  <ActionButton
-                    onClick={onOpen}
-                    tone="secondary"
-                    className="rounded-full border-white bg-white pl-6 pr-2 text-black shadow-xl hover:scale-[1.02] transition-transform"
-                  >
-                    Launch 3D Studio
-                    <span className="flex size-8 items-center justify-center rounded-full bg-black text-white">
-                      <ArrowRight className="size-3.5" aria-hidden="true" />
-                    </span>
-                  </ActionButton>
+                  <Link href="/designer/3d">
+                    <ActionButton
+                      tone="secondary"
+                      className="rounded-full border-white bg-white pl-6 pr-2 text-black shadow-xl hover:scale-[1.02] transition-transform"
+                    >
+                      Launch 3D Studio
+                      <span className="flex size-8 items-center justify-center rounded-full bg-black text-white">
+                        <ArrowRight className="size-3.5" aria-hidden="true" />
+                      </span>
+                    </ActionButton>
+                  </Link>
 
                   <Link href="/simulations">
                     <button className="hero-outline-button flex items-center gap-2 hover:scale-[1.02] transition-transform">
