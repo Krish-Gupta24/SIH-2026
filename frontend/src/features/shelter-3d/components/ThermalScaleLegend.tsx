@@ -106,7 +106,7 @@ export function ThermalScaleLegend({ mode, model, hourlyStep, hasSimResults }: P
                       }`,
                     }}
                   >
-                    {hasSimResults ? "⚡ EnergyPlus 24h" : "ISO 6946"}
+                    {hasSimResults ? "⚡ ThermoShelter 24h" : "ISO 6946"}
                   </span>
                 )}
               </div>

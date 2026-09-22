@@ -25,8 +25,8 @@ interface WarningsAndErrorsAlertProps {
 export function WarningsAndErrorsAlert({
   status,
   durationSeconds = 12.4,
-  engineName = "EnergyPlus",
-  engineVersion = "26.1.0",
+  engineName = "ThermoShelter Core",
+  engineVersion = "3.0.0",
   completedAt,
   warnings = [
     "Zone 'LIVING_ZONE' evaluated under Leh Ladakh sub-zero nocturnal design conditions.",
@@ -82,7 +82,7 @@ export function WarningsAndErrorsAlert({
               </span>
             </div>
             <p className="text-xs text-[#536772] mt-0.5">
-              Engine: <strong className="text-foreground">{engineName} v{engineVersion}</strong> · Duration: {durationSeconds}s
+              Engine: <strong className="text-foreground">{engineName === "EnergyPlus" ? "ThermoShelter Core" : engineName} v{engineVersion}</strong> · Duration: {durationSeconds}s
               {completedAt && (
                 <span suppressHydrationWarning>
                   {` · Timestamp: ${new Date(completedAt).toLocaleTimeString()}`}
@@ -122,7 +122,7 @@ export function WarningsAndErrorsAlert({
             <div className="rounded-2xl border-2 border-rose-500/50 bg-rose-50 dark:bg-rose-950/50 p-4 space-y-2 text-rose-900 dark:text-rose-100 shadow-md">
               <div className="flex items-center gap-2 font-bold text-sm text-rose-700 dark:text-rose-300">
                 <AlertTriangle className="size-4 text-rose-600 dark:text-rose-400 shrink-0" />
-                <span>Critical EnergyPlus Solver Error Details</span>
+                <span>Critical ThermoShelter Solver Error Details</span>
               </div>
               <p className="font-mono text-xs text-rose-900 dark:text-rose-200 font-semibold leading-relaxed bg-white/70 dark:bg-black/30 p-2.5 rounded-xl border border-rose-300 dark:border-rose-900">
                 {rawError || errors[0]}

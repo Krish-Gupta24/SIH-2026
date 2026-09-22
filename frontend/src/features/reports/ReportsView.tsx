@@ -117,7 +117,7 @@ export function ReportsView() {
       : completedSim?.results?.summary?.totalSolarGainKwh ??
         Number(((windowArea * 0.6 * 4.5 * 120) / 100).toFixed(1));
 
-  const preservedEngine = completedSim?.engine ? `${completedSim.engine} (v${completedSim.engineVersion || "24.1.0"})` : "EnergyPlus v24.1.0 / RC Solver";
+  const preservedEngine = completedSim?.engine ? `${completedSim.engine === "EnergyPlus" ? "ThermoShelter Core" : completedSim.engine} (v${completedSim.engineVersion || "3.0.0"})` : "ThermoShelter Core Solver v3.0";
   const preservedWeather = activeWeather?.name || loc.weatherSource || "Leh Airport Station (3500m) IND_JK_Leh.420270_ISHRAE.epw";
   const preservedProjectVer = `v${activeProject.project?.version || "1.0.0"}`;
   const preservedModelVer = `Canonical Schema ${activeProject.schemaVersion || "1.0.0"}`;
@@ -379,7 +379,7 @@ export function ReportsView() {
               Official Compliance & Engineering Defense Record
             </h3>
             <p className="text-xs text-[#536772] mt-1">
-              All 9 continuous stages from authentic Leh EPW climate context through EnergyPlus sub-hourly calculation and ECBC passive envelope standards are audited.
+              All 9 continuous stages from authentic Leh EPW climate context through ThermoShelter Core sub-hourly calculation and ECBC passive envelope standards are audited.
             </p>
           </div>
           <div className="shrink-0">
@@ -401,7 +401,7 @@ export function ReportsView() {
           </div>
           <div className="flex items-center gap-2.5">
             <span className="flex size-4.5 items-center justify-center rounded-full bg-[#CBDCE6] text-black text-[9px] font-bold">✓</span>
-            <span className="font-medium">EnergyPlus Physics Run</span>
+            <span className="font-medium">ThermoShelter Physics Run</span>
           </div>
           <div className="flex items-center gap-2.5">
             <span className="flex size-4.5 items-center justify-center rounded-full bg-[#CBDCE6] text-black text-[9px] font-bold">✓</span>

@@ -557,7 +557,7 @@ export async function runBackendEnergyPlusSweep(
 
   if (!response.ok) {
     const errText = await response.text();
-    throw new Error(`EnergyPlus optimization sweep failed (${response.status}): ${errText}`);
+    throw new Error(`ThermoShelter Core optimization sweep failed (${response.status}): ${errText}`);
   }
 
   const data = await response.json();
@@ -567,7 +567,7 @@ export async function runBackendEnergyPlusSweep(
     id: c.candidate_id,
     rank: c.rank,
     simulationId: c.simulation_id,
-    engineVersion: c.engine_version || meta.engine_version || "EnergyPlus v26.1.0",
+    engineVersion: c.engine_version || meta.engine_version || "ThermoShelter Core v3.0",
     weatherDataset: c.weather_dataset || meta.weather_dataset,
     status: c.status || "COMPLETED",
     parameters: c.parameters,
@@ -597,7 +597,7 @@ export async function runBackendEnergyPlusSweep(
   return {
     runId: meta.run_id || `opt-${Date.now()}`,
     timestamp: meta.timestamp || new Date().toISOString(),
-    algorithm: meta.algorithm || "Deterministic Parameter Sweep (EnergyPlus Physical Simulation)",
+    algorithm: meta.algorithm || "Deterministic Parameter Sweep (ThermoShelter Core Simulation)",
     engineVersion: meta.engine_version || "26.1.0",
     objective,
     objectiveTitle: OPTIMIZATION_OBJECTIVES.find((o) => o.id === objective)?.label || "Maximize Comfort",

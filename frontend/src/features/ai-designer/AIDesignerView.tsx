@@ -149,7 +149,7 @@ export function AIDesignerView() {
     }
   };
 
-  // Run EnergyPlus verification on selected candidates
+  // Run ThermoShelter Core verification on selected candidates
   const handleVerifyCandidate = async (cand: AICandidate) => {
     if (!currentJob) return;
     setIsVerifying(true);
@@ -174,7 +174,7 @@ export function AIDesignerView() {
         setSelectedCandidate(merged);
         setNotification({
           type: "success",
-          message: "EnergyPlus ground-truth physics calculation completed and verified!",
+          message: "ThermoShelter Core ground-truth physics calculation completed and verified!",
         });
       }
     } catch (err: any) {
@@ -234,7 +234,7 @@ export function AIDesignerView() {
       <PageIntro
         eyebrow="FLAGSHIP AI FEATURE · SURROGATE ML + NSGA-II"
         title="AI Generative Thermal Design Engine"
-        description="Inverse thermal design powered by Physics-Informed ML Surrogate, true NSGA-II genetic optimization, SHAP explainability, and authentic EnergyPlus validation."
+        description="Inverse thermal design powered by Physics-Informed ML Surrogate, true NSGA-II genetic optimization, SHAP explainability, and authentic ThermoShelter Core validation."
       />
 
       {/* User Notifications */}
@@ -291,7 +291,7 @@ export function AIDesignerView() {
                 isExplaining={isExplaining}
               />
 
-              {/* 5. EnergyPlus Physics Verification Table (if verified) */}
+              {/* 5. ThermoShelter Core Physics Verification Table (if verified) */}
               {selectedCandidate.is_physics_verified && (
                 <AIVsPhysicsTrustTable candidate={selectedCandidate} />
               )}

@@ -74,9 +74,9 @@ export function SettingsView() {
             </select>
           </label>
 
-          {/* EnergyPlus Engine Version */}
+          {/* ThermoShelter Engine Version */}
           <label>
-            <span className="micro-label block mb-2">EnergyPlus Engine Version</span>
+            <span className="micro-label block mb-2">ThermoShelter Engine Version</span>
             <input
               type="text"
               value={energyPlusVersion}

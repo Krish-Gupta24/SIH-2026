@@ -125,7 +125,7 @@ export function MissionRequirementsForm({
           {isSurrogateReady ? (
             <Badge variant="outline" className="gap-1.5 border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[11px] py-1">
               <Cpu className="size-3.5" />
-              Surrogate ML Active ({modelStatus?.model_card?.model_version || "v1.0"})
+              Surrogate ML Active ({modelStatus?.model_card?.version ? `v${modelStatus.model_card.version}.0` : modelStatus?.model_card?.model_version || "v3.0 Stacked Ensemble"})
             </Badge>
           ) : (
             <Badge variant="outline" className="gap-1.5 border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400 text-[11px] py-1">

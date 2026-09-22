@@ -526,7 +526,7 @@ export function ShelterDesignerWizard() {
               <div className="mt-6 rounded-2xl border-2 border-emerald-500/60 bg-emerald-50 dark:bg-emerald-950/40 p-5 text-xs text-emerald-950 dark:text-emerald-100 shadow-md">
                 <div className="flex items-center gap-2.5 font-bold text-sm text-emerald-800 dark:text-emerald-300">
                   <CheckCircle2 className="h-5 w-5 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                  <span>Simulation Successfully Dispatched to EnergyPlus Engine!</span>
+                  <span>Simulation Successfully Dispatched to ThermoShelter Solver!</span>
                 </div>
                 <p className="mt-2 text-slate-700 dark:text-slate-300">
                   Job ID: <code className="rounded-lg bg-white/90 dark:bg-black/50 px-2 py-0.5 font-mono text-xs font-bold text-foreground border border-emerald-500/30">{submittedJobId}</code>

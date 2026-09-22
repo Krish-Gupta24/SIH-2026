@@ -122,16 +122,22 @@ def get_model_status():
     registry = ModelRegistry()
     try:
         _, card = registry.load_approved_model()
+        card_dict = card.to_dict()
+        card_dict["model_version"] = f"v{card.version}.0"
+        card_dict["version"] = str(card.version)
         return {
             "is_surrogate_available": True,
-            "model_card": card.to_dict(),
+            "model_card": card_dict,
         }
     except Exception:
         try:
             _, card = registry.load_model()
+            card_dict = card.to_dict()
+            card_dict["model_version"] = f"v{card.version}.0"
+            card_dict["version"] = str(card.version)
             return {
                 "is_surrogate_available": True,
-                "model_card": card.to_dict(),
+                "model_card": card_dict,
             }
         except Exception:
             return {

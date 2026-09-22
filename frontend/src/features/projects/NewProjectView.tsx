@@ -133,7 +133,7 @@ export function NewProjectView() {
           </div>
           <h3 className="text-lg font-bold text-white">Full 13-Step Parametric Shelter Designer</h3>
           <p className="text-xs text-slate-300 max-w-xl">
-            Step-by-step guidance through geometry, multi-layer wall layers, roof & floor ground coupling, windows, doors, thermal mass, ventilation ACH, and EnergyPlus settings.
+            Step-by-step guidance through geometry, multi-layer wall layers, roof & floor ground coupling, windows, doors, thermal mass, ventilation ACH, and ThermoShelter solver settings.
           </p>
         </div>
 

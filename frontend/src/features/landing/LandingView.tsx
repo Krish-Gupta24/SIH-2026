@@ -74,12 +74,6 @@ export function PremiumLanding({ onOpen, onContinue, hasProject, summary }: Land
               Climate
             </Link>
             <Link
-              href="/simulations"
-              className="landing-nav-link text-[11px] font-semibold text-black/75 transition-colors hover:text-black"
-            >
-              Simulate
-            </Link>
-            <Link
               href="/ai-designer"
               className="landing-nav-link text-[11px] font-semibold text-black/75 transition-colors hover:text-black flex items-center gap-1"
             >
@@ -138,7 +132,7 @@ export function PremiumLanding({ onOpen, onContinue, hasProject, summary }: Land
           <nav className="mx-5 mt-2 rounded-[2rem] border border-white/20 bg-black/95 p-6 text-white shadow-2xl backdrop-blur-2xl md:hidden space-y-4">
             <div className="flex items-center justify-between border-b border-white/10 pb-3">
               <span className="text-xs font-semibold uppercase tracking-wider text-white/60">Platform Modules</span>
-              <span className="text-[10px] text-emerald-400 font-mono">EnergyPlus v26.1.0</span>
+              <span className="text-[10px] text-emerald-400 font-mono">ThermoShelter Core</span>
             </div>
 
             <div className="grid grid-cols-2 gap-2 text-xs font-medium">
@@ -256,7 +250,7 @@ export function PremiumLanding({ onOpen, onContinue, hasProject, summary }: Land
                   <span className="size-2 rounded-full bg-emerald-400 animate-pulse" />
                   <span className="font-semibold uppercase tracking-wider">SIH 2026 · DRDO PS 26051</span>
                   <span className="text-white/30">•</span>
-                  <span className="font-mono text-emerald-300">EnergyPlus 24.1.0</span>
+                  <span className="font-mono text-emerald-300">ANSYS-based Solver</span>
                 </div>
 
                 <h1 className="hero-title text-balance mt-4">
@@ -366,7 +360,7 @@ export function PremiumLanding({ onOpen, onContinue, hasProject, summary }: Land
                 <div className="mt-3.5 flex items-center justify-between border-t border-white/10 pt-2.5 text-[9px] text-white/60">
                   <span className="flex items-center gap-1.5 text-emerald-400 font-medium">
                     <ShieldCheck className="size-3" />
-                    <span>EnergyPlus Solved</span>
+                    <span>ThermoShelter Solved</span>
                   </span>
                   <Link href="/results" className="hover:text-white transition-colors flex items-center gap-1">
                     <span>View Results</span>

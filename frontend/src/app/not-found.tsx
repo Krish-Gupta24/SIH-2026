@@ -94,7 +94,7 @@ export default function NotFound() {
             </div>
             <div>
               <span className="text-white/40 block text-[9px] uppercase">Simulation Solver</span>
-              <span className="text-emerald-400 font-semibold">EnergyPlus 24.1.0 Ready</span>
+              <span className="text-emerald-400 font-semibold">ThermoShelter Core Ready</span>
             </div>
             <div>
               <span className="text-white/40 block text-[9px] uppercase">System Status</span>

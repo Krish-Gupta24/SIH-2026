@@ -40,7 +40,7 @@ export const WORKFLOW_PIPELINE: WorkflowStep[] = [
     stepNumber: 5,
     label: "Simulate",
     href: "/simulations",
-    description: "Physics-based EnergyPlus heat balance calculation",
+    description: "Physics-based ThermoShelter Core heat balance calculation",
   },
   {
     id: "results",

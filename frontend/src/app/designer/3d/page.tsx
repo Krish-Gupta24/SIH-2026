@@ -65,7 +65,7 @@ const UNIFIED_13_STEPS = [
   { id: 10, name: "Shading", description: "Solar Cutoff Overhangs & Fins", icon: Sun },
   { id: 11, name: "Thermal Mass", description: "Capacitive Storage & Trombe Wall", icon: Mountain },
   { id: 12, name: "Ventilation", description: "Infiltration ACH & Heat Recovery", icon: Wind },
-  { id: 13, name: "Simulation", description: "Targets & EnergyPlus Run", icon: Target },
+  { id: 13, name: "Simulation", description: "Targets & ThermoShelter Run", icon: Target },
 ];
 
 function Shelter3DPageContent() {
@@ -274,7 +274,7 @@ function Shelter3DPageContent() {
         <AnsysDeckExportModal open={ansysModalOpen} onOpenChange={setAnsysModalOpen} />
 
         {/* Connected Linear Workflow Footer */}
-        <WorkflowFooter customNextLabel="Proceed to EnergyPlus Simulation" customNextHref="/simulations" />
+        <WorkflowFooter customNextLabel="Proceed to ThermoShelter Simulation" customNextHref="/simulations" />
       </div>
     </AppShell>
   );

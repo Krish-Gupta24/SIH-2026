@@ -163,7 +163,7 @@ export function Shelter3DDesigner({ model, step, onStepChange, onUpdate, onSimul
             type="button"
             onClick={() => setSetting("visualization", "thermal")}
             className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/35 hover:bg-emerald-500/25 transition-all shadow-xs cursor-pointer mr-1"
-            title="EnergyPlus 24h simulation dataset ready! Click to visualize dynamic thermal field."
+            title="24h physics simulation dataset ready! Click to visualize dynamic thermal field."
           >
             <Sparkles className="size-3 text-emerald-500 animate-pulse" />
             <span className="hidden sm:inline">✨ 24h Thermal Field Ready</span>
@@ -216,7 +216,7 @@ export function Shelter3DDesigner({ model, step, onStepChange, onUpdate, onSimul
               {id === "thermal" && activeSim ? (
                 <span
                   className="size-1.5 rounded-full bg-emerald-500 animate-pulse ml-0.5"
-                  title="24h EnergyPlus simulation data loaded"
+                  title="24h physics simulation data loaded"
                 />
               ) : null}
             </button>
@@ -271,7 +271,7 @@ export function Shelter3DDesigner({ model, step, onStepChange, onUpdate, onSimul
                 <div className="space-y-1.5">
                   <h3 className="text-base font-bold text-foreground">Simulation Required for 24h Thermal View</h3>
                   <p className="text-xs text-muted-foreground leading-relaxed">
-                    The 24-hour diurnal thermal heat map, surface thermography, and flux vectors require at least one completed physical EnergyPlus simulation run for <strong>{model.project.name}</strong>.
+                    The 24-hour diurnal thermal heat map, surface thermography, and flux vectors require at least one completed physical simulation run for <strong>{model.project.name}</strong>.
                   </p>
                 </div>
                 <div className="flex items-center justify-center gap-3 pt-2">
@@ -376,7 +376,7 @@ export function Shelter3DDesigner({ model, step, onStepChange, onUpdate, onSimul
                         : "rgba(59, 130, 246, 0.25)",
                     }}
                   >
-                    {activeSim ? "⚡ EnergyPlus Sim" : "📐 ISO 6946 Sol-Air"}
+                    {activeSim ? "⚡ ThermoShelter Sim" : "📐 ISO 6946 Sol-Air"}
                   </span>
                 </div>
               </div>

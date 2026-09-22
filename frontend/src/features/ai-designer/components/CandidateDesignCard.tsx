@@ -86,7 +86,7 @@ export function CandidateDesignCard({
           {candidate.is_physics_verified ? (
             <Badge className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 gap-1.5 py-1 text-xs">
               <CheckCircle2 className="size-3.5" />
-              EnergyPlus Verified
+              ThermoShelter Verified
             </Badge>
           ) : (
             <Badge variant="outline" className="text-blue-500 border-blue-500/30 gap-1.5 py-1 text-xs">
@@ -221,7 +221,7 @@ export function CandidateDesignCard({
       {/* Action Buttons */}
       <div className="mt-6 flex flex-wrap items-center justify-between gap-3 pt-4 border-t border-border">
         <div className="flex items-center gap-2">
-          {/* Verify with EnergyPlus Button */}
+          {/* Verify with ThermoShelter Button */}
           <Button
             type="button"
             variant="outline"
@@ -233,7 +233,7 @@ export function CandidateDesignCard({
             {isVerifying ? (
               <>
                 <span className="size-3 border-2 border-muted-foreground border-t-foreground rounded-full animate-spin" />
-                Running EnergyPlus...
+                Running ThermoShelter...
               </>
             ) : candidate.is_physics_verified ? (
               <>
@@ -243,7 +243,7 @@ export function CandidateDesignCard({
             ) : (
               <>
                 <ShieldCheck className="size-3.5 text-blue-500" />
-                Verify with EnergyPlus
+                Verify with ThermoShelter
               </>
             )}
           </Button>

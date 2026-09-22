@@ -120,7 +120,7 @@ export function ResultsView() {
       <div className="max-w-4xl mx-auto py-16">
         <EmptyState
           title="No simulation results available"
-          description="Run an EnergyPlus simulation from the 3D Designer or Simulations dashboard to view normalized thermal outputs and multi-source analytics."
+          description="Run a ThermoShelter simulation from the 3D Designer or Simulations dashboard to view normalized thermal outputs and multi-source analytics."
           action={
             <div className="flex items-center justify-center gap-3">
               <Link href="/designer/3d">

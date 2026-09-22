@@ -355,7 +355,7 @@ export function Step2Location({ form, advancedMode }: StepProps) {
 
         <FieldWrapper
           label="Weather Source Dataset"
-          tooltip="Associated EPW (EnergyPlus Weather) dataset used for annual or design-day simulation."
+          tooltip="Associated EPW (Environmental Performance Weather) dataset used for annual or design-day simulation."
           error={errors.location?.weatherSource?.message}
           warning={
             watch("location.weatherSource")?.toLowerCase().includes("test_weather")

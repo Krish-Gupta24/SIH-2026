@@ -314,7 +314,7 @@ export function MaterialWorkbenchDialog({ open, model, onOpenChange, onUpdate }:
               <div className="rounded-xl border border-border/80 bg-background/60 p-3 flex items-start gap-2.5 text-xs text-muted-foreground">
                 <ShieldCheck className="size-4 text-emerald-600 shrink-0 mt-0.5" />
                 <p className="text-[11px] leading-relaxed">
-                  All layers automatically export to standard EnergyPlus material constructions and thermal conductivity models.
+                  All layers automatically export to standard ThermoShelter material constructions and thermal conductivity models.
                 </p>
               </div>
             </div>

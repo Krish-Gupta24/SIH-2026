@@ -4,7 +4,7 @@ import { SimulationsView } from "@/features/simulations/SimulationsView";
 
 export const metadata = {
   title: "Simulations Queue | ShelterThermal",
-  description: "Monitor and execute asynchronous EnergyPlus simulation runs.",
+  description: "Monitor and execute asynchronous ThermoShelter simulation runs.",
 };
 
 export default function SimulationsPage() {

@@ -1091,7 +1091,7 @@ export function PropertyInspector({
       </div>
 
       <div className="cad-property-summary mt-2">
-        <span>Engine: EnergyPlus 24.1.0</span>
+        <span>Engine: ThermoShelter Core</span>
         <span>Ready for Rerun</span>
       </div>
 
@@ -1100,7 +1100,7 @@ export function PropertyInspector({
         onClick={onSimulate}
         className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-foreground py-3 text-xs font-bold text-background shadow-md transition hover:opacity-90"
       >
-        <Play className="size-3.5 fill-current" /> Run EnergyPlus Simulation
+        <Play className="size-3.5 fill-current" /> Run Thermal Simulation
       </button>
     </div>
   );

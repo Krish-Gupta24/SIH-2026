@@ -143,7 +143,7 @@ export function OptimizationView() {
     );
   };
 
-  // Execute parameter sweep via EnergyPlus backend
+  // Execute parameter sweep via ThermoShelter backend
   const handleRunSweep = async () => {
     if (!activeProject) return;
 
@@ -162,10 +162,10 @@ export function OptimizationView() {
       setSweepResult(result);
       setNotification({
         type: "success",
-        message: `EnergyPlus physical sweep completed: ${result.validCount} candidates physically simulated with ${result.engineVersion || "EnergyPlus"} in ${result.executionDurationSec}s (${result.feasibleCount} feasible).`,
+        message: `ThermoShelter physical sweep completed: ${result.validCount} candidates physically simulated with ${result.engineVersion || "ThermoShelter Core"} in ${result.executionDurationSec}s (${result.feasibleCount} feasible).`,
       });
     } catch (backendErr: any) {
-      console.warn("Backend EnergyPlus sweep unavailable, running client RC preview:", backendErr);
+      console.warn("Backend ThermoShelter sweep unavailable, running client RC preview:", backendErr);
       const fallbackResult = runClientParameterSweep(
         activeProject,
         selectedParameters,
@@ -176,7 +176,7 @@ export function OptimizationView() {
       setSweepResult(fallbackResult);
       setNotification({
         type: "info",
-        message: `Client RC approximation evaluated (${fallbackResult.validCount} candidates). Backend EnergyPlus simulation unavailable.`,
+        message: `Client RC approximation evaluated (${fallbackResult.validCount} candidates). Backend ThermoShelter simulation unavailable.`,
       });
     } finally {
       setIsExecuting(false);
@@ -354,7 +354,7 @@ export function OptimizationView() {
               <strong className="text-foreground">
                 {activeProject?.project?.name || "this project"}
               </strong>
-              . Multi-objective optimization algorithms and Pareto frontier rankings require an authentic EnergyPlus physical baseline to calibrate envelope thermal loads and compute comparative delta improvements.
+              . Multi-objective optimization algorithms and Pareto frontier rankings require an authentic ThermoShelter Core physical baseline to calibrate envelope thermal loads and compute comparative delta improvements.
             </p>
           </div>
           <div className="flex flex-wrap items-center justify-center gap-3 pt-2">

@@ -59,7 +59,7 @@ export function AIVsPhysicsTrustTable({ candidate }: AIVsPhysicsTrustTableProps)
               <ShieldCheck className="size-4" />
             </span>
             <h3 className="text-lg font-bold tracking-tight">
-              EnergyPlus Ground Truth Physics Verification
+              ThermoShelter Core Physics Verification
             </h3>
           </div>
           <p className="text-xs text-muted-foreground mt-1">
@@ -87,7 +87,7 @@ export function AIVsPhysicsTrustTable({ candidate }: AIVsPhysicsTrustTableProps)
             <tr className="border-b border-border text-muted-foreground">
               <th className="pb-3 font-semibold">Engineering Metric</th>
               <th className="pb-3 font-semibold">AI Surrogate ML</th>
-              <th className="pb-3 font-semibold text-emerald-600 dark:text-emerald-400">EnergyPlus Simulation</th>
+              <th className="pb-3 font-semibold text-emerald-600 dark:text-emerald-400">ThermoShelter Core Simulation</th>
               <th className="pb-3 font-semibold">Calibration Delta (Δ)</th>
               <th className="pb-3 font-semibold">Uncertainty Coverage</th>
             </tr>
@@ -139,7 +139,7 @@ export function AIVsPhysicsTrustTable({ candidate }: AIVsPhysicsTrustTableProps)
       <div className="mt-4 rounded-xl bg-secondary/40 p-3 text-[11px] text-muted-foreground border border-border flex items-start gap-2">
         <CheckCircle2 className="size-4 text-emerald-500 shrink-0 mt-0.5" />
         <span>
-          <strong>Zero Fabrication Commitment:</strong> EnergyPlus high-fidelity outputs replace surrogate approximations for downstream analysis, CAD loading, and defense engineering reports. Discrepancies are logged in <code>storage/ai/calibration_pool.json</code> for model drift mitigation.
+          <strong>Zero Fabrication Commitment:</strong> ThermoShelter Core high-fidelity outputs replace surrogate approximations for downstream analysis, CAD loading, and defense engineering reports. Discrepancies are logged in <code>storage/ai/calibration_pool.json</code> for model drift mitigation.
         </span>
       </div>
     </Card>

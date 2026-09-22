@@ -4,7 +4,7 @@ import { ShelterDesignerWizard } from "@/features/shelter-editor";
 
 export const metadata = {
   title: "Shelter Designer | 13-Step Engineering Wizard",
-  description: "Parametric cold-climate building thermal design wizard mapped to EnergyPlus.",
+  description: "Parametric cold-climate building thermal design wizard mapped to ThermoShelter Core.",
 };
 
 export default function DesignerPage() {

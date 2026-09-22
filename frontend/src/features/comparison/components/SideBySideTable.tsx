@@ -215,7 +215,7 @@ export function SideBySideTable({ jobs }: SideBySideTableProps) {
       )}
       {!sameEngine && (
         <div className="p-3 bg-rose-500/10 border border-rose-500/30 rounded-xl text-xs text-rose-600 dark:text-rose-400">
-          <strong>Engine Equivalence Warning:</strong> Disparate simulation engines detected ({Array.from(new Set(engines)).join(", ")}). RC network approximations are NOT equivalent to full EnergyPlus physical simulations.
+          <strong>Engine Equivalence Warning:</strong> Disparate simulation engines detected ({Array.from(new Set(engines.map(e => e === "EnergyPlus" ? "ThermoShelter Core" : e))).join(", ")}). RC network approximations are NOT equivalent to full ThermoShelter Core physical simulations.
         </div>
       )}
 
@@ -237,7 +237,7 @@ export function SideBySideTable({ jobs }: SideBySideTableProps) {
                   </div>
                   <div className="flex flex-wrap gap-1 text-[9px] text-muted-foreground font-mono mt-0.5">
                     <span className="px-1.5 py-0.5 bg-background/80 rounded border border-border">ID: {baseline.id.slice(0, 8)}</span>
-                    <span className="px-1.5 py-0.5 bg-background/80 rounded border border-border">{baseline.engine || "EnergyPlus"}</span>
+                    <span className="px-1.5 py-0.5 bg-background/80 rounded border border-border">{baseline.engine === "EnergyPlus" ? "ThermoShelter Core" : (baseline.engine || "ThermoShelter Core")}</span>
                     <span className="px-1.5 py-0.5 bg-background/80 rounded border border-border">{baseline.weatherDatasetName || "Leh EPW"}</span>
                   </div>
                 </div>
@@ -255,7 +255,7 @@ export function SideBySideTable({ jobs }: SideBySideTableProps) {
                     </div>
                     <div className="flex flex-wrap gap-1 text-[9px] text-muted-foreground font-mono mt-0.5">
                       <span className="px-1.5 py-0.5 bg-background/80 rounded border border-border">ID: {cand.id.slice(0, 8)}</span>
-                      <span className="px-1.5 py-0.5 bg-background/80 rounded border border-border">{cand.engine || "EnergyPlus"}</span>
+                      <span className="px-1.5 py-0.5 bg-background/80 rounded border border-border">{cand.engine === "EnergyPlus" ? "ThermoShelter Core" : (cand.engine || "ThermoShelter Core")}</span>
                       <span className="px-1.5 py-0.5 bg-background/80 rounded border border-border">{cand.weatherDatasetName || "Leh EPW"}</span>
                     </div>
                   </div>

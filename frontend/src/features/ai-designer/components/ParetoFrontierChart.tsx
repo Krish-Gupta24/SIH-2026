@@ -95,7 +95,7 @@ export function ParetoFrontierChart({
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-1.5">
             <span className="size-3 rounded-full bg-emerald-500 inline-block" />
-            <span>EnergyPlus Physics-Verified</span>
+            <span>ThermoShelter Physics-Verified</span>
           </div>
           <div className="flex items-center gap-1.5">
             <span className="size-3 rounded-full bg-blue-500 inline-block" />

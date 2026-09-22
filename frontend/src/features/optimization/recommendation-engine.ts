@@ -295,7 +295,7 @@ export function generateClientRecommendationReport(
       },
       {
         category: "Thermodynamic Model Boundaries",
-        description: "Evaluations use lumped capacitance RC heat balance modeling. Complex convective stratification, localized drafts, and 3D geometric corner thermal leaks require full CFD or multi-zone EnergyPlus validation.",
+        description: "Evaluations use lumped capacitance RC heat balance modeling. Complex convective stratification, localized drafts, and 3D geometric corner thermal leaks require full CFD or multi-zone ThermoShelter Core validation.",
       },
       {
         category: "Microclimatic Variability & Weather Uncertainty",
@@ -311,7 +311,7 @@ export function generateClientRecommendationReport(
       },
     ],
     validationRecommendation:
-      "Perform full 8760-hour annual EnergyPlus simulation and empirical prototype sensor validation prior to physical fabrication.",
+      "Perform full 8760-hour annual ThermoShelter Core simulation and empirical prototype sensor validation prior to physical fabrication.",
   };
 
   const reportId = `REC-${sweepResult.runId}-${best.id.toUpperCase()}`;

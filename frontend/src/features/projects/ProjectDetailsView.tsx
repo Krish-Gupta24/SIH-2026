@@ -147,7 +147,7 @@ export function ProjectDetailsView({ projectId }: { projectId: string }) {
             className="gap-2 font-bold bg-emerald-600 hover:bg-emerald-700 shadow-lg shadow-emerald-600/20"
           >
             <Play className="h-4 w-4" />
-            {isSimulating ? "Launching..." : "Simulate (EnergyPlus)"}
+            {isSimulating ? "Launching..." : "Simulate (ThermoShelter)"}
           </Button>
         </div>
       </div>

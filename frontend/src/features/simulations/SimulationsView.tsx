@@ -349,7 +349,7 @@ export function SimulationsView() {
       pollSimulationStatus(simId, projToSim);
     } catch (err: any) {
       console.error("Queueing simulation failed:", err);
-      setQueueError(err.message || "Failed to dispatch simulation to EnergyPlus engine.");
+      setQueueError(err.message || "Failed to dispatch simulation to ThermoShelter engine.");
     } finally {
       setIsQueueing(false);
       setPendingSimProject(null);
@@ -434,7 +434,7 @@ export function SimulationsView() {
     <div className="space-y-10 max-w-7xl mx-auto">
       {/* V0 Page Intro */}
       <PageIntro
-        eyebrow="Validated EnergyPlus 24.1.0 Dispatch"
+        eyebrow="Validated ThermoShelter Core Dispatch"
         title="Run thermal simulation"
         description="Send the canonical model to the physics simulation engine with explicit period, timestep resolution, and authentic weather provenance."
         action={
@@ -492,7 +492,7 @@ export function SimulationsView() {
             <div className="space-y-1.5">
               <div className="flex items-center gap-2">
                 <Status strong>Simulation Validated · Run {latestRun.id}</Status>
-                <span className="text-[10px] text-[#6E818F]">EnergyPlus 24.1.0</span>
+                <span className="text-[10px] text-[#6E818F]">ThermoShelter Core Solver</span>
               </div>
               <h3 className="font-editorial text-2xl font-medium tracking-tight text-foreground">
                 Thermal Performance Ready for Analysis
@@ -540,7 +540,7 @@ export function SimulationsView() {
                 {isQueueing ? (
                   <>
                     <RotateCw className="size-4 animate-spin" />
-                    Dispatching EnergyPlus…
+                    Dispatching ThermoShelter Core…
                   </>
                 ) : (
                   <>
@@ -882,8 +882,8 @@ export function SimulationsView() {
 
         <div className="rounded-[2rem] border border-border bg-card p-6 shadow-[0_20px_55px_rgba(0,0,0,.04)]">
           <div className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Engine In Use</div>
-          <div className="text-base font-bold text-foreground mt-2">EnergyPlus 24.1.0</div>
-          <p className="text-[10px] text-muted-foreground mt-1">RC Solver & heat balance</p>
+          <div className="text-base font-bold text-foreground mt-2">ThermoShelter Core</div>
+          <p className="text-[10px] text-muted-foreground mt-1">High-altitude solver & heat balance</p>
         </div>
 
         <div className="rounded-[2rem] border border-border bg-card p-6 shadow-[0_20px_55px_rgba(0,0,0,.04)]">
@@ -905,7 +905,7 @@ export function SimulationsView() {
                 {activeRuns} {activeRuns === 1 ? "simulation is" : "simulations are"} currently active in the execution queue.
               </span>
               <p className="text-[11px] text-muted-foreground mt-0.5">
-                EnergyPlus thermodynamic balance equations are executing in isolated processes. Results will auto-update upon convergence.
+                ThermoShelter thermodynamic balance equations are executing in isolated processes. Results will auto-update upon convergence.
               </p>
             </div>
           </div>
@@ -1207,7 +1207,7 @@ export function SimulationsView() {
             {/* Explanation & Features Card */}
             <div className="rounded-2xl border border-border bg-secondary/40 p-4 space-y-2.5">
               <p className="text-xs text-foreground leading-relaxed font-medium">
-                EnergyPlus has finished computing all envelope heat fluxes, solar aperture harvests, and surface temperatures.
+                ThermoShelter Core has finished computing all envelope heat fluxes, solar aperture harvests, and surface temperatures.
               </p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1 text-[11px] text-muted-foreground">
                 <div className="flex items-center gap-2 p-2 rounded-xl bg-background/60 border border-border">

@@ -994,7 +994,7 @@ export function WeatherView() {
             <div className="flex items-center justify-between">
               <h3 className="text-base font-semibold flex items-center gap-2">
                 <Upload className="h-4 w-4 text-[#6E818F]" />
-                Upload EnergyPlus Weather (.epw)
+                Upload Climate Weather Dataset (.epw)
               </h3>
               <button onClick={() => setActiveModal(null)} className="text-muted-foreground hover:text-foreground">
                 <X className="h-5 w-5" />
@@ -1002,7 +1002,7 @@ export function WeatherView() {
             </div>
 
             <p className="text-xs text-muted-foreground">
-              Select an authentic EnergyPlus `.epw` file. The platform will validate header integrity, geographic coordinates, and physical variable bounds.
+              Select an authentic meteorological `.epw` file. The platform will validate header integrity, geographic coordinates, and physical variable bounds.
             </p>
 
             <div className="border-2 border-dashed border-border rounded-2xl p-6 text-center hover:border-[#6E818F] transition bg-secondary/30">
@@ -1018,7 +1018,7 @@ export function WeatherView() {
                 <span className="text-xs font-semibold text-foreground block">
                   {epwFile ? epwFile.name : "Click to browse or drop .epw file"}
                 </span>
-                <span className="text-[10px] text-muted-foreground block">EnergyPlus Weather format (35 columns)</span>
+                <span className="text-[10px] text-muted-foreground block">Standard EPW Weather format (35 columns)</span>
               </label>
             </div>
 
@@ -1551,7 +1551,7 @@ export function WeatherView() {
             </div>
 
             <p className="text-xs text-muted-foreground leading-relaxed">
-              Are you sure you want to remove this dataset from your active catalog? EnergyPlus simulations using this dataset will default to certified WMO benchmarks.
+              Are you sure you want to remove this dataset from your active catalog? ThermoShelter simulations using this dataset will default to certified WMO benchmarks.
             </p>
 
             <div className="flex justify-end gap-3 pt-2">

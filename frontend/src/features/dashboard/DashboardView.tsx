@@ -101,7 +101,7 @@ export function DashboardView() {
                 ? summary.comfortHoursPct >= 80
                   ? "Promising winter thermal response."
                   : "Comfort target requires envelope tuning."
-                : "Ready for EnergyPlus validation."}
+                : "Ready for ThermoShelter validation."}
             </h2>
             <p className="mt-4 text-sm leading-6 text-[#536772]">
               {summary
@@ -143,7 +143,7 @@ export function DashboardView() {
               detail={
                 latestRun
                   ? "Adjust envelope insulation and solar aperture in Designer"
-                  : "Confirm weather provenance and dispatch EnergyPlus"
+                  : "Confirm weather provenance and dispatch ThermoShelter"
               }
               onClick={() => router.push(latestRun ? "/designer" : "/simulations")}
             />
@@ -211,7 +211,7 @@ export function DashboardView() {
             <span className="flex size-10 items-center justify-center rounded-xl bg-secondary">
               <Cpu className="size-5 text-foreground" />
             </span>
-            <h3 className="mt-4 text-base font-semibold">EnergyPlus Simulation</h3>
+            <h3 className="mt-4 text-base font-semibold">ThermoShelter Simulation</h3>
             <p className="mt-1 text-xs leading-5 text-muted-foreground">
               Sub-hourly physics-based heat balance and comfort calculations.
             </p>

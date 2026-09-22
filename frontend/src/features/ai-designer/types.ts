@@ -91,6 +91,7 @@ export interface ModelStatus {
   is_surrogate_available: boolean;
   model_card?: {
     model_version?: string;
+    version?: string | number;
     model_family?: string;
     training_date?: string;
     training_sample_count?: number;
