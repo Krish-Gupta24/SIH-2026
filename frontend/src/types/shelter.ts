@@ -47,10 +47,33 @@ export interface AssemblyModel {
   layers: LayerModel[];
 }
 
+export interface RoofSolarPanelsConfig {
+  enabled: boolean;
+  panelCount: number;             // Number of modules (e.g. 4 to 16)
+  panelWattageW: number;          // Rated power per module in Watts (e.g. 400 Wp)
+  panelEfficiencyPct: number;     // e.g. 21.5%
+  panelAreaM2?: number;           // Total active PV collector area (m²)
+  tiltAngleDeg?: number;          // Racking tilt angle relative to horizon (°)
+  systemCapacityKw?: number;      // Calculated total rated capacity (kWp)
+  coverageRatioPct?: number;      // % of roof area occupied by PV modules
+  mountingType?: "FlushMount" | "BallastedRacking" | "UnistrutElevated";
+}
+
+export interface WindowSolarPaneConfig {
+  enabled: boolean;
+  transparencyPct: number;        // Visible light transmittance VLT % (e.g. 20% to 50%)
+  powerDensityWpM2: number;       // Peak power density per unit glass area in Wp/m² (e.g. 60 to 120 Wp/m²)
+  efficiencyPct: number;          // PV cell efficiency % (e.g. 10% to 15%)
+  shgc?: number;                  // Solar heat gain coefficient with BIPV coating (e.g. 0.32)
+  uValue?: number;                // Thermal transmittance W/m²K (e.g. 1.2 W/m²K)
+  capacityWatts?: number;         // Calculated peak electrical capacity (Watts)
+}
+
 export interface RoofAssemblyModel extends AssemblyModel {
   slope: number;               // Pitch angle (°)
   overhang: number;            // Overhang projection (m)
   solarAbsorptance: number;    // Exterior surface solar absorptance (0.0 to 1.0)
+  solarPanels?: RoofSolarPanelsConfig;
 }
 
 export interface FloorAssemblyModel extends AssemblyModel {
@@ -79,6 +102,7 @@ export interface WindowModel {
   glazingType: "Single_Clear" | "Double_LowE_Argon" | "Triple_LowE_Krypton";
   frameType: "Aluminum_ThermalBreak" | "UPVC_Insulated" | "Wood_HighPerformance";
   shadingOverhang: number;     // Depth of external shading overhang (m)
+  solarPane?: WindowSolarPaneConfig;
 }
 
 export interface DoorModel {

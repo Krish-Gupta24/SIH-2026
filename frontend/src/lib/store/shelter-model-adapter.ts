@@ -49,7 +49,7 @@ export function modelToFormValues(model: ShelterModel): ShelterFormValues {
       elevation: model.location?.elevation ?? 3500,
       region: model.location?.region || "Leh Ladakh, India",
       climateZone: model.location?.climateZone || "Cold / Extreme Alpine",
-      weatherSource: model.location?.weatherSource || "IND_JK_Leh.427053_TMYx.epw",
+      weatherSource: model.location?.weatherSource || "IND_JK_Leh.427053_TMYx",
       designTempWinter: model.location?.designTempWinter ?? -20,
       designTempSummer: model.location?.designTempSummer ?? 28,
     },

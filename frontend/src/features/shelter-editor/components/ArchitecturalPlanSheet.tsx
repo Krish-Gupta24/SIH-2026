@@ -1,7 +1,13 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
-import type { ShelterModel, WindowModel, DoorModel } from "@/types/shelter";
+import type {
+  ShelterModel,
+  WindowModel,
+  DoorModel,
+  RoofSolarPanelsConfig,
+  WindowSolarPaneConfig,
+} from "@/types/shelter";
 import { calculateAssemblyUValue } from "@/features/shelter-3d/thermal-physics";
 import {
   Printer,
@@ -294,6 +300,7 @@ export function ArchitecturalPlanSheet({
                     solarAngle={winterSolsticeSunAngle}
                     windows={southWindows}
                     doors={southDoors}
+                    roofSolarPanels={model.envelope?.roof?.solarPanels}
                   />
                 </div>
 
@@ -395,6 +402,7 @@ export function ArchitecturalPlanSheet({
                   solarAngle={winterSolsticeSunAngle}
                   windows={southWindows}
                   doors={southDoors}
+                  roofSolarPanels={model.envelope?.roof?.solarPanels}
                   scaleFactor={1.3}
                 />
               </div>
@@ -459,6 +467,7 @@ export function ArchitecturalPlanSheet({
                   uWall={southWallRes.uValue}
                   uRoof={roofRes.uValue}
                   uFloor={floorRes.uValue}
+                  roofSolarPanels={model.envelope?.roof?.solarPanels}
                 />
               </div>
             )}
@@ -477,6 +486,7 @@ export function ArchitecturalPlanSheet({
                   roofU={roofRes.uValue}
                   floorU={floorRes.uValue}
                   windows={windows}
+                  roofSolarPanels={model.envelope?.roof?.solarPanels}
                   detailedMode={true}
                 />
               </div>
@@ -582,6 +592,7 @@ export function ArchitecturalPlanSheet({
                 solarAngle={winterSolsticeSunAngle}
                 windows={southWindows}
                 doors={southDoors}
+                roofSolarPanels={model.envelope?.roof?.solarPanels}
                 scaleFactor={1.15}
               />
             </div>
@@ -687,6 +698,7 @@ export function ArchitecturalPlanSheet({
               uWall={southWallRes.uValue}
               uRoof={roofRes.uValue}
               uFloor={floorRes.uValue}
+              roofSolarPanels={model.envelope?.roof?.solarPanels}
               scaleFactor={1.15}
             />
           </div>
@@ -726,6 +738,7 @@ export function ArchitecturalPlanSheet({
               roofU={roofRes.uValue}
               floorU={floorRes.uValue}
               windows={windows}
+              roofSolarPanels={model.envelope?.roof?.solarPanels}
               detailedMode={true}
             />
           </div>
@@ -889,6 +902,23 @@ function ModernArchitecturalTitleBlock({
           <span>Solar Glazing (WWR):</span>
           <strong>{totalGlazingArea.toFixed(1)} m² ({wwr}%)</strong>
         </div>
+        {(() => {
+          const roofSolar = model.envelope?.roof?.solarPanels;
+          const roofSolarKw = roofSolar?.enabled !== false
+            ? (((roofSolar?.panelCount ?? 6) * (roofSolar?.panelWattageW ?? 400)) / 1000).toFixed(2)
+            : "0.00";
+          const bipvTotalWatts = (model.windows || [])
+            .filter((w) => w.solarPane?.enabled)
+            .reduce((sum, w) => sum + (w.width || 1.4) * (w.height || 1.2) * (w.solarPane?.powerDensityWpM2 || 90), 0)
+            .toFixed(0);
+
+          return (
+            <div className="flex justify-between text-amber-600 dark:text-amber-400 font-bold">
+              <span>Active Solar PV:</span>
+              <span>{roofSolarKw} kWp + {bipvTotalWatts} Wp BIPV</span>
+            </div>
+          );
+        })()}
         <p className="text-[7.5px] text-emerald-600 dark:text-emerald-400 font-bold pt-0.5">
           STANDARD: IS 3792 / NBC 2016 PASSIVE COLD CLIMATE
         </p>
@@ -1123,6 +1153,7 @@ function SouthElevationSvg({
   solarAngle,
   windows,
   doors,
+  roofSolarPanels,
   scaleFactor = 1.0,
 }: {
   length: number;
@@ -1133,6 +1164,7 @@ function SouthElevationSvg({
   solarAngle: number;
   windows: WindowModel[];
   doors: DoorModel[];
+  roofSolarPanels?: RoofSolarPanelsConfig;
   scaleFactor?: number;
 }) {
   const svgW = 600 * scaleFactor;
@@ -1160,6 +1192,11 @@ function SouthElevationSvg({
           <stop offset="0%" stopColor="#bfdbfe" stopOpacity="0.85" />
           <stop offset="60%" stopColor="#dbeafe" stopOpacity="0.95" />
           <stop offset="100%" stopColor="#93c5fd" stopOpacity="0.8" />
+        </linearGradient>
+        <linearGradient id="bipv-glaze-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#0b172a" stopOpacity="0.95" />
+          <stop offset="50%" stopColor="#1e293b" stopOpacity="0.95" />
+          <stop offset="100%" stopColor="#0f172a" stopOpacity="0.95" />
         </linearGradient>
       </defs>
 
@@ -1202,6 +1239,80 @@ function SouthElevationSvg({
         strokeWidth="1.4"
       />
 
+      {/* ROOFTOP SOLAR PV ARRAY RACKING */}
+      {(() => {
+        const isSolar = roofSolarPanels?.enabled !== false;
+        if (!isSolar) return null;
+        const panelCount = Math.min(16, Math.max(2, roofSolarPanels?.panelCount ?? 6));
+        const panelWattage = roofSolarPanels?.panelWattageW ?? 400;
+        const totalKw = (((roofSolarPanels?.panelCount ?? 6) * panelWattage) / 1000).toFixed(2);
+        const tilt = roofSolarPanels?.tiltAngleDeg ?? 30;
+        const arrayWidth = wallW * 0.85;
+        const arrayStartX = startX + (wallW - arrayWidth) / 2;
+        const panelW = (arrayWidth - (panelCount - 1) * 3) / panelCount;
+        const panelH = 13 * scaleFactor;
+        const rackY = topWallY - 10 * scaleFactor - panelH - 3;
+
+        return (
+          <g>
+            {/* Elevated Racking Rails */}
+            <line
+              x1={arrayStartX - 4}
+              y1={topWallY - 10 * scaleFactor}
+              x2={arrayStartX + arrayWidth + 4}
+              y2={topWallY - 10 * scaleFactor}
+              stroke="#64748b"
+              strokeWidth="2"
+            />
+            {/* Strut supports */}
+            {Array.from({ length: Math.min(8, panelCount + 1) }).map((_, i) => {
+              const sx = arrayStartX + (i * arrayWidth) / Math.min(7, panelCount);
+              return (
+                <line
+                  key={`strut-${i}`}
+                  x1={sx}
+                  y1={topWallY - 10 * scaleFactor}
+                  x2={sx}
+                  y2={rackY + panelH}
+                  stroke="#94a3b8"
+                  strokeWidth="1.2"
+                />
+              );
+            })}
+            {/* Individual Solar Panels */}
+            {Array.from({ length: panelCount }).map((_, i) => {
+              const px = arrayStartX + i * (panelW + 3);
+              return (
+                <g key={`pv-panel-${i}`}>
+                  {/* Panel Frame & Active Silicon */}
+                  <rect
+                    x={px}
+                    y={rackY}
+                    width={panelW}
+                    height={panelH}
+                    rx="1.5"
+                    fill="#0f172a"
+                    stroke="#0284c7"
+                    strokeWidth="1"
+                  />
+                  {/* Crystalline PV Cell Grids */}
+                  <line x1={px + panelW * 0.33} y1={rackY} x2={px + panelW * 0.33} y2={rackY + panelH} stroke="#0ea5e9" strokeWidth="0.5" strokeOpacity="0.8" />
+                  <line x1={px + panelW * 0.66} y1={rackY} x2={px + panelW * 0.66} y2={rackY + panelH} stroke="#0ea5e9" strokeWidth="0.5" strokeOpacity="0.8" />
+                  <line x1={px} y1={rackY + panelH * 0.5} x2={px + panelW} y2={rackY + panelH * 0.5} stroke="#38bdf8" strokeWidth="0.4" strokeOpacity="0.6" />
+                </g>
+              );
+            })}
+            {/* Capacity Annotation Tag */}
+            <g transform={`translate(${startX + wallW / 2}, ${rackY - 5})`}>
+              <rect x="-85" y="-8" width="170" height="11" rx="2.5" fill="#0369a1" fillOpacity="0.9" />
+              <text x="0" y="0" textAnchor="middle" fontSize="6" fontWeight="bold" fill="#ffffff">
+                ROOF SOLAR PV: {panelCount} PANELS ({totalKw} kWp @ {tilt}°)
+              </text>
+            </g>
+          </g>
+        );
+      })()}
+
       {/* Dynamic Doors on South Facade */}
       {doors.map((door, idx) => {
         const dW = (door.width || 0.95) * pxPerMeter;
@@ -1218,7 +1329,7 @@ function SouthElevationSvg({
         );
       })}
 
-      {/* Dynamic Windows on South Facade (Passive Solar Collectors) */}
+      {/* Dynamic Windows on South Facade (Passive Solar Collectors & BIPV Panes) */}
       {windows.length > 0 ? (
         windows.map((win, idx) => {
           const wW = (win.width || 1.4) * pxPerMeter;
@@ -1236,29 +1347,71 @@ function SouthElevationSvg({
                 width={wW + 4}
                 height={wH + 4}
                 fill="#0f172a"
-                stroke="#0369a1"
+                stroke={win.solarPane?.enabled ? "#0ea5e9" : "#0369a1"}
                 strokeWidth="1.2"
               />
-              {/* Passive Glazing Pane */}
-              <rect
-                x={wX}
-                y={wY}
-                width={wW}
-                height={wH}
-                fill="url(#south-glaze-grad)"
-                stroke="#0284c7"
-                strokeWidth="1"
-              />
-              {/* Internal Mullions */}
-              {wW > 35 && (
+
+              {/* If window has BIPV solar pane enabled */}
+              {win.solarPane?.enabled ? (
                 <>
-                  <line x1={wX + wW * 0.33} y1={wY} x2={wX + wW * 0.33} y2={wY + wH} stroke="#0369a1" strokeWidth="0.8" />
-                  <line x1={wX + wW * 0.66} y1={wY} x2={wX + wW * 0.66} y2={wY + wH} stroke="#0369a1" strokeWidth="0.8" />
+                  {/* BIPV Glazing Tint */}
+                  <rect
+                    x={wX}
+                    y={wY}
+                    width={wW}
+                    height={wH}
+                    fill="url(#bipv-glaze-grad)"
+                    stroke="#38bdf8"
+                    strokeWidth="1"
+                  />
+                  {/* BIPV Photovoltaic Busbar Grid Lines */}
+                  {Array.from({ length: 4 }).map((_, bi) => (
+                    <line
+                      key={`bipv-bus-${bi}`}
+                      x1={wX}
+                      y1={wY + (wH * (bi + 1)) / 5}
+                      x2={wX + wW}
+                      y2={wY + (wH * (bi + 1)) / 5}
+                      stroke="#0ea5e9"
+                      strokeWidth="0.8"
+                      strokeDasharray="4 2"
+                      strokeOpacity="0.8"
+                    />
+                  ))}
+                  {/* BIPV Badge & Output Tag */}
+                  <g transform={`translate(${wX + wW / 2}, ${wY + wH / 2})`}>
+                    <rect x="-35" y="-8" width="70" height="16" rx="2" fill="#0f172a" fillOpacity="0.9" stroke="#38bdf8" strokeWidth="0.6" />
+                    <text x="0" y="-1" textAnchor="middle" fontSize="5.5" fontWeight="bold" fill="#38bdf8">
+                      BIPV SOLAR PANE
+                    </text>
+                    <text x="0" y="6" textAnchor="middle" fontSize="5" fill="#f8fafc">
+                      {((win.width || 1.4) * (win.height || 1.2) * (win.solarPane?.powerDensityWpM2 || 90)).toFixed(0)}Wp · {win.solarPane?.transparencyPct || 30}% VLT
+                    </text>
+                  </g>
+                </>
+              ) : (
+                /* Standard Passive Glazing Pane */
+                <>
+                  <rect
+                    x={wX}
+                    y={wY}
+                    width={wW}
+                    height={wH}
+                    fill="url(#south-glaze-grad)"
+                    stroke="#0284c7"
+                    strokeWidth="1"
+                  />
+                  {wW > 35 && (
+                    <>
+                      <line x1={wX + wW * 0.33} y1={wY} x2={wX + wW * 0.33} y2={wY + wH} stroke="#0369a1" strokeWidth="0.8" />
+                      <line x1={wX + wW * 0.66} y1={wY} x2={wX + wW * 0.66} y2={wY + wH} stroke="#0369a1" strokeWidth="0.8" />
+                    </>
+                  )}
+                  <text x={wX + wW / 2} y={wY + wH / 2 + 3} textAnchor="middle" fontSize="6.5" fontWeight="bold" fill="#0c4a6e">
+                    SOLAR {win.width}x{win.height}m
+                  </text>
                 </>
               )}
-              <text x={wX + wW / 2} y={wY + wH / 2 + 3} textAnchor="middle" fontSize="6.5" fontWeight="bold" fill="#0c4a6e">
-                SOLAR {win.width}x{win.height}m
-              </text>
             </g>
           );
         })
@@ -1719,6 +1872,7 @@ function TechnicalSectionSvg({
   uWall,
   uRoof,
   uFloor,
+  roofSolarPanels,
   scaleFactor = 1.0,
 }: {
   length: number;
@@ -1729,6 +1883,7 @@ function TechnicalSectionSvg({
   uWall: number;
   uRoof: number;
   uFloor: number;
+  roofSolarPanels?: RoofSolarPanelsConfig;
   scaleFactor?: number;
 }) {
   const svgW = 680 * scaleFactor;
@@ -1857,6 +2012,34 @@ function TechnicalSectionSvg({
         INSULATED ROOF DECK (U={uRoof} W/m²K · AEROGEL CORE)
       </text>
 
+      {/* Rooftop Solar PV Elevated Racking (Cross-Section) */}
+      {(() => {
+        const isSolar = roofSolarPanels?.enabled !== false;
+        if (!isSolar) return null;
+        const tilt = roofSolarPanels?.tiltAngleDeg ?? 30;
+        const totalKw = (((roofSolarPanels?.panelCount ?? 6) * (roofSolarPanels?.panelWattageW ?? 400)) / 1000).toFixed(2);
+        return (
+          <g>
+            {/* Tilted Solar PV Array Cut Section */}
+            <line
+              x1={startX + 30}
+              y1={topWallY - 20}
+              x2={startX + wallW - 30}
+              y2={topWallY - 32}
+              stroke="#0284c7"
+              strokeWidth="3.5"
+            />
+            {/* Racking Stanchions */}
+            <line x1={startX + 50} y1={topWallY - 16} x2={startX + 50} y2={topWallY - 21} stroke="#64748b" strokeWidth="1.5" />
+            <line x1={startX + wallW / 2} y1={topWallY - 16} x2={startX + wallW / 2} y2={topWallY - 26} stroke="#64748b" strokeWidth="1.5" />
+            <line x1={startX + wallW - 50} y1={topWallY - 16} x2={startX + wallW - 50} y2={topWallY - 31} stroke="#64748b" strokeWidth="1.5" />
+            <text x={startX + wallW / 2} y={topWallY - 36} textAnchor="middle" fontSize="6.5" fontWeight="bold" fill="#0284c7">
+              ROOFTOP SOLAR PV ARRAY ({totalKw} kWp · {tilt}° TILT RACKING)
+            </text>
+          </g>
+        );
+      })()}
+
       {/* Interior Air Zone - Comfort Node */}
       <g transform={`translate(${startX + wallW / 2}, ${topWallY + wallH / 2})`}>
         <circle cx="0" cy="0" r="28" fill="none" stroke="#f59e0b" strokeWidth="1" strokeDasharray="3 3" />
@@ -1889,6 +2072,7 @@ function MaterialReferenceSchedule({
   roofU,
   floorU,
   windows,
+  roofSolarPanels,
   detailedMode = false,
 }: {
   southWallU: number;
@@ -1896,9 +2080,18 @@ function MaterialReferenceSchedule({
   roofU: number;
   floorU: number;
   windows: WindowModel[];
+  roofSolarPanels?: RoofSolarPanelsConfig;
   detailedMode?: boolean;
 }) {
   const primaryWindow = windows[0];
+  const isRoofSolar = roofSolarPanels?.enabled !== false;
+  const roofSolarKw = isRoofSolar
+    ? (((roofSolarPanels?.panelCount ?? 6) * (roofSolarPanels?.panelWattageW ?? 400)) / 1000).toFixed(2)
+    : "0.00";
+  const bipvWindows = windows.filter((w) => w.solarPane?.enabled);
+  const bipvWatts = bipvWindows
+    .reduce((sum, w) => sum + (w.width || 1.4) * (w.height || 1.2) * (w.solarPane?.powerDensityWpM2 || 90), 0)
+    .toFixed(0);
 
   return (
     <div className="space-y-3 font-mono">
@@ -1976,6 +2169,24 @@ function MaterialReferenceSchedule({
             </div>
             <p className="text-[9px] text-slate-500">
               Heavy timber core + dual EPDM compression seals for sub-zero wind-pressure resistance.
+            </p>
+          </div>
+        </div>
+
+        {/* Ext-06: Active Solar Generation Assets */}
+        <div className="flex items-start gap-2.5 p-1.5 rounded-lg border border-amber-300 dark:border-amber-900 bg-amber-50/60 dark:bg-amber-950/30">
+          <div className="size-4 shrink-0 rounded bg-amber-500 text-white font-bold flex items-center justify-center text-[9px] mt-0.5">
+            ☀️
+          </div>
+          <div className="flex-1">
+            <div className="flex justify-between items-baseline font-bold text-slate-900 dark:text-slate-100">
+              <span>EXT-06: ACTIVE SOLAR PV & BIPV HARDWARE</span>
+              <span className="text-amber-600 dark:text-amber-400 font-extrabold">
+                {roofSolarKw} kWp Rooftop + {bipvWatts} Wp BIPV
+              </span>
+            </div>
+            <p className="text-[9px] text-slate-600 dark:text-slate-400">
+              Rooftop: {roofSolarPanels?.panelCount ?? 6} monocrystalline panels ({roofSolarPanels?.tiltAngleDeg ?? 30}° tilt) · Fenestration: {bipvWindows.length} see-through BIPV solar panes.
             </p>
           </div>
         </div>

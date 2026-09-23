@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { ShelterFormValues, ShelterFormReturn } from "../schema";
 import { FieldWrapper } from "../components/FieldWrapper";
-import { Home, Plus, Trash2, ArrowUpDown } from "lucide-react";
+import { Home, Plus, Trash2, ArrowUpDown, Sun, Zap } from "lucide-react";
 
 interface StepProps {
   form: ShelterFormReturn;
@@ -190,6 +190,214 @@ export function Step5Roof({ form, advancedMode }: StepProps) {
           </button>
         </div>
       </div>
+
+      {/* ROOFTOP SOLAR PV ARRAY SECTION */}
+      {(() => {
+        const solarPanels = watch("roof.solarPanels") || {
+          enabled: true,
+          panelCount: 6,
+          panelWattageW: 400,
+          panelEfficiencyPct: 21.5,
+          tiltAngleDeg: 30,
+          mountingType: "UnistrutElevated",
+        };
+        const isEnabled = solarPanels.enabled !== false;
+        const count = solarPanels.panelCount ?? 6;
+        const wattage = solarPanels.panelWattageW ?? 400;
+        const efficiency = solarPanels.panelEfficiencyPct ?? 21.5;
+        const tilt = solarPanels.tiltAngleDeg ?? 30;
+        const mounting = solarPanels.mountingType ?? "UnistrutElevated";
+        const totalKw = ((count * wattage) / 1000).toFixed(2);
+        const estArea = (count * 1.95).toFixed(1);
+        const estDailyKwh = (Number(totalKw) * 4.8 * (efficiency / 21.5)).toFixed(1);
+
+        return (
+          <div className="rounded-xl border border-amber-300/80 bg-amber-50/40 p-4 shadow-xs dark:border-amber-900/50 dark:bg-amber-950/20">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-amber-200/60 pb-3 dark:border-amber-900/40">
+              <div className="flex items-center gap-2.5">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-500 text-white shadow-xs">
+                  <Sun className="h-4 w-4" />
+                </div>
+                <div>
+                  <h4 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                    Rooftop Solar Photovoltaic (PV) Array
+                    <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-800 dark:bg-amber-900/60 dark:text-amber-300">
+                      Active Solar Hardware
+                    </span>
+                  </h4>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    Mount high-efficiency monocrystalline PV modules on the roof to power electric heaters and recharge thermal batteries.
+                  </p>
+                </div>
+              </div>
+
+              <label className="relative inline-flex cursor-pointer items-center">
+                <input
+                  type="checkbox"
+                  checked={isEnabled}
+                  onChange={(e) => {
+                    setValue("roof.solarPanels", {
+                      ...solarPanels,
+                      enabled: e.target.checked,
+                    });
+                  }}
+                  className="peer sr-only"
+                />
+                <div className="peer h-6 w-11 rounded-full bg-slate-300 after:absolute after:top-[2px] after:left-[2px] after:h-5 after:w-5 after:rounded-full after:border after:border-gray-300 after:bg-white after:transition-all after:content-[''] peer-checked:bg-amber-500 peer-checked:after:translate-x-full peer-checked:after:border-white peer-focus:outline-none dark:bg-slate-700"></div>
+                <span className="ml-2 text-xs font-semibold text-slate-700 dark:text-slate-200">
+                  {isEnabled ? "Installed" : "Disabled"}
+                </span>
+              </label>
+            </div>
+
+            {isEnabled && (
+              <div className="mt-4 space-y-4">
+                {/* Live Real-time Telemetry Bar */}
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 rounded-lg border border-amber-200 bg-white/80 p-3 shadow-xs dark:border-amber-900/60 dark:bg-slate-900/80">
+                  <div>
+                    <span className="text-[10px] uppercase font-semibold text-slate-400">Array Capacity</span>
+                    <p className="text-base font-extrabold text-amber-600 dark:text-amber-400">
+                      {totalKw} <span className="text-xs font-normal text-slate-500">kWp</span>
+                    </p>
+                  </div>
+                  <div>
+                    <span className="text-[10px] uppercase font-semibold text-slate-400">Module Count</span>
+                    <p className="text-base font-extrabold text-slate-800 dark:text-slate-200">
+                      {count} <span className="text-xs font-normal text-slate-500">panels</span>
+                    </p>
+                  </div>
+                  <div>
+                    <span className="text-[10px] uppercase font-semibold text-slate-400">Collector Area</span>
+                    <p className="text-base font-extrabold text-slate-800 dark:text-slate-200">
+                      {estArea} <span className="text-xs font-normal text-slate-500">m²</span>
+                    </p>
+                  </div>
+                  <div>
+                    <span className="text-[10px] uppercase font-semibold text-slate-400">Est. Daily Yield (Ladakh)</span>
+                    <p className="text-base font-extrabold text-emerald-600 dark:text-emerald-400">
+                      ~{estDailyKwh} <span className="text-xs font-normal text-slate-500">kWh/day</span>
+                    </p>
+                  </div>
+                </div>
+
+                {/* Parameter Inputs */}
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3">
+                  <FieldWrapper
+                    label="Panel Count"
+                    unit="modules"
+                    tooltip="Number of standard 1.95m² solar photovoltaic panels installed on the roof."
+                  >
+                    <input
+                      type="number"
+                      min={1}
+                      max={48}
+                      step={1}
+                      value={count}
+                      onChange={(e) => {
+                        setValue("roof.solarPanels", {
+                          ...solarPanels,
+                          panelCount: Math.max(1, Number(e.target.value) || 1),
+                        });
+                      }}
+                      className="w-full rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs text-slate-900 shadow-sm focus:border-amber-500 focus:outline-none dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+                    />
+                  </FieldWrapper>
+
+                  <FieldWrapper
+                    label="Module Rated Power"
+                    unit="Wp"
+                    tooltip="Nominal peak output rating per individual panel (standard tier: 400Wp, high performance: 550Wp)."
+                  >
+                    <input
+                      type="number"
+                      min={100}
+                      max={750}
+                      step={10}
+                      value={wattage}
+                      onChange={(e) => {
+                        setValue("roof.solarPanels", {
+                          ...solarPanels,
+                          panelWattageW: Math.max(100, Number(e.target.value) || 400),
+                        });
+                      }}
+                      className="w-full rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs text-slate-900 shadow-sm focus:border-amber-500 focus:outline-none dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+                    />
+                  </FieldWrapper>
+
+                  <FieldWrapper
+                    label="Module Efficiency"
+                    unit="%"
+                    tooltip="Solar cell conversion efficiency (monocrystalline PERC: 20-22%, TOPCon/HJT: 22-24%)."
+                  >
+                    <input
+                      type="number"
+                      min={10}
+                      max={30}
+                      step={0.1}
+                      value={efficiency}
+                      onChange={(e) => {
+                        setValue("roof.solarPanels", {
+                          ...solarPanels,
+                          panelEfficiencyPct: Math.max(10, Number(e.target.value) || 21.5),
+                        });
+                      }}
+                      className="w-full rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs text-slate-900 shadow-sm focus:border-amber-500 focus:outline-none dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+                    />
+                  </FieldWrapper>
+
+                  <FieldWrapper
+                    label="Racking Tilt Angle"
+                    unit="°"
+                    tooltip="Tilt relative to horizontal horizon. In high-altitude Ladakh (lat ~34°N), 30° to 45° optimizes winter harvest and self-clearing snow shed."
+                  >
+                    <input
+                      type="number"
+                      min={0}
+                      max={85}
+                      step={1}
+                      value={tilt}
+                      onChange={(e) => {
+                        setValue("roof.solarPanels", {
+                          ...solarPanels,
+                          tiltAngleDeg: Math.max(0, Math.min(85, Number(e.target.value) || 30)),
+                        });
+                      }}
+                      className="w-full rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs text-slate-900 shadow-sm focus:border-amber-500 focus:outline-none dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+                    />
+                  </FieldWrapper>
+
+                  <FieldWrapper
+                    label="Racking Mounting System"
+                    tooltip="Structural mounting hardware anchored to roof framing or ballasted against alpine wind loads."
+                  >
+                    <select
+                      value={mounting}
+                      onChange={(e) => {
+                        setValue("roof.solarPanels", {
+                          ...solarPanels,
+                          mountingType: e.target.value as any,
+                        });
+                      }}
+                      className="w-full rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs text-slate-900 shadow-sm focus:border-amber-500 focus:outline-none dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+                    >
+                      <option value="UnistrutElevated">Elevated Unistrut Frame (300mm Snow Clearance)</option>
+                      <option value="FlushMount">Flush Roof Mounting (Seam Clamped)</option>
+                      <option value="BallastedRacking">Heavy Ballasted Non-Penetrating Racking</option>
+                    </select>
+                  </FieldWrapper>
+                </div>
+
+                <div className="flex items-center gap-2 rounded-lg bg-amber-100/60 p-2.5 text-[11px] text-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
+                  <Zap className="h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
+                  <span>
+                    <strong>Real-time dispatch impact:</strong> This {totalKw} kWp rooftop array directly feeds the thermal battery bank and electric radiant heating coils, slashing diurnal heating deficit before kerosene backup is initiated.
+                  </span>
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      })()}
     </div>
   );
 }

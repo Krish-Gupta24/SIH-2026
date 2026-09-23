@@ -1,15 +1,15 @@
 import { AppShell } from "@/components/layout/AppShell";
-import { OptimizationView } from "@/features/optimization/OptimizationView";
+import { OptimizationPageContainer } from "@/features/optimization";
 
 export const metadata = {
-  title: "Thermal Optimization | ShelterThermal",
-  description: "Parametric sensitivity curves for insulation thickness, WWR, and thermal mass.",
+  title: "Thermal, Energy, Fuel & Cost Optimization | ShelterThermal",
+  description: "Area-specific passive shelter optimization, renewable solar dispatch, and kerosene abatement analysis.",
 };
 
 export default function OptimizationPage() {
   return (
     <AppShell>
-      <OptimizationView />
+      <OptimizationPageContainer />
     </AppShell>
   );
 }

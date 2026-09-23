@@ -13,10 +13,33 @@ export const assemblySchema = z.object({
   layers: z.array(layerSchema).min(1, "Assembly must have at least one layer"),
 });
 
+export const roofSolarPanelsSchema = z.object({
+  enabled: z.boolean().default(true),
+  panelCount: z.number().min(0).max(64).default(6),
+  panelWattageW: z.number().min(50).max(800).default(400),
+  panelEfficiencyPct: z.number().min(5).max(30).default(21.5),
+  panelAreaM2: z.number().optional(),
+  tiltAngleDeg: z.number().min(0).max(90).optional(),
+  systemCapacityKw: z.number().optional(),
+  coverageRatioPct: z.number().optional(),
+  mountingType: z.enum(["FlushMount", "BallastedRacking", "UnistrutElevated"]).optional(),
+}).optional();
+
+export const windowSolarPaneSchema = z.object({
+  enabled: z.boolean().default(false),
+  transparencyPct: z.number().min(5).max(80).default(30),
+  powerDensityWpM2: z.number().min(10).max(250).default(90),
+  efficiencyPct: z.number().min(5).max(25).default(12.5),
+  shgc: z.number().min(0.1).max(0.9).optional(),
+  uValue: z.number().min(0.5).max(3.0).optional(),
+  capacityWatts: z.number().optional(),
+}).optional();
+
 export const roofAssemblySchema = assemblySchema.extend({
   slope: z.number().min(0, "Roof pitch cannot be negative").max(85, "Roof pitch cannot exceed 85°"),
   overhang: z.number().min(0, "Overhang cannot be negative").max(3.0, "Overhang cannot exceed 3 m"),
   solarAbsorptance: z.number().min(0.0, "Absorptance must be >= 0").max(1.0, "Absorptance must be <= 1"),
+  solarPanels: roofSolarPanelsSchema,
 });
 
 export const floorAssemblySchema = assemblySchema.extend({
@@ -34,6 +57,7 @@ export const windowSchema = z.object({
   glazingType: z.enum(["Single_Clear", "Double_LowE_Argon", "Triple_LowE_Krypton"]),
   frameType: z.enum(["Aluminum_ThermalBreak", "UPVC_Insulated", "Wood_HighPerformance"]),
   shadingOverhang: z.number().min(0, "Overhang depth cannot be negative").max(2.5, "Max overhang 2.5 m"),
+  solarPane: windowSolarPaneSchema,
 });
 
 export const doorSchema = z.object({
@@ -174,7 +198,7 @@ export const defaultShelterFormValues: ShelterFormValues = {
     elevation: 3500.0,
     region: "Leh Ladakh, India",
     climateZone: "Cold / Extreme Alpine",
-    weatherSource: "IND_JK_Leh.427053_TMYx.epw",
+    weatherSource: "IND_JK_Leh.427053_TMYx",
     designTempWinter: -20.0,
     designTempSummer: 28.0,
   },
@@ -227,7 +251,15 @@ export const defaultShelterFormValues: ShelterFormValues = {
     name: "Insulated Heavy Metal Roof",
     slope: 0.0,
     overhang: 0.6,
-    solarAbsorptance: 0.7,
+    solarAbsorptance: 0.65,
+    solarPanels: {
+      enabled: true,
+      panelCount: 6,
+      panelWattageW: 400,
+      panelEfficiencyPct: 21.5,
+      tiltAngleDeg: 30,
+      mountingType: "UnistrutElevated",
+    },
     layers: [
       { materialId: "mat-galvanized-steel", name: "Galvanized Corrugated Steel", thickness: 0.005 },
       { materialId: "mat-eps-insulation", name: "Rigid EPS Insulation", thickness: 0.15 },
@@ -256,6 +288,14 @@ export const defaultShelterFormValues: ShelterFormValues = {
       glazingType: "Double_LowE_Argon",
       frameType: "UPVC_Insulated",
       shadingOverhang: 0.5,
+      solarPane: {
+        enabled: true,
+        transparencyPct: 30,
+        powerDensityWpM2: 90,
+        efficiencyPct: 12.5,
+        shgc: 0.35,
+        uValue: 1.20,
+      },
     },
     {
       id: "win-south-02",

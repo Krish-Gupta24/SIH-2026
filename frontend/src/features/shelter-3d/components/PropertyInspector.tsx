@@ -21,8 +21,16 @@ import {
   Sliders,
   Play,
   CheckCircle2,
+  Sun,
+  Zap,
 } from "lucide-react";
-import type { ShelterModel, WindowModel, DoorModel } from "@/types/shelter";
+import type {
+  ShelterModel,
+  WindowModel,
+  DoorModel,
+  RoofSolarPanelsConfig,
+  WindowSolarPaneConfig,
+} from "@/types/shelter";
 import type { SelectedElement, WallOrientation } from "../types";
 import {
   findNextAvailableOpeningPosition,
@@ -95,6 +103,235 @@ function SectionTitle({
         <button aria-label="Close inspector selection" onClick={onClose}>
           <X className="size-4" />
         </button>
+      )}
+    </div>
+  );
+}
+
+function RoofSolarPanelsEditor({
+  model,
+  onUpdate,
+}: {
+  model: ShelterModel;
+  onUpdate: (updates: Partial<ShelterModel>) => void;
+}) {
+  const solar = model.envelope?.roof?.solarPanels || {
+    enabled: true,
+    panelCount: 6,
+    panelWattageW: 400,
+    panelEfficiencyPct: 21.5,
+    tiltAngleDeg: 30,
+    mountingType: "UnistrutElevated",
+  };
+  const isEnabled = solar.enabled !== false;
+  const count = solar.panelCount ?? 6;
+  const wattage = solar.panelWattageW ?? 400;
+  const totalKw = ((count * wattage) / 1000).toFixed(2);
+  const totalArea = (count * 1.95).toFixed(1);
+
+  const updateSolar = (patch: Partial<RoofSolarPanelsConfig>) => {
+    onUpdate({
+      envelope: {
+        ...model.envelope,
+        roof: {
+          ...model.envelope.roof,
+          solarPanels: {
+            ...solar,
+            ...patch,
+          },
+        },
+      },
+    });
+  };
+
+  return (
+    <div className="mt-3 rounded-lg border border-amber-500/40 bg-amber-500/10 p-2.5">
+      <div className="flex items-center justify-between">
+        <span className="flex items-center gap-1.5 text-xs font-semibold text-amber-300">
+          <Sun className="size-3.5 text-amber-400" />
+          Rooftop Solar Array
+        </span>
+        <label className="flex items-center gap-1.5 text-[11px] text-slate-300 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={isEnabled}
+            onChange={(e) => updateSolar({ enabled: e.target.checked })}
+            className="rounded border-slate-700 bg-slate-800 text-amber-500 focus:ring-0"
+          />
+          {isEnabled ? "Installed" : "Off"}
+        </label>
+      </div>
+
+      {isEnabled && (
+        <div className="mt-2 space-y-2">
+          <div className="cad-field-grid">
+            <label className="cad-field">
+              <span>Panel Count <small>pcs</small></span>
+              <input
+                type="number"
+                min={1}
+                max={48}
+                value={count}
+                onChange={(e) => updateSolar({ panelCount: Math.max(1, Number(e.target.value) || 1) })}
+              />
+            </label>
+            <label className="cad-field">
+              <span>Module Power <small>Wp</small></span>
+              <input
+                type="number"
+                min={100}
+                max={750}
+                step={25}
+                value={wattage}
+                onChange={(e) => updateSolar({ panelWattageW: Math.max(100, Number(e.target.value) || 400) })}
+              />
+            </label>
+          </div>
+          <div className="cad-field-grid">
+            <label className="cad-field">
+              <span>Racking Tilt <small>deg</small></span>
+              <input
+                type="number"
+                min={0}
+                max={85}
+                value={solar.tiltAngleDeg ?? 30}
+                onChange={(e) => updateSolar({ tiltAngleDeg: Math.max(0, Math.min(85, Number(e.target.value) || 30)) })}
+              />
+            </label>
+            <label className="cad-field">
+              <span>Efficiency <small>%</small></span>
+              <input
+                type="number"
+                min={10}
+                max={30}
+                step={0.5}
+                value={solar.panelEfficiencyPct ?? 21.5}
+                onChange={(e) => updateSolar({ panelEfficiencyPct: Math.max(10, Number(e.target.value) || 21.5) })}
+              />
+            </label>
+          </div>
+          <label className="cad-field">
+            <span>Mounting Frame</span>
+            <select
+              value={solar.mountingType || "UnistrutElevated"}
+              onChange={(e) => updateSolar({ mountingType: e.target.value as any })}
+            >
+              <option value="UnistrutElevated">Elevated Racking (Snow Clear)</option>
+              <option value="FlushMount">Flush Roof Clamp</option>
+              <option value="BallastedRacking">Heavy Ballasted</option>
+            </select>
+          </label>
+          <div className="cad-property-summary">
+            <span>{totalKw} kWp Rated</span>
+            <span>{totalArea} m² Collector</span>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function WindowSolarPaneEditor({
+  windowItem,
+  onUpdateWindow,
+}: {
+  windowItem: WindowModel;
+  onUpdateWindow: (patch: Partial<WindowModel>) => void;
+}) {
+  const pane = windowItem.solarPane || {
+    enabled: false,
+    transparencyPct: 30,
+    powerDensityWpM2: 90,
+    efficiencyPct: 12.5,
+    shgc: 0.35,
+    uValue: 1.20,
+  };
+  const isEnabled = pane.enabled === true;
+  const wArea = ((windowItem.width || 1.4) * (windowItem.height || 1.2)).toFixed(2);
+  const peakW = (Number(wArea) * (pane.powerDensityWpM2 ?? 90)).toFixed(1);
+
+  const updatePane = (patch: Partial<WindowSolarPaneConfig>) => {
+    onUpdateWindow({
+      solarPane: {
+        ...pane,
+        ...patch,
+      },
+    });
+  };
+
+  return (
+    <div className="mt-3 rounded-lg border border-sky-500/40 bg-sky-500/10 p-2.5">
+      <div className="flex items-center justify-between">
+        <span className="flex items-center gap-1.5 text-xs font-semibold text-sky-300">
+          <Zap className="size-3.5 text-sky-400" />
+          BIPV Solar Pane Glazing
+        </span>
+        <label className="flex items-center gap-1.5 text-[11px] text-slate-300 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={isEnabled}
+            onChange={(e) => updatePane({ enabled: e.target.checked })}
+            className="rounded border-slate-700 bg-slate-800 text-sky-500 focus:ring-0"
+          />
+          {isEnabled ? "Active" : "Off"}
+        </label>
+      </div>
+
+      {isEnabled && (
+        <div className="mt-2 space-y-2">
+          <div className="cad-field-grid">
+            <label className="cad-field">
+              <span>VLT Transmittance <small>%</small></span>
+              <input
+                type="number"
+                min={5}
+                max={80}
+                step={5}
+                value={pane.transparencyPct ?? 30}
+                onChange={(e) => updatePane({ transparencyPct: Number(e.target.value) || 30 })}
+              />
+            </label>
+            <label className="cad-field">
+              <span>Power Density <small>Wp/m²</small></span>
+              <input
+                type="number"
+                min={20}
+                max={250}
+                step={5}
+                value={pane.powerDensityWpM2 ?? 90}
+                onChange={(e) => updatePane({ powerDensityWpM2: Number(e.target.value) || 90 })}
+              />
+            </label>
+          </div>
+          <div className="cad-field-grid">
+            <label className="cad-field">
+              <span>Cell Efficiency <small>%</small></span>
+              <input
+                type="number"
+                min={5}
+                max={25}
+                step={0.5}
+                value={pane.efficiencyPct ?? 12.5}
+                onChange={(e) => updatePane({ efficiencyPct: Number(e.target.value) || 12.5 })}
+              />
+            </label>
+            <label className="cad-field">
+              <span>SHGC Coating</span>
+              <input
+                type="number"
+                min={0.15}
+                max={0.80}
+                step={0.02}
+                value={pane.shgc ?? 0.35}
+                onChange={(e) => updatePane({ shgc: Number(e.target.value) || 0.35 })}
+              />
+            </label>
+          </div>
+          <div className="cad-property-summary">
+            <span>{wArea} m² Glass</span>
+            <span className="text-sky-400 font-semibold">{peakW} Wp Generation</span>
+          </div>
+        </div>
       )}
     </div>
   );
@@ -290,6 +527,7 @@ export function PropertyInspector({
               </div>
             ))}
           </div>
+          <RoofSolarPanelsEditor model={model} onUpdate={onUpdate} />
         </div>
       );
     }
@@ -433,6 +671,8 @@ export function PropertyInspector({
             step={0.05}
             onChange={(v) => updateWindow(item.id, { shadingOverhang: v })}
           />
+
+          <WindowSolarPaneEditor windowItem={item} onUpdateWindow={(patch) => updateWindow(item.id, patch)} />
 
           <button
             type="button"
@@ -716,6 +956,7 @@ export function PropertyInspector({
             </div>
           ))}
         </div>
+        <RoofSolarPanelsEditor model={model} onUpdate={onUpdate} />
       </div>
     );
   }
@@ -748,11 +989,18 @@ export function PropertyInspector({
     const wallArea = 2 * (model.geometry.length + model.geometry.width) * model.geometry.height;
     const wwr = wallArea > 0 ? ((totalWinArea / wallArea) * 100).toFixed(1) : "0";
 
+    const bipvWindows = model.windows.filter((w) => w.solarPane?.enabled);
+    const bipvCount = bipvWindows.length;
+    const totalBipvWatts = bipvWindows
+      .reduce((sum, w) => sum + w.width * w.height * (w.solarPane?.powerDensityWpM2 || 90), 0)
+      .toFixed(0);
+
     return (
       <div className="cad-inspector-content">
         <SectionTitle eyebrow="Stage 5 · Apertures & Ingress" title="Windows & Doors" />
         <div className="cad-property-summary">
           <span>{model.windows.length} Windows ({wwr}% WWR)</span>
+          <span>{bipvCount} BIPV ({totalBipvWatts} Wp)</span>
           <span>{model.doors.length} Doors</span>
         </div>
 

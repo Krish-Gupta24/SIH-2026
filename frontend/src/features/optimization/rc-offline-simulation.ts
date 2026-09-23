@@ -1,4 +1,4 @@
-﻿/**
+/**
  * RC Offline Simulation Module
  * Runs a lightweight RC (Resistance-Capacitance) thermal simulation locally
  * when the backend physics server is unreachable.
@@ -65,14 +65,48 @@ function computeUValue(model: ShelterModel) {
   const uRoof = rRoof > 0.17 ? 1.0 / rRoof : 0.22;
 
   const windows = model.windows || [];
-  const winArea = windows.reduce((sum, w) => sum + (w.width || 1.2) * (w.height || 1.0), 0) || 2.8;
-  const glazingType = windows[0]?.glazingType || "Double_LowE_Argon";
-  let uWindow = 1.40, shgc = 0.62;
-  if (glazingType.includes("Triple") || glazingType.includes("Krypton")) { uWindow = 0.80; shgc = 0.52; }
-  else if (glazingType.includes("Single")) { uWindow = 5.60; shgc = 0.82; }
+  let totalWinArea = 0;
+  let totalWinUa = 0;
+  let totalWinShgc = 0;
+  let totalBipvCapacityW = 0;
+
+  for (const w of windows) {
+    const wArea = (w.width || 1.2) * (w.height || 1.0);
+    totalWinArea += wArea;
+    const glazingType = w.glazingType || "Double_LowE_Argon";
+    let u = 1.40;
+    let s = 0.62;
+
+    if (glazingType.includes("Triple") || glazingType.includes("Krypton")) {
+      u = 0.80;
+      s = 0.52;
+    } else if (glazingType.includes("Single")) {
+      u = 5.60;
+      s = 0.82;
+    }
+
+    if (w.solarPane?.enabled) {
+      u = w.solarPane.uValue ?? 1.20;
+      s = w.solarPane.shgc ?? 0.35;
+      totalBipvCapacityW += wArea * (w.solarPane.powerDensityWpM2 ?? 90);
+    }
+
+    totalWinUa += wArea * u;
+    totalWinShgc += wArea * s;
+  }
+
+  const winArea = Math.max(0.1, totalWinArea);
+  const uWindow = totalWinUa / winArea;
+  const shgc = totalWinShgc / winArea;
+
+  const roofSolar = model.envelope?.roof?.solarPanels;
+  const roofPvCapacityW =
+    roofSolar?.enabled !== false && (roofSolar?.panelCount || 0) > 0
+      ? (roofSolar!.panelCount || 0) * (roofSolar!.panelWattageW || 400)
+      : 0;
 
   const ach = (model.ventilation as any)?.infiltrationAch || (model.ventilation as any)?.infiltrationRateAch || 0.35;
-  return { uWall, uRoof, uWindow, shgc, winArea, ach };
+  return { uWall, uRoof, uWindow, shgc, winArea, ach, totalBipvCapacityW, roofPvCapacityW };
 }
 
 export function runOfflineRCSimulation(model: ShelterModel, opts: RCSimulationOptions) {
@@ -83,7 +117,7 @@ export function runOfflineRCSimulation(model: ShelterModel, opts: RCSimulationOp
   const floorArea = L * W;
   const volume = floorArea * H;
 
-  const { uWall, uRoof, uWindow, shgc, winArea, ach } = computeUValue(model);
+  const { uWall, uRoof, uWindow, shgc, winArea, ach, totalBipvCapacityW, roofPvCapacityW } = computeUValue(model);
   const orientation = model.geometry?.orientation ?? 0;
   const solarFactor = Math.max(0.05, (Math.cos((orientation * Math.PI) / 180) + 1.0) / 2.0);
 

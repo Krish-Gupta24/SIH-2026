@@ -10,6 +10,7 @@ import {
   AlertTriangle,
   ShieldCheck,
   Layers,
+  Zap,
 } from "lucide-react";
 import { findNextAvailableOpeningPosition } from "@/features/shelter-3d/geometry-math";
 
@@ -349,6 +350,183 @@ export function Step5WindowsAndDoors({ form, advancedMode }: StepProps) {
                         />
                       </FieldWrapper>
                     </div>
+
+                    {/* BIPV Solar Pane Glass Option */}
+                    {(() => {
+                      const solarPane = win.solarPane || {
+                        enabled: false,
+                        transparencyPct: 30,
+                        powerDensityWpM2: 90,
+                        efficiencyPct: 12.5,
+                        shgc: 0.35,
+                        uValue: 1.20,
+                      };
+                      const hasSolarPane = solarPane.enabled === true;
+                      const wArea = ((win.width || 1.4) * (win.height || 1.2)).toFixed(2);
+                      const peakW = (Number(wArea) * (solarPane.powerDensityWpM2 ?? 90)).toFixed(1);
+
+                      return (
+                        <div className="mt-3.5 rounded-lg border border-sky-300/80 bg-sky-50/50 p-3 dark:border-sky-900/60 dark:bg-sky-950/30">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <Zap className="h-4 w-4 text-sky-600 dark:text-sky-400" />
+                              <span className="text-xs font-bold text-slate-900 dark:text-white">
+                                Photovoltaic Solar Window Pane (BIPV)
+                              </span>
+                              <span className="rounded-full bg-sky-100 px-2 py-0.5 text-[9px] font-semibold text-sky-800 dark:bg-sky-900/60 dark:text-sky-300">
+                                See-Through Solar Glazing
+                              </span>
+                            </div>
+
+                            <label className="relative inline-flex cursor-pointer items-center">
+                              <input
+                                type="checkbox"
+                                checked={hasSolarPane}
+                                onChange={(e) => {
+                                  const updated = [...windows];
+                                  updated[idx] = {
+                                    ...updated[idx],
+                                    solarPane: {
+                                      ...solarPane,
+                                      enabled: e.target.checked,
+                                    },
+                                  };
+                                  setValue("windows", updated);
+                                }}
+                                className="peer sr-only"
+                              />
+                              <div className="peer h-5 w-9 rounded-full bg-slate-300 after:absolute after:top-[2px] after:left-[2px] after:h-4 after:w-4 after:rounded-full after:border after:border-gray-300 after:bg-white after:transition-all after:content-[''] peer-checked:bg-sky-600 peer-checked:after:translate-x-full peer-checked:after:border-white peer-focus:outline-none dark:bg-slate-700"></div>
+                              <span className="ml-1.5 text-[11px] font-semibold text-slate-700 dark:text-slate-200">
+                                {hasSolarPane ? "BIPV Active" : "Standard Glass"}
+                              </span>
+                            </label>
+                          </div>
+
+                          {hasSolarPane && (
+                            <div className="mt-3 space-y-3">
+                              <div className="flex flex-wrap items-center gap-4 rounded-md border border-sky-200 bg-white/80 px-3 py-1.5 text-[11px] dark:border-sky-900/50 dark:bg-slate-900/80">
+                                <span>Glass Area: <strong>{wArea} m²</strong></span>
+                                <span>Peak Power: <strong className="text-sky-600 dark:text-sky-400">{peakW} Wp</strong></span>
+                                <span>VLT Transmittance: <strong>{solarPane.transparencyPct ?? 30}%</strong></span>
+                                <span>Thermal U-Value: <strong>{solarPane.uValue ?? 1.20} W/m²K</strong></span>
+                              </div>
+
+                              <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
+                                <FieldWrapper label="Transparency (VLT)" unit="%" tooltip="Visible light transmittance through the see-through photovoltaic glazing.">
+                                  <input
+                                    type="number"
+                                    min={5}
+                                    max={80}
+                                    step={5}
+                                    value={solarPane.transparencyPct ?? 30}
+                                    onChange={(e) => {
+                                      const updated = [...windows];
+                                      updated[idx] = {
+                                        ...updated[idx],
+                                        solarPane: {
+                                          ...solarPane,
+                                          transparencyPct: Number(e.target.value) || 30,
+                                        },
+                                      };
+                                      setValue("windows", updated);
+                                    }}
+                                    className="w-full rounded border border-slate-300 bg-white px-2 py-1 text-xs text-slate-900 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+                                  />
+                                </FieldWrapper>
+
+                                <FieldWrapper label="Power Density" unit="Wp/m²" tooltip="Electrical power output rating per square meter of window glass.">
+                                  <input
+                                    type="number"
+                                    min={20}
+                                    max={250}
+                                    step={5}
+                                    value={solarPane.powerDensityWpM2 ?? 90}
+                                    onChange={(e) => {
+                                      const updated = [...windows];
+                                      updated[idx] = {
+                                        ...updated[idx],
+                                        solarPane: {
+                                          ...solarPane,
+                                          powerDensityWpM2: Number(e.target.value) || 90,
+                                        },
+                                      };
+                                      setValue("windows", updated);
+                                    }}
+                                    className="w-full rounded border border-slate-300 bg-white px-2 py-1 text-xs text-slate-900 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+                                  />
+                                </FieldWrapper>
+
+                                <FieldWrapper label="Cell Efficiency" unit="%" tooltip="Photovoltaic micro-cell conversion efficiency.">
+                                  <input
+                                    type="number"
+                                    min={5}
+                                    max={25}
+                                    step={0.5}
+                                    value={solarPane.efficiencyPct ?? 12.5}
+                                    onChange={(e) => {
+                                      const updated = [...windows];
+                                      updated[idx] = {
+                                        ...updated[idx],
+                                        solarPane: {
+                                          ...solarPane,
+                                          efficiencyPct: Number(e.target.value) || 12.5,
+                                        },
+                                      };
+                                      setValue("windows", updated);
+                                    }}
+                                    className="w-full rounded border border-slate-300 bg-white px-2 py-1 text-xs text-slate-900 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+                                  />
+                                </FieldWrapper>
+
+                                <FieldWrapper label="Solar SHGC" tooltip="Solar heat gain coefficient with BIPV micro-cell layer.">
+                                  <input
+                                    type="number"
+                                    min={0.15}
+                                    max={0.80}
+                                    step={0.02}
+                                    value={solarPane.shgc ?? 0.35}
+                                    onChange={(e) => {
+                                      const updated = [...windows];
+                                      updated[idx] = {
+                                        ...updated[idx],
+                                        solarPane: {
+                                          ...solarPane,
+                                          shgc: Number(e.target.value) || 0.35,
+                                        },
+                                      };
+                                      setValue("windows", updated);
+                                    }}
+                                    className="w-full rounded border border-slate-300 bg-white px-2 py-1 text-xs text-slate-900 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+                                  />
+                                </FieldWrapper>
+
+                                <FieldWrapper label="U-Value" unit="W/m²K" tooltip="Thermal transmittance coefficient of the insulating BIPV double/triple glazed unit.">
+                                  <input
+                                    type="number"
+                                    min={0.5}
+                                    max={2.5}
+                                    step={0.05}
+                                    value={solarPane.uValue ?? 1.20}
+                                    onChange={(e) => {
+                                      const updated = [...windows];
+                                      updated[idx] = {
+                                        ...updated[idx],
+                                        solarPane: {
+                                          ...solarPane,
+                                          uValue: Number(e.target.value) || 1.20,
+                                        },
+                                      };
+                                      setValue("windows", updated);
+                                    }}
+                                    className="w-full rounded border border-slate-300 bg-white px-2 py-1 text-xs text-slate-900 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+                                  />
+                                </FieldWrapper>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })()}
                   </div>
                 );
               })
