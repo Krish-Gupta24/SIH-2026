@@ -255,19 +255,15 @@ export function SimulationsView() {
       return;
     }
 
-    setIsQueueing(true);
-    setQueueError(null);
-    setConfirmTestDataModal(false);
+    let periodType = "quick";
+    let runPeriodDays = 1;
+    let sMonth = startMonth;
+    let sDay = startDay;
+    let eMonth = endMonth;
+    let eDay = endDay;
+    let isAnnual = false;
 
     try {
-      let periodType = "quick";
-      let runPeriodDays = 1;
-      let sMonth = startMonth;
-      let sDay = startDay;
-      let eMonth = endMonth;
-      let eDay = endDay;
-      let isAnnual = false;
-
       const daysInMonth = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
       const maxDaysThisMonth = daysInMonth[selectedMonth - 1] || 31;
 
@@ -392,7 +388,72 @@ export function SimulationsView() {
       pollSimulationStatus(simId, projToSim);
     } catch (err: any) {
       console.error("Queueing simulation failed:", err);
-      setQueueError(err.message || "Failed to dispatch simulation to ThermoShelter engine.");
+
+      // Detect network / offline errors and fall back to local RC model
+      const isOfflineErr =
+        err.message?.toLowerCase().includes("failed to fetch") ||
+        err.message?.toLowerCase().includes("network") ||
+        err.message?.toLowerCase().includes("econnrefused") ||
+        err.message?.toLowerCase().includes("networkerror");
+
+      if (isOfflineErr) {
+        // Run the RC offline simulation synchronously
+        try {
+          const { runOfflineRCSimulation } = await import("@/features/optimization/rc-offline-simulation");
+          const simId = `sim-offline-${Date.now().toString().slice(-6)}`;
+          setLastQueuedJobId(simId);
+          const isTest = isTestData || matchedStation?.isTestData;
+          const rcResults = runOfflineRCSimulation(projToSim, {
+            periodType,
+            runPeriodDays,
+            startMonth: sMonth,
+            startDay: sDay,
+            endMonth: eMonth,
+            endDay: eDay,
+            timestep,
+            isAnnual,
+          });
+          const newJob: SimulationJobItem = {
+            id: simId,
+            projectId: projToSim.id,
+            projectName: projToSim.project?.name || "Canonical Shelter",
+            shelterModel: projToSim,
+            weatherDatasetId: matchedStation?.id || activeWeatherId,
+            weatherDatasetName: matchedStation?.name || weatherFileName,
+            weatherProvenance: {
+              weather_source: isTest ? "TEST_DATA" : "REAL_DATA",
+              status: isTest ? "TEST_DATA" : "REAL_DATA",
+              is_test_data: isTest,
+            },
+            simulationPeriod: {
+              period_type: periodType,
+              is_annual: isAnnual,
+              start_month: sMonth,
+              start_day: sDay,
+              end_month: eMonth,
+              end_day: eDay,
+              run_period_days: runPeriodDays,
+              timestep_per_hour: timestep,
+              timestep_minutes: Math.floor(60 / timestep),
+            },
+            allowTestData: isTest,
+            engine: "ThermoShelter RC (Offline)",
+            engineVersion: "1.0.0",
+            status: "completed",
+            queuedAt: new Date().toISOString(),
+            completedAt: new Date().toISOString(),
+            durationSeconds: 0.3,
+            results: rcResults,
+          };
+          addProject(projToSim);
+          addSimulationJob(newJob);
+        } catch (rcErr) {
+          console.error("RC fallback also failed:", rcErr);
+          setQueueError("Backend offline and local RC fallback failed. Please start the backend server with: cd backend && python main.py");
+        }
+      } else {
+        setQueueError(err.message || "Failed to dispatch simulation. Check backend is running.");
+      }
     } finally {
       setIsQueueing(false);
       setPendingSimProject(null);
@@ -644,6 +705,16 @@ export function SimulationsView() {
                 </div>
               </div>
 
+              {/* Full-year performance warning */}
+              {periodPreset === "full_year" && (
+                <div className="flex items-start gap-2.5 rounded-xl border border-amber-400/40 bg-amber-50/60 dark:bg-amber-950/20 px-3.5 py-3 text-xs text-amber-800 dark:text-amber-200">
+                  <Calendar className="size-4 text-amber-500 shrink-0 mt-0.5" />
+                  <div>
+                    <span className="font-bold">Full-Year Simulation (8,760 hourly steps)</span> — Backend may take 2–10 minutes. If the backend is offline, the local RC model completes in under 1 second with annual statistics.
+                  </div>
+                </div>
+              )}
+
                 {/* Sub-inputs for 24h Quick Run */}
                 {periodPreset === "quick" && (
                   <div className="space-y-2 bg-secondary/50 p-3.5 rounded-2xl border border-border text-xs">
@@ -880,13 +951,35 @@ export function SimulationsView() {
               </div>
 
               {queueError && (
-                <div className="mt-3 rounded-2xl border-2 border-rose-500/60 bg-rose-50 dark:bg-rose-950/40 p-4 text-xs text-rose-900 dark:text-rose-100 flex items-start gap-3 shadow-md">
-                  <AlertCircle className="h-5 w-5 text-rose-600 dark:text-rose-400 shrink-0 mt-0.5" />
-                  <div className="space-y-1">
-                    <p className="font-bold text-sm text-rose-700 dark:text-rose-300">Simulation Queue Error</p>
-                    <p className="leading-relaxed font-mono text-[11px] text-rose-800 dark:text-rose-300 bg-white/70 dark:bg-black/40 p-2.5 rounded-xl border border-rose-300 dark:border-rose-900">
-                      {queueError}
-                    </p>
+                <div className="mt-3 rounded-2xl border-2 border-rose-500/60 bg-rose-50 dark:bg-rose-950/40 p-4 text-xs text-rose-900 dark:text-rose-100 shadow-md">
+                  <div className="flex items-start gap-3">
+                    <AlertCircle className="h-5 w-5 text-rose-600 dark:text-rose-400 shrink-0 mt-0.5" />
+                    <div className="flex-1 space-y-1">
+                      <p className="font-bold text-sm text-rose-700 dark:text-rose-300">Simulation Queue Error</p>
+                      <p className="leading-relaxed font-mono text-[11px] text-rose-800 dark:text-rose-300 bg-white/70 dark:bg-black/40 p-2.5 rounded-xl border border-rose-300 dark:border-rose-900">
+                        {queueError}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setQueueError(null)}
+                      className="text-rose-400 hover:text-rose-600 transition shrink-0 mt-0.5"
+                      title="Dismiss"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
+                  <div className="mt-3 flex items-center gap-2 pl-8">
+                    <button
+                      type="button"
+                      onClick={() => { setQueueError(null); handleQueueSimulation(targetProject || projects[0]); }}
+                      className="inline-flex items-center gap-1.5 rounded-full bg-rose-600 px-3 py-1 text-[11px] font-bold text-white hover:bg-rose-700"
+                    >
+                      <RotateCw className="size-3" /> Retry
+                    </button>
+                    <span className="text-[10px] text-rose-600 dark:text-rose-400">
+                      Backend offline? The system will auto-fallback to the local RC physics model.
+                    </span>
                   </div>
                 </div>
               )}

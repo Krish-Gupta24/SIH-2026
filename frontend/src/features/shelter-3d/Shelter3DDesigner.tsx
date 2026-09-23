@@ -185,18 +185,6 @@ export function Shelter3DDesigner({ model, step, onStepChange, onUpdate, onSimul
             <span className="sm:hidden">Sim Required</span>
           </button>
         )}
-        <button
-          type="button"
-          onClick={() => {
-            onUpdate(model);
-            router.push(`/designer?step=${step3dTo2d(step)}`);
-          }}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-secondary/80 hover:bg-secondary text-foreground border border-border transition-all cursor-pointer mr-1"
-          title="Return to 2D Engineering Wizard at this stage"
-        >
-          <Sliders className="size-3.5 text-sky-500" />
-          <span>2D Wizard</span>
-        </button>
         <button aria-label="Undo" disabled={!history.current.length} onClick={undo}><Undo2 /></button>
         <button aria-label="Redo" disabled={!future.current.length} onClick={redo}><Redo2 /></button>
         <button data-active={settings.showGrid} aria-label="Toggle grid" onClick={() => setSetting("showGrid", !settings.showGrid)}><Grid3X3 /></button>
@@ -326,128 +314,128 @@ export function Shelter3DDesigner({ model, step, onStepChange, onUpdate, onSimul
           (settings.visualization === "thermal" ||
             settings.visualization === "heat-flow" ||
             settings.visualization === "solar") ? (
-            <div
-              className="cad-timeline-scrubber"
-              role="region"
-              aria-label="24-Hour Diurnal Thermal Timeline"
-            >
-              <div className="cad-timeline-row-top">
-                <div className="cad-timeline-controls">
-                  <button
-                    type="button"
-                    className="cad-timeline-btn"
-                    aria-label="Previous hour"
-                    title="Step back 1 hour"
-                    onClick={() => setSelectedHour((h) => (h - 1 + 24) % 24)}
-                  >
-                    <SkipBack className="size-3.5" />
-                  </button>
-                  <button
-                    type="button"
-                    className={`cad-timeline-btn ${isPlaying ? "cad-timeline-btn-play" : ""}`}
-                    aria-label={isPlaying ? "Pause timeline playback" : "Play 24h diurnal cycle"}
-                    title={isPlaying ? "Pause playback" : "Play 24h diurnal cycle (1h/sec)"}
-                    onClick={() => setIsPlaying((p) => !p)}
-                  >
-                    {isPlaying ? (
-                      <Pause className="size-3.5" />
-                    ) : (
-                      <Play className="size-3.5 ml-0.5" />
-                    )}
-                  </button>
-                  <button
-                    type="button"
-                    className="cad-timeline-btn"
-                    aria-label="Next hour"
-                    title="Step forward 1 hour"
-                    onClick={() => setSelectedHour((h) => (h + 1) % 24)}
-                  >
-                    <SkipForward className="size-3.5" />
-                  </button>
-                  <span className="cad-timeline-chip font-bold text-amber-600 dark:text-amber-400">
-                    <Clock className="size-3" />
-                    {hourlyStep.timeLabel}
-                  </span>
-                </div>
-
-                <div className="cad-timeline-quick-hours">
-                  <span className="text-[10px] text-muted-foreground mr-1 hidden sm:inline">Jump:</span>
-                  {[
-                    { h: 0, label: "00h Night" },
-                    { h: 6, label: "06h Dawn" },
-                    { h: 12, label: "12h Noon" },
-                    { h: 18, label: "18h Dusk" },
-                  ].map((item) => (
-                    <button
-                      key={item.h}
-                      type="button"
-                      className="cad-timeline-quick-btn"
-                      data-active={selectedHour === item.h}
-                      onClick={() => setSelectedHour(item.h)}
-                    >
-                      {item.label}
-                    </button>
-                  ))}
-                </div>
-
-                <div className="flex items-center gap-1.5">
-                  <span
-                    className="cad-timeline-chip"
-                    style={{
-                      background: activeSim
-                        ? "rgba(16, 185, 129, 0.12)"
-                        : "rgba(59, 130, 246, 0.12)",
-                      color: activeSim ? "#059669" : "#2563eb",
-                      borderColor: activeSim
-                        ? "rgba(16, 185, 129, 0.28)"
-                        : "rgba(59, 130, 246, 0.25)",
-                    }}
-                  >
-                    {activeSim ? "⚡ ThermoShelter Sim" : "📐 ISO 6946 Sol-Air"}
-                  </span>
-                </div>
+          <div
+            className="cad-timeline-scrubber"
+            role="region"
+            aria-label="24-Hour Diurnal Thermal Timeline"
+          >
+            <div className="cad-timeline-row-top">
+              <div className="cad-timeline-controls">
+                <button
+                  type="button"
+                  className="cad-timeline-btn"
+                  aria-label="Previous hour"
+                  title="Step back 1 hour"
+                  onClick={() => setSelectedHour((h) => (h - 1 + 24) % 24)}
+                >
+                  <SkipBack className="size-3.5" />
+                </button>
+                <button
+                  type="button"
+                  className={`cad-timeline-btn ${isPlaying ? "cad-timeline-btn-play" : ""}`}
+                  aria-label={isPlaying ? "Pause timeline playback" : "Play 24h diurnal cycle"}
+                  title={isPlaying ? "Pause playback" : "Play 24h diurnal cycle (1h/sec)"}
+                  onClick={() => setIsPlaying((p) => !p)}
+                >
+                  {isPlaying ? (
+                    <Pause className="size-3.5" />
+                  ) : (
+                    <Play className="size-3.5 ml-0.5" />
+                  )}
+                </button>
+                <button
+                  type="button"
+                  className="cad-timeline-btn"
+                  aria-label="Next hour"
+                  title="Step forward 1 hour"
+                  onClick={() => setSelectedHour((h) => (h + 1) % 24)}
+                >
+                  <SkipForward className="size-3.5" />
+                </button>
+                <span className="cad-timeline-chip font-bold text-amber-600 dark:text-amber-400">
+                  <Clock className="size-3" />
+                  {hourlyStep.timeLabel}
+                </span>
               </div>
 
-              <div className="cad-timeline-slider-row">
-                <span className="text-[10px] font-mono text-muted-foreground w-7 text-right">00:00</span>
-                <input
-                  type="range"
-                  min="0"
-                  max="23"
-                  step="1"
-                  value={selectedHour}
-                  onChange={(e) => setSelectedHour(Number(e.target.value))}
-                  className="cad-timeline-slider"
-                  aria-label="Hour of day timeline slider"
-                />
-                <span className="text-[10px] font-mono text-muted-foreground w-7">23:00</span>
+              <div className="cad-timeline-quick-hours">
+                <span className="text-[10px] text-muted-foreground mr-1 hidden sm:inline">Jump:</span>
+                {[
+                  { h: 0, label: "00h Night" },
+                  { h: 6, label: "06h Dawn" },
+                  { h: 12, label: "12h Noon" },
+                  { h: 18, label: "18h Dusk" },
+                ].map((item) => (
+                  <button
+                    key={item.h}
+                    type="button"
+                    className="cad-timeline-quick-btn"
+                    data-active={selectedHour === item.h}
+                    onClick={() => setSelectedHour(item.h)}
+                  >
+                    {item.label}
+                  </button>
+                ))}
+              </div>
 
-                <div className="hidden md:flex items-center gap-2 border-l border-slate-300 dark:border-slate-700 pl-3">
-                  <span className="cad-timeline-chip" title="Ambient outdoor Sol-Air temperature">
-                    ❄ Out:{" "}
-                    <strong className="ml-0.5">
-                      {hourlyStep.outdoorTemp > 0
-                        ? `+${hourlyStep.outdoorTemp}`
-                        : hourlyStep.outdoorTemp}
-                      °C
-                    </strong>
-                  </span>
-                  <span className="cad-timeline-chip" title="Indoor living zone temperature">
-                    🏠 In:{" "}
-                    <strong className="ml-0.5">
-                      {hourlyStep.indoorTemp > 0
-                        ? `+${hourlyStep.indoorTemp}`
-                        : hourlyStep.indoorTemp}
-                      °C
-                    </strong>
-                  </span>
-                  <span className="cad-timeline-chip" title="Aperture solar irradiance harvest">
-                    ☀️ Sun: <strong className="ml-0.5">{hourlyStep.solarGainW} W</strong>
-                  </span>
-                </div>
+              <div className="flex items-center gap-1.5">
+                <span
+                  className="cad-timeline-chip"
+                  style={{
+                    background: activeSim
+                      ? "rgba(16, 185, 129, 0.12)"
+                      : "rgba(59, 130, 246, 0.12)",
+                    color: activeSim ? "#059669" : "#2563eb",
+                    borderColor: activeSim
+                      ? "rgba(16, 185, 129, 0.28)"
+                      : "rgba(59, 130, 246, 0.25)",
+                  }}
+                >
+                  {activeSim ? "⚡ ThermoShelter Sim" : "📐 ISO 6946 Sol-Air"}
+                </span>
               </div>
             </div>
-          ) : null}
+
+            <div className="cad-timeline-slider-row">
+              <span className="text-[10px] font-mono text-muted-foreground w-7 text-right">00:00</span>
+              <input
+                type="range"
+                min="0"
+                max="23"
+                step="1"
+                value={selectedHour}
+                onChange={(e) => setSelectedHour(Number(e.target.value))}
+                className="cad-timeline-slider"
+                aria-label="Hour of day timeline slider"
+              />
+              <span className="text-[10px] font-mono text-muted-foreground w-7">23:00</span>
+
+              <div className="hidden md:flex items-center gap-2 border-l border-slate-300 dark:border-slate-700 pl-3">
+                <span className="cad-timeline-chip" title="Ambient outdoor Sol-Air temperature">
+                  ❄ Out:{" "}
+                  <strong className="ml-0.5">
+                    {hourlyStep.outdoorTemp > 0
+                      ? `+${hourlyStep.outdoorTemp}`
+                      : hourlyStep.outdoorTemp}
+                    °C
+                  </strong>
+                </span>
+                <span className="cad-timeline-chip" title="Indoor living zone temperature">
+                  🏠 In:{" "}
+                  <strong className="ml-0.5">
+                    {hourlyStep.indoorTemp > 0
+                      ? `+${hourlyStep.indoorTemp}`
+                      : hourlyStep.indoorTemp}
+                    °C
+                  </strong>
+                </span>
+                <span className="cad-timeline-chip" title="Aperture solar irradiance harvest">
+                  ☀️ Sun: <strong className="ml-0.5">{hourlyStep.solarGainW} W</strong>
+                </span>
+              </div>
+            </div>
+          </div>
+        ) : null}
         <div className="cad-mode-label"><span>{settings.visualization === "model" ? "Geometry model" : `${settings.visualization.toUpperCase()} preview`}</span><strong>{settings.visualization === "thermal" ? "FLIR false-color IR thermography · Stefan-Boltzmann radiation emission" : settings.visualization === "solar" ? "Direct winter solar irradiance & glazing penetration (Leh Ladakh 34°N)" : settings.visualization === "heat-flow" ? "Envelope thermal bridges & convective currents" : "Editable canonical geometry"}</strong></div>
         <div className="cad-metrics"><span><small>Floor area</small><strong>{area.toFixed(1)} m²</strong></span><span><small>Volume</small><strong>{volume.toFixed(1)} m³</strong></span><span><small>South Glazing</small><strong>{southGlazingRatio.toFixed(1)}% WWR</strong></span><span><small>Solar Harvest</small><strong>~{estDailySolarGainKwh} kWh/d</strong></span><span><small>Openings</small><strong>{model.windows.length}W / {model.doors.length}D</strong></span></div>
         <button className="cad-inspector-toggle" aria-label="Toggle properties panel" onClick={() => setRightOpen(!rightOpen)}><PanelRight /></button>

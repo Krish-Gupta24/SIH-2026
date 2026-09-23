@@ -12,8 +12,13 @@ import {
 } from "@/lib/store/use-shelter-store";
 import { Badge } from "@/components/ui/badge";
 
-export function DesignPresetsDropdown() {
-  const { projects, activeProjectId, setActiveProject, addProject } = useShelterStore();
+export interface DesignPresetsDropdownProps {
+  onApplyPreset?: (presetModel: any, presetName: string) => void;
+}
+
+export function DesignPresetsDropdown({ onApplyPreset }: DesignPresetsDropdownProps = {}) {
+  const { projects, activeProjectId, updateProject } = useShelterStore();
+  const [appliedPresetMessage, setAppliedPresetMessage] = React.useState<string | null>(null);
 
   const presets = [
     {
@@ -58,27 +63,45 @@ export function DesignPresetsDropdown() {
     },
   ];
 
-  const currentPreset = presets.find((p) => p.id === activeProjectId) || presets[0];
-
   const handleSelect = (id: string) => {
-    // Check if project exists in store; if deleted/missing, re-instantiate preset archetype
-    const existing = projects.find((p) => p.id === id);
-    if (existing) {
-      setActiveProject(id);
-    } else {
-      const presetMap: Record<string, typeof DEFAULT_LADAKH_PROJECT> = {
-        "shelter-ladakh-01": DEFAULT_LADAKH_PROJECT,
-        "shelter-kargil-02": DEFAULT_KARGIL_PROJECT,
-        "shelter-spiti-03": DEFAULT_SPITI_PROJECT,
-        "shelter-tawang-04": DEFAULT_TAWANG_PROJECT,
-        "shelter-baseline-tin": DEFAULT_BASELINE_TIN_PROJECT,
-      };
-      const presetModel = presetMap[id] || DEFAULT_LADAKH_PROJECT;
+    const presetMap: Record<string, typeof DEFAULT_LADAKH_PROJECT> = {
+      "shelter-ladakh-01": DEFAULT_LADAKH_PROJECT,
+      "shelter-kargil-02": DEFAULT_KARGIL_PROJECT,
+      "shelter-spiti-03": DEFAULT_SPITI_PROJECT,
+      "shelter-tawang-04": DEFAULT_TAWANG_PROJECT,
+      "shelter-baseline-tin": DEFAULT_BASELINE_TIN_PROJECT,
+    };
+    const presetModel = presetMap[id];
+    if (!presetModel) return;
 
-      addProject(presetModel);
-      setActiveProject(presetModel.id);
+    const presetInfo = presets.find((p) => p.id === id);
+    const presetName = presetInfo?.name || "Preset";
+
+    if (onApplyPreset) {
+      onApplyPreset(presetModel, presetName);
+    } else {
+      // Direct store update if used standalone: copy engineering parameters into active project
+      if (activeProjectId) {
+        updateProject(activeProjectId, {
+          geometry: presetModel.geometry,
+          envelope: presetModel.envelope,
+          windows: presetModel.windows,
+          doors: presetModel.doors,
+          thermalMass: presetModel.thermalMass,
+          ventilation: presetModel.ventilation,
+          internalLoads: presetModel.internalLoads,
+          designTargets: presetModel.designTargets,
+          simulationSettings: presetModel.simulationSettings,
+        });
+      }
     }
+
+    setAppliedPresetMessage(`Copied "${presetName}" specs to current project`);
+    setTimeout(() => {
+      setAppliedPresetMessage(null);
+    }, 3500);
   };
+
 
   return (
     <div className="flex flex-col sm:flex-row sm:items-center gap-3 bg-secondary/40 border border-border p-2.5 rounded-2xl">
@@ -122,6 +145,13 @@ export function DesignPresetsDropdown() {
             </button>
           );
         })}
+
+        {appliedPresetMessage && (
+          <div className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 text-xs font-semibold animate-in fade-in">
+            <CheckCircle2 className="size-3.5 shrink-0" />
+            <span>{appliedPresetMessage}</span>
+          </div>
+        )}
       </div>
     </div>
   );

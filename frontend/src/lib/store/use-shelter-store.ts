@@ -2596,14 +2596,15 @@ export const useShelterStore = create<ShelterStoreState>()(
             set((state) => {
               const deletedIds = new Set(state.deletedProjectIds || []);
 
-              // The backend is the single source of truth across all devices.
-              // Keep projects that exist on backend and haven't been deleted locally.
+              // Keep projects that exist on backend and haven't been deleted locally
               const validBackendProjects = normalizedShelters.filter((ns) => !deletedIds.has(ns.id));
-              // Keep any purely local drafts that start with 'draft-'
-              const localDrafts = state.projects.filter(
-                (p) => !backendIds.has(p.id) && !deletedIds.has(p.id) && p.id.startsWith("draft-")
+              // Retain all existing local projects that have not been explicitly deleted
+              const localProjectsToKeep = (state.projects || []).filter(
+                (p) => !backendIds.has(p.id) && !deletedIds.has(p.id)
               );
-              const nextProjects = [...validBackendProjects, ...localDrafts];
+              // Non-destructive merge: backend projects + preserved local projects
+              const mergedProjects = [...validBackendProjects, ...localProjectsToKeep];
+              const nextProjects = mergedProjects.length > 0 ? mergedProjects : DEFAULT_PRESET_PROJECTS;
 
               // Check if project list actually changed to avoid spurious state updates
               const currentIds = state.projects.map((p) => p.id).join(",");
@@ -2619,9 +2620,9 @@ export const useShelterStore = create<ShelterStoreState>()(
 
               // Purge simulations belonging to projects that no longer exist
               const remainingIds = new Set(nextProjects.map((p) => p.id));
-              const nextSimulations = state.simulations.filter((s) => remainingIds.has(s.projectId));
+              const nextSimulations = (state.simulations || []).filter((s) => remainingIds.has(s.projectId));
               const nextJobIds = new Set(nextSimulations.map((s) => s.id));
-              const nextComparisons = state.comparisonJobIds.filter((cid) => nextJobIds.has(cid));
+              const nextComparisons = (state.comparisonJobIds || []).filter((cid) => nextJobIds.has(cid));
 
               return {
                 projects: nextProjects,
@@ -2630,6 +2631,19 @@ export const useShelterStore = create<ShelterStoreState>()(
                 comparisonJobIds: nextComparisons,
               };
             });
+
+            // Automatically sync any local projects to backend storage in the background
+            try {
+              const currentState = get();
+              const unpersisted = (currentState.projects || []).filter(
+                (p) => !backendIds.has(p.id) && !(currentState.deletedProjectIds || []).includes(p.id)
+              );
+              if (unpersisted.length > 0) {
+                unpersisted.forEach((up) => {
+                  api.projects.create(up).catch(() => {});
+                });
+              }
+            } catch (_) {}
           }
 
           // 2. Sync materials from backend

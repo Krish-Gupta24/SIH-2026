@@ -2,34 +2,59 @@
  * Strongly-typed HTTP client for communicating with the FastAPI backend platform.
  */
 
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL ||
-  (typeof window !== "undefined"
-    ? "/api/v1"
-    : (process.env.BACKEND_INTERNAL_URL ? `${process.env.BACKEND_INTERNAL_URL}/api/v1` : "http://127.0.0.1:8000/api/v1"));
+function getCandidateBaseUrls(): string[] {
+  const urls: string[] = [];
+  const envUrl = process.env.NEXT_PUBLIC_API_URL;
+  if (envUrl) {
+    urls.push(envUrl.replace("://localhost", "://127.0.0.1").replace(/\/+$/, ""));
+  }
+  urls.push("http://127.0.0.1:8000/api/v1");
+  if (typeof window !== "undefined") {
+    urls.push("/api/v1");
+  }
+  return Array.from(new Set(urls));
+}
+
+export const API_BASE_URL = getCandidateBaseUrls()[0];
 
 export async function fetchApi<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
-  const url = `${API_BASE_URL}${endpoint.startsWith("/") ? endpoint : `/${endpoint}`}`;
-  try {
-    const response = await fetch(url, {
-      ...options,
-      headers: {
-        "Content-Type": "application/json",
-        ...options.headers,
-      },
-    });
+  const cleanEndpoint = endpoint.startsWith("/") ? endpoint : `/${endpoint}`;
+  const candidates = getCandidateBaseUrls();
+  let lastError: any = null;
 
-    if (!response.ok) {
-      const errorBody = await response.text();
-      throw new Error(`API Error [${response.status}]: ${errorBody || response.statusText}`);
+  for (let i = 0; i < candidates.length; i++) {
+    const base = candidates[i];
+    const url = `${base}${cleanEndpoint}`;
+    try {
+      const response = await fetch(url, {
+        ...options,
+        headers: {
+          "Content-Type": "application/json",
+          ...options.headers,
+        },
+      });
+
+      if (!response.ok) {
+        const errorBody = await response.text();
+        throw new Error(`API Error [${response.status}]: ${errorBody || response.statusText}`);
+      }
+
+      return (await response.json()) as T;
+    } catch (err: any) {
+      lastError = err;
+      // If server responded with an HTTP status error, the backend was reached - do not retry candidates
+      if (err.message && err.message.startsWith("API Error [")) {
+        throw err;
+      }
+      // If it's a network failure ("Failed to fetch"), failover to next candidate
+      if (i < candidates.length - 1) {
+        continue;
+      }
     }
-
-    return (await response.json()) as T;
-  } catch (err: any) {
-    // Graceful error logging
-    console.warn(`[API fetchApi] ${endpoint} request failed:`, err.message);
-    throw err;
   }
+
+  console.warn(`[API fetchApi] All endpoint candidates failed for ${cleanEndpoint}:`, lastError?.message);
+  throw lastError || new Error(`Network request failed for ${cleanEndpoint}`);
 }
 
 export interface SimulationSubmitResponse {

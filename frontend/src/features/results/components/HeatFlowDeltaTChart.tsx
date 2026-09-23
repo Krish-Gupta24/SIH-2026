@@ -16,6 +16,7 @@ import {
 import { Flame, ArrowDownRight, Thermometer, ShieldCheck, Moon } from "lucide-react";
 import { UnitSystem } from "@/types/simulation";
 import { convertTemperature, getTemperatureUnit } from "../unit-converter";
+import { computeDownsampleIndices, formatTimeLabel } from "../chart-downsample";
 
 interface HeatFlowDeltaTChartProps {
   timestamps: string[];
@@ -36,8 +37,15 @@ export function HeatFlowDeltaTChart({
 }: HeatFlowDeltaTChartProps) {
   const tUnit = getTemperatureUnit(unit);
 
+  const totalLength = Math.max(timestamps.length, indoorTemp.length, outdoorTemp.length);
+  const { indices, stride } = useMemo(
+    () => computeDownsampleIndices(totalLength, 168),
+    [totalLength]
+  );
+
   const chartData = useMemo(() => {
-    return timestamps.map((ts, idx) => {
+    return indices.map((idx) => {
+      const ts = timestamps[idx] || `H${idx + 1}`;
       const rawIn = indoorTemp[idx] ?? 12.0;
       const rawOut = outdoorTemp[idx] ?? -15.0;
       const deltaT = Number((rawIn - rawOut).toFixed(2));
@@ -52,14 +60,12 @@ export function HeatFlowDeltaTChart({
         : idx % 24;
       const isNight = hour >= 18 || hour < 6;
 
-      const timeLabel = ts.includes("T")
-        ? ts.split("T")[1]?.slice(0, 5) || ts
-        : `H${idx + 1}`;
+      const timeLabel = formatTimeLabel(ts, idx, stride);
 
       return {
         index: idx,
         timestamp: ts,
-        timeLabel,
+        timeLabel: stride > 1 ? timeLabel : `H${idx + 1} (${timeLabel})`,
         deltaT,
         heatFlowWatts,
         heatFlowFlux,
@@ -68,7 +74,7 @@ export function HeatFlowDeltaTChart({
         isNight,
       };
     });
-  }, [timestamps, indoorTemp, outdoorTemp, unit, envelopeAreaM2, averageUFactor]);
+  }, [indices, timestamps, indoorTemp, outdoorTemp, unit, envelopeAreaM2, averageUFactor, stride]);
 
   const maxDeltaT = useMemo(
     () => Math.max(...chartData.map((d) => d.deltaT), 1),
@@ -174,8 +180,9 @@ export function HeatFlowDeltaTChart({
               dataKey="timeLabel"
               stroke="currentColor"
               strokeOpacity={0.4}
-              fontSize={11}
-              interval={Math.ceil(chartData.length / 12)}
+              fontSize={10}
+              interval="preserveStartEnd"
+              minTickGap={35}
               tickLine={false}
             />
             {/* Left Y-Axis: Temperature Difference (°C) */}

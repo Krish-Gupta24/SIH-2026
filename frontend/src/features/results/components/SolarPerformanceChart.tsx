@@ -22,6 +22,7 @@ import {
   getPowerUnit,
   formatNumber,
 } from "../unit-converter";
+import { computeDownsampleIndices, formatTimeLabel } from "../chart-downsample";
 
 interface SolarPerformanceChartProps {
   timestamps: string[];
@@ -56,30 +57,35 @@ export function SolarPerformanceChart({
     windowHeatGains && windowHeatGains.length > 0 && windowHeatGains.some((v) => v !== 0)
   );
 
-  const chartData = timestamps.map((ts, idx) => {
-    const rawGhi = solarRadiation[idx] ?? 0;
-    const rawGains = solarGains[idx] ?? 0;
-    const rawDni = hasDni ? (directNormal?.[idx] ?? 0) : null;
-    const rawWinHeat = hasWindowHeatGain ? (windowHeatGains?.[idx] ?? 0) : null;
+  const totalLength = Math.max(timestamps.length, solarRadiation.length, solarGains.length);
+  const { indices, stride } = React.useMemo(
+    () => computeDownsampleIndices(totalLength, 168),
+    [totalLength]
+  );
 
-    const timeLabel = ts.includes("T")
-      ? ts.split("T")[1]?.slice(0, 5) || ts
-      : ts.length > 5
-      ? ts.slice(-5)
-      : ts;
+  const chartData = React.useMemo(() => {
+    return indices.map((idx) => {
+      const ts = timestamps[idx] || `H${idx + 1}`;
+      const rawGhi = solarRadiation[idx] ?? 0;
+      const rawGains = solarGains[idx] ?? 0;
+      const rawDni = hasDni ? (directNormal?.[idx] ?? 0) : null;
+      const rawWinHeat = hasWindowHeatGain ? (windowHeatGains?.[idx] ?? 0) : null;
 
-    return {
-      index: idx,
-      timestamp: ts,
-      timeLabel: `H${idx + 1} (${timeLabel})`,
-      ghi: Number(convertFlux(rawGhi, unit).toFixed(1)),
-      dni: rawDni !== null ? Number(convertFlux(rawDni, unit).toFixed(1)) : null,
-      solarGains: Number(convertPower(rawGains, unit).toFixed(1)),
-      windowHeatGains: rawWinHeat !== null ? Number(convertPower(rawWinHeat, unit).toFixed(1)) : null,
-      rawGhi,
-      rawGains,
-    };
-  });
+      const timeLabel = formatTimeLabel(ts, idx, stride);
+
+      return {
+        index: idx,
+        timestamp: ts,
+        timeLabel: stride > 1 ? timeLabel : `H${idx + 1} (${timeLabel})`,
+        ghi: Number(convertFlux(rawGhi, unit).toFixed(1)),
+        dni: rawDni !== null ? Number(convertFlux(rawDni, unit).toFixed(1)) : null,
+        solarGains: Number(convertPower(rawGains, unit).toFixed(1)),
+        windowHeatGains: rawWinHeat !== null ? Number(convertPower(rawWinHeat, unit).toFixed(1)) : null,
+        rawGhi,
+        rawGains,
+      };
+    });
+  }, [indices, timestamps, solarRadiation, solarGains, directNormal, windowHeatGains, hasDni, hasWindowHeatGain, unit, stride]);
 
   const maxGhi = Math.max(...chartData.map((d) => Math.max(d.ghi, d.dni || 0)), 100);
   const maxGains = Math.max(...chartData.map((d) => Math.max(d.solarGains, d.windowHeatGains || 0)), 100);
@@ -251,8 +257,9 @@ export function SolarPerformanceChart({
                 dataKey="timeLabel"
                 stroke="currentColor"
                 strokeOpacity={0.4}
-                fontSize={11}
-                interval={Math.ceil(chartData.length / 12)}
+                fontSize={10}
+                interval="preserveStartEnd"
+                minTickGap={35}
                 tickLine={false}
               />
               {/* Left Axis: Solar Irradiance */}

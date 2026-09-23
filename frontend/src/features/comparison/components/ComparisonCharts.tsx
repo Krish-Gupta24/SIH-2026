@@ -32,23 +32,46 @@ const TRACE_COLORS = [
 export function ComparisonCharts({ jobs }: ComparisonChartsProps) {
   if (!jobs || jobs.length === 0) return null;
 
-  // Build merged timeseries data for line chart
-  const referenceSeries = jobs[0]?.results?.hourlyTimeseries || [];
+  // Build merged timeseries data for line chart supporting both hourly and hourlyTimeseries structures
+  const baselineJob = jobs[0];
+  const timestamps =
+    baselineJob?.results?.hourly?.timestamps ||
+    baselineJob?.results?.hourlyTimeseries?.map((h: any) => h.timestamp) ||
+    Array.from({ length: 24 }, (_, i) => `H${i + 1}`);
 
-  const tempChartData = referenceSeries.map((ref, idx) => {
-    const timeLabel = ref.timestamp?.includes("T")
-      ? ref.timestamp.split("T")[1]?.slice(0, 5) || `H${ref.hour}`
-      : `H${ref.hour}`;
+  const totalLength = timestamps.length;
+  const maxPoints = 168;
+  const stride = totalLength > maxPoints ? Math.ceil(totalLength / maxPoints) : 1;
+  const indices: number[] = [];
+  for (let i = 0; i < totalLength; i += stride) indices.push(i);
+  if (indices[indices.length - 1] !== totalLength - 1 && totalLength > 0) {
+    indices.push(totalLength - 1);
+  }
+
+  const tempChartData = indices.map((idx) => {
+    const ts = timestamps[idx] || `H${idx + 1}`;
+    const timeLabel = ts.includes("T")
+      ? ts.split("T")[1]?.slice(0, 5) || ts
+      : ts.length > 5
+      ? ts.slice(-5)
+      : ts;
+
+    const outdoorVal =
+      baselineJob?.results?.hourly?.outdoorTemp?.[idx] ??
+      baselineJob?.results?.hourlyTimeseries?.[idx]?.outdoorTempC ??
+      -15.0;
 
     const point: Record<string, any> = {
       index: idx,
-      timeLabel: `H${idx + 1} (${timeLabel})`,
-      outdoor: ref.outdoorTempC,
+      timeLabel: stride > 1 ? `D${Math.floor(idx / 24) + 1} (${timeLabel})` : `H${idx + 1} (${timeLabel})`,
+      outdoor: typeof outdoorVal === "number" ? Number(outdoorVal.toFixed(1)) : -15.0,
     };
 
     jobs.forEach((job) => {
-      const match = job.results?.hourlyTimeseries?.[idx];
-      point[job.id] = match ? match.indoorTempC : undefined;
+      const indoorVal =
+        job.results?.hourly?.indoorTemp?.[idx] ??
+        job.results?.hourlyTimeseries?.[idx]?.indoorTempC;
+      point[job.id] = typeof indoorVal === "number" ? Number(indoorVal.toFixed(1)) : undefined;
     });
 
     return point;

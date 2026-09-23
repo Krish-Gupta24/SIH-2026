@@ -33,6 +33,7 @@ import {
   getPowerUnit,
   getEnergyUnit,
 } from "../unit-converter";
+import { computeDownsampleIndices, formatTimeLabel } from "../chart-downsample";
 
 interface EnvelopeHeatBalanceChartProps {
   timestamps: string[];
@@ -242,11 +243,21 @@ export function EnvelopeHeatBalanceChart({
     }
   };
 
-  // Compile full chart timeseries with physically consistent signs:
-  // Transmission losses to outside ambient are negative (< 0)
-  // Radiant & internal gains are positive (> 0)
+  // Compile chart timeseries with downsampling for large datasets (e.g. annual or monthly runs)
+  const totalLength = Math.max(
+    timestamps.length,
+    wallHeatTransfer.length,
+    roofHeatTransfer.length,
+    solarGains.length
+  );
+  const { indices, stride } = useMemo(
+    () => computeDownsampleIndices(totalLength, 168),
+    [totalLength]
+  );
+
   const chartData = useMemo(() => {
-    return timestamps.map((ts, idx) => {
+    return indices.map((idx) => {
+      const ts = timestamps[idx] || `H${idx + 1}`;
       const inT = indoorTemp?.[idx] ?? 12.0;
       const outT = outdoorTemp?.[idx] ?? -15.0;
       const deltaT = Math.max(0, inT - outT);
@@ -305,17 +316,13 @@ export function EnvelopeHeatBalanceChart({
 
       const totalGains = convSolar + convInternal;
 
-      const timeLabel = ts.includes("T")
-        ? ts.split("T")[1]?.slice(0, 5) || ts
-        : ts.length > 5
-        ? ts.slice(-5)
-        : ts;
+      const timeLabel = formatTimeLabel(ts, idx, stride);
 
       return {
         index: idx,
         timestamp: ts,
-        timeLabel: `H${idx + 1} (${timeLabel})`,
-        hourDisplay: timeLabel,
+        timeLabel: stride > 1 ? timeLabel : `H${idx + 1} (${timeLabel})`,
+        hourDisplay: stride > 1 ? timeLabel : `H${idx + 1}`,
         solar: convSolar,
         internal: convInternal,
         walls: convWalls,
@@ -613,8 +620,9 @@ export function EnvelopeHeatBalanceChart({
               dataKey="hourDisplay"
               stroke="currentColor"
               strokeOpacity={0.4}
-              fontSize={11}
-              interval={Math.ceil(chartData.length / 12)}
+              fontSize={10}
+              interval="preserveStartEnd"
+              minTickGap={35}
               tickLine={false}
             />
             <YAxis

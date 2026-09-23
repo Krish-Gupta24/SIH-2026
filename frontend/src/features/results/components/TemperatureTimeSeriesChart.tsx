@@ -21,6 +21,7 @@ import {
   getTemperatureUnit,
   formatNumber,
 } from "../unit-converter";
+import { computeDownsampleIndices, formatTimeLabel } from "../chart-downsample";
 
 interface TemperatureTimeSeriesChartProps {
   timestamps: string[];
@@ -52,37 +53,43 @@ export function TemperatureTimeSeriesChart({
 
   const hasMeasuredData = Boolean(measuredTemp && measuredTemp.length > 0);
 
-  // Parse simulated indoor, outdoor ambient, and authentic telemetry (if provided)
-  const chartData = timestamps.map((ts, idx) => {
-    const rawIndoor = indoorTemp[idx] ?? 12.0;
-    const rawOutdoor = outdoorTemp[idx] ?? -15.0;
+  // Compute safe total length across arrays
+  const totalLength = Math.max(timestamps.length, indoorTemp.length, outdoorTemp.length);
+  const { indices, stride, isDownsampled } = React.useMemo(
+    () => computeDownsampleIndices(totalLength, 168),
+    [totalLength]
+  );
 
-    // Measured sensor telemetry only if authentic measured data is provided
-    const rawMeasured = hasMeasuredData ? measuredTemp![idx] : undefined;
+  // Parse simulated indoor, outdoor ambient, and authentic telemetry using downsampled indices
+  const chartData = React.useMemo(() => {
+    return indices.map((idx) => {
+      const ts = timestamps[idx] || `H${idx + 1}`;
+      const rawIndoor = indoorTemp[idx] ?? 12.0;
+      const rawOutdoor = outdoorTemp[idx] ?? -15.0;
 
-    // Reference baseline: standard uninsulated canvas military tent (theoretical thermal response)
-    const rawTent =
-      referenceTentTemp?.[idx] ??
-      Number((rawOutdoor + 2.5 + Math.max(0, 4.0 * Math.sin((idx % 24) * 0.26))).toFixed(2));
+      // Measured sensor telemetry only if authentic measured data is provided
+      const rawMeasured = hasMeasuredData ? measuredTemp![idx] : undefined;
 
-    const timeLabel = ts.includes("T")
-      ? ts.split("T")[1]?.slice(0, 5) || ts
-      : ts.length > 5
-      ? ts.slice(-5)
-      : ts;
+      // Reference baseline: standard uninsulated canvas military tent (theoretical thermal response)
+      const rawTent =
+        referenceTentTemp?.[idx] ??
+        Number((rawOutdoor + 2.5 + Math.max(0, 4.0 * Math.sin((idx % 24) * 0.26))).toFixed(2));
 
-    return {
-      index: idx,
-      timestamp: ts,
-      timeLabel: `H${idx + 1} (${timeLabel})`,
-      simulatedIndoor: Number(convertTemperature(rawIndoor, unit).toFixed(1)),
-      outdoorAmbient: Number(convertTemperature(rawOutdoor, unit).toFixed(1)),
-      measuredIndoor: typeof rawMeasured === "number" ? Number(convertTemperature(rawMeasured, unit).toFixed(1)) : undefined,
-      referenceTent: Number(convertTemperature(rawTent, unit).toFixed(1)),
-      rawIndoor,
-      rawOutdoor,
-    };
-  });
+      const timeLabel = formatTimeLabel(ts, idx, stride);
+
+      return {
+        index: idx,
+        timestamp: ts,
+        timeLabel: stride > 1 ? timeLabel : `H${idx + 1} (${timeLabel})`,
+        simulatedIndoor: Number(convertTemperature(rawIndoor, unit).toFixed(1)),
+        outdoorAmbient: Number(convertTemperature(rawOutdoor, unit).toFixed(1)),
+        measuredIndoor: typeof rawMeasured === "number" ? Number(convertTemperature(rawMeasured, unit).toFixed(1)) : undefined,
+        referenceTent: Number(convertTemperature(rawTent, unit).toFixed(1)),
+        rawIndoor,
+        rawOutdoor,
+      };
+    });
+  }, [indices, timestamps, indoorTemp, outdoorTemp, measuredTemp, referenceTentTemp, unit, hasMeasuredData, stride]);
 
   // Calculate dynamic Y-axis domain
   const allValues = chartData.flatMap((d) => [
@@ -148,8 +155,9 @@ export function TemperatureTimeSeriesChart({
               dataKey="timeLabel"
               stroke="currentColor"
               strokeOpacity={0.4}
-              fontSize={11}
-              interval={Math.ceil(chartData.length / 12)}
+              fontSize={10}
+              interval="preserveStartEnd"
+              minTickGap={35}
               tickLine={false}
             />
             <YAxis

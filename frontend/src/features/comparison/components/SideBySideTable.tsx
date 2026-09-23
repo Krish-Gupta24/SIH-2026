@@ -220,14 +220,14 @@ export function SideBySideTable({ jobs }: SideBySideTableProps) {
       )}
 
       <div className="overflow-x-auto rounded-2xl border border-border">
-        <Table>
+        <Table className="table-fixed w-full min-w-[680px]">
           <TableHeader className="bg-secondary/40">
             <TableRow className="border-border">
-              <TableHead className="w-1/3 text-muted-foreground font-semibold text-xs">
+              <TableHead className={`${jobs.length === 2 ? "w-[40%]" : "w-[34%]"} text-muted-foreground font-semibold text-xs`}>
                 Performance Metric
               </TableHead>
               {/* Baseline Column */}
-              <TableHead className="text-left bg-secondary/70 border-l border-border">
+              <TableHead className={`${jobs.length === 2 ? "w-[30%]" : "w-[22%]"} text-left bg-secondary/70 border-l border-border`}>
                 <div className="space-y-0.5">
                   <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold">
                     [Baseline Reference]
@@ -245,7 +245,7 @@ export function SideBySideTable({ jobs }: SideBySideTableProps) {
 
               {/* Candidate Columns */}
               {candidates.map((cand) => (
-                <TableHead key={cand.id} className="text-left border-l border-border">
+                <TableHead key={cand.id} className={`${jobs.length === 2 ? "w-[30%]" : "w-[22%]"} text-left border-l border-border`}>
                   <div className="space-y-0.5">
                     <span className="micro-label">
                       [Design Candidate]

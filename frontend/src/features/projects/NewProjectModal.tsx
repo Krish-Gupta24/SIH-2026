@@ -31,60 +31,91 @@ interface NewProjectModalProps {
 const ARCHETYPE_PRESETS = [
   {
     id: "shelter-ladakh-01",
-    name: "Leh Ladakh High-Altitude Outpost (92% Comfort)",
-    climate: "Cold Desert Alpine (3,500m)",
+    name: "Leh Ladakh High-Altitude Outpost",
+    climate: "Cold Desert Alpine · 3,500m",
     description: "300mm rammed earth Trombe wall + 150mm EPS composite envelope, double Low-E argon solar aperture, 85% HRV.",
-    dimensions: "6.0m × 4.0m × 3.0m (24 m²)",
+    dimensions: "6.0m × 4.0m × 3.0m",
     insulation: "150mm EPS (R=4.54)",
     glazing: "Double Low-E Argon (U=1.4)",
     weatherSource: "IND_JK_Leh.427053_TMYx.epw",
     baseModel: DEFAULT_LADAKH_PROJECT,
+    comfortPct: 92,
+    icon: "\u2600\uFE0F",
+    accent: "emerald",
+    tag: "Passive Solar",
+    uWall: 0.28,
+    highlight: "Trombe Wall",
   },
   {
     id: "shelter-kargil-02",
-    name: "Dras-Kargil Extreme Cold Bunkhouse (88% Comfort)",
-    climate: "Sub-Arctic Continental (-35°C, 3,230m)",
+    name: "Dras-Kargil Extreme Cold Bunkhouse",
+    climate: "Sub-Arctic Continental · -35\u00b0C, 3,230m",
     description: "250mm local granite mass core, 120mm PIR & VIP vacuum panels, triple Low-E krypton glazing, permafrost barrier.",
-    dimensions: "6.0m × 4.0m × 2.8m (24 m²)",
+    dimensions: "6.0m × 4.0m × 2.8m",
     insulation: "120mm PIR & VIP (R=6.90)",
     glazing: "Triple Low-E Krypton (U=0.78)",
     weatherSource: "dras_kargil.epw",
     baseModel: DEFAULT_KARGIL_PROJECT,
+    comfortPct: 88,
+    icon: "\u2744\uFE0F",
+    accent: "cyan",
+    tag: "VIP Insulation",
+    uWall: 0.14,
+    highlight: "Granite Core",
   },
   {
     id: "shelter-spiti-03",
-    name: "Spiti Valley High-Solar Clerestory (91% Comfort)",
-    climate: "High-Altitude Cold Desert (3,800m)",
-    description: "22° south high-gain clerestory shed roof, 150mm PIR rigid insulation, PCM Salt Hydrate 21°C latent thermal panels.",
-    dimensions: "6.5m × 4.0m × 3.2m (26 m²)",
+    name: "Spiti Valley High-Solar Clerestory",
+    climate: "High-Altitude Cold Desert · 3,800m",
+    description: "22\u00b0 south high-gain clerestory shed roof, 150mm PIR rigid insulation, PCM Salt Hydrate 21\u00b0C latent thermal panels.",
+    dimensions: "6.5m × 4.0m × 3.2m",
     insulation: "150mm PIR Foam (R=6.25)",
     glazing: "Double Low-E Argon (U=1.3)",
     weatherSource: "spiti_valley.epw",
     baseModel: DEFAULT_SPITI_PROJECT,
+    comfortPct: 91,
+    icon: "\u2728",
+    accent: "violet",
+    tag: "PCM Storage",
+    uWall: 0.16,
+    highlight: "Clerestory Roof",
   },
   {
     id: "shelter-tawang-04",
-    name: "Tawang Eastern Himalaya Timber Cabin (93% Comfort)",
-    climate: "Montane Temperate Alpine (3,048m)",
-    description: "Himalayan Cedar mass timber frame with 160mm hydrophobic rockwool & aerogel blanket, 30° snow-shedding gable roof.",
-    dimensions: "7.0m × 4.5m × 3.0m (31.5 m²)",
+    name: "Tawang Eastern Himalaya Timber Cabin",
+    climate: "Montane Temperate Alpine · 3,048m",
+    description: "Himalayan Cedar mass timber frame with 160mm hydrophobic rockwool & aerogel blanket, 30\u00b0 snow-shedding gable roof.",
+    dimensions: "7.0m × 4.5m × 3.0m",
     insulation: "160mm Mineral Wool + Aerogel (R=5.8)",
     glazing: "Triple Low-E Krypton (U=0.8)",
     weatherSource: "tawang.epw",
     baseModel: DEFAULT_TAWANG_PROJECT,
+    comfortPct: 93,
+    icon: "\uD83C\uDF32",
+    accent: "amber",
+    tag: "Mass Timber",
+    uWall: 0.17,
+    highlight: "Cedar Frame",
   },
   {
     id: "shelter-baseline-tin",
-    name: "CGI Tin Barrack (Baseline Uninsulated - 15% Comfort)",
-    climate: "Uninsulated Benchmark (Freezes at -15°C)",
-    description: "Standard corrugated galvanized iron with drafty single glazing. Demands continuous Bukhari fuel burning.",
-    dimensions: "6.0m × 4.0m × 2.6m (24 m²)",
+    name: "CGI Tin Barrack (Baseline)",
+    climate: "Uninsulated Benchmark · Freezes at -15\u00b0C",
+    description: "Standard corrugated galvanized iron with drafty single glazing. Demands continuous Bukhari fuel burning. Reference comparison only.",
+    dimensions: "6.0m × 4.0m × 2.6m",
     insulation: "0mm (Uninsulated Bare Sheet)",
     glazing: "Single Clear 4mm (U=5.8)",
     weatherSource: "IND_JK_Leh.427053_TMYx.epw",
     baseModel: DEFAULT_BASELINE_TIN_PROJECT,
+    comfortPct: 15,
+    icon: "\uD83D\uDD27",
+    accent: "rose",
+    tag: "Baseline Only",
+    uWall: 3.20,
+    highlight: "No Insulation",
   },
 ];
+
 
 export function NewProjectModal({ isOpen, onClose }: NewProjectModalProps) {
   const router = useRouter();
@@ -345,45 +376,84 @@ export function NewProjectModal({ isOpen, onClose }: NewProjectModalProps) {
                   Select Baseline Cold-Climate Archetype
                 </h3>
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  Pre-configured envelope assemblies designed for extreme high-altitude thermal retention.
+                  Pre-configured envelope assemblies designed for extreme high-altitude conditions. Each archetype copies its structural blueprint into your new project.
                 </p>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
-                {ARCHETYPE_PRESETS.map((arch) => (
-                  <button
-                    key={arch.id}
-                    type="button"
-                    onClick={() => setSelectedArchetype(arch.id)}
-                    className={`rounded-2xl border p-4 text-left transition flex flex-col justify-between ${
-                      selectedArchetype === arch.id
-                        ? "border-black ring-1 ring-black bg-[#CBDCE6]/25 shadow-sm"
-                        : "border-border bg-white hover:border-black/30 hover:bg-[#CBDCE6]/10"
-                    }`}
-                  >
-                    <div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-bold text-foreground">{arch.name}</span>
-                        {selectedArchetype === arch.id && (
-                          <CheckCircle2 className="h-4 w-4 text-black flex-shrink-0" />
-                        )}
-                      </div>
-                      <span className="inline-block mt-1 text-[10px] font-semibold text-[#536772]">
-                        {arch.climate}
-                      </span>
-                      <p className="mt-1.5 text-xs text-muted-foreground line-clamp-2">{arch.description}</p>
-                    </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {ARCHETYPE_PRESETS.map((arch) => {
+                  const isSelected = selectedArchetype === arch.id;
+                  const accentClasses: Record<string, { bar: string; badge: string; ring: string }> = {
+                    emerald: { bar: "bg-emerald-500", badge: "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300", ring: "ring-emerald-500" },
+                    cyan: { bar: "bg-cyan-500", badge: "bg-cyan-100 text-cyan-800 dark:bg-cyan-950/50 dark:text-cyan-300", ring: "ring-cyan-500" },
+                    violet: { bar: "bg-violet-500", badge: "bg-violet-100 text-violet-800 dark:bg-violet-950/50 dark:text-violet-300", ring: "ring-violet-500" },
+                    amber: { bar: "bg-amber-500", badge: "bg-amber-100 text-amber-800 dark:bg-amber-950/50 dark:text-amber-300", ring: "ring-amber-500" },
+                    rose: { bar: "bg-rose-400", badge: "bg-rose-100 text-rose-800 dark:bg-rose-950/50 dark:text-rose-300", ring: "ring-rose-400" },
+                  };
+                  const ac = accentClasses[arch.accent] || accentClasses.emerald;
+                  const comfortColor =
+                    arch.comfortPct >= 85 ? "text-emerald-700 dark:text-emerald-300" :
+                    arch.comfortPct >= 50 ? "text-amber-700 dark:text-amber-300" :
+                    "text-rose-600 dark:text-rose-400";
 
-                    <div className="mt-4 pt-3 border-t border-border grid grid-cols-2 gap-2 text-[10px] text-muted-foreground">
-                      <div>
-                        Size: <span className="font-mono font-semibold text-foreground">{arch.dimensions}</span>
+                  return (
+                    <button
+                      key={arch.id}
+                      type="button"
+                      onClick={() => setSelectedArchetype(arch.id)}
+                      className={`rounded-2xl border text-left transition-all overflow-hidden flex flex-col group ${
+                        isSelected
+                          ? `border-black ring-2 ${ac.ring} bg-white dark:bg-slate-900 shadow-md`
+                          : "border-border bg-white dark:bg-slate-900/60 hover:border-black/30 hover:shadow-sm"
+                      }`}
+                    >
+                      {/* Color accent top bar */}
+                      <div className={`h-1.5 w-full ${ac.bar}`} />
+
+                      <div className="p-4 flex flex-col gap-3 flex-1">
+                        {/* Header row */}
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xl leading-none">{arch.icon}</span>
+                            <div>
+                              <div className="text-xs font-bold text-foreground leading-tight">{arch.name}</div>
+                              <div className="text-[10px] text-muted-foreground mt-0.5">{arch.climate}</div>
+                            </div>
+                          </div>
+                          {isSelected && <CheckCircle2 className="h-4 w-4 text-black flex-shrink-0 mt-0.5" />}
+                        </div>
+
+                        {/* Comfort + Tag badges */}
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold ${ac.badge}`}>
+                            {arch.tag}
+                          </span>
+                          <span className={`inline-flex items-center rounded-full border border-border bg-secondary/50 px-2 py-0.5 text-[10px] font-bold ${comfortColor}`}>
+                            {arch.comfortPct}% Comfort
+                          </span>
+                          <span className="inline-flex items-center rounded-full border border-border bg-secondary/50 px-2 py-0.5 text-[10px] font-semibold text-muted-foreground">
+                            U={arch.uWall} W/m²K
+                          </span>
+                        </div>
+
+                        {/* Description */}
+                        <p className="text-[11px] text-muted-foreground leading-relaxed line-clamp-2">{arch.description}</p>
+
+                        {/* Stats grid */}
+                        <div className="mt-auto pt-2.5 border-t border-border grid grid-cols-2 gap-x-3 gap-y-1 text-[10px]">
+                          <div className="text-muted-foreground">Size: <span className="font-semibold text-foreground">{arch.dimensions}</span></div>
+                          <div className="text-muted-foreground">✦ <span className="font-semibold text-foreground">{arch.highlight}</span></div>
+                          <div className="text-muted-foreground">Insulation: <span className="font-mono font-semibold text-foreground">{arch.insulation.split(" ")[0]}</span></div>
+                          <div className="text-muted-foreground">Glazing: <span className="font-mono font-semibold text-foreground">{arch.glazing.split("(")[0].trim()}</span></div>
+                        </div>
                       </div>
-                      <div>
-                        Insulation: <span className="font-mono font-semibold text-foreground">{arch.insulation}</span>
-                      </div>
-                    </div>
-                  </button>
-                ))}
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div className="rounded-xl border border-border bg-secondary/30 px-4 py-3 text-[11px] text-muted-foreground">
+                <span className="font-bold text-foreground">Note:</span> Selecting an archetype copies its complete envelope blueprint into your new project. You can customize every parameter in the 13-step designer after creation.
               </div>
             </div>
           )}

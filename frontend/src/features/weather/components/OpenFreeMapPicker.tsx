@@ -110,8 +110,29 @@ const MAP_STYLES: Array<{
   },
   {
     id: "liberty",
-    name: "OpenFreeMap Topo",
-    style: "https://tiles.openfreemap.org/styles/liberty",
+    name: "Topographic",
+    style: {
+      version: 8,
+      sources: {
+        "esri-topo": {
+          type: "raster",
+          tiles: [
+            "https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}",
+          ],
+          tileSize: 256,
+          attribution: "© Esri, HERE, Garmin, FAO, USGS, NOAA",
+        },
+      },
+      layers: [
+        {
+          id: "esri-topo-layer",
+          type: "raster",
+          source: "esri-topo",
+          minzoom: 0,
+          maxzoom: 19,
+        },
+      ],
+    },
   },
   {
     id: "carto",
@@ -122,12 +143,13 @@ const MAP_STYLES: Array<{
         "carto-voyager": {
           type: "raster",
           tiles: [
-            "https://a.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}@2x.png",
-            "https://b.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}@2x.png",
-            "https://c.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}@2x.png",
+            "https://a.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png",
+            "https://b.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png",
+            "https://c.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png",
+            "https://d.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png",
           ],
           tileSize: 256,
-          attribution: "© OpenStreetMap © CARTO",
+          attribution: "© CARTO, © OpenStreetMap contributors",
         },
       },
       layers: [
