@@ -300,5 +300,13 @@ export const api = {
         body: JSON.stringify(candidate),
       }),
   },
+  system: {
+    health: () =>
+      fetchApi<{
+        status: string;
+        service?: string;
+        version?: string;
+      }>("/health"),
+  },
 };
 

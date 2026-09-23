@@ -50,18 +50,17 @@ export function TemperatureTimeSeriesChart({
   const comfortMin = convertTemperature(comfortMinC, unit);
   const comfortMax = convertTemperature(comfortMaxC, unit);
 
-  // Synthesize realistic measured telemetry (calibrated with slight sensor noise ±0.4°C and lag)
-  // and reference uninsulated tent baseline if not provided
+  const hasMeasuredData = Boolean(measuredTemp && measuredTemp.length > 0);
+
+  // Parse simulated indoor, outdoor ambient, and authentic telemetry (if provided)
   const chartData = timestamps.map((ts, idx) => {
     const rawIndoor = indoorTemp[idx] ?? 12.0;
     const rawOutdoor = outdoorTemp[idx] ?? -15.0;
 
-    // Measured sensor telemetry (empirical array with micro-fluctuations)
-    const rawMeasured =
-      measuredTemp?.[idx] ??
-      Number((rawIndoor + 0.35 * Math.sin(idx * 0.4) - 0.2).toFixed(2));
+    // Measured sensor telemetry only if authentic measured data is provided
+    const rawMeasured = hasMeasuredData ? measuredTemp![idx] : undefined;
 
-    // Reference baseline: standard uninsulated canvas military tent (closely tracks outdoor ambient + 2°C)
+    // Reference baseline: standard uninsulated canvas military tent (theoretical thermal response)
     const rawTent =
       referenceTentTemp?.[idx] ??
       Number((rawOutdoor + 2.5 + Math.max(0, 4.0 * Math.sin((idx % 24) * 0.26))).toFixed(2));
@@ -78,7 +77,7 @@ export function TemperatureTimeSeriesChart({
       timeLabel: `H${idx + 1} (${timeLabel})`,
       simulatedIndoor: Number(convertTemperature(rawIndoor, unit).toFixed(1)),
       outdoorAmbient: Number(convertTemperature(rawOutdoor, unit).toFixed(1)),
-      measuredIndoor: Number(convertTemperature(rawMeasured, unit).toFixed(1)),
+      measuredIndoor: typeof rawMeasured === "number" ? Number(convertTemperature(rawMeasured, unit).toFixed(1)) : undefined,
       referenceTent: Number(convertTemperature(rawTent, unit).toFixed(1)),
       rawIndoor,
       rawOutdoor,
@@ -89,7 +88,7 @@ export function TemperatureTimeSeriesChart({
   const allValues = chartData.flatMap((d) => [
     d.simulatedIndoor,
     d.outdoorAmbient,
-    ...(visibility.measured ? [d.measuredIndoor] : []),
+    ...(hasMeasuredData && visibility.measured && typeof d.measuredIndoor === "number" ? [d.measuredIndoor] : []),
     ...(visibility.reference ? [d.referenceTent] : []),
   ]);
   const minVal = Math.floor(Math.min(...allValues, comfortMin) - 3);
@@ -122,7 +121,7 @@ export function TemperatureTimeSeriesChart({
             <span className="h-0.5 w-3 bg-muted-foreground" />
             Ambient
           </span>
-          {visibility.measured && (
+          {hasMeasuredData && visibility.measured && (
             <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2.5 py-1 text-emerald-600 dark:text-emerald-400 font-semibold">
               <span className="size-1.5 rounded-full bg-emerald-500" />
               Measured Telemetry
@@ -131,7 +130,7 @@ export function TemperatureTimeSeriesChart({
           {visibility.reference && (
             <span className="inline-flex items-center gap-1.5 rounded-full border border-purple-500/20 bg-purple-500/10 px-2.5 py-1 text-purple-600 dark:text-purple-400 font-semibold">
               <span className="h-0.5 w-3 bg-purple-400 border-t border-dashed" />
-              Tent Baseline
+              Uninsulated Tent (Theoretical Reference)
             </span>
           )}
           <span className="inline-flex items-center gap-1.5 rounded-full border border-indigo-500/20 bg-indigo-500/10 px-2.5 py-1 text-indigo-600 dark:text-indigo-400 font-semibold">
@@ -271,8 +270,8 @@ export function TemperatureTimeSeriesChart({
               />
             )}
 
-            {/* 2. Measured Field Telemetry Trace */}
-            {visibility.measured && (
+            {/* 2. Measured Field Telemetry Trace (only rendered if authentic field data provided) */}
+            {hasMeasuredData && visibility.measured && (
               <Line
                 type="monotone"
                 dataKey="measuredIndoor"
@@ -300,7 +299,7 @@ export function TemperatureTimeSeriesChart({
               <Line
                 type="monotone"
                 dataKey="referenceTent"
-                name={`Reference Tent Baseline (${tUnit})`}
+                name={`Uninsulated Canvas Tent Baseline (${tUnit})`}
                 stroke="#c084fc"
                 strokeWidth={1.8}
                 strokeDasharray="2 2"

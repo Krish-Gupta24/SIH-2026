@@ -99,13 +99,17 @@ export function AnsysMaterialComparisonTable({ activeProject }: AnsysMaterialCom
   const [modalOpen, setModalOpen] = useState(false);
   const [materials, setMaterials] = useState(DEFAULT_MATERIALS);
   const [isLoading, setIsLoading] = useState(false);
+
+  const initialAmbient = activeProject?.location?.designTempWinter ?? -20.5;
+  const initialLocation = activeProject?.location?.region || "Leh, Ladakh (3,500m ASL)";
+
   const [metadata, setMetadata] = useState<{
     location?: string;
     ambientTemp?: number;
     environment?: string;
   }>({
-    location: "Leh, Ladakh (3,500m ASL)",
-    ambientTemp: -20.5,
+    location: initialLocation,
+    ambientTemp: initialAmbient,
     environment: "ANSYS Mechanical APDL 2024 R1",
   });
 
@@ -193,7 +197,7 @@ export function AnsysMaterialComparisonTable({ activeProject }: AnsysMaterialCom
             <span>Comparative Analysis with Different Materials (Same Ambient Conditions)</span>
           </h3>
           <p className="text-xs text-muted-foreground mt-0.5 max-w-2xl">
-            Simulated under identical peak-winter atmospheric boundary conditions (Ambient: <strong>−20.5°C</strong>, Altitude: <strong>3,500m ASL Leh</strong>, Convection: <strong>18.5 W/m²·K</strong>, Solar: <strong>480 W/m²</strong>).
+            Simulated under identical peak-winter atmospheric boundary conditions (Ambient: <strong>{metadata.ambientTemp !== undefined ? `${metadata.ambientTemp > 0 ? "+" : ""}${metadata.ambientTemp}°C` : "−20.5°C"}</strong>, Location: <strong>{metadata.location || initialLocation}</strong>, Convection: <strong>18.5 W/m²·K</strong>, Solar: <strong>480 W/m²</strong>).
           </p>
         </div>
 

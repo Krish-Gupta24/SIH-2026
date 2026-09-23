@@ -198,11 +198,6 @@ class EnergyMetrics:
     reason: Optional[str] = None
 
 
-class NoValidDesignError(Exception):
-    """Raised when no valid or feasible candidate exists under the specified constraints."""
-    pass
-
-
 @dataclass
 class PerformanceSummary:
     simulation_id: str
@@ -467,6 +462,9 @@ class RecommendationEngine:
         selected_cfg = cls._build_selected_configuration(base_model, params, metrics)
 
         # --- 5. Performance ---
+        geom = base_model.get("geometry", {})
+        floor_area_m2 = float(geom.get("length", 6.0)) * float(geom.get("width", 4.0))
+
         performance = cls._build_performance_summary(
             metrics=metrics,
             simulation_id=sim_id,
@@ -474,6 +472,7 @@ class RecommendationEngine:
             weather_dataset=wx_ds,
             base_heating=baseline_heating_kwh,
             base_comfort=baseline_comfort_pct,
+            floor_area_m2=floor_area_m2,
         )
 
         # --- 6. Reason for Selection ---
@@ -528,7 +527,7 @@ class RecommendationEngine:
                 "description": "Minimize annual auxiliary space heating load (kWh/m²·a) by maximizing envelope insulation and useful solar storage.",
                 "metric_label": "Space Heating Demand (kWh/m²·a)",
                 "higher_is_better": False,
-                "formulation": "Objective = max(0.0, 250.0 - 1.2 * HeatingDemandKwhM2)",
+                "formulation": "Objective = max(0.0, 300.0 - 1.5 * HeatingDemandKwhM2)",
             },
             "minimize_heat_loss": {
                 "id": "minimize_heat_loss",
@@ -544,7 +543,7 @@ class RecommendationEngine:
                 "description": "Maximize winter solar heat harvest without causing unmitigated daytime zone overheating.",
                 "metric_label": "Net Useful Solar Aperture (kWh)",
                 "higher_is_better": True,
-                "formulation": "Objective = 2.5 * UsefulSolarKwh - 15.0 * max(0, IndoorMaxC - 25.0)",
+                "formulation": "Objective = 3.0 * UsefulSolarKwh - 15.0 * max(0, IndoorMaxC - 25.0)",
             },
             "minimize_material_cost": {
                 "id": "minimize_material_cost",
@@ -552,7 +551,7 @@ class RecommendationEngine:
                 "description": "Optimize thermal retention per unit cost and transportation weight penalty.",
                 "metric_label": "Material Cost Index ($)",
                 "higher_is_better": False,
-                "formulation": "Objective = max(0.0, 1000.0 - (0.2 * MaterialCost + 2.5 * HeatingDemandKwhM2))",
+                "formulation": "Objective = max(0.0, 1500.0 - (0.15 * MaterialCost + 2.5 * HeatingDemandKwhM2))",
             },
         }
 
@@ -588,10 +587,10 @@ class RecommendationEngine:
             val = float(metrics.get(metric_key, 0.0))
             if metric_key == "indoorMinC" or metric_key == "indoor_min_c":
                 val = float(metrics.get("indoor_min_c", metrics.get("indoorMinC", 0.0)))
-            elif metric_key == "wallThicknessM" or metric_key == "wall_thickness_m":
-                val = float(metrics.get("wall_thickness_m", metrics.get("wallThicknessM", 0.0)))
-            elif metric_key == "wwrPct" or metric_key == "wwr_pct":
-                val = float(metrics.get("wwr_pct", metrics.get("wwrPct", 0.0)))
+            elif metric_key == "wallThicknessM" or metric_key == "wall_thickness_m" or metric_key == "total_wall_thickness_m":
+                val = float(metrics.get("total_wall_thickness_m", metrics.get("wall_thickness_m", metrics.get("wallThicknessM", 0.0))))
+            elif metric_key == "wwrPct" or metric_key == "wwr_pct" or metric_key == "window_to_wall_ratio_pct":
+                val = float(metrics.get("window_to_wall_ratio_pct", metrics.get("wwr_pct", metrics.get("wwrPct", 0.0))))
 
             passed = True
             margin_str = "Nominal"
@@ -676,12 +675,24 @@ class RecommendationEngine:
         # Wall System
         wall_const = str(params.get("wall_construction", "Standard_EPS_Wall"))
         ins_thick = float(params.get("insulation_thickness", 0.15))
-        total_wall_thick = float(metrics.get("wall_thickness_m", ins_thick + 0.05))
+        total_wall_thick = float(metrics.get("total_wall_thickness_m", metrics.get("wall_thickness_m", ins_thick + 0.05)))
 
         ins_mat_obj = material_db.get("mat-aerogel-blanket") if "Aerogel" in wall_const else material_db.get("mat-eps-insulation")
         k_ins = ins_mat_obj.thermal_conductivity if ins_mat_obj else (0.015 if "Aerogel" in wall_const else 0.035)
         ins_mat = ins_mat_obj.name if ins_mat_obj else ("Silica Aerogel Thermal Blanket" if "Aerogel" in wall_const else "Expanded Polystyrene (EPS)")
-        u_wall = float(metrics.get("u_wall", 0.22))
+        if "Aerogel" in wall_const:
+            r_ins = ins_thick / 0.015
+            r_mass = 0.20 / 1.25
+        elif "Rammed" in wall_const:
+            r_ins = ins_thick / 0.035
+            r_mass = 0.30 / 1.25
+        elif "Granite" in wall_const:
+            r_ins = ins_thick / 0.035
+            r_mass = 0.35 / 2.80
+        else:
+            r_ins = ins_thick / 0.035
+            r_mass = 0.05 / 0.72
+        u_wall = float(metrics.get("u_wall", round(1.0 / (r_ins + r_mass + 0.17), 3)))
         r_wall = 1.0 / max(0.01, u_wall)
 
         wall_spec = WallSystemSpecification(
@@ -716,7 +727,7 @@ class RecommendationEngine:
 
         # Windows
         win_area = float(params.get("window_area", 2.8))
-        wwr = float(metrics.get("wwr_pct", (win_area / (length * height)) * 100))
+        wwr = float(metrics.get("window_to_wall_ratio_pct", metrics.get("wwr_pct", (win_area / (length * height)) * 100)))
         glazing = str(params.get("glazing_type", "Double_LowE_Argon"))
         glaze_def = glazing_db.get_glazing(glazing)
         u_win = glaze_def.u_value
@@ -783,6 +794,7 @@ class RecommendationEngine:
         weather_dataset: str,
         base_heating: float,
         base_comfort: float,
+        floor_area_m2: float = 24.0,
     ) -> PerformanceSummary:
         # Strictly extract metrics without fabricating synthetic default numbers
         in_min_raw = metrics.get("indoor_min_c")
@@ -922,7 +934,7 @@ class RecommendationEngine:
                 else None
             )
             peak_power_kw = round(float(peak_loss_raw) / 1000.0, 2) if peak_loss_raw is not None else None
-            total_kwh = round(heating_kwh_m2 * 24.0, 0)
+            total_kwh = round(heating_kwh_m2 * floor_area_m2, 1)
             energy_metrics = EnergyMetrics(
                 heating_demand_kwh_m2=round(heating_kwh_m2, 1),
                 peak_heating_power_kw=peak_power_kw,

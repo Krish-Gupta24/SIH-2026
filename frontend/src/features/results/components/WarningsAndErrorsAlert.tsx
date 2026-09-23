@@ -24,9 +24,9 @@ interface WarningsAndErrorsAlertProps {
 
 export function WarningsAndErrorsAlert({
   status,
-  durationSeconds = 12.4,
+  durationSeconds,
   engineName = "ThermoShelter Core",
-  engineVersion = "3.0.0",
+  engineVersion,
   completedAt,
   warnings = [
     "Zone 'LIVING_ZONE' evaluated under Leh Ladakh sub-zero nocturnal design conditions.",
@@ -82,7 +82,10 @@ export function WarningsAndErrorsAlert({
               </span>
             </div>
             <p className="text-xs text-[#536772] mt-0.5">
-              Engine: <strong className="text-foreground">{engineName === "EnergyPlus" ? "ThermoShelter Core" : engineName} v{engineVersion}</strong> · Duration: {durationSeconds}s
+              Engine: <strong className="text-foreground">{engineName === "EnergyPlus" ? "ThermoShelter Core" : engineName}{engineVersion ? ` v${engineVersion}` : ""}</strong>
+              {typeof durationSeconds === "number" && !isNaN(durationSeconds) && (
+                <span>{` · Duration: ${durationSeconds}s`}</span>
+              )}
               {completedAt && (
                 <span suppressHydrationWarning>
                   {` · Timestamp: ${new Date(completedAt).toLocaleTimeString()}`}

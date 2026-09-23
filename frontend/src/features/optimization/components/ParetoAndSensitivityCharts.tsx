@@ -40,17 +40,46 @@ export function ParetoAndSensitivityCharts({
   const paretoPoints = paretoScatterData.filter((d) => d.isPareto);
   const nonParetoPoints = paretoScatterData.filter((d) => !d.isPareto);
 
-  // 2. Prepare Insulation Thickness Sensitivity Curve (aggregated from sweep or precomputed standard)
-  const insulationSensitivityData = [
-    { thicknessMm: 50, heatingDemand: 165.0, minTemp: 3.8, uValue: 0.65 },
-    { thicknessMm: 75, heatingDemand: 118.0, minTemp: 9.8, uValue: 0.44 },
-    { thicknessMm: 100, heatingDemand: 88.0, minTemp: 13.5, uValue: 0.33 },
-    { thicknessMm: 125, heatingDemand: 68.0, minTemp: 15.6, uValue: 0.27 },
-    { thicknessMm: 150, heatingDemand: 42.5, minTemp: 18.0, uValue: 0.22 }, // Optimal sweet spot knee
-    { thicknessMm: 175, heatingDemand: 36.0, minTemp: 18.6, uValue: 0.19 },
-    { thicknessMm: 200, heatingDemand: 31.0, minTemp: 19.0, uValue: 0.17 },
-    { thicknessMm: 250, heatingDemand: 26.0, minTemp: 19.5, uValue: 0.14 },
-  ];
+  // 2. Prepare Insulation Thickness Sensitivity Curve (aggregated from evaluated sweep candidates)
+  const insulationMap = new Map<number, { count: number; totalDemand: number; totalMinTemp: number }>();
+
+  candidates.forEach((c) => {
+    const rawThick = c.parameters?.insulation_thickness;
+    if (typeof rawThick === "number" && !isNaN(rawThick)) {
+      const thickMm = Math.round(rawThick * 1000);
+      const cur = insulationMap.get(thickMm) || { count: 0, totalDemand: 0, totalMinTemp: 0 };
+      cur.count += 1;
+      cur.totalDemand += c.metrics?.heatingDemandKwhM2 ?? 0;
+      cur.totalMinTemp += c.metrics?.indoorMinC ?? 0;
+      insulationMap.set(thickMm, cur);
+    }
+  });
+
+  const hasSweepData = insulationMap.size >= 2;
+
+  const insulationSensitivityData = hasSweepData
+    ? Array.from(insulationMap.entries())
+        .sort(([a], [b]) => a - b)
+        .map(([thicknessMm, stats]) => ({
+          thicknessMm,
+          heatingDemand: Number((stats.totalDemand / stats.count).toFixed(1)),
+          minTemp: Number((stats.totalMinTemp / stats.count).toFixed(1)),
+        }))
+    : [
+        // Standard reference baseline (shown only if insulation thickness was not varied in sweep)
+        { thicknessMm: 50, heatingDemand: 165.0, minTemp: 3.8 },
+        { thicknessMm: 75, heatingDemand: 118.0, minTemp: 9.8 },
+        { thicknessMm: 100, heatingDemand: 88.0, minTemp: 13.5 },
+        { thicknessMm: 125, heatingDemand: 68.0, minTemp: 15.6 },
+        { thicknessMm: 150, heatingDemand: 42.5, minTemp: 18.0 },
+        { thicknessMm: 175, heatingDemand: 36.0, minTemp: 18.6 },
+        { thicknessMm: 200, heatingDemand: 31.0, minTemp: 19.0 },
+        { thicknessMm: 250, heatingDemand: 26.0, minTemp: 19.5 },
+      ];
+
+  const maxHeatingDemand = Math.max(100, ...insulationSensitivityData.map((d) => d.heatingDemand * 1.15));
+  const minNightTemp = Math.min(0, ...insulationSensitivityData.map((d) => d.minTemp - 2));
+  const maxNightTemp = Math.max(24, ...insulationSensitivityData.map((d) => d.minTemp + 2));
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -163,7 +192,9 @@ export function ParetoAndSensitivityCharts({
             Insulation Diminishing Returns
           </h3>
           <p className="text-xs text-muted-foreground mt-1">
-            Demonstrating heating load flattening beyond 150mm EPS, identifying the economic knee point.
+            {hasSweepData
+              ? "Aggregated directly from current sweep candidates across varied insulation thicknesses."
+              : "Demonstrating heating load flattening beyond 150mm EPS, identifying the economic knee point (Reference)."}
           </p>
         </div>
 
@@ -186,7 +217,7 @@ export function ParetoAndSensitivityCharts({
                 fontSize={10}
                 tickLine={false}
                 unit=" kWh"
-                domain={[0, 180]}
+                domain={[0, Math.ceil(maxHeatingDemand / 20) * 20]}
               />
               <YAxis
                 yAxisId="right"
@@ -196,7 +227,7 @@ export function ParetoAndSensitivityCharts({
                 fontSize={10}
                 tickLine={false}
                 unit="°C"
-                domain={[0, 25]}
+                domain={[Math.floor(minNightTemp), Math.ceil(maxNightTemp)]}
               />
               <Tooltip
                 content={({ active, payload, label }) => {
@@ -219,14 +250,16 @@ export function ParetoAndSensitivityCharts({
               />
               <Legend wrapperStyle={{ paddingTop: "14px", fontSize: "11px" }} />
 
-              {/* 150mm Sweet spot marker */}
-              <ReferenceLine
-                x={150}
-                yAxisId="left"
-                stroke="#8b5cf6"
-                strokeDasharray="4 4"
-                label={{ value: "Sweet Spot (150mm)", fill: "#8b5cf6", fontSize: 10, position: "top" }}
-              />
+              {/* Sweet spot marker if 150mm is in the dataset */}
+              {insulationSensitivityData.some((d) => Math.abs(d.thicknessMm - 150) <= 10) && (
+                <ReferenceLine
+                  x={150}
+                  yAxisId="left"
+                  stroke="#8b5cf6"
+                  strokeDasharray="4 4"
+                  label={{ value: "Sweet Spot (150mm)", fill: "#8b5cf6", fontSize: 10, position: "top" }}
+                />
+              )}
 
               <Line
                 yAxisId="left"

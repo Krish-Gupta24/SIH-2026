@@ -1937,15 +1937,15 @@ export function transformBackendJobToItem(
   const solarGainsList: number[] = rawRes.solar_gains || hourly.solar_gains || hourly.solarGains || [];
   const solarRadList: number[] = rawRes.solar_radiation || hourly.global_horizontal_irradiance || hourly.globalHorizontalIrradiance || [];
 
-  const outMin = outTempList.length > 0 ? Math.min(...outTempList) : (sum.outdoor_min_c ?? -18.4);
-  const outMax = outTempList.length > 0 ? Math.max(...outTempList) : (sum.outdoor_max_c ?? -4.2);
-  const inMin = comf.indoor_min_c ?? sum.indoor_min_c ?? (inTempList.length > 0 ? Math.min(...inTempList) : -2.4);
-  const inMax = comf.indoor_max_c ?? sum.indoor_max_c ?? (inTempList.length > 0 ? Math.max(...inTempList) : 0.2);
-  const inMean = comf.indoor_mean_c ?? sum.indoor_mean_c ?? (inTempList.length > 0 ? inTempList.reduce((a: number, b: number) => a + b, 0) / inTempList.length : -1.4);
+  const outMin = outTempList.length > 0 ? Math.min(...outTempList) : (sum.outdoor_min_c ?? 0);
+  const outMax = outTempList.length > 0 ? Math.max(...outTempList) : (sum.outdoor_max_c ?? 0);
+  const inMin = comf.indoor_min_c ?? sum.indoor_min_c ?? (inTempList.length > 0 ? Math.min(...inTempList) : 0);
+  const inMax = comf.indoor_max_c ?? sum.indoor_max_c ?? (inTempList.length > 0 ? Math.max(...inTempList) : 0);
+  const inMean = comf.indoor_mean_c ?? sum.indoor_mean_c ?? (inTempList.length > 0 ? inTempList.reduce((a: number, b: number) => a + b, 0) / inTempList.length : 0);
 
   const outdoorSwing = Math.abs(outMax - outMin);
   const indoorSwing = comf.diurnal_temperature_swing_c ?? Math.abs(inMax - inMin);
-  const diurnalDamping = outdoorSwing > 0.01 ? Math.max(0, Math.min(100, Math.round(((outdoorSwing - indoorSwing) / outdoorSwing) * 1000) / 10)) : 81.7;
+  const diurnalDamping = outdoorSwing > 0.01 ? Math.max(0, Math.min(100, Math.round(((outdoorSwing - indoorSwing) / outdoorSwing) * 1000) / 10)) : 0;
 
   return {
     id: backendJob.id || backendJob.job_id,
@@ -1974,11 +1974,11 @@ export function transformBackendJobToItem(
         outdoorMaxC: Math.round(outMax * 10) / 10,
         comfortHoursPct: comf.percent_time_comfortable ?? sum.comfort_hours_pct ?? 0.0,
         diurnalSwingDampingPct: diurnalDamping,
-        heatingDemandKwhM2: sum.heating_demand_kwh_m2 ?? 58.4,
-        peakEnvelopeLossW: sum.peak_envelope_loss_w ?? 680,
-        totalSolarGainKwh: Math.round((energy.total_solar_gains_kwh ?? sum.total_solar_gain_kwh ?? 11.75) * 100) / 100,
-        underheatingDegreeHoursCh: Math.round((comf.underheating_degree_hours_c_h ?? sum.underheating_degree_hours_ch ?? 465.6) * 10) / 10,
-        usefulSolarHarvestKwh: Math.round((energy.total_solar_gains_kwh ?? sum.useful_solar_harvest_kwh ?? 11.75) * 100) / 100,
+        heatingDemandKwhM2: sum.heating_demand_kwh_m2 ?? 0,
+        peakEnvelopeLossW: sum.peak_envelope_loss_w ?? 0,
+        totalSolarGainKwh: Math.round((energy.total_solar_gains_kwh ?? sum.total_solar_gain_kwh ?? 0) * 100) / 100,
+        underheatingDegreeHoursCh: Math.round((comf.underheating_degree_hours_c_h ?? sum.underheating_degree_hours_ch ?? 0) * 10) / 10,
+        usefulSolarHarvestKwh: Math.round((energy.total_solar_gains_kwh ?? sum.useful_solar_harvest_kwh ?? 0) * 100) / 100,
       },
       hourly: {
         timestamps: tsList,

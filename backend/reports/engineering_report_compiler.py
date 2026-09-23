@@ -125,9 +125,10 @@ class EngineeringReportCompiler:
         opt_meta = (optimization_result or {}).get("metadata", {})
 
         # Preserved core attributes
-        engine_name = sim_settings.get("engine", "ThermoShelter Core / High-Fidelity Physics Solver")
-        engine_version = "3.0.0"
-        weather_src = loc.get("weatherSource", "IND_JK_Leh.420270_ISHRAE.epw")
+        res_meta = (simulation_result or {}).get("metadata", {})
+        engine_name = res_meta.get("engine_name") or sim_settings.get("engine", "ThermoShelter Core / High-Fidelity Physics Solver")
+        engine_version = res_meta.get("engine_version") or "3.0.0"
+        weather_src = res_meta.get("weather_dataset") or loc.get("weatherSource", "IND_JK_Leh.420270_ISHRAE.epw")
         proj_ver = p.get("version", "1.0.0")
         model_ver = shelter_model.get("schemaVersion", "1.0.0")
 

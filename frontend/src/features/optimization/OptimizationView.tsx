@@ -45,6 +45,7 @@ import {
 import {
   generateClientRecommendationReport,
 } from "./recommendation-engine";
+import { api } from "@/lib/api-client";
 import { OptimizationSetupCard } from "./components/OptimizationSetupCard";
 import { OptimalCandidateCard } from "./components/OptimalCandidateCard";
 import { RecommendedDesignReportCard } from "./components/RecommendedDesignReportCard";
@@ -98,6 +99,26 @@ export function OptimizationView() {
     type: "success" | "info";
     message: string;
   } | null>(null);
+
+  // Backend connectivity state
+  const [backendStatus, setBackendStatus] = useState<"checking" | "online" | "offline">("checking");
+
+  useEffect(() => {
+    let isMounted = true;
+    api.system
+      .health()
+      .then((res) => {
+        if (isMounted) {
+          setBackendStatus(res && res.status === "healthy" ? "online" : "offline");
+        }
+      })
+      .catch(() => {
+        if (isMounted) setBackendStatus("offline");
+      });
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   // Calculate rough candidate budget based on selections (Default demo: 20-50 candidates)
   const candidateBudget = useMemo(() => {
@@ -176,7 +197,7 @@ export function OptimizationView() {
       setSweepResult(fallbackResult);
       setNotification({
         type: "info",
-        message: `Client RC approximation evaluated (${fallbackResult.validCount} candidates). Backend ThermoShelter simulation unavailable.`,
+        message: `Client RC dynamic model evaluated (${fallbackResult.validCount} candidates). Backend EnergyPlus simulation server is currently offline or unreachable — local physics fallback engaged.`,
       });
     } finally {
       setIsExecuting(false);
@@ -258,22 +279,41 @@ export function OptimizationView() {
         title="Transparent optimization & recommendations"
         description="Deterministic Cartesian exploration across thermal design variables with physics constraints, Pareto frontier ranking, and engineering recommendations."
         action={
-          projects.length > 1 ? (
-            <div className="flex items-center gap-2 rounded-full border border-border bg-card px-4 py-2 text-xs font-semibold">
-              <FolderOpen className="size-3.5 text-muted-foreground" />
-              <select
-                value={activeProjectId || ""}
-                onChange={(e) => setActiveProject(e.target.value)}
-                className="bg-transparent text-xs text-foreground focus:outline-none cursor-pointer"
-              >
-                {projects.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.project.name} (v{p.project.version})
-                  </option>
-                ))}
-              </select>
-            </div>
-          ) : undefined
+          <div className="flex flex-wrap items-center gap-2.5">
+            {backendStatus === "online" ? (
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-700 dark:text-emerald-300">
+                <span className="size-2 rounded-full bg-emerald-500 animate-pulse" />
+                Backend: Online (EnergyPlus Core)
+              </span>
+            ) : backendStatus === "offline" ? (
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-500/30 bg-amber-500/10 px-3 py-1 text-xs font-semibold text-amber-700 dark:text-amber-300">
+                <span className="size-2 rounded-full bg-amber-500" />
+                Backend: Offline (RC Physics Engine Active)
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-secondary/50 px-3 py-1 text-xs font-semibold text-muted-foreground">
+                <Clock className="size-3 animate-spin" />
+                Checking Backend...
+              </span>
+            )}
+
+            {projects.length > 1 && (
+              <div className="flex items-center gap-2 rounded-full border border-border bg-card px-4 py-2 text-xs font-semibold">
+                <FolderOpen className="size-3.5 text-muted-foreground" />
+                <select
+                  value={activeProjectId || ""}
+                  onChange={(e) => setActiveProject(e.target.value)}
+                  className="bg-transparent text-xs text-foreground focus:outline-none cursor-pointer"
+                >
+                  {projects.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.project.name} (v{p.project.version})
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+          </div>
         }
       />
 

@@ -158,26 +158,57 @@ export function ResultsView() {
   const doorHeatTransfer: number[] = rawHourlyTimeseries.map((t: any) => t.doorHeatTransferW ?? 0);
   const infiltrationHeatTransfer: number[] = rawHourlyTimeseries.map((t: any) => t.infiltrationHeatTransferW ?? 0);
 
+  const activeProject =
+    projects.find((p) => p.id === activeJob?.projectId) ||
+    projects.find((p) => p.id === activeProjectId) ||
+    projects[0];
+
+  // Derive model-accurate window aperture UA
+  const modelWindows = activeProject?.windows || [];
+  const totalWinArea = modelWindows.reduce(
+    (acc: number, w: any) => acc + ((w.width || 1.2) * (w.height || 1.0)),
+    0
+  );
+  const effectiveWinArea = totalWinArea > 0 ? totalWinArea : 2.4;
+  const winUA = effectiveWinArea * 1.40; // Double Low-E baseline U-value (1.4 W/m²K)
+
+  // Derive thermal bridge linear joint transmission coefficient UA
+  const geomL = activeProject?.geometry?.length || 6.0;
+  const geomW = activeProject?.geometry?.width || 4.0;
+  const geomH = activeProject?.geometry?.height || 2.8;
+  const perimeterJointsM = 4 * geomH + 4 * (geomL + geomW);
+  const psiThermalBridge = 0.06; // Standard W/mK for insulated frame joints
+  const thermalBridgeUA = Number((perimeterJointsM * psiThermalBridge).toFixed(2));
+
+  // Derive internal casual sensible gains from model occupancy and equipment
+  const modelInternal = activeProject?.internalLoads;
+  const occupants = modelInternal?.occupantsCount ?? 2;
+  const activityW = modelInternal?.activityLevelWatts ?? 120;
+  const equipW = modelInternal?.equipmentPowerWatts ?? 110;
+  const baseFloorArea = geomL * geomW;
+  const lightingW = (modelInternal?.lightingPowerDensityWpm2 ?? 3.5) * baseFloorArea;
+  const modelDerivedInternalGainsW = Math.round(occupants * activityW + equipW + lightingW);
+
   // Guarantee non-zero window heat transfer if glazing exists
   const hasValidWindows = rawWindowHeatTransfer.some((w) => Math.abs(w) > 0.05);
   const windowHeatTransfer: number[] = hasValidWindows
     ? rawWindowHeatTransfer
     : timestamps.map((_, i) => {
         const deltaT = (indoorTemp[i] ?? 12) - (outdoorTemp[i] ?? -15);
-        return -Math.round(4.32 * Math.max(0, deltaT));
+        return -Math.round(winUA * Math.max(0, deltaT));
       });
 
   // Calculate linear thermal bridge losses (framing studs, wall-roof perimeter joints)
   const thermalBridgeHeatTransfer: number[] = rawHourlyTimeseries.map((t: any, i: number) => {
     if (typeof t.thermalBridgeHeatTransferW === "number") return t.thermalBridgeHeatTransferW;
     const deltaT = (indoorTemp[i] ?? 12) - (outdoorTemp[i] ?? -15);
-    return -Math.round(2.85 * Math.max(0, deltaT));
+    return -Math.round(thermalBridgeUA * Math.max(0, deltaT));
   });
 
   // Calculate internal sensible heat gains (occupants + minimal equipment)
   const internalGains: number[] = rawHourlyTimeseries.map((t: any) => {
     if (typeof t.internalGainsW === "number") return t.internalGainsW;
-    return 240; // 2 occupants (~160W) + 80W equipment
+    return modelDerivedInternalGainsW;
   });
 
   // Derive comfort metrics from verified summary or null
@@ -431,7 +462,7 @@ export function ResultsView() {
       {/* 2. Simulation Execution & Diagnostics Status Banner */}
       <WarningsAndErrorsAlert
         status={activeJob.status}
-        durationSeconds={activeJob.durationSeconds || 14.8}
+        durationSeconds={activeJob.durationSeconds}
         engineName={activeJob.engine}
         engineVersion={activeJob.engineVersion}
         completedAt={activeJob.completedAt}

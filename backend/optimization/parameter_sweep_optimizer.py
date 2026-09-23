@@ -411,7 +411,7 @@ class ParameterSweepOptimizer:
                     "position_x": 0.3,
                     "glass_u_value": glaze_def.u_value,
                     "glass_shgc": glaze_def.shgc,
-                    "glass_vlt": glaze_def.vlt,
+                    "glass_vlt": glaze_def.visible_transmittance,
                     "glazing_id": glaze_def.id,
                 })
                 windows.append({
@@ -608,12 +608,16 @@ class ParameterSweepOptimizer:
             geom = candidate_model.get("geometry", {})
             floor_area = float(geom.get("length", 6.0)) * float(geom.get("width", 4.0))
 
+            sim_hours = max(1.0, float(self.run_period_days * 24.0))
+            avg_indoor = indoor_mean_c if indoor_mean_c is not None else 10.0
+            outdoor_mean = float(self.base_model.get("location", {}).get("designTempWinter", -10.0))
+            delta_t = max(2.0, abs(avg_indoor - outdoor_mean))
+            ua_equiv = (total_loss_kwh * 1000.0) / (sim_hours * delta_t)
+
             heating_kwh = energy.get("heating_demand_kwh")
             if heating_kwh is None:
                 underheat_dh = float(comfort.get("underheating_degree_hours_c_h", 0.0))
-                hours_sim = max(1.0, float(self.run_period_days * 24.0))
-                avg_heat_loss_rate_w = (total_loss_kwh * 1000.0) / hours_sim
-                heating_kwh = (avg_heat_loss_rate_w * underheat_dh) / 1000.0 if underheat_dh > 0 else 0.0
+                heating_kwh = (underheat_dh * ua_equiv) / 1000.0 if underheat_dh > 0 else 0.0
 
             heating_demand_kwh_m2 = float(heating_kwh) / max(1.0, floor_area)
 
@@ -645,12 +649,6 @@ class ParameterSweepOptimizer:
             )
             total_cost = cost_glaze + cost_ins + cost_mass + cost_roof
 
-            sim_hours = max(1.0, self.run_period_days * 24.0)
-            avg_indoor = indoor_mean_c if indoor_mean_c is not None else 10.0
-            outdoor_mean = -10.0
-            delta_t = max(2.0, abs(avg_indoor - outdoor_mean))
-            ua_equiv = (total_loss_kwh * 1000.0) / (sim_hours * delta_t)
-
             metrics = {
                 "indoor_min_c": round(indoor_min_c, 2) if indoor_min_c is not None else 0.0,
                 "indoor_max_c": round(indoor_max_c, 2) if indoor_max_c is not None else 0.0,
@@ -664,7 +662,7 @@ class ParameterSweepOptimizer:
                 "peak_solar_gain_w": round(peak_solar_gain_w, 1),
                 "total_heat_loss_kwh": round(total_loss_kwh, 2),
                 "total_heat_loss_rate_ua": round(ua_equiv, 2),
-                "peak_heat_loss_w": round(max(wall_loss, roof_loss, floor_loss, inf_loss) * 1000.0, 1),
+                "peak_heat_loss_w": round((total_loss_kwh * 1000.0) / max(1.0, sim_hours), 1),
                 "heating_demand_kwh_m2": round(heating_demand_kwh_m2, 1),
                 "total_wall_thickness_m": total_wall_thickness,
                 "window_to_wall_ratio_pct": wwr,
@@ -946,7 +944,7 @@ class ParameterSweepOptimizer:
 
         orientation = float(param_dict.get("orientation", geom.get("orientation", 0.0)))
         solar_azimuth_efficiency = math.cos(math.radians(orientation))
-        solar_factor = max(0.2, (solar_azimuth_efficiency + 1.0) / 2.0)
+        solar_factor = max(0.05, (solar_azimuth_efficiency + 1.0) / 2.0)
 
         ins_thickness = float(param_dict.get("insulation_thickness", 0.15))
         wall_construction = str(param_dict.get("wall_construction", "Standard_EPS_Wall"))

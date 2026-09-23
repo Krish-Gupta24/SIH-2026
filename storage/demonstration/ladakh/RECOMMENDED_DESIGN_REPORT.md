@@ -1,5 +1,5 @@
 # RECOMMENDED DESIGN: Standard EPS Wall (200mm) [Maximize Comfort]
-> **Report ID**: `REC-opt-sweep-dcce4a34-CAND-4A34-003` | **Simulation ID**: `sim-4a34-003` | **Generated**: 2026-09-13T11:22:54.494068+00:00
+> **Report ID**: `REC-opt-sweep-124d584c-CAND-584C-003` | **Simulation ID**: `sim-584c-003` | **Generated**: 2026-09-23T07:55:30.780427+00:00
 > **Simulation Engine**: `24.1.0-9d7789a3ac` | **Weather Dataset**: `IND_JK_Leh.427053_TMYx.epw`
 > **Engineering Notice**: Best configuration found within the evaluated design space and constraints.
 
@@ -36,13 +36,13 @@
 
 ### Building Assemblies & Thermal Enclosure
 - **Wall System**: Standard_EPS_Wall | Insulation: 200mm (Expanded Polystyrene (EPS))
-  - Thermal Transmittance: **U = 0.220 W/m²·K** (R = 4.55 m²·K/W, Total Thickness: 0.250m)
+  - Thermal Transmittance: **U = 0.168 W/m²·K** (R = 5.95 m²·K/W, Total Thickness: 0.250m)
   - Layers: 200mm Expanded Polystyrene (EPS) + structural core substrate with interior vapor retarder.
 - **Roof System**: Insulated_Heavy_Metal_Roof | Pitch: 15.0°, Overhang: 0.45m
   - Thermal Transmittance: **U = 0.220 W/m²·K** (High-R ceiling cavity thermal barrier to prevent convective plume heat loss.)
 - **Floor Sub-structure**: Insulated Perimeter Slab on Grade (U = 0.280 W/m²·K)
   - Ground contact: True, Perimeter sub-slab insulation: True
-- **Fenestration (Windows)**: 2 units, Total Area: 2.8 m² (WWR: 15.6%)
+- **Fenestration (Windows)**: 2 units, Total Area: 2.8 m² (WWR: 4.7%)
   - Specification: Double_LowE_Argon (**U = 1.40 W/m²·K**, SHGC = 0.40, Frame: Thermally Broken UPVC / Composite)
   - Placement Strategy: South-dominant solar aperture
 - **Doors**: 1 unit (Insulated High-Performance Timber / Steel Air-Lock Entry, U = 1.20 W/m²·K, Seal: Double Compression Gasket Seals (Class 4 Air Tightness))
@@ -69,13 +69,13 @@
 - **Useful Aperture Fraction**: 100.0% (Monitored by max temperature ceiling constraint)
 
 ### Heat Loss Breakdown
-- **Total Envelope Transmission UA**: **212.5 W/K**
-- **Peak Envelope Conduction**: 5164 W (100.0% of total loss)
+- **Total Envelope Transmission UA**: **39.6 W/K**
+- **Peak Envelope Conduction**: 425 W (100.0% of total loss)
 
 ### Space Heating Energy & Carbon
-- **Annual Space Heating Demand**: **11.8 kWh/m²·a**
-- **Peak Auxiliary Heating Power**: 5.16 kW
-- **Energy Reduction vs Uninsulated Baseline**: **92.8%** (283 kWh/year total)
+- **Annual Space Heating Demand**: **1.1 kWh/m²·a**
+- **Peak Auxiliary Heating Power**: 0.42 kW
+- **Energy Reduction vs Uninsulated Baseline**: **99.3%** (26 kWh/year total)
 
 ## 6. Reason for Selection
 This candidate was selected because it achieved the highest composite objective score (-43.66 pts) under the active objective 'maximize comfort', while satisfying all boundary constraints without violation. In the evaluated candidate space, this design vector delivers the optimum balance between passive solar harvest, nighttime heat retention, and physical feasibility.

@@ -73,9 +73,22 @@ export function SimulationsView() {
     durationSeconds?: number;
   } | null>(null);
 
+  // Track active poll intervals to prevent duplicate polling loops and memory leaks
+  const activePollsRef = React.useRef<Map<string, NodeJS.Timeout>>(new Map());
+
+  React.useEffect(() => {
+    return () => {
+      activePollsRef.current.forEach((intervalId) => clearInterval(intervalId));
+      activePollsRef.current.clear();
+    };
+  }, []);
+
   // Poll active simulation jobs until completion
   const pollSimulationStatus = React.useCallback(
     (simId: string, proj: any) => {
+      if (activePollsRef.current.has(simId)) {
+        return;
+      }
       let attempts = 0;
       const maxAttempts = 120; // Up to 5 minutes
       const interval = setInterval(async () => {
@@ -84,6 +97,7 @@ export function SimulationsView() {
           const statusData = await simulationApi.status(simId);
           if (statusData.status === "completed") {
             clearInterval(interval);
+            activePollsRef.current.delete(simId);
             if (proj) {
               addProject(proj);
             }
@@ -95,6 +109,8 @@ export function SimulationsView() {
                 results: transformed.results,
                 completedAt: statusData.completed_at || new Date().toISOString(),
                 durationSeconds: statusData.duration_seconds,
+                engine: statusData.engine || transformed.engine || "ThermoShelter Core",
+                engineVersion: statusData.engine_version || transformed.engineVersion,
               });
             } catch (rErr) {
               console.error("Failed to fetch completed results:", rErr);
@@ -102,6 +118,8 @@ export function SimulationsView() {
                 status: "completed",
                 completedAt: statusData.completed_at || new Date().toISOString(),
                 durationSeconds: statusData.duration_seconds,
+                engine: statusData.engine || "ThermoShelter Core",
+                engineVersion: statusData.engine_version,
               });
             }
 
@@ -114,6 +132,7 @@ export function SimulationsView() {
             });
           } else if (statusData.status === "failed" || statusData.status === "cancelled") {
             clearInterval(interval);
+            activePollsRef.current.delete(simId);
             updateSimulationJob(simId, {
               status: "failed",
               error: statusData.error_message || "Simulation failed during execution.",
@@ -130,8 +149,11 @@ export function SimulationsView() {
 
         if (attempts >= maxAttempts) {
           clearInterval(interval);
+          activePollsRef.current.delete(simId);
         }
       }, 2500);
+
+      activePollsRef.current.set(simId, interval);
     },
     [projects, updateSimulationJob, addProject]
   );
@@ -291,7 +313,27 @@ export function SimulationsView() {
         sDay = startDay;
         eMonth = endMonth;
         eDay = endDay;
-        runPeriodDays = Math.max(1, (endMonth - startMonth) * 30 + (endDay - startDay + 1));
+        const DAYS_IN_MONTH = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+        if (startMonth === endMonth) {
+          runPeriodDays = Math.max(1, endDay - startDay + 1);
+        } else if (endMonth > startMonth) {
+          let days = DAYS_IN_MONTH[startMonth - 1] - startDay + 1;
+          for (let m = startMonth + 1; m < endMonth; m++) {
+            days += DAYS_IN_MONTH[m - 1];
+          }
+          days += endDay;
+          runPeriodDays = Math.max(1, days);
+        } else {
+          let days = DAYS_IN_MONTH[startMonth - 1] - startDay + 1;
+          for (let m = startMonth + 1; m <= 12; m++) {
+            days += DAYS_IN_MONTH[m - 1];
+          }
+          for (let m = 1; m < endMonth; m++) {
+            days += DAYS_IN_MONTH[m - 1];
+          }
+          days += endDay;
+          runPeriodDays = Math.max(1, days);
+        }
       }
 
       const payload = {
@@ -336,11 +378,11 @@ export function SimulationsView() {
           end_day: eDay,
           run_period_days: runPeriodDays,
           timestep_per_hour: timestep,
-          timestep_minutes: 60 / timestep,
+          timestep_minutes: Math.floor(60 / timestep),
         },
         allowTestData: isTest,
         engine: "ThermoShelter Core",
-        engineVersion: "3.0.0",
+        engineVersion: undefined,
         status: "queued",
         queuedAt: new Date().toISOString(),
       };

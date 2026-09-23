@@ -204,10 +204,10 @@ function evaluateCandidateThermodynamics(
   const floorArea = L * W;
   const volume = floorArea * H;
 
-  // 1. Orientation solar factor
+  // 1. Orientation solar factor (0.05 diffuse floor for pure North, 1.0 for pure South)
   const orientation = params.orientation ?? model.geometry.orientation ?? 0;
   const solarRad = Math.cos((orientation * Math.PI) / 180);
-  const solarFactor = Math.max(0.2, (solarRad + 1.0) / 2.0);
+  const solarFactor = Math.max(0.05, (solarRad + 1.0) / 2.0);
 
   // 2. Wall U-value
   const insThickness = params.insulation_thickness ?? 0.15;
@@ -216,23 +216,27 @@ function evaluateCandidateThermodynamics(
   let kIns = 0.035;
   let massThickness = 0.05;
   let materialCostFactor = 1.0;
+  let kMass = 0.72; // Standard EPS wall mud plaster core
 
   if (wallConstruction === "Aerogel_Blanket_SuperWall") {
     kIns = 0.015;
     massThickness = 0.20;
     materialCostFactor = 2.4;
+    kMass = 1.25;
   } else if (wallConstruction === "Rammed_Earth_EPS_Composite") {
     kIns = 0.035;
     massThickness = 0.30;
     materialCostFactor = 1.2;
+    kMass = 1.25;
   } else if (wallConstruction === "Granite_Stone_Masonry") {
     kIns = 0.035;
     massThickness = 0.35;
     materialCostFactor = 1.3;
+    kMass = 2.80;
   }
 
   const rIns = insThickness / kIns;
-  const rMass = massThickness / 1.10;
+  const rMass = massThickness / kMass;
   const uWall = 1.0 / (rIns + rMass + 0.17);
   const totalWallThickness = insThickness + massThickness;
 
@@ -281,12 +285,15 @@ function evaluateCandidateThermodynamics(
   if (massMode === "high_mass_rammed_earth_pcm") dampingRatio = 88.0;
   if (massMode === "lightweight_timber") dampingRatio = 38.0;
 
-  // 8. Diurnal temperature balance with internal casual load (~450W continuous)
-  const tAmbientMin = -18.0;
-  const tAmbientMean = -11.0;
-  const tAmbientMax = -4.0;
-  const solarPeak = 780.0;
-  const internalHeatW = 450.0;
+  // 8. Diurnal temperature balance with dynamic casual load from model
+  const tAmbientMin = model.location?.designTempWinter ?? -18.0;
+  const tAmbientMax = model.location?.designTempSummer ?? -4.0;
+  const tAmbientMean = (tAmbientMin + tAmbientMax) / 2.0;
+  const solarPeak = (model.location as any)?.solarPeakRadiation ?? 780.0;
+  const internalHeatW =
+    (model.internalLoads?.occupantsCount ?? 2) * (model.internalLoads?.activityLevelWatts ?? 120.0) +
+    (model.internalLoads?.lightingPowerDensityWpm2 ?? 3.5) * floorArea +
+    (model.internalLoads?.equipmentPowerWatts ?? 110.0);
 
   const solarKwhDay = winArea * shgc * (solarPeak / 1000.0) * 5.2 * solarFactor * placementBonus;
   const solarAvgW = (solarKwhDay * 1000.0) / 24.0;
@@ -316,13 +323,15 @@ function evaluateCandidateThermodynamics(
   }
 
   // Annual space heating demand
-  const hdd18 = 5200.0;
+  const hdd18 = (model.location as any)?.heatingDegreeDays ?? 5200.0;
   const annualLossKwh = (uaTotal * hdd18 * 24.0) / 1000.0;
   const solarOffsetKwh = Math.min(annualLossKwh * 0.75, (solarKwhDay + (internalHeatW * 24.0) / 1000.0) * 180.0);
   const netHeatingKwh = Math.max(0.0, annualLossKwh - solarOffsetKwh);
   const heatingDemandKwhM2 = netHeatingKwh / floorArea;
 
-  const peakHeatLossW = uaTotal * (20.0 - -25.0);
+  const targetIndoor = model.designTargets?.targetIndoorTempC ?? 20.0;
+  const winterDesign = model.location?.designTempWinter ?? -25.0;
+  const peakHeatLossW = uaTotal * (targetIndoor - winterDesign);
 
   // Material cost
   const insVol = opaqueWallArea * insThickness;
@@ -355,15 +364,15 @@ function computeObjectiveScore(
     case "maximize_comfort":
       return Number((metrics.comfortHoursPct * 1.0 + (metrics.indoorMinC - 10.0) * 2.0).toFixed(2));
     case "minimize_auxiliary_energy":
-      return Number(Math.max(0.0, 250.0 - metrics.heatingDemandKwhM2 * 1.2).toFixed(2));
+      return Number(Math.max(0.0, 300.0 - metrics.heatingDemandKwhM2 * 1.5).toFixed(2));
     case "minimize_heat_loss":
-      return Number(Math.max(0.0, 300.0 - metrics.totalHeatLossUA * 2.5).toFixed(2));
+      return Number(Math.max(0.0, 400.0 - metrics.totalHeatLossUA * 2.5).toFixed(2));
     case "maximize_useful_solar_gain": {
       const overheatingPenalty = Math.max(0.0, metrics.indoorMaxC - 25.0) * 15.0;
-      return Number((metrics.totalSolarGainKwh * 2.5 - overheatingPenalty).toFixed(2));
+      return Number((metrics.totalSolarGainKwh * 3.0 - overheatingPenalty).toFixed(2));
     }
     case "minimize_material_cost":
-      return Number(Math.max(0.0, 1000.0 - (metrics.materialCostUsd * 0.2 + metrics.heatingDemandKwhM2 * 2.5)).toFixed(2));
+      return Number(Math.max(0.0, 1500.0 - (metrics.materialCostUsd * 0.15 + metrics.heatingDemandKwhM2 * 2.5)).toFixed(2));
     default:
       return metrics.comfortHoursPct;
   }
