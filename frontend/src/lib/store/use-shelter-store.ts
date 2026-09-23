@@ -1952,7 +1952,7 @@ export function transformBackendJobToItem(
     projectId: backendJob.project_id || proj?.id || "shelter-ladakh-01",
     projectName: proj?.project?.name || proj?.name || "Shelter Design",
     status: (backendJob.status?.toLowerCase() as any) || "completed",
-    engine: backendJob.engine === "EnergyPlus" ? "ThermoShelter Core" : (backendJob.engine || "ThermoShelter Core"),
+    engine: (!backendJob.engine || backendJob.engine.toLowerCase().includes("energyplus")) ? "ThermoShelter Core" : backendJob.engine,
     engineVersion: backendJob.engine_version || rawRes.metadata?.engine_version || "3.0.0",
     weatherFile: backendJob.weather_file || "IND_JK_Leh.427053_TMYx.epw",
     weatherDatasetName: backendJob.weather_file || "IND_JK_Leh.427053_TMYx.epw",
@@ -2014,7 +2014,7 @@ export function transformBackendJobToItem(
         infiltrationHeatTransferW: infHtList[i] ?? 0,
       })),
       metadata: rawRes.metadata || {
-        engineName: backendJob.engine === "EnergyPlus" ? "ThermoShelter Core" : (backendJob.engine || "ThermoShelter Core"),
+        engineName: (!backendJob.engine || backendJob.engine.toLowerCase().includes("energyplus")) ? "ThermoShelter Core" : backendJob.engine,
         engineVersion: backendJob.engine_version || "3.0.0",
         weatherDataset: backendJob.weather_file || "IND_JK_Leh.427053_TMYx.epw",
         completedSuccessfully: true,

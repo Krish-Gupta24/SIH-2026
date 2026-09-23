@@ -223,7 +223,7 @@ export function generateReproducibilityManifest(jobs: SimulationJobItem[]): Repr
   return {
     manifestId: `REP-MAN-${Date.now().toString().slice(-8)}`,
     generatedAt: new Date().toISOString(),
-    engineName: referenceJob?.engine === "EnergyPlus" ? "ThermoShelter Core" : (referenceJob?.engine || "ThermoShelter Core"),
+    engineName: (!referenceJob?.engine || referenceJob.engine.toLowerCase().includes("energyplus")) ? "ThermoShelter Core" : referenceJob.engine,
     engineVersion: referenceJob?.engineVersion || "3.0.0",
     weatherDatasetName: weather,
     weatherStationId: referenceJob?.weatherDatasetId || "wx-leh-ladakh",

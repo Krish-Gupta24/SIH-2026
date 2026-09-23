@@ -117,7 +117,9 @@ export function ReportsView() {
       : completedSim?.results?.summary?.totalSolarGainKwh ??
         Number(((windowArea * 0.6 * 4.5 * 120) / 100).toFixed(1));
 
-  const preservedEngine = completedSim?.engine ? `${completedSim.engine === "EnergyPlus" ? "ThermoShelter Core" : completedSim.engine} (v${completedSim.engineVersion || "3.0.0"})` : "ThermoShelter Core Solver v3.0";
+  const preservedEngine = completedSim?.engine
+    ? `${(!completedSim.engine || completedSim.engine.toLowerCase().includes("energyplus")) ? "ThermoShelter Core" : completedSim.engine} (v${completedSim.engineVersion || "3.0.0"})`
+    : "ThermoShelter Core Solver v3.0";
   const preservedWeather = activeWeather?.name || loc.weatherSource || "Leh Airport Station (3500m) IND_JK_Leh.420270_ISHRAE.epw";
   const preservedProjectVer = `v${activeProject.project?.version || "1.0.0"}`;
   const preservedModelVer = `Canonical Schema ${activeProject.schemaVersion || "1.0.0"}`;

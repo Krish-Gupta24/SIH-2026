@@ -197,7 +197,7 @@ export function OptimizationView() {
       setSweepResult(fallbackResult);
       setNotification({
         type: "info",
-        message: `Client RC dynamic model evaluated (${fallbackResult.validCount} candidates). Backend EnergyPlus simulation server is currently offline or unreachable — local physics fallback engaged.`,
+        message: `Client RC dynamic model evaluated (${fallbackResult.validCount} candidates). Backend ThermoShelter physics server is currently offline or unreachable — local physics fallback engaged.`,
       });
     } finally {
       setIsExecuting(false);
@@ -283,7 +283,7 @@ export function OptimizationView() {
             {backendStatus === "online" ? (
               <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-700 dark:text-emerald-300">
                 <span className="size-2 rounded-full bg-emerald-500 animate-pulse" />
-                Backend: Online (EnergyPlus Core)
+                Backend: Online (ThermoShelter Physics Core)
               </span>
             ) : backendStatus === "offline" ? (
               <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-500/30 bg-amber-500/10 px-3 py-1 text-xs font-semibold text-amber-700 dark:text-amber-300">
