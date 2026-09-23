@@ -177,9 +177,9 @@ function Shelter3DPageContent() {
 
   return (
     <AppShell>
-      <div className="space-y-6">
+      <div className="3d-studio-page space-y-3">
         {/* Stage Header with View Toggle Pill */}
-        <div className="flex flex-col justify-between gap-4 border-b border-border pb-6 sm:flex-row sm:items-center">
+        <div className="flex flex-col justify-between gap-3 border-b border-border pb-3 sm:flex-row sm:items-center">
           <div>
             <div className="flex items-center gap-2">
               <span className="micro-label">Canonical Model · 13-Step Sequence</span>
@@ -190,12 +190,7 @@ function Shelter3DPageContent() {
                 Stage {step + 1} of {UNIFIED_13_STEPS.length}
               </span>
             </div>
-            <h1 className="font-editorial mt-2 text-3xl sm:text-4xl font-medium tracking-tight text-foreground">
-              {currentStepInfo.name}
-            </h1>
-            <p className="text-xs text-muted-foreground mt-1">
-              {currentStepInfo.description} · Interactive Three.js WebGL Spatial Studio
-            </p>
+            <p className="mt-1 text-xs text-muted-foreground">{currentStepInfo.name} · {currentStepInfo.description}</p>
           </div>
 
           {/* Action Area: Save Project + ANSYS Export + View Switcher */}
@@ -263,49 +258,7 @@ function Shelter3DPageContent() {
           </div>
         </div>
 
-        {/* 1-Click Design Presets (Baseline vs Passive Solar vs Super-Insulated) */}
-        <DesignPresetsDropdown />
-
-        {/* Stepper Navigation Strip with all 13 options */}
-        <div className="overflow-x-auto pb-2">
-          <nav
-            className="flex min-w-max items-center gap-1.5 rounded-2xl bg-secondary/40 p-1.5 border border-border"
-            aria-label="3D CAD design stages"
-          >
-            {UNIFIED_13_STEPS.map((s, idx) => {
-              const isCurrent = step === idx;
-              const isCompleted = step > idx;
-
-              return (
-                <button
-                  key={s.id}
-                  type="button"
-                  onClick={() => handleStepChange(idx)}
-                  className={`group flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-semibold transition ${
-                    isCurrent
-                      ? "bg-foreground text-background shadow-sm"
-                      : isCompleted
-                      ? "bg-white text-black border border-black/10"
-                      : "text-muted-foreground hover:bg-white/60 hover:text-foreground"
-                  }`}
-                >
-                  <span
-                    className={`flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-bold ${
-                      isCurrent
-                        ? "bg-background text-foreground"
-                        : isCompleted
-                        ? "bg-[#CBDCE6] text-black"
-                        : "bg-black/5 text-muted-foreground"
-                    }`}
-                  >
-                    {isCompleted ? "✓" : s.id}
-                  </span>
-                  <span>{s.name}</span>
-                </button>
-              );
-            })}
-          </nav>
-        </div>
+        <DesignPresetsDropdown compact />
 
         {/* 3D CAD Interactive Canvas Studio */}
         <Shelter3DDesigner

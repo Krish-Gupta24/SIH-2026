@@ -8,6 +8,7 @@ import { Dialog, DialogDescription, DialogFooter, DialogHeader, DialogTitle } fr
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { AssemblyModel, LayerModel, ShelterModel } from "@/types/shelter";
 import type { WallOrientation } from "../types";
+import { materialAppearance } from "../procedural-textures";
 
 type AssemblyTarget = "walls" | "roof" | "floor";
 
@@ -170,6 +171,7 @@ export function MaterialWorkbenchDialog({ open, model, onOpenChange, onUpdate }:
               <div className="space-y-2.5">
                 {assembly.layers.map((layer, index) => {
                   const material = materialFor(layer.materialId);
+                  const appearance = materialAppearance(layer.materialId, layer.name);
                   const layerResistance = layer.thickness / material.conductivity;
 
                   return (
@@ -179,6 +181,11 @@ export function MaterialWorkbenchDialog({ open, model, onOpenChange, onUpdate }:
                     >
                       <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center gap-2">
+                          <span
+                            className="size-5 shrink-0 rounded-md border border-black/10 shadow-inner"
+                            style={{ backgroundColor: appearance.color }}
+                            title={`${layer.name} visual material`}
+                          />
                           <span className="flex size-5 items-center justify-center rounded-md bg-muted text-[10px] font-bold font-mono text-muted-foreground">
                             {index + 1}
                           </span>

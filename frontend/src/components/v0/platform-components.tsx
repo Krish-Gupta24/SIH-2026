@@ -496,6 +496,8 @@ export function ShelterScene({
             showDimensions: false,
             showCompass: false,
             showSunShadows: true,
+            showEnvironment: false,
+            explodedView: false,
             wireframe: wireframe,
             transparentWalls: false,
             revealLayers: false,

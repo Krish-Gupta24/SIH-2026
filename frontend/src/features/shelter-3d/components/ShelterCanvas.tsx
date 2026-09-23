@@ -29,17 +29,19 @@ function CameraController({
   preset,
   controlsRef,
   model,
+  explodedView,
 }: {
   preset: CameraPreset;
   controlsRef: React.RefObject<OrbitControlsImpl | null>;
   model: ShelterModel;
+  explodedView: boolean;
 }) {
   useEffect(() => {
     const controls = controlsRef.current;
     if (!controls) return;
     const maxDim = Math.max(model.geometry.length, model.geometry.width, model.geometry.height);
-    const dist = Math.max(10, maxDim * 2.2);
-    const midY = model.geometry.height * 0.55;
+    const dist = Math.max(10, maxDim * (explodedView ? 2.65 : 2.2));
+    const midY = model.geometry.height * (explodedView ? 0.78 : 0.55);
 
     const positions: Record<CameraPreset, [number, number, number]> = {
       iso: [dist * 0.85, dist * 0.65, dist * 0.85],
@@ -53,7 +55,7 @@ function CameraController({
     controls.object.position.set(...positions[preset]);
     controls.target.set(0, midY, 0);
     controls.update();
-  }, [preset, controlsRef, model.geometry.length, model.geometry.width, model.geometry.height]);
+  }, [preset, controlsRef, model.geometry.length, model.geometry.width, model.geometry.height, explodedView]);
 
   return null;
 }
@@ -89,7 +91,7 @@ export function ShelterCanvas({
         <color attach="background" args={[bgColor]} />
         {!envActive ? <fog attach="fog" args={[bgColor, 24, 65]} /> : null}
 
-        <CameraController preset={activePreset} controlsRef={controlsRef} model={model} />
+        <CameraController preset={activePreset} controlsRef={controlsRef} model={model} explodedView={settings.explodedView} />
 
         <OrbitControls
           ref={controlsRef}

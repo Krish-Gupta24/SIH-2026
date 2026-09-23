@@ -14,11 +14,13 @@ import { Badge } from "@/components/ui/badge";
 
 export interface DesignPresetsDropdownProps {
   onApplyPreset?: (presetModel: any, presetName: string) => void;
+  compact?: boolean;
 }
 
-export function DesignPresetsDropdown({ onApplyPreset }: DesignPresetsDropdownProps = {}) {
+export function DesignPresetsDropdown({ onApplyPreset, compact = false }: DesignPresetsDropdownProps = {}) {
   const { projects, activeProjectId, updateProject } = useShelterStore();
   const [appliedPresetMessage, setAppliedPresetMessage] = React.useState<string | null>(null);
+  const [selectedPresetId, setSelectedPresetId] = React.useState("");
 
   const presets = [
     {
@@ -76,6 +78,7 @@ export function DesignPresetsDropdown({ onApplyPreset }: DesignPresetsDropdownPr
 
     const presetInfo = presets.find((p) => p.id === id);
     const presetName = presetInfo?.name || "Preset";
+    setSelectedPresetId(id);
 
     if (onApplyPreset) {
       onApplyPreset(presetModel, presetName);
@@ -102,6 +105,24 @@ export function DesignPresetsDropdown({ onApplyPreset }: DesignPresetsDropdownPr
     }, 3500);
   };
 
+
+  if (compact) {
+    return (
+      <div className="flex flex-wrap items-center gap-2 rounded-xl border border-border bg-secondary/30 px-3 py-2">
+        <Sparkles className="size-3.5 shrink-0 text-amber-500" />
+        <select
+          aria-label="Apply a shelter design preset"
+          value={selectedPresetId}
+          onChange={(event) => handleSelect(event.target.value)}
+          className="min-w-0 flex-1 bg-transparent text-xs font-semibold text-foreground outline-none"
+        >
+          <option value="" disabled>Apply a climate-ready design preset</option>
+          {presets.map((preset) => <option key={preset.id} value={preset.id}>{preset.name} · {preset.comfort}</option>)}
+        </select>
+        {appliedPresetMessage ? <span className="text-[11px] font-semibold text-emerald-600">Preset applied</span> : null}
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col sm:flex-row sm:items-center gap-3 bg-secondary/40 border border-border p-2.5 rounded-2xl">

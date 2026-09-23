@@ -1156,6 +1156,19 @@
   box-shadow: 0 28px 90px rgba(16, 24, 32, .16);
 }
 
+.3d-workspace-content {
+  width: 100%;
+  padding: .75rem clamp(.75rem, 2vw, 1.5rem) 1rem;
+}
+
+.3d-studio-page .cad-shell {
+  min-height: calc(100dvh - 126px);
+}
+
+.3d-studio-page .cad-workspace {
+  min-height: calc(100dvh - 234px);
+}
+
 .cad-toolbar {
   min-height: 62px;
   display: flex;
@@ -1343,6 +1356,57 @@
   padding: .55rem;
 }
 
+.cad-stage-panel .cad-workflow-groups {
+  gap: .45rem;
+  padding: .65rem .55rem 2.25rem;
+}
+
+.cad-workflow-group {
+  overflow: hidden;
+  border: 1px solid rgba(110, 129, 143, .18);
+  border-radius: .65rem;
+  background: rgba(255, 255, 255, .58);
+}
+
+.cad-workflow-group[data-open="true"] {
+  border-color: rgba(110, 129, 143, .32);
+  background: white;
+}
+
+.cad-workflow-group-trigger {
+  display: flex;
+  width: 100%;
+  min-height: 34px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 .65rem;
+  color: var(--cad-ink);
+  text-align: left;
+}
+
+.cad-workflow-group-trigger span {
+  border: 0;
+  border-radius: 0;
+  font-family: inherit;
+  font-size: .57rem;
+  font-weight: 800;
+  letter-spacing: .07em;
+  text-transform: uppercase;
+}
+
+.cad-workflow-group-trigger small {
+  color: var(--cad-slate);
+  font-family: var(--font-geist-mono), monospace;
+  font-size: .55rem;
+  font-weight: 700;
+}
+
+.cad-workflow-group > ol {
+  gap: .1rem;
+  padding: .2rem;
+  border-top: 1px solid rgba(110, 129, 143, .14);
+}
+
 .cad-stage-panel li button {
   display: flex;
   width: 100%;
@@ -1434,7 +1498,7 @@
   backdrop-filter: blur(12px);
   flex-wrap: nowrap;
   max-width: calc(100% - 280px);
-  overflow-x: auto;
+  overflow: visible;
 }
 
 .cad-floating-tools button {
@@ -1457,6 +1521,31 @@
 .cad-floating-tools button[data-active="true"] {
   background: var(--cad-ink);
   color: var(--cad-paper);
+}
+
+.cad-view-options-wrap {
+  position: relative;
+}
+
+.cad-view-options {
+  display: grid;
+  position: absolute;
+  top: calc(100% + .45rem);
+  right: 0;
+  width: 142px;
+  gap: .15rem;
+  padding: .3rem;
+  border: 1px solid rgba(110, 129, 143, .24);
+  border-radius: .65rem;
+  background: rgba(247, 249, 250, .96);
+  box-shadow: 0 14px 34px rgba(16, 24, 32, .16);
+  backdrop-filter: blur(14px);
+}
+
+.cad-view-options button {
+  width: 100%;
+  justify-content: flex-start;
+  text-align: left;
 }
 
 .cad-mode-label {
@@ -1800,6 +1889,36 @@
   font-size: 8px;
   font-weight: 600;
   opacity: 0.85;
+}
+
+.cad-layer-label {
+  display: flex;
+  min-width: 86px;
+  flex-direction: column;
+  gap: .06rem;
+  padding: .22rem .32rem .22rem .5rem;
+  border: 1px solid rgba(110, 129, 143, .26);
+  border-left: 3px solid var(--layer-color);
+  border-radius: .32rem;
+  background: rgba(247, 249, 250, .94);
+  color: var(--cad-ink);
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 7px;
+  line-height: 1.15;
+  box-shadow: 0 4px 14px rgba(16, 24, 32, .1);
+  white-space: nowrap;
+}
+
+.cad-layer-label strong {
+  max-width: 118px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cad-layer-label small {
+  color: var(--cad-slate);
+  font-size: 6px;
+  font-weight: 700;
 }
 
 /* Materials reference library */
@@ -2289,7 +2408,9 @@
   .cad-floating-tools {
     right: .65rem;
     left: .65rem;
-    overflow-x: auto;
+    max-width: none;
+    flex-wrap: wrap;
+    overflow: visible;
   }
 
   .cad-floating-tools button {

@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { Html } from "@react-three/drei";
 import type { ThreeEvent } from "@react-three/fiber";
 import * as THREE from "three";
-import type { ShelterModel } from "@/types/shelter";
+import type { LayerModel, ShelterModel } from "@/types/shelter";
 import type { SelectedElement, ViewerSettings, WallOrientation } from "../types";
 import { deriveShelter3DGeometry, type Opening3DPlacement } from "../geometry-math";
 import { ThermalRadiationOverlay } from "./ThermalRadiationOverlay";
@@ -15,9 +15,8 @@ import {
 } from "../thermal-physics";
 import { useExplodeFactor } from "../use-explode-factor";
 import {
-  createMetalRoofTexture,
-  createMudPlasterWallTexture,
-  createStoneFoundationTexture,
+  createMaterialTexture,
+  materialAppearance,
 } from "../procedural-textures";
 
 interface Props {
@@ -86,6 +85,64 @@ function addPosition(
   delta: [number, number, number]
 ): [number, number, number] {
   return [base[0] + delta[0], base[1] + delta[1], base[2] + delta[2]];
+}
+
+function AssemblySample({
+  layers,
+  label,
+  position,
+  width,
+  depth,
+}: {
+  layers: LayerModel[];
+  label: string;
+  position: [number, number, number];
+  width: number;
+  depth: number;
+}) {
+  const visibleLayers = layers.slice(0, 5);
+  const displayDepths = visibleLayers.map((layer) => Math.max(0.055, Math.min(0.24, layer.thickness * 1.35)));
+  const layerMaps = useMemo(
+    () => visibleLayers.map((layer) => createMaterialTexture(layer.materialId, layer.name)),
+    [layers]
+  );
+  const layerGap = 0.065;
+  const totalDepth = displayDepths.reduce((sum, value) => sum + value, 0) + Math.max(0, visibleLayers.length - 1) * layerGap;
+  let cursor = totalDepth / 2;
+
+  return (
+    <group position={position}>
+      {visibleLayers.map((layer, index) => {
+        const thickness = displayDepths[index];
+        const appearance = materialAppearance(layer.materialId, layer.name);
+        cursor -= thickness / 2;
+        const y = cursor;
+        cursor -= thickness / 2 + layerGap;
+        return (
+          <group key={`${label}-${layer.materialId}-${index}`}>
+            <mesh position={[0, y, 0]} castShadow receiveShadow>
+              <boxGeometry args={[width, thickness, depth]} />
+              <meshStandardMaterial
+                color={appearance.color}
+                map={layerMaps[index]}
+                roughness={appearance.roughness}
+                metalness={appearance.metalness}
+              />
+            </mesh>
+            <Html position={[width / 2 + 0.16, y, 0]} distanceFactor={14} style={{ pointerEvents: "none" }}>
+              <span className="cad-layer-label" style={{ "--layer-color": appearance.color } as React.CSSProperties}>
+                <strong>{layer.name}</strong>
+                <small>{Math.round(layer.thickness * 1000)} mm</small>
+              </span>
+            </Html>
+          </group>
+        );
+      })}
+      <Html position={[0, totalDepth / 2 + 0.22, 0]} center distanceFactor={14} style={{ pointerEvents: "none" }}>
+        <span className="cad-scene-label">{label} · exterior to interior</span>
+      </Html>
+    </group>
+  );
 }
 
 interface ThermalTextureParams {
@@ -390,8 +447,7 @@ export function ShelterMesh({ model, selected, onSelect, settings, hourlyStep }:
   const xrayWallOpacity = 0.14;
   const xrayEdgeOpacity = 0.88;
 
-  const explodeRef = useExplodeFactor(settings.explodedView);
-  const explode = explodeRef.current;
+  const explode = useExplodeFactor(settings.explodedView);
   const span = Math.max(model.geometry.length, model.geometry.width);
   const wallExplode = (side: WallOrientation): [number, number, number] => {
     const n = geom.walls[side].normal;
@@ -404,14 +460,25 @@ export function ShelterMesh({ model, selected, onSelect, settings, hourlyStep }:
   const buildingTextures = useMemo(() => {
     if (typeof window === "undefined") return null;
     return {
-      south: createMudPlasterWallTexture("south"),
-      north: createMudPlasterWallTexture("north"),
-      east: createMudPlasterWallTexture("east"),
-      west: createMudPlasterWallTexture("west"),
-      roof: createMetalRoofTexture(),
-      floor: createStoneFoundationTexture(),
+      south: createMaterialTexture(model.envelope.walls.south.layers[0]?.materialId ?? "", model.envelope.walls.south.layers[0]?.name ?? ""),
+      north: createMaterialTexture(model.envelope.walls.north.layers[0]?.materialId ?? "", model.envelope.walls.north.layers[0]?.name ?? ""),
+      east: createMaterialTexture(model.envelope.walls.east.layers[0]?.materialId ?? "", model.envelope.walls.east.layers[0]?.name ?? ""),
+      west: createMaterialTexture(model.envelope.walls.west.layers[0]?.materialId ?? "", model.envelope.walls.west.layers[0]?.name ?? ""),
+      roof: createMaterialTexture(model.envelope.roof.layers[0]?.materialId ?? "", model.envelope.roof.layers[0]?.name ?? ""),
+      floor: createMaterialTexture(model.envelope.floor.layers[0]?.materialId ?? "", model.envelope.floor.layers[0]?.name ?? ""),
     };
-  }, []);
+  }, [model.envelope]);
+  const wallLayerTextures = useMemo(
+    () => ({
+      north: model.envelope.walls.north.layers.map((layer) => createMaterialTexture(layer.materialId, layer.name)),
+      south: model.envelope.walls.south.layers.map((layer) => createMaterialTexture(layer.materialId, layer.name)),
+      east: model.envelope.walls.east.layers.map((layer) => createMaterialTexture(layer.materialId, layer.name)),
+      west: model.envelope.walls.west.layers.map((layer) => createMaterialTexture(layer.materialId, layer.name)),
+    }),
+    [model.envelope.walls]
+  );
+  const floorAppearance = materialAppearance(model.envelope.floor.layers[0]?.materialId ?? "", model.envelope.floor.layers[0]?.name ?? "");
+  const roofAppearance = materialAppearance(model.envelope.roof.layers[0]?.materialId ?? "", model.envelope.roof.layers[0]?.name ?? "");
 
   // Dynamically calibrated FLIR / Turbo thermal gradient maps for surfaces (ISO 6946 / ISO 10211)
   const thermalTextures = useMemo(() => {
@@ -513,6 +580,25 @@ export function ShelterMesh({ model, selected, onSelect, settings, hourlyStep }:
         </Html>
       ) : null}
 
+      {explode > 0.55 && settings.revealLayers ? (
+        <>
+          <AssemblySample
+            label="Roof build-up"
+            layers={model.envelope.roof.layers}
+            position={[model.geometry.length / 2 + 2.1, model.geometry.height + roofExplodeY * 0.76, 0]}
+            width={Math.min(2.1, model.geometry.length * 0.34)}
+            depth={Math.min(1.45, model.geometry.width * 0.3)}
+          />
+          <AssemblySample
+            label="Floor build-up"
+            layers={model.envelope.floor.layers}
+            position={[-model.geometry.length / 2 - 2.1, 0.65 + floorExplodeY, 0]}
+            width={Math.min(2.1, model.geometry.length * 0.34)}
+            depth={Math.min(1.45, model.geometry.width * 0.3)}
+          />
+        </>
+      ) : null}
+
       {/* 1. Ground Foundation Slab */}
       <mesh
         position={addPosition(geom.floor.center, [0, floorExplodeY, 0])}
@@ -534,6 +620,8 @@ export function ShelterMesh({ model, selected, onSelect, settings, hourlyStep }:
               ? palette.solar
               : isThermal
               ? "#ffffff"
+              : isModelVisual
+              ? floorAppearance.color
               : palette.ink
           }
           map={
@@ -546,7 +634,8 @@ export function ShelterMesh({ model, selected, onSelect, settings, hourlyStep }:
           emissiveMap={!isXRay && isThermal ? thermalTextures?.floor : null}
           emissive={!isXRay && isThermal ? "#ffffff" : "#000000"}
           emissiveIntensity={!isXRay && isThermal ? 0.45 : 0}
-          roughness={isThermal ? 0.4 : 0.78}
+          roughness={isThermal ? 0.4 : isModelVisual ? floorAppearance.roughness : 0.78}
+          metalness={isModelVisual ? floorAppearance.metalness : 0}
           transparent={isXRay}
           opacity={isXRay ? 0.2 : 1}
           wireframe={settings.wireframe}
@@ -569,6 +658,7 @@ export function ShelterMesh({ model, selected, onSelect, settings, hourlyStep }:
         const wallGeom = wallGeometries[side];
         const active = isActive(`wall-${side}`);
         const wallPos = addPosition(wall.position, wallExplode(side));
+        const wallAppearance = materialAppearance(layers[0]?.materialId ?? "", layers[0]?.name ?? "");
 
         return (
           <group key={side}>
@@ -591,6 +681,8 @@ export function ShelterMesh({ model, selected, onSelect, settings, hourlyStep }:
                     ? palette.xrayTint
                     : isThermal
                     ? "#ffffff"
+                    : isModelVisual
+                    ? wallAppearance.color
                     : getWallMaterialColor(settings.visualization, side, active)
                 }
                 map={
@@ -603,8 +695,8 @@ export function ShelterMesh({ model, selected, onSelect, settings, hourlyStep }:
                 emissiveMap={!isXRay && isThermal ? thermalTextures?.[side] : null}
                 emissive={!isXRay && isThermal ? "#ffffff" : "#000000"}
                 emissiveIntensity={!isXRay && isThermal ? 0.6 : 0}
-                roughness={isXRay ? 0.15 : isThermal ? 0.45 : 0.7}
-                metalness={isXRay ? 0.08 : 0.04}
+                roughness={isXRay ? 0.15 : isThermal ? 0.45 : isModelVisual ? wallAppearance.roughness : 0.7}
+                metalness={isXRay ? 0.08 : isModelVisual ? wallAppearance.metalness : 0.04}
                 wireframe={settings.wireframe}
                 transparent={isXRay}
                 opacity={isXRay ? xrayWallOpacity : 1}
@@ -628,40 +720,57 @@ export function ShelterMesh({ model, selected, onSelect, settings, hourlyStep }:
 
             {/* Exploded Construction Layers (Reveal Layers mode) */}
             {settings.revealLayers
-              ? layers.slice(0, 4).map((layer, layerIndex) => {
-                  const displacement = 0.2 + layerIndex * 0.1;
+              ? layers.slice(0, 5).map((layer, layerIndex) => {
+                  const material = materialAppearance(layer.materialId, layer.name);
                   const normal = wall.normal;
+                  const layerDepth = Math.max(0.018, Math.min(layer.thickness, wall.dimensions[2] * 0.82));
+                  // Keep the true opening geometry while spacing the exterior-to-interior build-up.
+                  const displacement = 0.28 + layerIndex * (0.11 + Math.min(0.08, layerDepth * 0.4));
                   return (
-                    <mesh
-                      key={`${layer.materialId}-${layerIndex}`}
-                      position={[
-                        wallPos[0] + normal[0] * displacement,
-                        wallPos[1],
-                        wallPos[2] + normal[2] * displacement,
-                      ]}
-                      rotation={wall.rotation}
-                    >
-                      <boxGeometry
-                        args={[
-                          wall.dimensions[0] * 0.96,
-                          wall.dimensions[1] * 0.96,
-                          Math.max(0.025, layer.thickness * 0.25),
+                    <group key={`${layer.materialId}-${layerIndex}`}>
+                      <mesh
+                        position={[
+                          wallPos[0] + normal[0] * displacement,
+                          wallPos[1],
+                          wallPos[2] + normal[2] * displacement,
                         ]}
-                      />
-                      <meshStandardMaterial
-                        color={[palette.paper, palette.ice, palette.slate, palette.charcoal][layerIndex]}
-                        transparent
-                        opacity={0.9}
-                        roughness={0.65}
-                      />
-                    </mesh>
+                        rotation={wall.rotation}
+                        geometry={wallGeom}
+                        scale={[0.96, 0.96, layerDepth / wall.dimensions[2]]}
+                      >
+                        <meshStandardMaterial
+                          color={material.color}
+                          map={isModelVisual ? wallLayerTextures[side][layerIndex] : null}
+                          transparent={!isModelVisual}
+                          opacity={isModelVisual ? 1 : 0.88}
+                          roughness={material.roughness}
+                          metalness={material.metalness}
+                        />
+                      </mesh>
+                    {side === "south" ? (
+                      <Html
+                        position={[
+                          wallPos[0] + normal[0] * (displacement + 0.12),
+                          wallPos[1] + wall.dimensions[1] * 0.48 - layerIndex * 0.23,
+                          wallPos[2] + normal[2] * (displacement + 0.12),
+                        ]}
+                        distanceFactor={14}
+                        style={{ pointerEvents: "none" }}
+                      >
+                        <span className="cad-layer-label" style={{ "--layer-color": material.color } as React.CSSProperties}>
+                          <strong>{layer.name}</strong>
+                          <small>{Math.round(layer.thickness * 1000)} mm · exterior → interior</small>
+                        </span>
+                      </Html>
+                      ) : null}
+                    </group>
                   );
                 })
               : null}
 
             {settings.revealLayers && wallIndex === 1 ? (
               <Html position={[wall.position[0], wall.position[1] + model.geometry.height * 0.58, wall.position[2] + 0.8]} center>
-                <span className="cad-scene-label">Assembly Layers</span>
+                <span className="cad-scene-label">South wall assembly</span>
               </Html>
             ) : null}
           </group>
@@ -700,6 +809,8 @@ export function ShelterMesh({ model, selected, onSelect, settings, hourlyStep }:
                     ? palette.solar
                     : isThermal
                     ? "#ffffff"
+                    : isModelVisual
+                    ? roofAppearance.color
                     : palette.charcoal
                 }
                 map={
@@ -712,8 +823,8 @@ export function ShelterMesh({ model, selected, onSelect, settings, hourlyStep }:
                 emissiveMap={!isXRay && isThermal ? thermalTextures?.roof : null}
                 emissive={!isXRay && isThermal ? "#ffffff" : "#000000"}
                 emissiveIntensity={!isXRay && isThermal ? 0.55 : 0}
-                roughness={isXRay ? 0.15 : 0.48}
-                metalness={isXRay ? 0.08 : 0.22}
+                roughness={isXRay ? 0.15 : isModelVisual ? roofAppearance.roughness : 0.48}
+                metalness={isXRay ? 0.08 : isModelVisual ? roofAppearance.metalness : 0.22}
                 wireframe={settings.wireframe}
                 transparent={isXRay}
                 opacity={isXRay ? xrayWallOpacity : 1}
@@ -757,6 +868,8 @@ export function ShelterMesh({ model, selected, onSelect, settings, hourlyStep }:
                     ? palette.solar
                     : isThermal
                     ? "#ffffff"
+                    : isModelVisual
+                    ? roofAppearance.color
                     : palette.charcoal
                 }
                 map={
@@ -769,8 +882,8 @@ export function ShelterMesh({ model, selected, onSelect, settings, hourlyStep }:
                 emissiveMap={!isXRay && isThermal ? thermalTextures?.roof : null}
                 emissive={!isXRay && isThermal ? "#ffffff" : "#000000"}
                 emissiveIntensity={!isXRay && isThermal ? 0.55 : 0}
-                roughness={isXRay ? 0.15 : 0.48}
-                metalness={isXRay ? 0.08 : 0.22}
+                roughness={isXRay ? 0.15 : isModelVisual ? roofAppearance.roughness : 0.48}
+                metalness={isXRay ? 0.08 : isModelVisual ? roofAppearance.metalness : 0.22}
                 wireframe={settings.wireframe}
                 transparent={isXRay}
                 opacity={isXRay ? xrayWallOpacity : 1}
@@ -906,6 +1019,8 @@ export function ShelterMesh({ model, selected, onSelect, settings, hourlyStep }:
                     ? palette.solar
                     : isThermal
                     ? "#ffffff"
+                    : isModelVisual
+                    ? roofAppearance.color
                     : palette.charcoal
                 }
                 map={
@@ -918,8 +1033,8 @@ export function ShelterMesh({ model, selected, onSelect, settings, hourlyStep }:
                 emissiveMap={!isXRay && isThermal ? thermalTextures?.roof : null}
                 emissive={!isXRay && isThermal ? "#ffffff" : "#000000"}
                 emissiveIntensity={!isXRay && isThermal ? 0.55 : 0}
-                roughness={isXRay ? 0.15 : 0.48}
-                metalness={isXRay ? 0.08 : 0.22}
+                roughness={isXRay ? 0.15 : isModelVisual ? roofAppearance.roughness : 0.48}
+                metalness={isXRay ? 0.08 : isModelVisual ? roofAppearance.metalness : 0.22}
                 wireframe={settings.wireframe}
                 transparent={isXRay}
                 opacity={isXRay ? xrayWallOpacity : 1}
@@ -1067,6 +1182,8 @@ export function ShelterMesh({ model, selected, onSelect, settings, hourlyStep }:
                   ? palette.solar
                   : isThermal
                   ? "#ffffff"
+                  : isModelVisual
+                  ? roofAppearance.color
                   : palette.charcoal
               }
               map={
@@ -1079,8 +1196,8 @@ export function ShelterMesh({ model, selected, onSelect, settings, hourlyStep }:
               emissiveMap={!isXRay && isThermal ? thermalTextures?.roof : null}
               emissive={!isXRay && isThermal ? "#ffffff" : "#000000"}
               emissiveIntensity={!isXRay && isThermal ? 0.55 : 0}
-              roughness={isXRay ? 0.15 : 0.48}
-              metalness={isXRay ? 0.08 : 0.22}
+              roughness={isXRay ? 0.15 : isModelVisual ? roofAppearance.roughness : 0.48}
+              metalness={isXRay ? 0.08 : isModelVisual ? roofAppearance.metalness : 0.22}
               wireframe={settings.wireframe}
               transparent={isXRay}
               opacity={isXRay ? xrayWallOpacity : 1}

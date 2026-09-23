@@ -2,7 +2,7 @@
 
 import { useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
-import { Html } from "@react-three/drei";
+import { Html, Line } from "@react-three/drei";
 import * as THREE from "three";
 import type { ShelterModel } from "@/types/shelter";
 import type { ViewerSettings } from "../types";
@@ -29,6 +29,13 @@ export function SunLighting({ model, settings, sunHour }: Props) {
     () => new THREE.Vector3(...sunPositionGeographic(lat, sunHour, 48)),
     [lat, sunHour]
   );
+  const sunPath = useMemo(
+    () =>
+      Array.from({ length: 49 }, (_, index) => index * 0.5)
+        .filter((hour) => computeSunAngles(lat, hour).altitudeDeg > 0)
+        .map((hour) => sunPositionGeographic(lat, hour, 48)),
+    [lat]
+  );
 
   const showSunDisc =
     settings.showEnvironment &&
@@ -49,6 +56,8 @@ export function SunLighting({ model, settings, sunHour }: Props) {
   const hemiSky = altitudeDeg > 5 ? "#dbeafe" : "#94a3b8";
   const hemiGround = "#7d8f7a";
   const amb = ambientIntensityForHour(sunHour, altitudeDeg);
+  const sunMinutes = Math.round((sunHour % 1) * 60);
+  const sunTimeLabel = `${Math.floor(sunHour).toString().padStart(2, "0")}:${sunMinutes.toString().padStart(2, "0")}`;
 
   return (
     <>
@@ -71,6 +80,10 @@ export function SunLighting({ model, settings, sunHour }: Props) {
         color={settings.visualization === "solar" ? "#fff4d6" : "#fffaf0"}
       />
 
+      {settings.showEnvironment && settings.visualization === "model" && sunPath.length > 1 ? (
+        <Line points={sunPath} color="#e7a82d" lineWidth={0.8} transparent opacity={0.44} />
+      ) : null}
+
       {showSunDisc ? (
         <group position={sunPos.toArray()}>
           <mesh>
@@ -83,7 +96,7 @@ export function SunLighting({ model, settings, sunHour }: Props) {
           </mesh>
           <Html center distanceFactor={55} style={{ pointerEvents: "none" }}>
             <div className="cad-sun-hud">
-              <strong>{sunHour.toString().padStart(2, "0")}:00</strong>
+              <strong>{sunTimeLabel}</strong>
               <span>Alt {altitudeDeg.toFixed(1)}° · {lat.toFixed(1)}°N</span>
             </div>
           </Html>

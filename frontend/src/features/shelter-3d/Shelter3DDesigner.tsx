@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
 import {
   ArrowRight,
   Box,
@@ -23,7 +22,7 @@ import {
   Save,
   SkipBack,
   SkipForward,
-  Sliders,
+  SlidersHorizontal,
   Sparkles,
   Sun,
   Undo2,
@@ -33,7 +32,6 @@ import {
 } from "lucide-react";
 import type { ShelterModel } from "@/types/shelter";
 import { useShelterStore } from "@/lib/store/use-shelter-store";
-import { step3dTo2d } from "@/lib/store/shelter-model-adapter";
 import type { CameraPreset, SelectedElement, ViewerSettings, VisualizationMode } from "./types";
 import { calculateHourlyThermalStep } from "./thermal-physics";
 import { ShelterCanvas } from "./components/ShelterCanvas";
@@ -55,19 +53,26 @@ const stages = [
   "Ventilation",
   "Targets",
 ];
+const workflowGroups = [
+  { id: "site", label: "Site & form", stages: [0, 1, 2, 3] },
+  { id: "envelope", label: "Passive envelope", stages: [4, 5, 6] },
+  { id: "openings", label: "Openings & comfort", stages: [7, 8, 9, 10, 11] },
+  { id: "performance", label: "Performance target", stages: [12] },
+];
 const views: { id: CameraPreset; label: string }[] = [{ id: "iso", label: "3D" }, { id: "top", label: "Plan" }, { id: "south", label: "South" }, { id: "north", label: "North" }, { id: "east", label: "East" }, { id: "west", label: "West" }];
 const modes: { id: VisualizationMode; label: string; icon: typeof Box }[] = [{ id: "model", label: "Model", icon: Box }, { id: "thermal", label: "Thermal", icon: Eye }, { id: "solar", label: "Solar", icon: Sun }, { id: "heat-flow", label: "Heat flow", icon: Wind }];
 
 interface Props { model: ShelterModel; step: number; onStepChange: (step: number) => void; onUpdate: (updates: Partial<ShelterModel>) => void; onSimulate: () => void; }
 
 export function Shelter3DDesigner({ model, step, onStepChange, onUpdate, onSimulate }: Props) {
-  const router = useRouter();
   const [selected, setSelected] = useState<SelectedElement>({ type: "shelter" });
   const [preset, setPreset] = useState<CameraPreset>("iso");
   const [leftOpen, setLeftOpen] = useState(true);
   const [rightOpen, setRightOpen] = useState(true);
   const [saved, setSaved] = useState(false);
   const [materialsOpen, setMaterialsOpen] = useState(false);
+  const [viewOptionsOpen, setViewOptionsOpen] = useState(false);
+  const [openWorkflowGroup, setOpenWorkflowGroup] = useState(() => workflowGroups.find((group) => group.stages.includes(step))?.id ?? "site");
   const [settings, setSettings] = useState<ViewerSettings>({
     showGrid: true,
     showDimensions: true,
@@ -81,6 +86,7 @@ export function Shelter3DDesigner({ model, step, onStepChange, onUpdate, onSimul
     visualization: "model",
   });
   const [selectedHour, setSelectedHour] = useState(12);
+  const [sunTime, setSunTime] = useState(12);
   const [isPlaying, setIsPlaying] = useState(false);
 
   const simulations = useShelterStore((state) => state.simulations);
@@ -110,8 +116,13 @@ export function Shelter3DDesigner({ model, step, onStepChange, onUpdate, onSimul
   useEffect(() => {
     if (!isPlaying) return;
     const timer = setInterval(() => {
-      setSelectedHour((prev) => (prev + 1) % 24);
-    }, 1100);
+      setSunTime((previous) => {
+        const next = (previous + 0.05) % 24;
+        const simulationHour = Math.round(next) % 24;
+        setSelectedHour((current) => current === simulationHour ? current : simulationHour);
+        return next;
+      });
+    }, 50);
     return () => clearInterval(timer);
   }, [isPlaying]);
 
@@ -154,6 +165,7 @@ export function Shelter3DDesigner({ model, step, onStepChange, onUpdate, onSimul
 
   // Handle stage change with auto-focusing elements in 3D
   const handleStageSelect = (idx: number) => {
+    setOpenWorkflowGroup(workflowGroups.find((group) => group.stages.includes(idx))?.id ?? "site");
     onStepChange(idx);
     if (idx === 3 || idx === 4) setSelected({ type: "wall", orientation: "south" });
     else if (idx === 5) setSelected({ type: "roof" });
@@ -164,6 +176,23 @@ export function Shelter3DDesigner({ model, step, onStepChange, onUpdate, onSimul
     else if (idx === 10) setSelected(model.thermalMass[0] ? { type: "thermalMass", id: model.thermalMass[0].id } : null);
     else setSelected({ type: "shelter" });
   };
+
+  const toggleExplodedView = () => {
+    const next = !settings.explodedView;
+    setSettings((current) => ({
+      ...current,
+      explodedView: next,
+      revealLayers: next ? true : current.revealLayers,
+    }));
+  };
+
+  const setSolarTime = (hour: number) => {
+    const normalized = (hour + 24) % 24;
+    setSunTime(normalized);
+    setSelectedHour(Math.round(normalized) % 24);
+  };
+
+  const formattedSolarTime = `${Math.floor(sunTime).toString().padStart(2, "0")}:${Math.round((sunTime % 1) * 60).toString().padStart(2, "0")}`;
 
   const southWallArea = model.geometry.length * model.geometry.height;
   const southWinArea = model.windows.filter((w) => w.wall === "south").reduce((sum, w) => sum + w.width * w.height, 0);
@@ -200,10 +229,6 @@ export function Shelter3DDesigner({ model, step, onStepChange, onUpdate, onSimul
         )}
         <button aria-label="Undo" disabled={!history.current.length} onClick={undo}><Undo2 /></button>
         <button aria-label="Redo" disabled={!future.current.length} onClick={redo}><Redo2 /></button>
-        <button data-active={settings.showGrid} aria-label="Toggle grid" onClick={() => setSetting("showGrid", !settings.showGrid)}><Grid3X3 /></button>
-        <button data-active={settings.showDimensions} aria-label="Toggle dimensions" onClick={() => setSetting("showDimensions", !settings.showDimensions)}><Ruler /></button>
-        <button data-active={settings.showCompass} aria-label="Toggle compass" onClick={() => setSetting("showCompass", !settings.showCompass)}><Compass /></button>
-        <button data-active={settings.wireframe} aria-label="Toggle wireframe" title="Toggle wireframe mode (W)" onClick={() => setSetting("wireframe", !settings.wireframe)}><Boxes /></button>
         <button
           className="cad-save"
           onClick={() => {
@@ -223,7 +248,37 @@ export function Shelter3DDesigner({ model, step, onStepChange, onUpdate, onSimul
     <div className="cad-workspace">
       <aside className="cad-stage-panel" data-open={leftOpen}>
         <div className="cad-panel-heading"><span>Design sequence</span><button aria-label="Toggle workflow panel" onClick={() => setLeftOpen(!leftOpen)}><PanelLeft /></button></div>
-        <ol>{stages.map((label, index) => <li key={label}><button data-active={index === step} data-complete={index < step} onClick={() => handleStageSelect(index)}><span>{index < step ? <Check /> : String(index + 1).padStart(2, "0")}</span><strong>{label}</strong></button></li>)}</ol>
+        <ol className="cad-workflow-groups">
+          {workflowGroups.map((group) => {
+            const isOpen = openWorkflowGroup === group.id;
+            const completed = group.stages.filter((index) => index < step).length;
+            return (
+              <li key={group.id} className="cad-workflow-group" data-open={isOpen}>
+                <button
+                  type="button"
+                  className="cad-workflow-group-trigger"
+                  onClick={() => setOpenWorkflowGroup(isOpen ? "" : group.id)}
+                  aria-expanded={isOpen}
+                >
+                  <span>{group.label}</span>
+                  <small>{completed}/{group.stages.length}</small>
+                </button>
+                {isOpen ? (
+                  <ol>
+                    {group.stages.map((index) => (
+                      <li key={stages[index]}>
+                        <button data-active={index === step} data-complete={index < step} onClick={() => handleStageSelect(index)}>
+                          <span>{index < step ? <Check /> : String(index + 1).padStart(2, "0")}</span>
+                          <strong>{stages[index]}</strong>
+                        </button>
+                      </li>
+                    ))}
+                  </ol>
+                ) : null}
+              </li>
+            );
+          })}
+        </ol>
         <div className="cad-stage-progress"><span style={{ width: `${((step + 1) / stages.length) * 100}%` }} /></div>
       </aside>
 
@@ -261,36 +316,35 @@ export function Shelter3DDesigner({ model, step, onStepChange, onUpdate, onSimul
             Materials
           </button>
           <button
-            data-active={settings.transparentWalls}
-            onClick={() => setSetting("transparentWalls", !settings.transparentWalls)}
-          >
-            <Eye />
-            X-ray
-          </button>
-          <button
-            data-active={settings.wireframe}
-            title="Toggle wireframe (W)"
-            onClick={() => setSetting("wireframe", !settings.wireframe)}
-          >
-            <Boxes />
-            Wireframe
-          </button>
-          <button
-            data-active={settings.showEnvironment}
-            title="Ladakh site context, sky, and mountains"
-            onClick={() => setSetting("showEnvironment", !settings.showEnvironment)}
-          >
-            <Mountain />
-            Environment
-          </button>
-          <button
             data-active={settings.explodedView}
             title="Exploded assembly view"
-            onClick={() => setSetting("explodedView", !settings.explodedView)}
+            onClick={toggleExplodedView}
           >
             <UnfoldVertical />
             Exploded
           </button>
+          <div className="cad-view-options-wrap">
+            <button
+              type="button"
+              data-active={viewOptionsOpen || settings.transparentWalls || settings.wireframe}
+              aria-expanded={viewOptionsOpen}
+              aria-controls="designer-view-options"
+              onClick={() => setViewOptionsOpen((open) => !open)}
+            >
+              <SlidersHorizontal />
+              View
+            </button>
+            {viewOptionsOpen ? (
+              <div id="designer-view-options" className="cad-view-options" role="group" aria-label="View options">
+                <button data-active={settings.showEnvironment} onClick={() => setSetting("showEnvironment", !settings.showEnvironment)}><Mountain /> Site context</button>
+                <button data-active={settings.showGrid} onClick={() => setSetting("showGrid", !settings.showGrid)}><Grid3X3 /> Grid</button>
+                <button data-active={settings.showDimensions} onClick={() => setSetting("showDimensions", !settings.showDimensions)}><Ruler /> Dimensions</button>
+                <button data-active={settings.showCompass} onClick={() => setSetting("showCompass", !settings.showCompass)}><Compass /> Compass</button>
+                <button data-active={settings.transparentWalls} onClick={() => setSetting("transparentWalls", !settings.transparentWalls)}><Eye /> X-ray</button>
+                <button data-active={settings.wireframe} onClick={() => setSetting("wireframe", !settings.wireframe)}><Boxes /> Wireframe</button>
+              </div>
+            ) : null}
+          </div>
         </div>
 
         <ShelterCanvas
@@ -301,7 +355,7 @@ export function Shelter3DDesigner({ model, step, onStepChange, onUpdate, onSimul
           activePreset={preset}
           hourlyStep={hourlyStep}
           hasSimResults={Boolean(activeSim)}
-          sunHour={selectedHour}
+          sunHour={sunTime}
         />
 
         {!activeSim &&
@@ -357,7 +411,7 @@ export function Shelter3DDesigner({ model, step, onStepChange, onUpdate, onSimul
                   className="cad-timeline-btn"
                   aria-label="Previous hour"
                   title="Step back 1 hour"
-                  onClick={() => setSelectedHour((h) => (h - 1 + 24) % 24)}
+                  onClick={() => setSolarTime(selectedHour - 1)}
                 >
                   <SkipBack className="size-3.5" />
                 </button>
@@ -365,7 +419,7 @@ export function Shelter3DDesigner({ model, step, onStepChange, onUpdate, onSimul
                   type="button"
                   className={`cad-timeline-btn ${isPlaying ? "cad-timeline-btn-play" : ""}`}
                   aria-label={isPlaying ? "Pause timeline playback" : "Play 24h diurnal cycle"}
-                  title={isPlaying ? "Pause playback" : "Play 24h diurnal cycle (1h/sec)"}
+                  title={isPlaying ? "Pause daylight playback" : "Play a smooth 24-hour daylight cycle"}
                   onClick={() => setIsPlaying((p) => !p)}
                 >
                   {isPlaying ? (
@@ -379,13 +433,13 @@ export function Shelter3DDesigner({ model, step, onStepChange, onUpdate, onSimul
                   className="cad-timeline-btn"
                   aria-label="Next hour"
                   title="Step forward 1 hour"
-                  onClick={() => setSelectedHour((h) => (h + 1) % 24)}
+                  onClick={() => setSolarTime(selectedHour + 1)}
                 >
                   <SkipForward className="size-3.5" />
                 </button>
                 <span className="cad-timeline-chip font-bold text-amber-600 dark:text-amber-400">
                   <Clock className="size-3" />
-                  {hourlyStep?.timeLabel ?? `${selectedHour.toString().padStart(2, "0")}:00`}
+                  {hourlyStep?.timeLabel ?? formattedSolarTime}
                 </span>
               </div>
 
@@ -402,7 +456,7 @@ export function Shelter3DDesigner({ model, step, onStepChange, onUpdate, onSimul
                     type="button"
                     className="cad-timeline-quick-btn"
                     data-active={selectedHour === item.h}
-                    onClick={() => setSelectedHour(item.h)}
+                    onClick={() => setSolarTime(item.h)}
                   >
                     {item.label}
                   </button>
@@ -435,7 +489,7 @@ export function Shelter3DDesigner({ model, step, onStepChange, onUpdate, onSimul
                 max="23"
                 step="1"
                 value={selectedHour}
-                onChange={(e) => setSelectedHour(Number(e.target.value))}
+                onChange={(e) => setSolarTime(Number(e.target.value))}
                 className="cad-timeline-slider"
                 aria-label="Hour of day timeline slider"
               />

@@ -26,7 +26,7 @@ interface NavItem {
 
 const GLOBAL_NAV: NavItem[] = [
   { id: "dashboard", label: "Dashboard", href: "/dashboard" },
-  { id: "ai-designer", label: "⚡ AI Generative Designer", href: "/ai-designer" },
+  { id: "ai-designer", label: "AI Studio", href: "/ai-designer" },
   { id: "projects", label: "Projects", href: "/projects" },
   { id: "materials", label: "Materials", href: "/materials" },
   { id: "settings", label: "Settings", href: "/settings" },
@@ -64,6 +64,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   // Determine if this is a project-specific workflow view
   const currentStepIndex = getWorkflowStepIndex(pathname);
   const isProjectView = currentStepIndex !== -1;
+  const isImmersiveDesigner = pathname === "/designer/3d";
 
   const nextRecommendedStep =
     currentStepIndex !== -1 && currentStepIndex < WORKFLOW_PIPELINE.length - 1
@@ -373,7 +374,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       </header>
 
       {/* Main Page Workspace Content */}
-      <main className="workspace-content mx-auto max-w-[1500px] px-5 py-8 sm:px-8 sm:py-10 lg:px-12">
+      <main className={isImmersiveDesigner ? "workspace-content 3d-workspace-content" : "workspace-content mx-auto max-w-[1500px] px-5 py-8 sm:px-8 sm:py-10 lg:px-12"}>
         {children}
       </main>
     </div>
