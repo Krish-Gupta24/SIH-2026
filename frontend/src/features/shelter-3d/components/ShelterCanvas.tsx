@@ -23,6 +23,8 @@ interface ShelterCanvasProps {
   hourlyStep?: HourlyThermalStep | null;
   hasSimResults?: boolean;
   sunHour?: number;
+  solarDate: string;
+  suppressHtmlLabels?: boolean;
 }
 
 function CameraController({
@@ -40,20 +42,20 @@ function CameraController({
     const controls = controlsRef.current;
     if (!controls) return;
     const maxDim = Math.max(model.geometry.length, model.geometry.width, model.geometry.height);
-    const dist = Math.max(10, maxDim * (explodedView ? 2.65 : 2.2));
-    const midY = model.geometry.height * (explodedView ? 0.78 : 0.55);
+    const dist = Math.max(9.0, maxDim * (explodedView ? 2.2 : 1.7));
+    const targetY = model.geometry.height * (explodedView ? 0.75 : 0.62);
 
     const positions: Record<CameraPreset, [number, number, number]> = {
-      iso: [dist * 0.85, dist * 0.65, dist * 0.85],
-      top: [0, dist * 1.3, 0.01],
-      south: [0, midY, dist],
-      north: [0, midY, -dist],
-      east: [dist, midY, 0],
-      west: [-dist, midY, 0],
+      iso: [dist * 0.82, targetY + dist * 0.52, dist * 0.82],
+      top: [0, targetY + dist * 1.3, 0.01],
+      south: [0, targetY, dist * 1.08],
+      north: [0, targetY, -dist * 1.08],
+      east: [dist * 1.08, targetY, 0],
+      west: [-dist * 1.08, targetY, 0],
     };
 
     controls.object.position.set(...positions[preset]);
-    controls.target.set(0, midY, 0);
+    controls.target.set(0, targetY, 0);
     controls.update();
   }, [preset, controlsRef, model.geometry.length, model.geometry.width, model.geometry.height, explodedView]);
 
@@ -69,9 +71,11 @@ export function ShelterCanvas({
   hourlyStep,
   hasSimResults,
   sunHour = 12,
+  solarDate,
+  suppressHtmlLabels = false,
 }: ShelterCanvasProps) {
   const controlsRef = useRef<OrbitControlsImpl>(null);
-  const compassRadius = Math.max(4.5, Math.max(model.geometry.length, model.geometry.width) * 0.72);
+  const compassRadius = Math.max(7.5, Math.max(model.geometry.length, model.geometry.width) * 1.15 + 1.8);
 
   const isAnalysis =
     settings.visualization === "thermal" || settings.visualization === "heat-flow";
@@ -81,10 +85,18 @@ export function ShelterCanvas({
 
   return (
     <div className="cad-viewport relative size-full overflow-hidden">
+      {/* Fixed Clean Screen HUD Pill for Exploded View — never overlaps 3D geometry */}
+      {settings.explodedView && !suppressHtmlLabels ? (
+        <div className="cad-exploded-hud">
+          <span className="cad-exploded-hud-dot" />
+          <span>Exploded Assembly · Drag to Orbit · Click any Wall to Inspect Layers</span>
+        </div>
+      ) : null}
+
       <Canvas
         shadows={settings.showSunShadows}
         dpr={[1, 2]}
-        camera={{ position: [12, 8, 12], fov: 36, near: 0.1, far: 200 }}
+        camera={{ position: [6.5, 4.5, 6.5], fov: 42, near: 0.1, far: 250 }}
         onPointerMissed={() => onSelect(null)}
         className="touch-none"
       >
@@ -98,13 +110,13 @@ export function ShelterCanvas({
           makeDefault
           enableDamping
           dampingFactor={0.08}
-          minDistance={3.5}
-          maxDistance={55}
+          minDistance={1.8}
+          maxDistance={60}
           maxPolarAngle={Math.PI / 2 - 0.02}
         />
 
-        <SunLighting model={model} settings={settings} sunHour={sunHour} />
-        <SceneEnvironment model={model} settings={settings} sunHour={sunHour} />
+        <SunLighting model={model} settings={settings} sunHour={sunHour} solarDate={solarDate} />
+        <SceneEnvironment model={model} settings={settings} sunHour={sunHour} solarDate={solarDate} />
 
         {/* CAD Coordinate Grid */}
         {settings.showGrid ? (
@@ -124,20 +136,24 @@ export function ShelterCanvas({
         ) : null}
 
         {/* Solar Compass Rose */}
-        {settings.showCompass ? (
+        {settings.showCompass && !suppressHtmlLabels ? (
           <CompassRose orientation={model.geometry.orientation} radius={compassRadius} />
         ) : null}
 
-        {/* Interactive Dimension Lines & Callouts */}
-        {settings.showDimensions ? <DimensionLines model={model} selected={selected} /> : null}
+        {/* Interactive Dimension Lines & Callouts — hidden during exploded view to avoid label clutter */}
+        {settings.showDimensions && !settings.explodedView && !suppressHtmlLabels ? (
+          <DimensionLines model={model} selected={selected} />
+        ) : null}
 
         {/* 3D Shelter Mesh with Architectural Assemblies & Visualizers */}
         <ShelterMesh
           model={model}
           selected={selected}
           onSelect={onSelect}
-          settings={settings}
+          settings={suppressHtmlLabels ? { ...settings, revealLayers: false } : settings}
           hourlyStep={hourlyStep}
+          sunHour={sunHour}
+          solarDate={solarDate}
         />
       </Canvas>
 

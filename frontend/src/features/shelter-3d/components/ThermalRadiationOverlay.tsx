@@ -11,12 +11,21 @@ import {
   type DynamicThermalCalculations,
   type HourlyThermalStep,
 } from "../thermal-physics";
+import {
+  computeSunAngles,
+  dayOfYearFromIsoDate,
+  sunPositionGeographic,
+  type SolarSite,
+} from "../sun-geometry";
 
 interface Props {
   model: ShelterModel;
   geom: Shelter3DRepresentation;
   mode: VisualizationMode;
   hourlyStep?: HourlyThermalStep | null;
+  exploded?: boolean;
+  sunHour?: number;
+  solarDate?: string;
 }
 
 /* ─────────────────────────────────────────────────────────────
@@ -511,18 +520,26 @@ function HeatFlowAnnotations({
 }
 
 /* ─────────────────────────────────────────────────────────────
-   3. Solar Irradiance & Winter Sun Vector
-   Sun position for Leh Ladakh (34°N winter noon altitude 32°),
-   solar penetration beams through glazing onto the floor.
+   3. Real-Time Dynamic Solar Ray Tracing & Envelope Interaction
+   - Linked directly in real time to the moving celestial sun (SunLighting.tsx)
+   - Real-time rays reacting to Windows, Doors, Walls, and Roof
+   - Incident rays stop on solid exterior walls (absorbing heat)
+   - Penetrating rays enter through glazing & door openings
+   - Floor/wall solar absorption patches move dynamically across interior
+   - Zero duplicate/fixed sun: only the true moving celestial sun!
    ──────────────────────────────────────────────────────────── */
 function SolarAnnotations({
   model,
   geom,
   metrics,
+  sunHour = 12,
+  solarDate = "2026-06-21",
 }: {
   model: ShelterModel;
   geom: Shelter3DRepresentation;
   metrics: DynamicThermalCalculations;
+  sunHour?: number;
+  solarDate?: string;
 }) {
   const L = model.geometry.length;
   const W = model.geometry.width;
@@ -530,106 +547,347 @@ function SolarAnnotations({
   const halfL = L / 2;
   const halfW = W / 2;
 
-  const sunAltitudeRad = THREE.MathUtils.degToRad(metrics.solarAltitudeDeg);
-  const sunAzimuthRad = THREE.MathUtils.degToRad(180 - model.geometry.orientation);
-  const sunDistance = 22;
-  const sunX = sunDistance * Math.cos(sunAltitudeRad) * Math.sin(sunAzimuthRad);
-  const sunY = sunDistance * Math.sin(sunAltitudeRad);
-  const sunZ = sunDistance * Math.cos(sunAltitudeRad) * Math.cos(sunAzimuthRad);
-  const sunPosition: [number, number, number] = [sunX, sunY, sunZ];
+  // Real-time Solar Site Position (matches celestial sun in SunLighting.tsx)
+  const lat = model.location?.latitude ?? 34.15;
+  const lon = model.location?.longitude ?? 77.58;
+  const dayOfYear = dayOfYearFromIsoDate(solarDate);
+  const solarSite: SolarSite = {
+    latitudeDeg: lat,
+    longitudeDeg: lon,
+    dayOfYear,
+  };
+
+  const effectiveHour = typeof sunHour === "number" ? sunHour : 12;
+  const { altitudeDeg } = computeSunAngles(solarSite, effectiveHour);
+  const isDay = altitudeDeg > 0;
+
+  // Real-time 3D coordinates of the celestial sun disc (distance = 48m, identical to SunLighting)
+  const sunPos = sunPositionGeographic(solarSite, effectiveHour, 48);
+  const sunDist = Math.hypot(sunPos[0], sunPos[1], sunPos[2]) || 1;
+
+  // Normalized direction pointing from sun into the shelter scene
+  const rayDir: [number, number, number] = [
+    -sunPos[0] / sunDist,
+    -sunPos[1] / sunDist,
+    -sunPos[2] / sunDist,
+  ];
+
+  // Normalized direction pointing from shelter toward the sun
+  const toSunDir: [number, number, number] = [
+    sunPos[0] / sunDist,
+    sunPos[1] / sunDist,
+    sunPos[2] / sunDist,
+  ];
+
+  // 1. Ray-trace through Window Glazing (entering into shelter interior)
+  const windowBeams = useMemo(() => {
+    if (!isDay) return [];
+
+    return geom.windows.map((win) => {
+      // Normal dot product with incoming sun vector
+      const cosIncidence =
+        win.normal[0] * toSunDir[0] +
+        win.normal[1] * toSunDir[1] +
+        win.normal[2] * toSunDir[2];
+
+      if (cosIncidence < 0.04) {
+        return { win, isIlluminated: false, cosIncidence: 0, hitPoint: [0, 0, 0] as [number, number, number], hitType: "floor" as const, patchRadius: 0.5 };
+      }
+
+      const [wx, wy, wz] = win.worldPosition;
+      const [dx, dy, dz] = rayDir;
+
+      // Interior floor intersection: dy is negative (sun is shining downward)
+      const tFloor = (0.02 - wy) / (dy || -0.001);
+      const rawFloorX = wx + tFloor * dx;
+      const rawFloorZ = wz + tFloor * dz;
+
+      // Interior boundary limits
+      const boundX = halfL - 0.12;
+      const boundZ = halfW - 0.12;
+      let tHit = tFloor;
+      let hitType: "floor" | "wall" = "floor";
+
+      if (rawFloorX > boundX) {
+        const t = (boundX - wx) / (dx || 0.001);
+        if (t > 0 && t < tHit) { tHit = t; hitType = "wall"; }
+      } else if (rawFloorX < -boundX) {
+        const t = (-boundX - wx) / (dx || -0.001);
+        if (t > 0 && t < tHit) { tHit = t; hitType = "wall"; }
+      }
+
+      if (rawFloorZ > boundZ) {
+        const t = (boundZ - wz) / (dz || 0.001);
+        if (t > 0 && t < tHit) { tHit = t; hitType = "wall"; }
+      } else if (rawFloorZ < -boundZ) {
+        const t = (-boundZ - wz) / (dz || -0.001);
+        if (t > 0 && t < tHit) { tHit = t; hitType = "wall"; }
+      }
+
+      const hitPoint: [number, number, number] = [
+        wx + tHit * dx,
+        Math.max(0.02, wy + tHit * dy),
+        wz + tHit * dz,
+      ];
+
+      return {
+        win,
+        isIlluminated: true,
+        cosIncidence,
+        hitPoint,
+        hitType,
+        patchRadius: Math.max(0.35, Math.min(1.2, (win.dimensions[0] * 0.55) / Math.max(0.2, -dy))),
+      };
+    });
+  }, [geom.windows, rayDir, toSunDir, halfL, halfW, isDay]);
+
+  // 2. Ray-trace through Door Openings (entering into shelter)
+  const doorBeams = useMemo(() => {
+    if (!isDay) return [];
+
+    return geom.doors.map((door) => {
+      const cosIncidence =
+        door.normal[0] * toSunDir[0] +
+        door.normal[1] * toSunDir[1] +
+        door.normal[2] * toSunDir[2];
+
+      if (cosIncidence < 0.04) {
+        return { door, isIlluminated: false, cosIncidence: 0, hitPoint: [0, 0, 0] as [number, number, number], patchRadius: 0.5 };
+      }
+
+      const [dx, dy, dz] = rayDir;
+      const [wx, wy, wz] = door.worldPosition;
+      const tFloor = (0.02 - wy) / (dy || -0.001);
+      const hitPoint: [number, number, number] = [
+        Math.max(-halfL + 0.1, Math.min(halfL - 0.1, wx + tFloor * dx)),
+        0.02,
+        Math.max(-halfW + 0.1, Math.min(halfW - 0.1, wz + tFloor * dz)),
+      ];
+
+      return {
+        door,
+        isIlluminated: true,
+        cosIncidence,
+        hitPoint,
+        patchRadius: Math.max(0.4, door.dimensions[0] * 0.5),
+      };
+    });
+  }, [geom.doors, rayDir, toSunDir, halfL, halfW, isDay]);
+
+  // 3. Incident Solar Rays on Opaque Exterior Walls (stopping at wall surface)
+  const wallRays = useMemo(() => {
+    if (!isDay) return [];
+
+    const list: Array<{
+      side: "north" | "south" | "east" | "west";
+      cosIncidence: number;
+      surfacePoints: [number, number, number][];
+    }> = [];
+
+    (["south", "east", "west", "north"] as const).forEach((side) => {
+      const wall = geom.walls[side];
+      const cosIncidence =
+        wall.normal[0] * toSunDir[0] +
+        wall.normal[1] * toSunDir[1] +
+        wall.normal[2] * toSunDir[2];
+
+      if (cosIncidence > 0.05) {
+        const pts: [number, number, number][] = [];
+        const isSouthOrNorth = side === "south" || side === "north";
+        const sign = side === "south" || side === "east" ? 1 : -1;
+        const normDist = isSouthOrNorth ? (halfW + 0.02) * sign : (halfL + 0.02) * sign;
+
+        [-0.35, 0, 0.35].forEach((offsetFrac) => {
+          if (isSouthOrNorth) {
+            pts.push([halfL * offsetFrac, H * 0.55, normDist]);
+          } else {
+            pts.push([normDist, H * 0.55, halfW * offsetFrac]);
+          }
+        });
+
+        list.push({ side, cosIncidence, surfacePoints: pts });
+      }
+    });
+
+    return list;
+  }, [geom.walls, toSunDir, halfL, halfW, H, isDay]);
+
+  // 4. Roof Insolation Rays
+  const roofRays = useMemo(() => {
+    if (!isDay || altitudeDeg <= 2) return [];
+    return [
+      [-halfL * 0.32, geom.roof.center[1] + 0.04, 0] as [number, number, number],
+      [0, geom.roof.center[1] + 0.04, 0] as [number, number, number],
+      [halfL * 0.32, geom.roof.center[1] + 0.04, 0] as [number, number, number],
+    ];
+  }, [isDay, altitudeDeg, geom.roof.center, halfL]);
+
+  if (!isDay) return null;
 
   return (
     <group>
-      {/* ── Sun Sphere ── */}
-      <group position={sunPosition}>
-        <mesh>
-          <sphereGeometry args={[0.85, 24, 24]} />
-          <meshBasicMaterial color="#fbbf24" />
-        </mesh>
-        <mesh>
-          <sphereGeometry args={[1.25, 16, 16]} />
-          <meshBasicMaterial color="#f59e0b" transparent opacity={0.25} />
-        </mesh>
-        <Html center distanceFactor={22} style={{ pointerEvents: "none" }}>
-          <PillCallout
-            value={`${metrics.dniNoon} W/m²`}
-            label="Winter Sun DNI"
-            sub={`Alt ${metrics.solarAltitudeDeg}° · ${model.location?.region?.split(",")[0] || "34°N"}`}
-            status="solar"
-          />
-        </Html>
-      </group>
-
-      {/* ── Solar Incident Rays onto South Facade ── */}
-      {[-halfL * 0.65, 0, halfL * 0.65].map((xOffset, i) => (
-        <Line
-          key={`ray-${i}`}
-          points={[sunPosition, [xOffset, H * 0.55, halfW + 0.05]]}
-          color="#f59e0b"
-          lineWidth={1.2}
-          transparent
-          opacity={0.3}
-        />
-      ))}
-
-      {/* ── Solar Rays Entering Through Windows & Warming Floor ── */}
-      {geom.windows.map((win, idx) => (
-        <group key={`solar-ray-${win.id}`}>
-          <Line
-            points={[sunPosition, win.exteriorPosition]}
-            color="#f59e0b"
-            lineWidth={1.8}
-            transparent
-            opacity={0.5}
-          />
-          <Line
-            points={[
-              win.worldPosition,
-              [win.worldPosition[0] * 0.85, 0.05, win.worldPosition[2] - 1.5],
-            ]}
-            color="#ea580c"
-            lineWidth={1.5}
-            transparent
-            opacity={0.45}
-          />
-          {/* Floor Solar Absorption Patch */}
-          <mesh
-            position={[win.worldPosition[0] * 0.85, 0.02, win.worldPosition[2] - 1.5]}
-            rotation={[-Math.PI / 2, 0, 0]}
-          >
-            <circleGeometry args={[0.55, 20]} />
-            <meshBasicMaterial color="#fbbf24" transparent opacity={0.35} />
-          </mesh>
-
-          {/* Only annotate the first window to prevent visual clutter */}
-          {idx === 0 && (
+      {/* ── 1. Exterior Walls Solar Irradiation (Terminating on solid wall surfaces) ── */}
+      {wallRays.map(({ side, cosIncidence, surfacePoints }) => (
+        <group key={`wall-rays-${side}`}>
+          {surfacePoints.map((target, idx) => (
+            <group key={`wray-${side}-${idx}`}>
+              {/* Incident ray straight from the real celestial moving sun */}
+              <Line
+                points={[sunPos, target]}
+                color="#f59e0b"
+                lineWidth={1.2}
+                transparent
+                opacity={0.28 * cosIncidence}
+              />
+              {/* Solar Absorption Hotspot Ring on Exterior Wall Face */}
+              <mesh position={target}>
+                <sphereGeometry args={[0.08, 12, 12]} />
+                <meshBasicMaterial color="#f59e0b" transparent opacity={0.6 * cosIncidence} />
+              </mesh>
+            </group>
+          ))}
+          {/* Surface Solar Irradiance Pill on the most illuminated wall */}
+          {cosIncidence > 0.4 && surfacePoints[1] && (
             <Html
-              position={[
-                win.worldPosition[0],
-                win.worldPosition[1] + win.dimensions[1] / 2 + 0.2,
-                win.worldPosition[2] + 0.1,
-              ]}
+              position={[surfacePoints[1][0], surfacePoints[1][1] + 0.35, surfacePoints[1][2]]}
               center
-              distanceFactor={16}
-              occlude
+              distanceFactor={18}
               style={{ pointerEvents: "none" }}
             >
               <PillCallout
-                value={`${metrics.estDailySolarKwh} kWh/d`}
-                label="Solar Harvest"
-                sub={`${metrics.qGlazingTransmitted} W/m² trans`}
-                status="solar"
+                value={`${Math.round(metrics.qSouthFlux * cosIncidence)} W/m²`}
+                label={`${side.toUpperCase()} Wall Insolation`}
+                sub={`Direct Solar Absorption`}
+                status="warm"
               />
             </Html>
           )}
         </group>
       ))}
+
+      {/* ── 2. Roof Solar Irradiation (Terminating on Roof Surface) ── */}
+      {roofRays.map((rTarget, idx) => (
+        <group key={`roof-ray-${idx}`}>
+          <Line
+            points={[sunPos, rTarget]}
+            color="#f59e0b"
+            lineWidth={1.2}
+            transparent
+            opacity={0.3}
+          />
+          <mesh position={rTarget}>
+            <sphereGeometry args={[0.07, 12, 12]} />
+            <meshBasicMaterial color="#f59e0b" transparent opacity={0.6} />
+          </mesh>
+        </group>
+      ))}
+
+      {/* ── 3. Solar Rays Entering Through Windows & Warming Interior Floor ── */}
+      {windowBeams.map(({ win, isIlluminated, cosIncidence, hitPoint, hitType, patchRadius }, idx) => {
+        if (!isIlluminated) return null;
+
+        return (
+          <group key={`win-solar-${win.id}`}>
+            {/* Direct Sun Ray from Celestial Sun to Window Glazing */}
+            <Line
+              points={[sunPos, win.exteriorPosition]}
+              color="#fbbf24"
+              lineWidth={2.0}
+              transparent
+              opacity={0.55}
+            />
+
+            {/* Transmitted Light Beam Entering into Shelter Interior */}
+            <Line
+              points={[win.worldPosition, hitPoint]}
+              color="#ea580c"
+              lineWidth={2.4}
+              transparent
+              opacity={0.7}
+            />
+
+            {/* Glowing Floor / Wall Solar Absorption Patch */}
+            <group position={hitPoint}>
+              <mesh rotation={hitType === "floor" ? [-Math.PI / 2, 0, 0] : [0, 0, 0]}>
+                <circleGeometry args={[patchRadius, 24]} />
+                <meshBasicMaterial color="#f59e0b" transparent opacity={0.42} />
+              </mesh>
+              {/* Inner intense solar focal core */}
+              <mesh rotation={hitType === "floor" ? [-Math.PI / 2, 0, 0] : [0, 0, 0]}>
+                <circleGeometry args={[patchRadius * 0.45, 16]} />
+                <meshBasicMaterial color="#fbbf24" transparent opacity={0.75} />
+              </mesh>
+            </group>
+
+            {/* Primary Window Telemetry Badge */}
+            {idx === 0 && (
+              <Html
+                position={[
+                  win.worldPosition[0],
+                  win.worldPosition[1] + win.dimensions[1] / 2 + 0.25,
+                  win.worldPosition[2],
+                ]}
+                center
+                distanceFactor={16}
+                occlude
+                style={{ pointerEvents: "none" }}
+              >
+                <PillCallout
+                  value={`${Math.round(metrics.qGlazingTransmitted * cosIncidence)} W/m²`}
+                  label="Solar Glazing Harvest"
+                  sub={`Direct Penetration · Alt ${Math.round(altitudeDeg)}°`}
+                  status="solar"
+                />
+              </Html>
+            )}
+          </group>
+        );
+      })}
+
+      {/* ── 4. Solar Rays Entering Through Doors (Entryway Insolation) ── */}
+      {doorBeams.map(({ door, isIlluminated, hitPoint, patchRadius }) => {
+        if (!isIlluminated) return null;
+
+        return (
+          <group key={`door-solar-${door.id}`}>
+            {/* Direct Sun Ray from Sun to Door Entrance */}
+            <Line
+              points={[sunPos, door.exteriorPosition]}
+              color="#fbbf24"
+              lineWidth={2.0}
+              transparent
+              opacity={0.5}
+            />
+            {/* Beam Entering Through Doorway onto Interior Entry Floor */}
+            <Line
+              points={[door.worldPosition, hitPoint]}
+              color="#ea580c"
+              lineWidth={2.2}
+              transparent
+              opacity={0.65}
+            />
+            {/* Entryway Floor Solar Patch */}
+            <mesh position={hitPoint} rotation={[-Math.PI / 2, 0, 0]}>
+              <circleGeometry args={[patchRadius, 20]} />
+              <meshBasicMaterial color="#f59e0b" transparent opacity={0.38} />
+            </mesh>
+          </group>
+        );
+      })}
     </group>
   );
 }
 
 /* ── Main Overlay Component ─────────────────────────────────── */
-export function ThermalRadiationOverlay({ model, geom, mode, hourlyStep }: Props) {
+export function ThermalRadiationOverlay({
+  model,
+  geom,
+  mode,
+  hourlyStep,
+  exploded = false,
+  sunHour = 12,
+  solarDate = "2026-06-21",
+}: Props) {
   const modelMetrics = useMemo(() => calculateThermalMetrics(model), [model]);
 
   const effectiveMetrics: DynamicThermalCalculations = useMemo(() => {
@@ -652,8 +910,21 @@ export function ThermalRadiationOverlay({ model, geom, mode, hourlyStep }: Props
     };
   }, [modelMetrics, hourlyStep]);
 
+  // Suppress all fixed thermal badges and flux lines during exploded assembly view to prevent label overlap
+  if (exploded) return null;
+
   if (mode === "thermal") return <ThermalAnnotations model={model} geom={geom} metrics={effectiveMetrics} />;
   if (mode === "heat-flow") return <HeatFlowAnnotations model={model} geom={geom} metrics={effectiveMetrics} />;
-  if (mode === "solar") return <SolarAnnotations model={model} geom={geom} metrics={effectiveMetrics} />;
+  if (mode === "solar") {
+    return (
+      <SolarAnnotations
+        model={model}
+        geom={geom}
+        metrics={effectiveMetrics}
+        sunHour={sunHour}
+        solarDate={solarDate}
+      />
+    );
+  }
   return null;
 }

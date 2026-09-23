@@ -21,19 +21,22 @@ const materials = [
   { id: "mat-timber-deck", name: "Pine timber deck", category: "Bio-based", conductivity: 0.13, carbon: "Very low", tone: "wood" },
   { id: "mat-concrete-slab", name: "Heavy concrete slab", category: "Thermal mass", conductivity: 1.7, carbon: "High", tone: "stone" },
   { id: "mat-galvanized-steel", name: "Galvanized steel", category: "Weather layer", conductivity: 50, carbon: "High", tone: "metal" },
+  { id: "mat-weather-barrier", name: "Breathable weather barrier", category: "Air / weather control", conductivity: 0.19, carbon: "Low", tone: "blue" },
+  { id: "mat-vapor-control", name: "Vapor control membrane", category: "Moisture control", conductivity: 0.22, carbon: "Low", tone: "blue" },
+  { id: "mat-timber-frame", name: "Timber structural frame", category: "Structure", conductivity: 0.13, carbon: "Very low", tone: "wood" },
 ];
 
 const presets: Record<AssemblyTarget, { name: string; description: string; layers: LayerModel[] }[]> = {
   walls: [
-    { name: "Alpine mass wall", description: "High inertia with continuous exterior insulation.", layers: [{ materialId: "mat-eps-insulation", name: "Rigid EPS insulation", thickness: 0.15 }, { materialId: "mat-rammed-earth", name: "Stabilized rammed earth", thickness: 0.3 }] },
+    { name: "Alpine mass wall", description: "Cladding, weather control, frame, continuous insulation and internal thermal mass.", layers: [{ materialId: "mat-galvanized-steel", name: "Exterior cladding", thickness: 0.008 }, { materialId: "mat-weather-barrier", name: "Weather / air barrier", thickness: 0.006 }, { materialId: "mat-timber-frame", name: "Structural frame", thickness: 0.09 }, { materialId: "mat-eps-insulation", name: "Continuous insulation", thickness: 0.15 }, { materialId: "mat-rammed-earth", name: "Thermal mass core", thickness: 0.3 }, { materialId: "mat-vapor-control", name: "Vapor control layer", thickness: 0.004 }, { materialId: "mat-timber-deck", name: "Interior lining", thickness: 0.018 }] },
     { name: "Ultra-light envelope", description: "Slim, high-performance assembly for constrained sites.", layers: [{ materialId: "mat-aerogel-blanket", name: "Aerogel blanket", thickness: 0.06 }, { materialId: "mat-timber-deck", name: "Pine timber deck", thickness: 0.04 }] },
   ],
   roof: [
-    { name: "Cold-climate roof", description: "Weather skin, deep insulation and timber ceiling deck.", layers: [{ materialId: "mat-galvanized-steel", name: "Galvanized steel", thickness: 0.005 }, { materialId: "mat-eps-insulation", name: "Rigid EPS insulation", thickness: 0.18 }, { materialId: "mat-timber-deck", name: "Pine timber deck", thickness: 0.025 }] },
+    { name: "Cold-climate roof", description: "Standing-seam cladding, weather control, insulated structure and finished ceiling.", layers: [{ materialId: "mat-galvanized-steel", name: "Exterior roof cladding", thickness: 0.005 }, { materialId: "mat-weather-barrier", name: "Weather / air barrier", thickness: 0.006 }, { materialId: "mat-timber-frame", name: "Roof structural frame", thickness: 0.12 }, { materialId: "mat-eps-insulation", name: "Continuous insulation", thickness: 0.18 }, { materialId: "mat-vapor-control", name: "Vapor control layer", thickness: 0.004 }, { materialId: "mat-timber-deck", name: "Interior ceiling lining", thickness: 0.025 }] },
     { name: "Compact aerogel roof", description: "Reduced depth with premium thermal resistance.", layers: [{ materialId: "mat-galvanized-steel", name: "Galvanized steel", thickness: 0.005 }, { materialId: "mat-aerogel-blanket", name: "Aerogel blanket", thickness: 0.08 }, { materialId: "mat-timber-deck", name: "Pine timber deck", thickness: 0.025 }] },
   ],
   floor: [
-    { name: "Insulated ground slab", description: "Exposed mass above continuous sub-slab insulation.", layers: [{ materialId: "mat-concrete-slab", name: "Heavy concrete slab", thickness: 0.15 }, { materialId: "mat-xps-insulation", name: "XPS insulation", thickness: 0.1 }] },
+    { name: "Insulated ground slab", description: "Durable inner finish over mass core, moisture protection and sub-slab insulation.", layers: [{ materialId: "mat-timber-deck", name: "Interior floor finish", thickness: 0.025 }, { materialId: "mat-concrete-slab", name: "Thermal mass core", thickness: 0.15 }, { materialId: "mat-vapor-control", name: "Ground moisture barrier", thickness: 0.006 }, { materialId: "mat-xps-insulation", name: "Sub-slab insulation", thickness: 0.1 }] },
     { name: "Low-carbon floor", description: "Timber surface over high-performance insulation.", layers: [{ materialId: "mat-timber-deck", name: "Pine timber deck", thickness: 0.05 }, { materialId: "mat-aerogel-blanket", name: "Aerogel blanket", thickness: 0.06 }] },
   ],
 };

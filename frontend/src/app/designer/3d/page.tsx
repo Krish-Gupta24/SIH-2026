@@ -7,7 +7,6 @@ import { Box, Loader2 } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
 import { useShelterStore } from "@/lib/store/use-shelter-store";
 import { step2dTo3d, step3dTo2d } from "@/lib/store/shelter-model-adapter";
-import { WorkflowFooter } from "@/components/layout/WorkflowFooter";
 
 // Dynamically import the 3D designer with SSR disabled for WebGL canvas compatibility
 const Shelter3DDesigner = dynamic(
@@ -45,12 +44,11 @@ import {
   Wind,
   Target,
   Sliders,
-  Eye,
   Cpu,
-  CheckCircle2,
 } from "lucide-react";
 import { AnsysDeckExportModal } from "@/components/modals/AnsysDeckExportModal";
 import { DesignPresetsDropdown } from "@/features/shelter-editor/components/DesignPresetsDropdown";
+import { Designer3DStepsNav } from "@/features/shelter-3d/components/Designer3DStepsNav";
 
 const UNIFIED_13_STEPS = [
   { id: 1, name: "Project", description: "Identity & Version", icon: FolderKanban },
@@ -77,7 +75,6 @@ function Shelter3DPageContent() {
     activeWizardStep,
     setActiveWizardStep,
     updateProject,
-    addProject,
   } = useShelterStore();
 
   const lastParamKeyRef = React.useRef<string | null>(
@@ -111,8 +108,6 @@ function Shelter3DPageContent() {
   });
 
   const [ansysModalOpen, setAnsysModalOpen] = useState(false);
-  const [savedToast, setSavedToast] = useState(false);
-
   const activeModel = projects.find((p) => p.id === activeProjectId) || projects[0];
   const activeModelRef = React.useRef(activeModel);
   activeModelRef.current = activeModel;
@@ -173,92 +168,35 @@ function Shelter3DPageContent() {
     );
   }
 
-  const currentStepInfo = UNIFIED_13_STEPS[step] || UNIFIED_13_STEPS[0];
-
   return (
     <AppShell>
-      <div className="3d-studio-page space-y-3">
-        {/* Stage Header with View Toggle Pill */}
-        <div className="flex flex-col justify-between gap-3 border-b border-border pb-3 sm:flex-row sm:items-center">
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="micro-label">Canonical Model · 13-Step Sequence</span>
-              <span className="rounded-full bg-secondary/80 px-2.5 py-0.5 text-xs font-semibold text-foreground border border-border">
-                {activeModel?.project?.name || activeModel?.name || "Untitled Shelter"}
-              </span>
-              <span className="text-xs text-muted-foreground">
-                Stage {step + 1} of {UNIFIED_13_STEPS.length}
-              </span>
-            </div>
-            <p className="mt-1 text-xs text-muted-foreground">{currentStepInfo.name} · {currentStepInfo.description}</p>
+      <div className="designer-3d-studio-page">
+        <section className="designer-pagebar">
+          <div className="designer-pagebar-title">
+            <span className="micro-label">3D SHELTER DESIGNER</span>
+            <h1>{activeModel.project.name}</h1>
+            <p>{UNIFIED_13_STEPS[step]?.name} · Stage {step + 1} of {UNIFIED_13_STEPS.length}</p>
           </div>
-
-          {/* Action Area: Save Project + ANSYS Export + View Switcher */}
-          <div className="flex flex-wrap items-center gap-2">
-            {/* Autosave Active Badge */}
-            <div
-              className="flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 text-xs text-muted-foreground shadow-xs"
-              title="Continuous autosave active: all edits are immediately saved to storage and project library"
+          <div className="designer-pagebar-actions">
+            <DesignPresetsDropdown compact />
+            <Link
+              href={`/designer?step=${step3dTo2d(step)}`}
+              onClick={() => setActiveWizardStep(step3dTo2d(step))}
+              className="designer-pagebar-button"
             >
-              <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-              <span className="text-[11px] font-medium hidden sm:inline">Autosave Active</span>
-            </div>
-
-            <button
-              type="button"
-              onClick={() => {
-                if (activeModel) {
-                  updateProject(activeModel.id, activeModel);
-                  setSavedToast(true);
-                  setTimeout(() => setSavedToast(false), 3000);
-                }
-              }}
-              className="inline-flex items-center gap-1.5 rounded-full bg-foreground px-4 py-1.5 text-xs font-semibold text-background shadow-sm hover:opacity-90 transition"
-            >
-              <FolderKanban className="size-3.5" />
-              <span>Save Project</span>
+              <Sliders className="size-3.5" /> 2D Designer
+            </Link>
+            <button type="button" onClick={() => setAnsysModalOpen(true)} className="designer-pagebar-button">
+              <Cpu className="size-3.5" /> Export
             </button>
-
-            {savedToast && (
-              <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 flex items-center gap-1 animate-in fade-in">
-                <CheckCircle2 className="size-3.5" />
-                Saved to Projects
-              </span>
-            )}
-
-            <button
-              type="button"
-              onClick={() => setAnsysModalOpen(true)}
-              className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3.5 py-1.5 text-xs font-semibold text-foreground hover:bg-secondary/60 transition shadow-sm"
-            >
-              <Cpu className="size-3.5 text-emerald-500" />
-              <span>Export ANSYS Deck</span>
-            </button>
-
-            {/* View Switcher: 2D Wizard vs 3D CAD Studio */}
-            <div className="flex items-center gap-1 rounded-full border border-border bg-secondary/40 p-0.5">
-              <Link
-                href={`/designer?step=${step3dTo2d(step)}`}
-                onClick={() => {
-                  if (activeModel) {
-                    updateProject(activeModel.id, activeModel);
-                  }
-                  setActiveWizardStep(step3dTo2d(step));
-                }}
-                className="inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-semibold text-muted-foreground transition hover:text-foreground"
-              >
-                <Sliders className="size-3.5" />
-                <span>2D Wizard</span>
-              </Link>
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-foreground px-3.5 py-1.5 text-xs font-semibold text-background shadow-sm">
-                <Eye className="size-3.5" />
-                <span>3D CAD Studio</span>
-              </span>
-            </div>
           </div>
-        </div>
-
-        <DesignPresetsDropdown compact />
+        </section>
+        
+        {/* 13-Stage Engineering Workflow Navigation Strip & Phase Cards */}
+        <Designer3DStepsNav
+          currentStep={step}
+          onStepChange={handleStepChange}
+        />
 
         {/* 3D CAD Interactive Canvas Studio */}
         <Shelter3DDesigner
@@ -272,8 +210,6 @@ function Shelter3DPageContent() {
         {/* ANSYS Validation Deck Export Modal */}
         <AnsysDeckExportModal open={ansysModalOpen} onOpenChange={setAnsysModalOpen} />
 
-        {/* Connected Linear Workflow Footer */}
-        <WorkflowFooter customNextLabel="Proceed to ThermoShelter Simulation" customNextHref="/simulations" />
       </div>
     </AppShell>
   );

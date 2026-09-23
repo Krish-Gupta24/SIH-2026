@@ -17,8 +17,8 @@ function Dimension({
 }) {
   return (
     <group>
-      <Line points={points} color="#1e293b" lineWidth={1.5} />
-      <Html position={position} center distanceFactor={12}>
+      <Line points={points} color="#0f172a" lineWidth={1.8} />
+      <Html position={position} center distanceFactor={15} zIndexRange={[10, 0]}>
         <span className="cad-dimension">{label}</span>
       </Html>
     </group>
@@ -34,7 +34,7 @@ export function DimensionLines({
 }) {
   const { length: l, width: w, height: h } = model.geometry;
   const geom = useMemo(() => deriveShelter3DGeometry(model), [model]);
-  const offset = 0.75;
+  const offset = 0.95;
   const showEnvelope =
     !selected ||
     selected.type === "shelter" ||
@@ -53,27 +53,27 @@ export function DimensionLines({
         <>
           <Dimension
             points={[
-              [-l / 2, 0.05, w / 2 + offset],
-              [l / 2, 0.05, w / 2 + offset],
+              [-l / 2, 0.06, w / 2 + offset],
+              [l / 2, 0.06, w / 2 + offset],
             ]}
-            label={`L: ${l.toFixed(2)} m`}
-            position={[0, 0.15, w / 2 + offset + 0.15]}
+            label={`Length: ${l.toFixed(2)} m`}
+            position={[0, 0.22, w / 2 + offset + 0.35]}
           />
           <Dimension
             points={[
-              [l / 2 + offset, 0.05, -w / 2],
-              [l / 2 + offset, 0.05, w / 2],
+              [l / 2 + offset, 0.06, -w / 2],
+              [l / 2 + offset, 0.06, w / 2],
             ]}
-            label={`W: ${w.toFixed(2)} m`}
-            position={[l / 2 + offset + 0.15, 0.15, 0]}
+            label={`Width: ${w.toFixed(2)} m`}
+            position={[l / 2 + offset + 0.35, 0.22, 0]}
           />
           <Dimension
             points={[
-              [-l / 2 - offset, 0, w / 2],
-              [-l / 2 - offset, h, w / 2],
+              [-l / 2 - offset, 0.06, w / 2 + 0.1],
+              [-l / 2 - offset, h, w / 2 + 0.1],
             ]}
-            label={`H: ${h.toFixed(2)} m`}
-            position={[-l / 2 - offset - 0.15, h / 2, w / 2]}
+            label={`Height: ${h.toFixed(2)} m`}
+            position={[-l / 2 - offset - 0.35, h / 2, w / 2 + 0.1]}
           />
         </>
       ) : null}

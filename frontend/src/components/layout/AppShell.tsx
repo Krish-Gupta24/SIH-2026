@@ -374,7 +374,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       </header>
 
       {/* Main Page Workspace Content */}
-      <main className={isImmersiveDesigner ? "workspace-content 3d-workspace-content" : "workspace-content mx-auto max-w-[1500px] px-5 py-8 sm:px-8 sm:py-10 lg:px-12"}>
+      <main className={isImmersiveDesigner ? "workspace-content designer-3d-workspace-content" : "workspace-content mx-auto max-w-[1500px] px-5 py-8 sm:px-8 sm:py-10 lg:px-12"}>
         {children}
       </main>
     </div>

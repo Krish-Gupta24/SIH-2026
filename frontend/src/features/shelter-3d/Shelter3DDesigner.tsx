@@ -5,6 +5,7 @@ import {
   ArrowRight,
   Box,
   Boxes,
+  CalendarDays,
   Check,
   ChevronLeft,
   ChevronRight,
@@ -26,14 +27,17 @@ import {
   Sparkles,
   Sun,
   Undo2,
+  Mountain,
   UnfoldVertical,
   Wind,
-  Mountain,
+  Maximize2,
+  Minimize2,
 } from "lucide-react";
 import type { ShelterModel } from "@/types/shelter";
 import { useShelterStore } from "@/lib/store/use-shelter-store";
 import type { CameraPreset, SelectedElement, ViewerSettings, VisualizationMode } from "./types";
 import { calculateHourlyThermalStep } from "./thermal-physics";
+import { daylightWindow, dayOfYearFromIsoDate } from "./sun-geometry";
 import { ShelterCanvas } from "./components/ShelterCanvas";
 import { PropertyInspector } from "./components/PropertyInspector";
 import { MaterialWorkbenchDialog } from "./components/MaterialWorkbenchDialog";
@@ -53,11 +57,37 @@ const stages = [
   "Ventilation",
   "Targets",
 ];
-const workflowGroups = [
-  { id: "site", label: "Site & form", stages: [0, 1, 2, 3] },
-  { id: "envelope", label: "Passive envelope", stages: [4, 5, 6] },
-  { id: "openings", label: "Openings & comfort", stages: [7, 8, 9, 10, 11] },
-  { id: "performance", label: "Performance target", stages: [12] },
+
+// Grouped workflow phases for cleaner navigation
+const workflowPhases = [
+  { 
+    id: "site", 
+    label: "Site & Context", 
+    description: "Location, climate, and building form",
+    stages: [0, 1, 2, 3],
+    icon: "📍"
+  },
+  { 
+    id: "envelope", 
+    label: "Building Envelope", 
+    description: "Walls, roof, and floor assemblies",
+    stages: [4, 5, 6],
+    icon: "🏗️"
+  },
+  { 
+    id: "openings", 
+    label: "Openings & Systems", 
+    description: "Windows, doors, shading, and ventilation",
+    stages: [7, 8, 9, 10, 11],
+    icon: "🪟"
+  },
+  { 
+    id: "performance", 
+    label: "Performance Goals", 
+    description: "Thermal comfort targets",
+    stages: [12],
+    icon: "🎯"
+  },
 ];
 const views: { id: CameraPreset; label: string }[] = [{ id: "iso", label: "3D" }, { id: "top", label: "Plan" }, { id: "south", label: "South" }, { id: "north", label: "North" }, { id: "east", label: "East" }, { id: "west", label: "West" }];
 const modes: { id: VisualizationMode; label: string; icon: typeof Box }[] = [{ id: "model", label: "Model", icon: Box }, { id: "thermal", label: "Thermal", icon: Eye }, { id: "solar", label: "Solar", icon: Sun }, { id: "heat-flow", label: "Heat flow", icon: Wind }];
@@ -67,12 +97,20 @@ interface Props { model: ShelterModel; step: number; onStepChange: (step: number
 export function Shelter3DDesigner({ model, step, onStepChange, onUpdate, onSimulate }: Props) {
   const [selected, setSelected] = useState<SelectedElement>({ type: "shelter" });
   const [preset, setPreset] = useState<CameraPreset>("iso");
-  const [leftOpen, setLeftOpen] = useState(true);
+  const [leftOpen, setLeftOpen] = useState(false);
   const [rightOpen, setRightOpen] = useState(true);
   const [saved, setSaved] = useState(false);
   const [materialsOpen, setMaterialsOpen] = useState(false);
   const [viewOptionsOpen, setViewOptionsOpen] = useState(false);
-  const [openWorkflowGroup, setOpenWorkflowGroup] = useState(() => workflowGroups.find((group) => group.stages.includes(step))?.id ?? "site");
+  const [openWorkflowGroup, setOpenWorkflowGroup] = useState(() => workflowPhases.find((phase) => phase.stages.includes(step))?.id ?? "site");
+
+  // Keep open phase group synced when step changes externally
+  useEffect(() => {
+    const phase = workflowPhases.find((p) => p.stages.includes(step));
+    if (phase) {
+      setOpenWorkflowGroup(phase.id);
+    }
+  }, [step]);
   const [settings, setSettings] = useState<ViewerSettings>({
     showGrid: true,
     showDimensions: true,
@@ -87,7 +125,9 @@ export function Shelter3DDesigner({ model, step, onStepChange, onUpdate, onSimul
   });
   const [selectedHour, setSelectedHour] = useState(12);
   const [sunTime, setSunTime] = useState(12);
+  const [solarDate, setSolarDate] = useState("2026-12-21");
   const [isPlaying, setIsPlaying] = useState(false);
+  const [timelineMinimized, setTimelineMinimized] = useState(false);
 
   const simulations = useShelterStore((state) => state.simulations);
   const activeSim = useMemo(() => {
@@ -165,7 +205,7 @@ export function Shelter3DDesigner({ model, step, onStepChange, onUpdate, onSimul
 
   // Handle stage change with auto-focusing elements in 3D
   const handleStageSelect = (idx: number) => {
-    setOpenWorkflowGroup(workflowGroups.find((group) => group.stages.includes(idx))?.id ?? "site");
+    setOpenWorkflowGroup(workflowPhases.find((phase) => phase.stages.includes(idx))?.id ?? "site");
     onStepChange(idx);
     if (idx === 3 || idx === 4) setSelected({ type: "wall", orientation: "south" });
     else if (idx === 5) setSelected({ type: "roof" });
@@ -193,6 +233,16 @@ export function Shelter3DDesigner({ model, step, onStepChange, onUpdate, onSimul
   };
 
   const formattedSolarTime = `${Math.floor(sunTime).toString().padStart(2, "0")}:${Math.round((sunTime % 1) * 60).toString().padStart(2, "0")}`;
+  const siteDaylight = useMemo(() => daylightWindow({
+    latitudeDeg: model.location?.latitude ?? 34.15,
+    longitudeDeg: model.location?.longitude ?? 77.58,
+    dayOfYear: dayOfYearFromIsoDate(solarDate),
+  }), [model.location?.latitude, model.location?.longitude, solarDate]);
+  const formatSolarHour = (hour: number) => {
+    const normalized = ((hour % 24) + 24) % 24;
+    const totalMinutes = Math.round(normalized * 60) % (24 * 60);
+    return `${Math.floor(totalMinutes / 60).toString().padStart(2, "0")}:${(totalMinutes % 60).toString().padStart(2, "0")}`;
+  };
 
   const southWallArea = model.geometry.length * model.geometry.height;
   const southWinArea = model.windows.filter((w) => w.wall === "south").reduce((sum, w) => sum + w.width * w.height, 0);
@@ -201,8 +251,41 @@ export function Shelter3DDesigner({ model, step, onStepChange, onUpdate, onSimul
 
   return <div className="cad-shell">
     <header className="cad-toolbar">
-      <div className="cad-model-identity"><span className="cad-model-icon"><Box /></span><div><strong>{model.project.name}</strong><span>{model.geometry.length.toFixed(1)} × {model.geometry.width.toFixed(1)} × {model.geometry.height.toFixed(1)} m · {model.geometry.roofType}</span></div></div>
       <div className="cad-view-switcher" aria-label="Camera views">{views.map((view) => <button key={view.id} data-active={preset === view.id} onClick={() => setPreset(view.id)}>{view.label}</button>)}</div>
+      
+      <div className="cad-toolbar-step-nav" aria-label="Workflow stage selector">
+        <button
+          type="button"
+          disabled={step === 0}
+          onClick={() => handleStageSelect(step - 1)}
+          className="cad-step-nav-btn"
+          title="Previous stage"
+          aria-label="Previous stage"
+        >
+          <ChevronLeft className="size-3.5" />
+        </button>
+        <button
+          type="button"
+          onClick={() => setLeftOpen(!leftOpen)}
+          className={`cad-step-nav-badge ${leftOpen ? "active" : ""}`}
+          title="Toggle 13-stage workflow panel"
+        >
+          <Layers3 className="size-3.5 text-sky-400" />
+          <span className="cad-step-num font-mono">Stage {step + 1}/13</span>
+          <span className="cad-step-name">{stages[step]}</span>
+        </button>
+        <button
+          type="button"
+          disabled={step === stages.length - 1}
+          onClick={() => handleStageSelect(step + 1)}
+          className="cad-step-nav-btn"
+          title="Next stage"
+          aria-label="Next stage"
+        >
+          <ChevronRight className="size-3.5" />
+        </button>
+      </div>
+
       <div className="cad-toolbar-actions">
         {activeSim ? (
           <button
@@ -245,47 +328,73 @@ export function Shelter3DDesigner({ model, step, onStepChange, onUpdate, onSimul
       </div>
     </header>
 
-    <div className="cad-workspace">
+    <div className="cad-workspace" data-left-open={leftOpen} data-right-open={rightOpen}>
       <aside className="cad-stage-panel" data-open={leftOpen}>
-        <div className="cad-panel-heading"><span>Design sequence</span><button aria-label="Toggle workflow panel" onClick={() => setLeftOpen(!leftOpen)}><PanelLeft /></button></div>
-        <ol className="cad-workflow-groups">
-          {workflowGroups.map((group) => {
-            const isOpen = openWorkflowGroup === group.id;
-            const completed = group.stages.filter((index) => index < step).length;
+        <div className="cad-panel-heading">
+          <div className="flex items-center gap-1.5 font-bold text-xs">
+            <Layers3 className="size-4 text-sky-400" />
+            <span>Workflow Sequence</span>
+          </div>
+          <button aria-label="Toggle workflow panel" onClick={() => setLeftOpen(!leftOpen)} title="Close workflow panel">
+            <PanelLeft className="size-4" />
+          </button>
+        </div>
+        <div className="cad-workflow-phases">
+          {workflowPhases.map((phase) => {
+            const isOpen = openWorkflowGroup === phase.id;
+            const completed = phase.stages.filter((index) => index < step).length;
+            const isActive = phase.stages.includes(step);
             return (
-              <li key={group.id} className="cad-workflow-group" data-open={isOpen}>
+              <div key={phase.id} className="cad-workflow-phase" data-open={isOpen} data-active={isActive}>
                 <button
                   type="button"
-                  className="cad-workflow-group-trigger"
-                  onClick={() => setOpenWorkflowGroup(isOpen ? "" : group.id)}
+                  className="cad-phase-trigger"
+                  onClick={() => setOpenWorkflowGroup(isOpen ? "" : phase.id)}
                   aria-expanded={isOpen}
                 >
-                  <span>{group.label}</span>
-                  <small>{completed}/{group.stages.length}</small>
+                  <span className="cad-phase-icon">{phase.icon}</span>
+                  <div className="cad-phase-info">
+                    <strong>{phase.label}</strong>
+                    <small>{phase.description}</small>
+                  </div>
+                  <span className="cad-phase-progress">{completed}/{phase.stages.length}</span>
                 </button>
-                {isOpen ? (
-                  <ol>
-                    {group.stages.map((index) => (
+                {isOpen && (
+                  <ol className="cad-phase-stages">
+                    {phase.stages.map((index) => (
                       <li key={stages[index]}>
                         <button data-active={index === step} data-complete={index < step} onClick={() => handleStageSelect(index)}>
-                          <span>{index < step ? <Check /> : String(index + 1).padStart(2, "0")}</span>
+                          <span className="cad-stage-marker">{index < step ? <Check className="size-3" /> : String(index + 1).padStart(2, "0")}</span>
                           <strong>{stages[index]}</strong>
                         </button>
                       </li>
                     ))}
                   </ol>
-                ) : null}
-              </li>
+                )}
+              </div>
             );
           })}
-        </ol>
-        <div className="cad-stage-progress"><span style={{ width: `${((step + 1) / stages.length) * 100}%` }} /></div>
+        </div>
+        <div className="cad-stage-progress">
+          <div className="cad-progress-bar">
+            <span style={{ width: `${((step + 1) / stages.length) * 100}%` }} />
+          </div>
+          <p className="cad-progress-text">Step {step + 1} of {stages.length} complete</p>
+        </div>
       </aside>
 
       <main className="cad-canvas-region relative">
         <div className="cad-floating-tools">
-          <button aria-label="Toggle workflow panel" onClick={() => setLeftOpen(!leftOpen)}>
-            <PanelLeft />
+          <button
+            type="button"
+            aria-label="Toggle workflow panel"
+            onClick={() => setLeftOpen(!leftOpen)}
+            data-active={leftOpen}
+            className="relative"
+            title="Toggle 13-stage workflow drawer"
+          >
+            <Layers3 className="size-4" />
+            Workflow
           </button>
           {modes.map(({ id, label, icon: Icon }) => (
             <button
@@ -306,11 +415,9 @@ export function Shelter3DDesigner({ model, step, onStepChange, onUpdate, onSimul
           ))}
           <button
             aria-haspopup="dialog"
-            data-active={materialsOpen || settings.revealLayers}
-            onClick={() => {
-              setMaterialsOpen(true);
-              setSetting("revealLayers", true);
-            }}
+            data-active={materialsOpen}
+            onClick={() => setMaterialsOpen(true)}
+            title="Open Material Assembly Workbench"
           >
             <Layers3 />
             Materials
@@ -356,12 +463,12 @@ export function Shelter3DDesigner({ model, step, onStepChange, onUpdate, onSimul
           hourlyStep={hourlyStep}
           hasSimResults={Boolean(activeSim)}
           sunHour={sunTime}
+          solarDate={solarDate}
+          suppressHtmlLabels={materialsOpen}
         />
 
         {!activeSim &&
-          (settings.visualization === "thermal" ||
-            settings.visualization === "heat-flow" ||
-            settings.visualization === "solar") && (
+          (settings.visualization === "thermal" || settings.visualization === "heat-flow") && (
             <div className="absolute inset-0 z-20 flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-xs">
               <div className="w-full max-w-md rounded-3xl border border-border bg-card p-6 shadow-2xl text-center space-y-4">
                 <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-500/15 text-amber-600 dark:text-amber-400">
@@ -393,17 +500,28 @@ export function Shelter3DDesigner({ model, step, onStepChange, onUpdate, onSimul
             </div>
           )}
 
-        {(settings.visualization === "model" && settings.showEnvironment) ||
+        {(settings.visualization === "model" && settings.showEnvironment) || settings.visualization === "solar" ||
         (activeSim &&
           hourlyStep &&
           (settings.visualization === "thermal" ||
-            settings.visualization === "heat-flow" ||
-            settings.visualization === "solar")) ? (
-          <div
-            className="cad-timeline-scrubber"
-            role="region"
-            aria-label="24-Hour Diurnal Thermal Timeline"
-          >
+            settings.visualization === "heat-flow")) ? (
+          timelineMinimized ? (
+            <button
+              type="button"
+              onClick={() => setTimelineMinimized(false)}
+              className="cad-timeline-minimized-pill"
+              title="Expand 24h Solar Diurnal Timeline"
+            >
+              <Sun className="size-3.5 text-amber-400" />
+              <span>{hourlyStep?.timeLabel ?? formattedSolarTime} · Solar Timeline</span>
+              <Maximize2 className="size-3 text-slate-400" />
+            </button>
+          ) : (
+            <div
+              className="cad-timeline-scrubber"
+              role="region"
+              aria-label="24-Hour Diurnal Thermal Timeline"
+            >
             <div className="cad-timeline-row-top">
               <div className="cad-timeline-controls">
                 <button
@@ -411,7 +529,7 @@ export function Shelter3DDesigner({ model, step, onStepChange, onUpdate, onSimul
                   className="cad-timeline-btn"
                   aria-label="Previous hour"
                   title="Step back 1 hour"
-                  onClick={() => setSolarTime(selectedHour - 1)}
+                  onClick={() => setSolarTime(sunTime - 1)}
                 >
                   <SkipBack className="size-3.5" />
                 </button>
@@ -433,7 +551,7 @@ export function Shelter3DDesigner({ model, step, onStepChange, onUpdate, onSimul
                   className="cad-timeline-btn"
                   aria-label="Next hour"
                   title="Step forward 1 hour"
-                  onClick={() => setSolarTime(selectedHour + 1)}
+                  onClick={() => setSolarTime(sunTime + 1)}
                 >
                   <SkipForward className="size-3.5" />
                 </button>
@@ -455,7 +573,7 @@ export function Shelter3DDesigner({ model, step, onStepChange, onUpdate, onSimul
                     key={item.h}
                     type="button"
                     className="cad-timeline-quick-btn"
-                    data-active={selectedHour === item.h}
+                    data-active={Math.abs(sunTime - item.h) < 0.15}
                     onClick={() => setSolarTime(item.h)}
                   >
                     {item.label}
@@ -463,7 +581,14 @@ export function Shelter3DDesigner({ model, step, onStepChange, onUpdate, onSimul
                 ))}
               </div>
 
-              <div className="flex items-center gap-1.5">
+              <div className="cad-solar-context">
+                <label title="Solar date"><CalendarDays className="size-3" /><input type="date" value={solarDate} onChange={(event) => setSolarDate(event.target.value)} aria-label="Solar date" /></label>
+                <span title={`Sunrise ${formatSolarHour(siteDaylight.sunrise)}, sunset ${formatSolarHour(siteDaylight.sunset)}`}>
+                  {formatSolarHour(siteDaylight.sunrise)}–{formatSolarHour(siteDaylight.sunset)} · {siteDaylight.durationHours.toFixed(1)}h
+                </span>
+              </div>
+
+              <div className="flex items-center gap-1.5 ml-auto">
                 <span
                   className="cad-timeline-chip"
                   style={{
@@ -478,6 +603,15 @@ export function Shelter3DDesigner({ model, step, onStepChange, onUpdate, onSimul
                 >
                   {activeSim ? "⚡ ThermoShelter Sim" : "📐 ISO 6946 Sol-Air"}
                 </span>
+                <button
+                  type="button"
+                  onClick={() => setTimelineMinimized(true)}
+                  className="cad-timeline-btn"
+                  title="Minimize solar timeline"
+                  aria-label="Minimize solar timeline"
+                >
+                  <Minimize2 className="size-3.5" />
+                </button>
               </div>
             </div>
 
@@ -486,9 +620,9 @@ export function Shelter3DDesigner({ model, step, onStepChange, onUpdate, onSimul
               <input
                 type="range"
                 min="0"
-                max="23"
-                step="1"
-                value={selectedHour}
+                max="24"
+                step="0.1"
+                value={sunTime}
                 onChange={(e) => setSolarTime(Number(e.target.value))}
                 className="cad-timeline-slider"
                 aria-label="Hour of day timeline slider"
@@ -528,10 +662,19 @@ export function Shelter3DDesigner({ model, step, onStepChange, onUpdate, onSimul
               )}
             </div>
           </div>
+          )
         ) : null}
-        <div className="cad-mode-label"><span>{settings.visualization === "model" ? "Geometry model" : `${settings.visualization.toUpperCase()} preview`}</span><strong>{settings.visualization === "thermal" ? "FLIR false-color IR thermography · Stefan-Boltzmann radiation emission" : settings.visualization === "solar" ? "Direct winter solar irradiance & glazing penetration (Leh Ladakh 34°N)" : settings.visualization === "heat-flow" ? "Envelope thermal bridges & convective currents" : "Editable canonical geometry"}</strong></div>
+        <div className="cad-mode-label"><span>{settings.visualization === "model" ? "Geometry model" : `${settings.visualization.toUpperCase()} preview`}</span><strong>{settings.visualization === "thermal" ? "FLIR false-color IR thermography · Stefan-Boltzmann radiation emission" : settings.visualization === "solar" ? `Site sun · ${model.location.region} · ${solarDate}` : settings.visualization === "heat-flow" ? "Envelope thermal bridges & convective currents" : "Editable canonical geometry"}</strong></div>
         <div className="cad-metrics"><span><small>Floor area</small><strong>{area.toFixed(1)} m²</strong></span><span><small>Volume</small><strong>{volume.toFixed(1)} m³</strong></span><span><small>South Glazing</small><strong>{southGlazingRatio.toFixed(1)}% WWR</strong></span><span><small>Solar Harvest</small><strong>~{estDailySolarGainKwh} kWh/d</strong></span><span><small>Openings</small><strong>{model.windows.length}W / {model.doors.length}D</strong></span></div>
-        <button className="cad-inspector-toggle" aria-label="Toggle properties panel" onClick={() => setRightOpen(!rightOpen)}><PanelRight /></button>
+        <button
+          className="cad-inspector-toggle"
+          aria-label={rightOpen ? "Collapse inspector panel" : "Expand inspector panel"}
+          title={rightOpen ? "Collapse inspector (maximize 3D canvas)" : "Show inspector panel"}
+          data-open={rightOpen}
+          onClick={() => setRightOpen(!rightOpen)}
+        >
+          <PanelRight className="size-4" />
+        </button>
       </main>
 
       <aside className="cad-property-panel" data-open={rightOpen}><PropertyInspector model={model} selected={selected} currentStep={step} onSelect={setSelected} onUpdate={update} onSimulate={onSimulate} /></aside>
