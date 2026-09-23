@@ -10,6 +10,7 @@ import { deriveShelter3DGeometry, type Opening3DPlacement } from "../geometry-ma
 import { ThermalRadiationOverlay } from "./ThermalRadiationOverlay";
 import {
   getThermalColor,
+  getHeatFlowColor,
   calculateThermalMetrics,
   type HourlyThermalStep,
 } from "../thermal-physics";
@@ -28,6 +29,7 @@ interface Props {
   hourlyStep?: HourlyThermalStep | null;
   sunHour?: number;
   solarDate?: string;
+  suppressHtmlLabels?: boolean;
 }
 
 const palette = {
@@ -72,13 +74,7 @@ function getWallMaterialColor(
     return side === "south" ? "#d97706" : "#cbd5e1";
   }
   if (mode === "heat-flow") {
-    const heatFlowColors: Record<WallOrientation, string> = {
-      south: "#dc2626",  // warm red – heat gain
-      north: "#2563eb",  // cool blue – heat loss
-      east: "#f59e0b",   // amber – moderate
-      west: "#6366f1",   // indigo – wind-driven loss
-    };
-    return heatFlowColors[side];
+    return "#ffffff";
   }
   return side === "south" ? "#ded9cb" : palette.paper;
 }
@@ -346,6 +342,119 @@ function createThermalTexture(params: ThermalTextureParams): THREE.CanvasTexture
   return texture;
 }
 
+interface HeatFlowTextureParams {
+  type: "south" | "north" | "east" | "west" | "roof" | "floor";
+  flux: number;
+  psiBridge: number;
+}
+
+function createHeatFlowTexture(params: HeatFlowTextureParams): THREE.CanvasTexture | null {
+  if (typeof document === "undefined") return null;
+  const canvas = document.createElement("canvas");
+  canvas.width = 256;
+  canvas.height = 256;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return null;
+
+  const { type, flux, psiBridge } = params;
+  const isGain = flux >= 0;
+  const coreColor = getHeatFlowColor(flux);
+  // Boundary edges and corners suffer greater conductive dissipation or peripheral dilution
+  const edgeFlux = isGain ? flux * 0.7 - psiBridge * 12 : flux * 1.35 - psiBridge * 15;
+  const edgeColor = getHeatFlowColor(edgeFlux);
+  const midColor = getHeatFlowColor((flux + edgeFlux) / 2);
+
+  if (type === "south" || type === "roof") {
+    // Solar gain or exposed boundary: core center with edge dissipation
+    const grad = ctx.createRadialGradient(128, 120, 20, 128, 128, 145);
+    grad.addColorStop(0, coreColor);
+    grad.addColorStop(0.6, midColor);
+    grad.addColorStop(1, edgeColor);
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, 256, 256);
+  } else if (type === "north") {
+    // Shaded conduction loss with vertical stratification
+    const grad = ctx.createLinearGradient(0, 0, 0, 256);
+    grad.addColorStop(0, edgeColor);
+    grad.addColorStop(0.5, coreColor);
+    grad.addColorStop(1, edgeColor);
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, 256, 256);
+  } else if (type === "east" || type === "west") {
+    // Lateral solar/convective wall
+    const grad = ctx.createLinearGradient(0, 0, 256, 256);
+    grad.addColorStop(0, edgeColor);
+    grad.addColorStop(0.5, coreColor);
+    grad.addColorStop(1, edgeColor);
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, 256, 256);
+  } else {
+    // Floor subgrade perimeter dissipation (ISO 13370)
+    const grad = ctx.createRadialGradient(128, 128, 25, 128, 128, 130);
+    grad.addColorStop(0, coreColor);
+    grad.addColorStop(0.7, midColor);
+    grad.addColorStop(1, edgeColor);
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, 256, 256);
+  }
+
+  // Draw Heat Flux Vector Streamlines & Directional Arrow Grid
+  ctx.save();
+  ctx.strokeStyle = isGain ? "rgba(255, 255, 255, 0.28)" : "rgba(255, 255, 255, 0.18)";
+  ctx.fillStyle = isGain ? "rgba(255, 255, 255, 0.35)" : "rgba(255, 255, 255, 0.22)";
+  ctx.lineWidth = 1.2;
+
+  // Streamline chevron field
+  for (let x = 44; x <= 212; x += 42) {
+    for (let y = 44; y <= 212; y += 42) {
+      if (isGain) {
+        // Inward heat injection: arrows pointing down/inward
+        ctx.beginPath();
+        ctx.moveTo(x, y - 9);
+        ctx.lineTo(x, y + 9);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(x - 3.5, y + 4);
+        ctx.lineTo(x, y + 10);
+        ctx.lineTo(x + 3.5, y + 4);
+        ctx.stroke();
+      } else {
+        // Outward heat conduction loss: arrows pointing up/outward
+        ctx.beginPath();
+        ctx.moveTo(x, y + 9);
+        ctx.lineTo(x, y - 9);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(x - 3.5, y - 4);
+        ctx.lineTo(x, y - 10);
+        ctx.lineTo(x + 3.5, y - 4);
+        ctx.stroke();
+      }
+    }
+  }
+
+  // ISO 10211 Corner thermal bridge demarcation lines
+  ctx.strokeStyle = isGain ? "rgba(251, 191, 36, 0.3)" : "rgba(239, 68, 68, 0.35)";
+  ctx.lineWidth = 2;
+  ctx.strokeRect(10, 10, 236, 236);
+
+  // Heat flux density label badge (ISO notation)
+  ctx.fillStyle = "rgba(15, 23, 42, 0.72)";
+  ctx.fillRect(12, 12, 82, 22);
+  ctx.font = "bold 10px monospace";
+  ctx.fillStyle = isGain ? "#fbbf24" : "#38bdf8";
+  ctx.fillText(`${flux >= 0 ? "+" : ""}${Math.round(flux)} W/m²`, 18, 27);
+
+  ctx.restore();
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.wrapS = THREE.ClampToEdgeWrapping;
+  texture.wrapT = THREE.ClampToEdgeWrapping;
+  return texture;
+}
+
 /**
  * Generates an extruded wall geometry with mathematically non-degenerate cutouts for windows and doors.
  */
@@ -479,6 +588,7 @@ export function ShelterMesh({
   hourlyStep,
   sunHour = 12,
   solarDate = "2026-06-21",
+  suppressHtmlLabels = false,
 }: Props) {
   const [hovered, setHovered] = useState<string | null>(null);
   const geom = useMemo(() => deriveShelter3DGeometry(model), [model]);
@@ -568,14 +678,18 @@ export function ShelterMesh({
   }, [geom.walls, openingsByWall]);
 
   const isXRay = settings.transparentWalls;
+  const isHeatFlow = settings.visualization === "heat-flow";
   const isThermal = settings.visualization === "thermal";
+  const isAnalysisVisual = isThermal || isHeatFlow;
   const isModelVisual = settings.visualization === "model";
   const xrayWallOpacity = 0.14;
   const xrayEdgeOpacity = 0.88;
 
   const explode = useExplodeFactor(settings.explodedView);
+  const isWallSelected = selected?.type === "wall";
+  const isRoofSelected = selected?.type === "roof";
   const activeWallSide: WallOrientation =
-    selected?.type === "wall" && selected.orientation
+    isWallSelected && selected?.orientation
       ? selected.orientation
       : "south";
   const span = Math.max(model.geometry.length, model.geometry.width);
@@ -585,7 +699,7 @@ export function ShelterMesh({
     const scale = 0.55 + span * 0.18;
     return [n[0] * scale * explode, 0.18 * explode, n[2] * scale * explode];
   };
-  const roofExplodeY = (model.geometry.height * 0.55 + 1.2) * explode;
+  const roofExplodeY = (model.geometry.height * 0.75 + 1.8) * explode;
   const floorExplodeY = -0.42 * explode;
 
   const buildingTextures = useMemo(() => {
@@ -608,6 +722,14 @@ export function ShelterMesh({
     }),
     [model.envelope.walls]
   );
+  const roofLayerTextures = useMemo(
+    () => (model.envelope.roof.layers ?? []).map((layer) => createMaterialTexture(layer.materialId, layer.name)),
+    [model.envelope.roof.layers]
+  );
+  const isRevealingRoofLayers = settings.revealLayers && explode > 0.05 && isRoofSelected;
+  const roofLayers = model.envelope.roof.layers ?? [];
+  const topRoofLayerDisp = (0.20 + Math.max(0, roofLayers.length - 1) * 0.26) * explode;
+  const avgRoofDisp = (0.20 + (Math.max(0, roofLayers.length - 1) * 0.26) / 2) * explode;
   const floorAppearance = materialAppearance(model.envelope.floor.layers[0]?.materialId ?? "", model.envelope.floor.layers[0]?.name ?? "");
   const roofAppearance = materialAppearance(model.envelope.roof.layers[0]?.materialId ?? "", model.envelope.roof.layers[0]?.name ?? "");
   const [hoveredRoofFeature, setHoveredRoofFeature] = useState<"solar" | "chimney" | null>(null);
@@ -708,6 +830,42 @@ export function ShelterMesh({
     };
   }, [model, hourlyStep, modelMetrics]);
 
+  // Dynamically calibrated ISO 6946 / ISO 10211 heat flow vector maps
+  const heatFlowTextures = useMemo(() => {
+    if (typeof window === "undefined") return null;
+
+    const effMetrics = hourlyStep
+      ? {
+          qSouth: hourlyStep.qSouthFlux,
+          qNorth: hourlyStep.qNorthFlux,
+          qEast: hourlyStep.qEastFlux,
+          qWest: hourlyStep.qWestFlux,
+          qRoof: hourlyStep.qRoofFlux,
+          qFloor: hourlyStep.qFloorFlux,
+          psiBridge: hourlyStep.psiBridge,
+        }
+      : {
+          qSouth: modelMetrics.qSouthFlux,
+          qNorth: modelMetrics.qNorthFlux,
+          qEast: modelMetrics.qEastFlux ?? -Math.round(modelMetrics.uEast * modelMetrics.deltaT),
+          qWest: modelMetrics.qWestFlux ?? -Math.round(modelMetrics.uWest * modelMetrics.deltaT),
+          qRoof: modelMetrics.qRoofFlux ?? -Math.round(modelMetrics.uRoof * modelMetrics.deltaT),
+          qFloor: modelMetrics.qFloorFlux ?? -18,
+          psiBridge: modelMetrics.psiBridge,
+        };
+
+    return {
+      south: createHeatFlowTexture({ type: "south", flux: effMetrics.qSouth, psiBridge: effMetrics.psiBridge }),
+      north: createHeatFlowTexture({ type: "north", flux: effMetrics.qNorth, psiBridge: effMetrics.psiBridge }),
+      east: createHeatFlowTexture({ type: "east", flux: effMetrics.qEast, psiBridge: effMetrics.psiBridge }),
+      west: createHeatFlowTexture({ type: "west", flux: effMetrics.qWest, psiBridge: effMetrics.psiBridge }),
+      roof: createHeatFlowTexture({ type: "roof", flux: effMetrics.qRoof, psiBridge: effMetrics.psiBridge }),
+      floor: createHeatFlowTexture({ type: "floor", flux: effMetrics.qFloor, psiBridge: effMetrics.psiBridge }),
+    };
+  }, [hourlyStep, modelMetrics]);
+
+  const activeAnalysisTextures = isHeatFlow ? heatFlowTextures : thermalTextures;
+
   return (
     <group rotation={[0, orientation, 0]}>
       {/* 1. Ground Foundation Slab */}
@@ -729,23 +887,23 @@ export function ShelterMesh({
               ? "#0f172a"
               : isActive("floor")
               ? palette.solar
-              : isThermal
+              : isAnalysisVisual
               ? "#ffffff"
               : isModelVisual
               ? floorAppearance.color
               : palette.ink
           }
           map={
-            !isXRay && isThermal
-              ? thermalTextures?.floor
+            !isXRay && isAnalysisVisual
+              ? activeAnalysisTextures?.floor
               : isModelVisual && !isXRay
               ? buildingTextures?.floor
               : null
           }
-          emissiveMap={!isXRay && isThermal ? thermalTextures?.floor : null}
-          emissive={!isXRay && isThermal ? "#ffffff" : "#000000"}
-          emissiveIntensity={!isXRay && isThermal ? 0.45 : 0}
-          roughness={isThermal ? 0.4 : isModelVisual ? floorAppearance.roughness : 0.78}
+          emissiveMap={!isXRay && isAnalysisVisual ? activeAnalysisTextures?.floor : null}
+          emissive={!isXRay && isAnalysisVisual ? "#ffffff" : "#000000"}
+          emissiveIntensity={!isXRay && isAnalysisVisual ? (isHeatFlow ? 0.65 : 0.45) : 0}
+          roughness={isAnalysisVisual ? 0.4 : isModelVisual ? floorAppearance.roughness : 0.78}
           metalness={isModelVisual ? floorAppearance.metalness : 0}
           transparent={isXRay}
           opacity={isXRay ? 0.2 : 1}
@@ -772,7 +930,9 @@ export function ShelterMesh({
         const active = isActive(`wall-${side}`);
         const wallPos = addPosition(wall.position, wallExplode(side));
         const wallAppearance = materialAppearance(layers[0]?.materialId ?? "", layers[0]?.name ?? "");
-        const isFocusWall = side === activeWallSide;
+        const isFocusWall = isWallSelected
+          ? side === selected.orientation
+          : (!selected && side === "south");
         const isRevealingLayers = settings.revealLayers && explode > 0.05 && isFocusWall;
 
         return (
@@ -794,23 +954,23 @@ export function ShelterMesh({
                 color={
                   isXRay
                     ? palette.xrayTint
-                    : isThermal
+                    : isAnalysisVisual
                     ? "#ffffff"
                     : isModelVisual
                     ? wallAppearance.color
                     : getWallMaterialColor(settings.visualization, side, active)
                 }
                 map={
-                  !isXRay && isThermal
-                    ? thermalTextures?.[side]
+                  !isXRay && isAnalysisVisual
+                    ? activeAnalysisTextures?.[side]
                     : isModelVisual && !isXRay
                     ? buildingTextures?.[side]
                     : null
                 }
-                emissiveMap={!isXRay && isThermal ? thermalTextures?.[side] : null}
-                emissive={!isXRay && isThermal ? "#ffffff" : "#000000"}
-                emissiveIntensity={!isXRay && isThermal ? 0.6 : 0}
-                roughness={isXRay ? 0.15 : isThermal ? 0.45 : isModelVisual ? wallAppearance.roughness : 0.7}
+                emissiveMap={!isXRay && isAnalysisVisual ? activeAnalysisTextures?.[side] : null}
+                emissive={!isXRay && isAnalysisVisual ? "#ffffff" : "#000000"}
+                emissiveIntensity={!isXRay && isAnalysisVisual ? (isHeatFlow ? 0.7 : 0.6) : 0}
+                roughness={isXRay ? 0.15 : isAnalysisVisual ? 0.45 : isModelVisual ? wallAppearance.roughness : 0.7}
                 metalness={isXRay ? 0.08 : isModelVisual ? wallAppearance.metalness : 0.04}
                 wireframe={settings.wireframe}
                 transparent={isXRay || (isRevealingLayers && explode > 0.1)}
@@ -924,11 +1084,13 @@ export function ShelterMesh({
                     stackZ = wallPos[2] + wall.dimensions[0] * 0.5 + 0.52;
                   }
 
+                  if (suppressHtmlLabels) return null;
+
                   return (
                     <Html
                       position={[stackX, stackY, stackZ]}
                       distanceFactor={14}
-                      zIndexRange={[50, 0]}
+                      zIndexRange={[15, 0]}
                       style={{ pointerEvents: "none" }}
                     >
                       <div className="cad-assembly-stack">
@@ -965,6 +1127,191 @@ export function ShelterMesh({
         );
       })}
 
+      {/* 2.5 Attic & Clerestory Wall Extensions (Synchronized with host walls during exploded view) */}
+      {model.geometry.roofType === "Gable" && model.geometry.roofAngle > 0 && gableEndGeom && (
+        <group>
+          {/* East Gable Wall Extension */}
+          <mesh
+            geometry={gableEndGeom}
+            position={addPosition([model.geometry.length / 2, model.geometry.height, 0], wallExplode("east"))}
+            rotation={[0, Math.PI / 2, 0]}
+            castShadow={!isXRay}
+            receiveShadow
+            onClick={(e) => {
+              e.stopPropagation();
+              onSelect({ type: "wall", orientation: "east" });
+            }}
+          >
+            <meshStandardMaterial
+              color={
+                isXRay
+                  ? palette.xrayTint
+                  : isAnalysisVisual
+                  ? "#ffffff"
+                  : getWallMaterialColor(settings.visualization, "east", isActive("wall-east"))
+              }
+              map={!isXRay && isAnalysisVisual ? activeAnalysisTextures?.east : null}
+              emissiveMap={!isXRay && isAnalysisVisual ? activeAnalysisTextures?.east : null}
+              emissive={!isXRay && isAnalysisVisual ? "#ffffff" : "#000000"}
+              emissiveIntensity={!isXRay && isAnalysisVisual ? (isHeatFlow ? 0.7 : 0.6) : 0}
+              roughness={isXRay ? 0.15 : isAnalysisVisual ? 0.45 : 0.7}
+              metalness={isXRay ? 0.08 : 0.04}
+              wireframe={settings.wireframe}
+              transparent={isXRay}
+              opacity={isXRay ? xrayWallOpacity : 1}
+              depthWrite={!isXRay}
+              side={isXRay ? THREE.DoubleSide : THREE.FrontSide}
+            />
+          </mesh>
+
+          {/* West Gable Wall Extension */}
+          <mesh
+            geometry={gableEndGeom}
+            position={addPosition([-model.geometry.length / 2, model.geometry.height, 0], wallExplode("west"))}
+            rotation={[0, -Math.PI / 2, 0]}
+            castShadow={!isXRay}
+            receiveShadow
+            onClick={(e) => {
+              e.stopPropagation();
+              onSelect({ type: "wall", orientation: "west" });
+            }}
+          >
+            <meshStandardMaterial
+              color={
+                isXRay
+                  ? palette.xrayTint
+                  : isAnalysisVisual
+                  ? "#ffffff"
+                  : getWallMaterialColor(settings.visualization, "west", isActive("wall-west"))
+              }
+              map={!isXRay && isAnalysisVisual ? activeAnalysisTextures?.west : null}
+              emissiveMap={!isXRay && isAnalysisVisual ? activeAnalysisTextures?.west : null}
+              emissive={!isXRay && isAnalysisVisual ? "#ffffff" : "#000000"}
+              emissiveIntensity={!isXRay && isAnalysisVisual ? (isHeatFlow ? 0.7 : 0.6) : 0}
+              roughness={isXRay ? 0.15 : isAnalysisVisual ? 0.45 : 0.7}
+              metalness={isXRay ? 0.08 : 0.04}
+              wireframe={settings.wireframe}
+              transparent={isXRay}
+              opacity={isXRay ? xrayWallOpacity : 1}
+              depthWrite={!isXRay}
+              side={isXRay ? THREE.DoubleSide : THREE.FrontSide}
+            />
+          </mesh>
+        </group>
+      )}
+
+      {model.geometry.roofType === "Shed" && model.geometry.roofAngle > 0 && (
+        <group>
+          {/* High Wall (South) Clerestory Upper Wall Extension */}
+          <mesh
+            position={addPosition(
+              [0, model.geometry.height + deltaHShed / 2, model.geometry.width / 2 + wallThickness / 2],
+              wallExplode("south")
+            )}
+            castShadow={!isXRay}
+            receiveShadow
+            onClick={(e) => {
+              e.stopPropagation();
+              onSelect({ type: "wall", orientation: "south" });
+            }}
+          >
+            <boxGeometry args={[model.geometry.length, deltaHShed, wallThickness]} />
+            <meshStandardMaterial
+              color={
+                isXRay
+                  ? palette.xrayTint
+                  : isAnalysisVisual
+                  ? "#ffffff"
+                  : getWallMaterialColor(settings.visualization, "south", isActive("wall-south"))
+              }
+              map={!isXRay && isAnalysisVisual ? activeAnalysisTextures?.south : null}
+              emissiveMap={!isXRay && isAnalysisVisual ? activeAnalysisTextures?.south : null}
+              emissive={!isXRay && isAnalysisVisual ? "#ffffff" : "#000000"}
+              emissiveIntensity={!isXRay && isAnalysisVisual ? (isHeatFlow ? 0.7 : 0.6) : 0}
+              roughness={isXRay ? 0.15 : isAnalysisVisual ? 0.45 : 0.7}
+              metalness={isXRay ? 0.08 : 0.04}
+              wireframe={settings.wireframe}
+              transparent={isXRay}
+              opacity={isXRay ? xrayWallOpacity : 1}
+              depthWrite={!isXRay}
+              side={isXRay ? THREE.DoubleSide : THREE.FrontSide}
+            />
+          </mesh>
+
+          {/* East Shed Triangular Wedge Wall */}
+          {eastShedWedgeGeom && (
+            <mesh
+              geometry={eastShedWedgeGeom}
+              position={addPosition([model.geometry.length / 2 + wallThickness / 2, model.geometry.height, 0], wallExplode("east"))}
+              rotation={[0, Math.PI / 2, 0]}
+              castShadow={!isXRay}
+              receiveShadow
+              onClick={(e) => {
+                e.stopPropagation();
+                onSelect({ type: "wall", orientation: "east" });
+              }}
+            >
+              <meshStandardMaterial
+                color={
+                  isXRay
+                    ? palette.xrayTint
+                    : isAnalysisVisual
+                    ? "#ffffff"
+                    : getWallMaterialColor(settings.visualization, "east", isActive("wall-east"))
+                }
+                map={!isXRay && isAnalysisVisual ? activeAnalysisTextures?.east : null}
+                emissiveMap={!isXRay && isAnalysisVisual ? activeAnalysisTextures?.east : null}
+                emissive={!isXRay && isAnalysisVisual ? "#ffffff" : "#000000"}
+                emissiveIntensity={!isXRay && isAnalysisVisual ? (isHeatFlow ? 0.7 : 0.6) : 0}
+                roughness={isXRay ? 0.15 : isAnalysisVisual ? 0.45 : 0.7}
+                metalness={isXRay ? 0.08 : 0.04}
+                wireframe={settings.wireframe}
+                transparent={isXRay}
+                opacity={isXRay ? xrayWallOpacity : 1}
+                depthWrite={!isXRay}
+                side={isXRay ? THREE.DoubleSide : THREE.FrontSide}
+              />
+            </mesh>
+          )}
+
+          {/* West Shed Triangular Wedge Wall */}
+          {westShedWedgeGeom && (
+            <mesh
+              geometry={westShedWedgeGeom}
+              position={addPosition([-model.geometry.length / 2 - wallThickness / 2, model.geometry.height, 0], wallExplode("west"))}
+              rotation={[0, -Math.PI / 2, 0]}
+              castShadow={!isXRay}
+              receiveShadow
+              onClick={(e) => {
+                e.stopPropagation();
+                onSelect({ type: "wall", orientation: "west" });
+              }}
+            >
+              <meshStandardMaterial
+                color={
+                  isXRay
+                    ? palette.xrayTint
+                    : isAnalysisVisual
+                    ? "#ffffff"
+                    : getWallMaterialColor(settings.visualization, "west", isActive("wall-west"))
+                }
+                map={!isXRay && isAnalysisVisual ? activeAnalysisTextures?.west : null}
+                emissiveMap={!isXRay && isAnalysisVisual ? activeAnalysisTextures?.west : null}
+                emissive={!isXRay && isAnalysisVisual ? "#ffffff" : "#000000"}
+                emissiveIntensity={!isXRay && isAnalysisVisual ? (isHeatFlow ? 0.7 : 0.6) : 0}
+                roughness={isXRay ? 0.15 : isAnalysisVisual ? 0.45 : 0.7}
+                metalness={isXRay ? 0.08 : 0.04}
+                wireframe={settings.wireframe}
+                transparent={isXRay}
+                opacity={isXRay ? xrayWallOpacity : 1}
+                depthWrite={!isXRay}
+                side={isXRay ? THREE.DoubleSide : THREE.FrontSide}
+              />
+            </mesh>
+          )}
+        </group>
+      )}
+
       {/* 3. Roof System (Gable, Shed, or Flat) with full architectural accuracy */}
       <group position={[0, roofExplodeY, 0]}>
       {model.geometry.roofType === "Gable" && model.geometry.roofAngle > 0 ? (
@@ -995,28 +1342,28 @@ export function ShelterMesh({
                     ? palette.xrayTint
                     : isActive("roof")
                     ? palette.solar
-                    : isThermal
+                    : isAnalysisVisual
                     ? "#ffffff"
                     : isModelVisual
                     ? roofAppearance.color
                     : palette.charcoal
                 }
                 map={
-                  !isXRay && isThermal
-                    ? thermalTextures?.roof
+                  !isXRay && isAnalysisVisual
+                    ? activeAnalysisTextures?.roof
                     : isModelVisual && !isXRay
                     ? buildingTextures?.roof
                     : null
                 }
-                emissiveMap={!isXRay && isThermal ? thermalTextures?.roof : null}
-                emissive={!isXRay && isThermal ? "#ffffff" : "#000000"}
-                emissiveIntensity={!isXRay && isThermal ? 0.55 : 0}
-                roughness={isXRay ? 0.15 : isModelVisual ? roofAppearance.roughness : 0.48}
+                emissiveMap={!isXRay && isAnalysisVisual ? activeAnalysisTextures?.roof : null}
+                emissive={!isXRay && isAnalysisVisual ? "#ffffff" : "#000000"}
+                emissiveIntensity={!isXRay && isAnalysisVisual ? (isHeatFlow ? 0.65 : 0.55) : 0}
+                roughness={isXRay ? 0.15 : isAnalysisVisual ? 0.45 : isModelVisual ? roofAppearance.roughness : 0.48}
                 metalness={isXRay ? 0.08 : isModelVisual ? roofAppearance.metalness : 0.22}
                 wireframe={settings.wireframe}
-                transparent={isXRay}
-                opacity={isXRay ? xrayWallOpacity : 1}
-                depthWrite={!isXRay}
+                transparent={isXRay || (isRevealingRoofLayers && explode > 0.1)}
+                opacity={isXRay ? xrayWallOpacity : (isRevealingRoofLayers && explode > 0.1 ? 0.18 : 1)}
+                depthWrite={!isXRay && (!isRevealingRoofLayers || explode <= 0.1)}
                 side={isXRay ? THREE.DoubleSide : THREE.FrontSide}
               />
             </mesh>
@@ -1027,8 +1374,92 @@ export function ShelterMesh({
               </lineSegments>
             )}
 
-            {/* High-Efficiency South-Facing Photovoltaic Solar Array */}
-            <group position={[0, roofThickness / 2 + 0.038, 0]}>
+            {/* Exploded Roof Construction Layers & Unified CAD Assembly Callout */}
+            {isRevealingRoofLayers ? (
+              <group>
+                {roofLayers.map((layer, index) => {
+                  const mat = materialAppearance(layer.materialId, layer.name ?? "");
+                  const layerDepth = Math.max(0.024, Math.min(layer.thickness * 1.5, 0.10));
+                  const layerDisp = (0.20 + (roofLayers.length - 1 - index) * 0.26) * explode;
+                  const layerEdgeX = roofSpan / 2;
+                  const stackX = roofSpan / 2 + 0.52;
+                  const stackY = avgRoofDisp + 0.20;
+
+                  return (
+                    <group key={`gable-roof-layer-${layer.materialId}-${index}`}>
+                      <mesh
+                        position={[0, layerDisp, 0]}
+                        castShadow={!isXRay}
+                        receiveShadow
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onSelect({ type: "roof" });
+                        }}
+                      >
+                        <boxGeometry args={[roofSpan, layerDepth, rafterLengthGable]} />
+                        <meshStandardMaterial
+                          color={mat.color}
+                          map={isModelVisual ? roofLayerTextures[index] : null}
+                          roughness={mat.roughness}
+                          metalness={mat.metalness}
+                        />
+                      </mesh>
+
+                      {/* CAD Leader Line */}
+                      <Line
+                        points={[
+                          [layerEdgeX, layerDisp, 0],
+                          [stackX, stackY, 0],
+                        ]}
+                        color={mat.color}
+                        lineWidth={1.5}
+                        transparent
+                        opacity={0.8}
+                      />
+                    </group>
+                  );
+                })}
+
+                {/* Unified CAD Roof Assembly Callout Stack */}
+                {!suppressHtmlLabels && (
+                  <Html
+                    position={[roofSpan / 2 + 0.55, avgRoofDisp + 0.20, 0]}
+                    distanceFactor={14}
+                    zIndexRange={[15, 0]}
+                    style={{ pointerEvents: "none" }}
+                  >
+                    <div className="cad-assembly-stack cad-roof-stack">
+                      <div className="cad-stack-header">
+                        <strong>{model.envelope.roof.name || "GABLE ROOF SYSTEM"}</strong>
+                        <small>{roofLayers.length} Layers · U: {modelMetrics.uRoof.toFixed(2)} W/m²K</small>
+                      </div>
+                      <div className="cad-stack-body">
+                        {roofLayers.map((layer, index) => {
+                          const mat = materialAppearance(layer.materialId, layer.name ?? "");
+                          const desc = layerDescription(layer.materialId, layer.name ?? "");
+                          return (
+                            <div
+                              key={`gable-callout-${layer.materialId}-${index}`}
+                              className="cad-stack-row"
+                              style={{ "--layer-color": mat.color } as React.CSSProperties}
+                              title={desc ? `${layer.name ?? layer.materialId}: ${desc}` : (layer.name ?? layer.materialId)}
+                            >
+                              <span className="cad-stack-idx">{index + 1}</span>
+                              <span className="cad-stack-dot" style={{ backgroundColor: mat.color }} />
+                              <span className="cad-stack-name">{layer.name ?? layer.materialId}</span>
+                              <span className="cad-stack-thick">{Math.round(layer.thickness * 1000)} mm</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </Html>
+                )}
+              </group>
+            ) : null}
+
+            {/* High-Efficiency South-Facing Photovoltaic Solar Array mounted on outermost roof plane */}
+            <group position={[0, roofThickness / 2 + 0.038 + (isRevealingRoofLayers ? topRoofLayerDisp : 0), 0]}>
               <SolarArray
                 span={roofSpan}
                 rafterDepth={rafterLengthGable}
@@ -1040,11 +1471,12 @@ export function ShelterMesh({
                 }}
                 onPointerOut={() => setHoveredRoofFeature(null)}
               />
-              {hoveredRoofFeature === "solar" && (
+              {hoveredRoofFeature === "solar" && !suppressHtmlLabels && (
                 <Html
                   position={[0, 0.45, 0]}
                   center
                   distanceFactor={14}
+                  zIndexRange={[15, 0]}
                   style={{ pointerEvents: "none" }}
                 >
                   <div className="cad-minimal-tooltip cad-solar-callout" style={{ minWidth: 190 }}>
@@ -1087,23 +1519,23 @@ export function ShelterMesh({
                     ? palette.xrayTint
                     : isActive("roof")
                     ? palette.solar
-                    : isThermal
+                    : isAnalysisVisual
                     ? "#ffffff"
                     : isModelVisual
                     ? roofAppearance.color
                     : palette.charcoal
                 }
                 map={
-                  !isXRay && isThermal
-                    ? thermalTextures?.roof
+                  !isXRay && isAnalysisVisual
+                    ? activeAnalysisTextures?.roof
                     : isModelVisual && !isXRay
                     ? buildingTextures?.roof
                     : null
                 }
-                emissiveMap={!isXRay && isThermal ? thermalTextures?.roof : null}
-                emissive={!isXRay && isThermal ? "#ffffff" : "#000000"}
-                emissiveIntensity={!isXRay && isThermal ? 0.55 : 0}
-                roughness={isXRay ? 0.15 : isModelVisual ? roofAppearance.roughness : 0.48}
+                emissiveMap={!isXRay && isAnalysisVisual ? activeAnalysisTextures?.roof : null}
+                emissive={!isXRay && isAnalysisVisual ? "#ffffff" : "#000000"}
+                emissiveIntensity={!isXRay && isAnalysisVisual ? (isHeatFlow ? 0.65 : 0.55) : 0}
+                roughness={isXRay ? 0.15 : isAnalysisVisual ? 0.45 : isModelVisual ? roofAppearance.roughness : 0.48}
                 metalness={isXRay ? 0.08 : isModelVisual ? roofAppearance.metalness : 0.22}
                 wireframe={settings.wireframe}
                 transparent={isXRay}
@@ -1124,7 +1556,7 @@ export function ShelterMesh({
           <mesh
             position={[
               0,
-              model.geometry.height + deltaHGable + roofThickness / 2 + 0.01,
+              model.geometry.height + deltaHGable + roofThickness / 2 + 0.01 + (isRevealingRoofLayers ? topRoofLayerDisp * 0.5 : 0),
               0,
             ]}
             castShadow={!isXRay}
@@ -1155,11 +1587,12 @@ export function ShelterMesh({
                   }}
                   onPointerOut={() => setHoveredRoofFeature(null)}
                 />
-                {hoveredRoofFeature === "chimney" && (
+                {hoveredRoofFeature === "chimney" && !suppressHtmlLabels && (
                   <Html
                     position={[0, chimneyFlueHeight + 0.35, 0]}
                     center
                     distanceFactor={14}
+                    zIndexRange={[15, 0]}
                     style={{ pointerEvents: "none" }}
                   >
                     <div className="cad-minimal-tooltip" style={{ minWidth: 190, borderColor: "#f97316" }}>
@@ -1176,79 +1609,6 @@ export function ShelterMesh({
               </group>
             );
           })()}
-
-          {/* Triangular Gable End Walls (East & West) Closing the Attic */}
-          {gableEndGeom && (
-            <>
-              {/* East Gable Wall */}
-              <mesh
-                geometry={gableEndGeom}
-                position={[model.geometry.length / 2, model.geometry.height, 0]}
-                rotation={[0, Math.PI / 2, 0]}
-                castShadow={!isXRay}
-                receiveShadow
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onSelect({ type: "wall", orientation: "east" });
-                }}
-              >
-                <meshStandardMaterial
-                  color={
-                    isXRay
-                      ? palette.xrayTint
-                      : isThermal
-                      ? "#ffffff"
-                      : getWallMaterialColor(settings.visualization, "east", isActive("wall-east"))
-                  }
-                  map={!isXRay && isThermal ? thermalTextures?.east : null}
-                  emissiveMap={!isXRay && isThermal ? thermalTextures?.east : null}
-                  emissive={!isXRay && isThermal ? "#ffffff" : "#000000"}
-                  emissiveIntensity={!isXRay && isThermal ? 0.6 : 0}
-                  roughness={isXRay ? 0.15 : isThermal ? 0.45 : 0.7}
-                  metalness={isXRay ? 0.08 : 0.04}
-                  wireframe={settings.wireframe}
-                  transparent={isXRay}
-                  opacity={isXRay ? xrayWallOpacity : 1}
-                  depthWrite={!isXRay}
-                  side={isXRay ? THREE.DoubleSide : THREE.FrontSide}
-                />
-              </mesh>
-
-              {/* West Gable Wall */}
-              <mesh
-                geometry={gableEndGeom}
-                position={[-model.geometry.length / 2, model.geometry.height, 0]}
-                rotation={[0, -Math.PI / 2, 0]}
-                castShadow={!isXRay}
-                receiveShadow
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onSelect({ type: "wall", orientation: "west" });
-                }}
-              >
-                <meshStandardMaterial
-                  color={
-                    isXRay
-                      ? palette.xrayTint
-                      : isThermal
-                      ? "#ffffff"
-                      : getWallMaterialColor(settings.visualization, "west", isActive("wall-west"))
-                  }
-                  map={!isXRay && isThermal ? thermalTextures?.west : null}
-                  emissiveMap={!isXRay && isThermal ? thermalTextures?.west : null}
-                  emissive={!isXRay && isThermal ? "#ffffff" : "#000000"}
-                  emissiveIntensity={!isXRay && isThermal ? 0.6 : 0}
-                  roughness={isXRay ? 0.15 : isThermal ? 0.45 : 0.7}
-                  metalness={isXRay ? 0.08 : 0.04}
-                  wireframe={settings.wireframe}
-                  transparent={isXRay}
-                  opacity={isXRay ? xrayWallOpacity : 1}
-                  depthWrite={!isXRay}
-                  side={isXRay ? THREE.DoubleSide : THREE.FrontSide}
-                />
-              </mesh>
-            </>
-          )}
         </group>
       ) : model.geometry.roofType === "Shed" && model.geometry.roofAngle > 0 ? (
         <group>
@@ -1278,28 +1638,28 @@ export function ShelterMesh({
                     ? palette.xrayTint
                     : isActive("roof")
                     ? palette.solar
-                    : isThermal
+                    : isAnalysisVisual
                     ? "#ffffff"
                     : isModelVisual
                     ? roofAppearance.color
                     : palette.charcoal
                 }
                 map={
-                  !isXRay && isThermal
-                    ? thermalTextures?.roof
+                  !isXRay && isAnalysisVisual
+                    ? activeAnalysisTextures?.roof
                     : isModelVisual && !isXRay
                     ? buildingTextures?.roof
                     : null
                 }
-                emissiveMap={!isXRay && isThermal ? thermalTextures?.roof : null}
-                emissive={!isXRay && isThermal ? "#ffffff" : "#000000"}
-                emissiveIntensity={!isXRay && isThermal ? 0.55 : 0}
-                roughness={isXRay ? 0.15 : isModelVisual ? roofAppearance.roughness : 0.48}
+                emissiveMap={!isXRay && isAnalysisVisual ? activeAnalysisTextures?.roof : null}
+                emissive={!isXRay && isAnalysisVisual ? "#ffffff" : "#000000"}
+                emissiveIntensity={!isXRay && isAnalysisVisual ? (isHeatFlow ? 0.65 : 0.55) : 0}
+                roughness={isXRay ? 0.15 : isAnalysisVisual ? 0.45 : isModelVisual ? roofAppearance.roughness : 0.48}
                 metalness={isXRay ? 0.08 : isModelVisual ? roofAppearance.metalness : 0.22}
                 wireframe={settings.wireframe}
-                transparent={isXRay}
-                opacity={isXRay ? xrayWallOpacity : 1}
-                depthWrite={!isXRay}
+                transparent={isXRay || (isRevealingRoofLayers && explode > 0.1)}
+                opacity={isXRay ? xrayWallOpacity : (isRevealingRoofLayers && explode > 0.1 ? 0.18 : 1)}
+                depthWrite={!isXRay && (!isRevealingRoofLayers || explode <= 0.1)}
                 side={isXRay ? THREE.DoubleSide : THREE.FrontSide}
               />
             </mesh>
@@ -1310,8 +1670,92 @@ export function ShelterMesh({
               </lineSegments>
             )}
 
+            {/* Exploded Shed Roof Construction Layers & Unified CAD Assembly Callout */}
+            {isRevealingRoofLayers ? (
+              <group>
+                {roofLayers.map((layer, index) => {
+                  const mat = materialAppearance(layer.materialId, layer.name ?? "");
+                  const layerDepth = Math.max(0.024, Math.min(layer.thickness * 1.5, 0.10));
+                  const layerDisp = (0.20 + (roofLayers.length - 1 - index) * 0.26) * explode;
+                  const layerEdgeX = roofSpan / 2;
+                  const stackX = roofSpan / 2 + 0.52;
+                  const stackY = avgRoofDisp + 0.20;
+
+                  return (
+                    <group key={`shed-roof-layer-${layer.materialId}-${index}`}>
+                      <mesh
+                        position={[0, layerDisp, 0]}
+                        castShadow={!isXRay}
+                        receiveShadow
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onSelect({ type: "roof" });
+                        }}
+                      >
+                        <boxGeometry args={[roofSpan, layerDepth, slopeDepthShed]} />
+                        <meshStandardMaterial
+                          color={mat.color}
+                          map={isModelVisual ? roofLayerTextures[index] : null}
+                          roughness={mat.roughness}
+                          metalness={mat.metalness}
+                        />
+                      </mesh>
+
+                      {/* CAD Leader Line */}
+                      <Line
+                        points={[
+                          [layerEdgeX, layerDisp, 0],
+                          [stackX, stackY, 0],
+                        ]}
+                        color={mat.color}
+                        lineWidth={1.5}
+                        transparent
+                        opacity={0.8}
+                      />
+                    </group>
+                  );
+                })}
+
+                {/* Unified CAD Roof Assembly Callout Stack */}
+                {!suppressHtmlLabels && (
+                  <Html
+                    position={[roofSpan / 2 + 0.55, avgRoofDisp + 0.20, 0]}
+                    distanceFactor={14}
+                    zIndexRange={[15, 0]}
+                    style={{ pointerEvents: "none" }}
+                  >
+                    <div className="cad-assembly-stack cad-roof-stack">
+                      <div className="cad-stack-header">
+                        <strong>{model.envelope.roof.name || "SHED ROOF SYSTEM"}</strong>
+                        <small>{roofLayers.length} Layers · U: {modelMetrics.uRoof.toFixed(2)} W/m²K</small>
+                      </div>
+                      <div className="cad-stack-body">
+                        {roofLayers.map((layer, index) => {
+                          const mat = materialAppearance(layer.materialId, layer.name ?? "");
+                          const desc = layerDescription(layer.materialId, layer.name ?? "");
+                          return (
+                            <div
+                              key={`shed-callout-${layer.materialId}-${index}`}
+                              className="cad-stack-row"
+                              style={{ "--layer-color": mat.color } as React.CSSProperties}
+                              title={desc ? `${layer.name ?? layer.materialId}: ${desc}` : (layer.name ?? layer.materialId)}
+                            >
+                              <span className="cad-stack-idx">{index + 1}</span>
+                              <span className="cad-stack-dot" style={{ backgroundColor: mat.color }} />
+                              <span className="cad-stack-name">{layer.name ?? layer.materialId}</span>
+                              <span className="cad-stack-thick">{Math.round(layer.thickness * 1000)} mm</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </Html>
+                )}
+              </group>
+            ) : null}
+
             {/* Monocrystalline Solar PV Array mounted on Shed Roof */}
-            <group position={[0, roofThickness / 2 + 0.038, slopeDepthShed * 0.06]}>
+            <group position={[0, roofThickness / 2 + 0.038 + (isRevealingRoofLayers ? topRoofLayerDisp : 0), slopeDepthShed * 0.06]}>
               <SolarArray
                 span={roofSpan}
                 rafterDepth={slopeDepthShed * 0.65}
@@ -1323,11 +1767,12 @@ export function ShelterMesh({
                 }}
                 onPointerOut={() => setHoveredRoofFeature(null)}
               />
-              {hoveredRoofFeature === "solar" && (
+              {hoveredRoofFeature === "solar" && !suppressHtmlLabels && (
                 <Html
                   position={[0, 0.45, 0]}
                   center
                   distanceFactor={14}
+                  zIndexRange={[15, 0]}
                   style={{ pointerEvents: "none" }}
                 >
                   <div className="cad-minimal-tooltip cad-solar-callout" style={{ minWidth: 190 }}>
@@ -1344,115 +1789,6 @@ export function ShelterMesh({
             </group>
           </group>
 
-          {/* High Wall (South) Clerestory Upper Wall Extension */}
-          <mesh
-            position={[
-              0,
-              model.geometry.height + deltaHShed / 2,
-              model.geometry.width / 2 + wallThickness / 2,
-            ]}
-            castShadow={!isXRay}
-            receiveShadow
-            onClick={(e) => {
-              e.stopPropagation();
-              onSelect({ type: "wall", orientation: "south" });
-            }}
-          >
-            <boxGeometry args={[model.geometry.length, deltaHShed, wallThickness]} />
-            <meshStandardMaterial
-              color={
-                isXRay
-                  ? palette.xrayTint
-                  : isThermal
-                  ? "#ffffff"
-                  : getWallMaterialColor(settings.visualization, "south", isActive("wall-south"))
-              }
-              map={!isXRay && isThermal ? thermalTextures?.south : null}
-              emissiveMap={!isXRay && isThermal ? thermalTextures?.south : null}
-              emissive={!isXRay && isThermal ? "#ffffff" : "#000000"}
-              emissiveIntensity={!isXRay && isThermal ? 0.6 : 0}
-              roughness={isXRay ? 0.15 : isThermal ? 0.45 : 0.7}
-              metalness={isXRay ? 0.08 : 0.04}
-              wireframe={settings.wireframe}
-              transparent={isXRay}
-              opacity={isXRay ? xrayWallOpacity : 1}
-              depthWrite={!isXRay}
-              side={isXRay ? THREE.DoubleSide : THREE.FrontSide}
-            />
-          </mesh>
-
-          {/* East Shed Triangular Wedge Wall */}
-          {eastShedWedgeGeom && (
-            <mesh
-              geometry={eastShedWedgeGeom}
-              position={[model.geometry.length / 2 + wallThickness / 2, model.geometry.height, 0]}
-              rotation={[0, Math.PI / 2, 0]}
-              castShadow={!isXRay}
-              receiveShadow
-              onClick={(e) => {
-                e.stopPropagation();
-                onSelect({ type: "wall", orientation: "east" });
-              }}
-            >
-              <meshStandardMaterial
-                color={
-                  isXRay
-                    ? palette.xrayTint
-                    : isThermal
-                    ? "#ffffff"
-                    : getWallMaterialColor(settings.visualization, "east", isActive("wall-east"))
-                }
-                map={!isXRay && isThermal ? thermalTextures?.east : null}
-                emissiveMap={!isXRay && isThermal ? thermalTextures?.east : null}
-                emissive={!isXRay && isThermal ? "#ffffff" : "#000000"}
-                emissiveIntensity={!isXRay && isThermal ? 0.6 : 0}
-                roughness={isXRay ? 0.15 : isThermal ? 0.45 : 0.7}
-                metalness={isXRay ? 0.08 : 0.04}
-                wireframe={settings.wireframe}
-                transparent={isXRay}
-                opacity={isXRay ? xrayWallOpacity : 1}
-                depthWrite={!isXRay}
-                side={isXRay ? THREE.DoubleSide : THREE.FrontSide}
-              />
-            </mesh>
-          )}
-
-          {/* West Shed Triangular Wedge Wall */}
-          {westShedWedgeGeom && (
-            <mesh
-              geometry={westShedWedgeGeom}
-              position={[-model.geometry.length / 2 - wallThickness / 2, model.geometry.height, 0]}
-              rotation={[0, -Math.PI / 2, 0]}
-              castShadow={!isXRay}
-              receiveShadow
-              onClick={(e) => {
-                e.stopPropagation();
-                onSelect({ type: "wall", orientation: "west" });
-              }}
-            >
-              <meshStandardMaterial
-                color={
-                  isXRay
-                    ? palette.xrayTint
-                    : isThermal
-                    ? "#ffffff"
-                    : getWallMaterialColor(settings.visualization, "west", isActive("wall-west"))
-                }
-                map={!isXRay && isThermal ? thermalTextures?.west : null}
-                emissiveMap={!isXRay && isThermal ? thermalTextures?.west : null}
-                emissive={!isXRay && isThermal ? "#ffffff" : "#000000"}
-                emissiveIntensity={!isXRay && isThermal ? 0.6 : 0}
-                roughness={isXRay ? 0.15 : isThermal ? 0.45 : 0.7}
-                metalness={isXRay ? 0.08 : 0.04}
-                wireframe={settings.wireframe}
-                transparent={isXRay}
-                opacity={isXRay ? xrayWallOpacity : 1}
-                depthWrite={!isXRay}
-                side={isXRay ? THREE.DoubleSide : THREE.FrontSide}
-              />
-            </mesh>
-          )}
-
           {/* Alpine Class-A Insulated Chimney Flue on Shed Roof */}
           {(() => {
             const chimneyX = model.geometry.length * 0.28;
@@ -1468,7 +1804,7 @@ export function ShelterMesh({
             );
 
             return (
-              <group position={[chimneyX, shedYAtZ, chimneyZ]}>
+              <group position={[chimneyX, shedYAtZ + (isRevealingRoofLayers ? topRoofLayerDisp : 0), chimneyZ]}>
                 <ChimneyFlue
                   flueHeight={chimneyFlueHeight}
                   isXRay={isXRay}
@@ -1478,11 +1814,12 @@ export function ShelterMesh({
                   }}
                   onPointerOut={() => setHoveredRoofFeature(null)}
                 />
-                {hoveredRoofFeature === "chimney" && (
+                {hoveredRoofFeature === "chimney" && !suppressHtmlLabels && (
                   <Html
                     position={[0, chimneyFlueHeight + 0.35, 0]}
                     center
                     distanceFactor={14}
+                    zIndexRange={[15, 0]}
                     style={{ pointerEvents: "none" }}
                   >
                     <div className="cad-minimal-tooltip" style={{ minWidth: 190, borderColor: "#f97316" }}>
@@ -1521,28 +1858,28 @@ export function ShelterMesh({
                   ? palette.xrayTint
                   : isActive("roof")
                   ? palette.solar
-                  : isThermal
+                  : isAnalysisVisual
                   ? "#ffffff"
                   : isModelVisual
                   ? roofAppearance.color
                   : palette.charcoal
               }
               map={
-                !isXRay && isThermal
-                  ? thermalTextures?.roof
+                !isXRay && isAnalysisVisual
+                  ? activeAnalysisTextures?.roof
                   : isModelVisual && !isXRay
                   ? buildingTextures?.roof
                   : null
               }
-              emissiveMap={!isXRay && isThermal ? thermalTextures?.roof : null}
-              emissive={!isXRay && isThermal ? "#ffffff" : "#000000"}
-              emissiveIntensity={!isXRay && isThermal ? 0.55 : 0}
-              roughness={isXRay ? 0.15 : isModelVisual ? roofAppearance.roughness : 0.48}
+              emissiveMap={!isXRay && isAnalysisVisual ? activeAnalysisTextures?.roof : null}
+              emissive={!isXRay && isAnalysisVisual ? "#ffffff" : "#000000"}
+              emissiveIntensity={!isXRay && isAnalysisVisual ? (isHeatFlow ? 0.65 : 0.55) : 0}
+              roughness={isXRay ? 0.15 : isAnalysisVisual ? 0.45 : isModelVisual ? roofAppearance.roughness : 0.48}
               metalness={isXRay ? 0.08 : isModelVisual ? roofAppearance.metalness : 0.22}
               wireframe={settings.wireframe}
-              transparent={isXRay}
-              opacity={isXRay ? xrayWallOpacity : 1}
-              depthWrite={!isXRay}
+              transparent={isXRay || (isRevealingRoofLayers && explode > 0.1)}
+              opacity={isXRay ? xrayWallOpacity : (isRevealingRoofLayers && explode > 0.1 ? 0.18 : 1)}
+              depthWrite={!isXRay && (!isRevealingRoofLayers || explode <= 0.1)}
               side={isXRay ? THREE.DoubleSide : THREE.FrontSide}
             />
           </mesh>
@@ -1555,7 +1892,7 @@ export function ShelterMesh({
 
           {/* Vernacular Ladakhi Parapet Wall Rim (when overhang <= 0.15m) */}
           {overhang <= 0.15 && !isXRay && (
-            <group position={[0, roofThickness / 2 + 0.10, 0]}>
+            <group position={[0, roofThickness / 2 + 0.10 + (isRevealingRoofLayers ? topRoofLayerDisp : 0), 0]}>
               {/* South parapet */}
               <mesh position={[0, 0, model.geometry.width / 2]}>
                 <boxGeometry args={[model.geometry.length + wallThickness * 2, 0.20, 0.14]} />
@@ -1579,9 +1916,93 @@ export function ShelterMesh({
             </group>
           )}
 
+          {/* Exploded Flat Roof Construction Layers & Unified CAD Assembly Callout */}
+          {isRevealingRoofLayers ? (
+            <group>
+              {roofLayers.map((layer, index) => {
+                const mat = materialAppearance(layer.materialId, layer.name ?? "");
+                const layerDepth = Math.max(0.024, Math.min(layer.thickness * 1.5, 0.10));
+                const layerDisp = (0.20 + (roofLayers.length - 1 - index) * 0.26) * explode;
+                const layerEdgeX = roofSpan / 2;
+                const stackX = roofSpan / 2 + 0.52;
+                const stackY = avgRoofDisp + 0.20;
+
+                return (
+                  <group key={`flat-roof-layer-${layer.materialId}-${index}`}>
+                    <mesh
+                      position={[0, layerDisp, 0]}
+                      castShadow={!isXRay}
+                      receiveShadow
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onSelect({ type: "roof" });
+                      }}
+                    >
+                      <boxGeometry args={[roofSpan, layerDepth, model.geometry.width + overhang * 2]} />
+                      <meshStandardMaterial
+                        color={mat.color}
+                        map={isModelVisual ? roofLayerTextures[index] : null}
+                        roughness={mat.roughness}
+                        metalness={mat.metalness}
+                      />
+                    </mesh>
+
+                    {/* CAD Leader Line */}
+                    <Line
+                      points={[
+                        [layerEdgeX, layerDisp, 0],
+                        [stackX, stackY, 0],
+                      ]}
+                      color={mat.color}
+                      lineWidth={1.5}
+                      transparent
+                      opacity={0.8}
+                    />
+                  </group>
+                );
+              })}
+
+              {/* Unified CAD Roof Assembly Callout Stack */}
+              {!suppressHtmlLabels && (
+                <Html
+                  position={[roofSpan / 2 + 0.55, avgRoofDisp + 0.20, 0]}
+                  distanceFactor={14}
+                  zIndexRange={[15, 0]}
+                  style={{ pointerEvents: "none" }}
+                >
+                  <div className="cad-assembly-stack cad-roof-stack">
+                    <div className="cad-stack-header">
+                      <strong>{model.envelope.roof.name || "FLAT ROOF SYSTEM"}</strong>
+                      <small>{roofLayers.length} Layers · U: {modelMetrics.uRoof.toFixed(2)} W/m²K</small>
+                    </div>
+                    <div className="cad-stack-body">
+                      {roofLayers.map((layer, index) => {
+                        const mat = materialAppearance(layer.materialId, layer.name ?? "");
+                        const desc = layerDescription(layer.materialId, layer.name ?? "");
+                        return (
+                          <div
+                            key={`flat-callout-${layer.materialId}-${index}`}
+                            className="cad-stack-row"
+                            style={{ "--layer-color": mat.color } as React.CSSProperties}
+                            title={desc ? `${layer.name ?? layer.materialId}: ${desc}` : (layer.name ?? layer.materialId)}
+                          >
+                            <span className="cad-stack-idx">{index + 1}</span>
+                            <span className="cad-stack-dot" style={{ backgroundColor: mat.color }} />
+                            <span className="cad-stack-name">{layer.name ?? layer.materialId}</span>
+                            <span className="cad-stack-thick">{Math.round(layer.thickness * 1000)} mm</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </Html>
+              )}
+            </group>
+          ) : null}
+
           {/* Flat Roof: 30° South-Tilted Ballast-Mounted Photovoltaic Solar Array */}
           <group
-            position={[0, roofThickness / 2 + 0.22, model.geometry.width * 0.08]}
+            position={[0, roofThickness / 2 + 0.22 + (isRevealingRoofLayers ? topRoofLayerDisp : 0), model.geometry.width * 0.08]}
             rotation={[THREE.MathUtils.degToRad(30), 0, 0]}
           >
             {/* Concrete Ballast Blocks & Aluminum Racking Legs */}
@@ -1611,11 +2032,12 @@ export function ShelterMesh({
               }}
               onPointerOut={() => setHoveredRoofFeature(null)}
             />
-            {hoveredRoofFeature === "solar" && (
+            {hoveredRoofFeature === "solar" && !suppressHtmlLabels && (
               <Html
                 position={[0, 0.45, 0]}
                 center
                 distanceFactor={14}
+                zIndexRange={[15, 0]}
                 style={{ pointerEvents: "none" }}
               >
                 <div className="cad-minimal-tooltip cad-solar-callout" style={{ minWidth: 195 }}>
@@ -1632,7 +2054,7 @@ export function ShelterMesh({
           </group>
 
           {/* Alpine Class-A Insulated Chimney Flue on Flat Roof Deck */}
-          <group position={[model.geometry.length * 0.28, roofThickness / 2, -model.geometry.width * 0.26]}>
+          <group position={[model.geometry.length * 0.28, roofThickness / 2 + (isRevealingRoofLayers ? topRoofLayerDisp : 0), -model.geometry.width * 0.26]}>
             <ChimneyFlue
               flueHeight={1.42}
               isXRay={isXRay}
@@ -1642,11 +2064,12 @@ export function ShelterMesh({
               }}
               onPointerOut={() => setHoveredRoofFeature(null)}
             />
-            {hoveredRoofFeature === "chimney" && (
+            {hoveredRoofFeature === "chimney" && !suppressHtmlLabels && (
               <Html
                 position={[0, 1.42 + 0.35, 0]}
                 center
                 distanceFactor={14}
+                zIndexRange={[15, 0]}
                 style={{ pointerEvents: "none" }}
               >
                 <div className="cad-minimal-tooltip" style={{ minWidth: 190, borderColor: "#f97316" }}>
@@ -1781,6 +2204,22 @@ export function ShelterMesh({
                   roughness={0.15}
                   wireframe={settings.wireframe}
                 />
+              ) : isHeatFlow ? (
+                <meshStandardMaterial
+                  color={
+                    (hourlyStep ? hourlyStep.qWindowNetFlux : (modelMetrics.qWindowNetFlux ?? 280)) >= 0
+                      ? "#f59e0b"
+                      : "#0284c7"
+                  }
+                  emissive={
+                    (hourlyStep ? hourlyStep.qWindowNetFlux : (modelMetrics.qWindowNetFlux ?? 280)) >= 0
+                      ? "#ea580c"
+                      : "#1d4ed8"
+                  }
+                  emissiveIntensity={0.72}
+                  roughness={0.2}
+                  wireframe={settings.wireframe}
+                />
               ) : isXRay ? (
                 <meshPhysicalMaterial
                   color="#bae6fd"
@@ -1835,8 +2274,8 @@ export function ShelterMesh({
             ) : null}
 
             {/* Minimal In-Situ Tooltip on Hover only (when not selected) */}
-            {isHovered && !isSelected ? (
-              <Html position={[0, wHeight / 2 + 0.35, wDepth / 2 + 0.05]} center distanceFactor={12}>
+            {isHovered && !isSelected && !suppressHtmlLabels ? (
+              <Html position={[0, wHeight / 2 + 0.35, wDepth / 2 + 0.05]} center distanceFactor={12} zIndexRange={[15, 0]}>
                 <div className="cad-minimal-tooltip">
                   <strong>Aperture #{index + 1} · {source?.wall.toUpperCase()}</strong>
                   <span>
@@ -1924,10 +2363,18 @@ export function ShelterMesh({
                     ? palette.solar
                     : isThermal
                     ? thermalPalette.eastNeutral
+                    : isHeatFlow
+                    ? "#1e40af"
                     : palette.charcoal
                 }
-                emissive={!isXRay && isThermal ? thermalPalette.eastNeutral : "#000000"}
-                emissiveIntensity={!isXRay && isThermal ? 0.35 : 0}
+                emissive={
+                  !isXRay && isThermal
+                    ? thermalPalette.eastNeutral
+                    : !isXRay && isHeatFlow
+                    ? "#1d4ed8"
+                    : "#000000"
+                }
+                emissiveIntensity={!isXRay && (isThermal || isHeatFlow) ? 0.35 : 0}
                 roughness={0.55}
                 metalness={0.1}
                 transparent={isXRay}
@@ -1966,8 +2413,8 @@ export function ShelterMesh({
             </mesh>
 
             {/* Minimal In-Situ Tooltip on Hover only (when not selected) */}
-            {isHovered && !isSelected ? (
-              <Html position={[0, dHeight / 2 + 0.35, dDepth / 2 + 0.05]} center distanceFactor={12}>
+            {isHovered && !isSelected && !suppressHtmlLabels ? (
+              <Html position={[0, dHeight / 2 + 0.35, dDepth / 2 + 0.05]} center distanceFactor={12} zIndexRange={[15, 0]}>
                 <div className="cad-minimal-tooltip">
                   <strong>Door #{index + 1} · {source?.wall.toUpperCase()}</strong>
                   <span>{dWidth.toFixed(2)} × {dHeight.toFixed(2)} m · Ingress</span>
@@ -2024,6 +2471,7 @@ export function ShelterMesh({
         exploded={settings.explodedView}
         sunHour={sunHour}
         solarDate={solarDate}
+        suppressHtmlLabels={suppressHtmlLabels}
       />
     </group>
   );

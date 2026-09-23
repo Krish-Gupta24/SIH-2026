@@ -26,6 +26,7 @@ interface Props {
   exploded?: boolean;
   sunHour?: number;
   solarDate?: string;
+  suppressHtmlLabels?: boolean;
 }
 
 /* ─────────────────────────────────────────────────────────────
@@ -224,6 +225,7 @@ function ThermalAnnotations({
           center
           distanceFactor={18}
           occlude
+          zIndexRange={[15, 0]}
           style={{ pointerEvents: "none" }}
         >
           <PillCallout
@@ -259,6 +261,7 @@ function ThermalAnnotations({
             center
             distanceFactor={18}
             occlude
+            zIndexRange={[15, 0]}
             style={{ pointerEvents: "none" }}
           >
             <PillCallout
@@ -288,6 +291,7 @@ function ThermalAnnotations({
           center
           distanceFactor={18}
           occlude
+          zIndexRange={[15, 0]}
           style={{ pointerEvents: "none" }}
         >
           <PillCallout
@@ -316,6 +320,7 @@ function ThermalAnnotations({
           center
           distanceFactor={18}
           occlude
+          zIndexRange={[15, 0]}
           style={{ pointerEvents: "none" }}
         >
           <PillCallout
@@ -339,10 +344,12 @@ function HeatFlowAnnotations({
   model,
   geom,
   metrics,
+  hourlyStep,
 }: {
   model: ShelterModel;
   geom: Shelter3DRepresentation;
   metrics: DynamicThermalCalculations;
+  hourlyStep?: HourlyThermalStep | null;
 }) {
   const L = model.geometry.length;
   const W = model.geometry.width;
@@ -350,9 +357,44 @@ function HeatFlowAnnotations({
   const halfL = L / 2;
   const halfW = W / 2;
 
+  const southArea = L * H;
+  const northArea = L * H;
+  const eastArea = W * H;
+  const westArea = W * H;
+  const roofSlopeRad = ((model.geometry.roofAngle || 15) * Math.PI) / 180;
+  const roofArea = L * W * (1.0 / Math.cos(roofSlopeRad));
+  const floorArea = L * W;
+
+  // Face heat fluxes
+  const qSouth = metrics.qSouthFlux;
+  const qNorth = metrics.qNorthFlux;
+  const qEast = metrics.qEastFlux ?? -Math.round(metrics.uEast * metrics.deltaT);
+  const qWest = metrics.qWestFlux ?? -Math.round(metrics.uWest * metrics.deltaT);
+  const qRoof = metrics.qRoofFlux ?? -Math.round(metrics.uRoof * metrics.deltaT);
+  const qFloor = metrics.qFloorFlux ?? -18;
+
+  const isSouthGain = qSouth >= 0;
+  const isEastGain = qEast >= 0;
+  const isWestGain = qWest >= 0;
+  const isRoofGain = qRoof >= 0;
+
+  const southWatts = Math.round(qSouth * southArea);
+  const northWatts = Math.round(qNorth * northArea);
+  const eastWatts = Math.round(qEast * eastArea);
+  const westWatts = Math.round(qWest * westArea);
+  const roofWatts = Math.round(qRoof * roofArea);
+  const floorWatts = Math.round(qFloor * floorArea);
+
+  const roofApexY =
+    model.geometry.roofType === "Gable"
+      ? H + 0.5 * W * Math.tan(roofSlopeRad)
+      : model.geometry.roofType === "Shed"
+      ? H + W * Math.tan(roofSlopeRad)
+      : H;
+
   return (
     <group>
-      {/* ── 4 Structural Corner Thermal Bridge Nodes ── */}
+      {/* ── 1. Structural Corner Thermal Bridge Nodes (ISO 10211) ── */}
       {(
         [
           [-halfL, H, halfW],
@@ -363,130 +405,413 @@ function HeatFlowAnnotations({
       ).map((corner, idx) => (
         <group key={`bridge-${idx}`}>
           <mesh position={[corner[0] * 0.98, corner[1], corner[2] * 0.98]}>
-            <sphereGeometry args={[0.07, 14, 14]} />
-            <meshBasicMaterial color="#ef4444" />
+            <sphereGeometry args={[0.08, 16, 16]} />
+            <meshStandardMaterial
+              color="#ef4444"
+              emissive="#ef4444"
+              emissiveIntensity={0.8}
+            />
+          </mesh>
+          {/* Subtle thermal bridging dissipation ring */}
+          <mesh
+            position={[corner[0] * 0.98, corner[1] - 0.2, corner[2] * 0.98]}
+            rotation={[Math.PI / 2, 0, 0]}
+          >
+            <ringGeometry args={[0.09, 0.18, 20]} />
+            <meshBasicMaterial color="#ef4444" transparent opacity={0.35} side={THREE.DoubleSide} />
           </mesh>
         </group>
       ))}
 
-      {/* One single elegant Thermal Bridge Callout on top corner */}
+      {/* Top Corner Thermal Bridge Callout */}
       <group position={[halfL, H, halfW]}>
         <Line
           points={[
             [0, 0, 0],
-            [0.3, 0.35, 0.3],
+            [0.35, 0.38, 0.35],
           ]}
           color="#ef4444"
-          lineWidth={1.5}
+          lineWidth={1.6}
           transparent
-          opacity={0.7}
+          opacity={0.8}
         />
         <Html
-          position={[0.35, 0.42, 0.35]}
+          position={[0.42, 0.45, 0.42]}
           center
-          distanceFactor={16}
+          distanceFactor={15}
           occlude
+          zIndexRange={[15, 0]}
           style={{ pointerEvents: "none" }}
         >
           <PillCallout
             value={`Ψ ${metrics.psiBridge.toFixed(2)}`}
-            label="Thermal Bridge"
-            sub="W/(m·K)"
+            label="Corner Thermal Bridge"
+            sub="ISO 10211 Linear Ψ W/(m·K)"
             status={metrics.psiBridge > 0.2 ? "hot" : "warm"}
           />
         </Html>
       </group>
 
-      {/* ── South Wall Heat Gain Conduction Arrows ── */}
-      {[-halfL * 0.45, 0, halfL * 0.45].map((xOff, i) => (
-        <group key={`south-flow-${i}`}>
-          <Line
-            points={[
-              [xOff, H * 0.5, halfW + 0.45],
-              [xOff, H * 0.5, halfW - 0.1],
-            ]}
-            color="#f97316"
-            lineWidth={2.8}
-            transparent
-            opacity={0.75}
-          />
-          <mesh position={[xOff, H * 0.5, halfW - 0.1]} rotation={[Math.PI / 2, 0, 0]}>
-            <coneGeometry args={[0.065, 0.16, 10]} />
-            <meshBasicMaterial color="#f97316" transparent opacity={0.85} />
-          </mesh>
-        </group>
-      ))}
+      {/* ── 2. South Wall Conduction & Sol-Air Flux Vectors ── */}
+      {[-halfL * 0.42, 0, halfL * 0.42].map((xOff, i) => {
+        const arrowStart: [number, number, number] = isSouthGain
+          ? [xOff, H * 0.5, halfW + 0.48]
+          : [xOff, H * 0.5, halfW - 0.08];
+        const arrowEnd: [number, number, number] = isSouthGain
+          ? [xOff, H * 0.5, halfW - 0.08]
+          : [xOff, H * 0.5, halfW + 0.48];
+        const coneRot: [number, number, number] = isSouthGain
+          ? [Math.PI / 2, 0, 0]
+          : [-Math.PI / 2, 0, 0];
+        const flowColor = isSouthGain ? "#f97316" : "#2563eb";
 
-      {/* South Flow Callout */}
+        return (
+          <group key={`south-flow-${i}`}>
+            <Line
+              points={[arrowStart, arrowEnd]}
+              color={flowColor}
+              lineWidth={3}
+              transparent
+              opacity={0.85}
+            />
+            <mesh position={arrowEnd} rotation={coneRot}>
+              <coneGeometry args={[0.065, 0.16, 12]} />
+              <meshBasicMaterial color={flowColor} />
+            </mesh>
+          </group>
+        );
+      })}
+
+      {/* South Wall Heat Flux Callout */}
       <Html
-        position={[0, H * 0.82, halfW + 0.4]}
+        position={[0, H * 0.85, halfW + 0.42]}
         center
-        distanceFactor={16}
+        distanceFactor={15}
         occlude
+        zIndexRange={[15, 0]}
         style={{ pointerEvents: "none" }}
       >
         <PillCallout
-          value={`+${metrics.iSouthIncident}`}
-          label="South Solar Gain →"
-          sub="W/m² incident"
-          status="hot"
+          value={`${isSouthGain ? "+" : ""}${qSouth} W/m²`}
+          label={isSouthGain ? "South Sol-Air Gain →" : "← South Heat Loss"}
+          sub={`${isSouthGain ? "+" : ""}${southWatts} W · U ${metrics.uSouth.toFixed(2)}`}
+          status={isSouthGain ? "hot" : "cold"}
         />
       </Html>
 
-      {/* ── North Wall Heat Loss Streamlines ── */}
-      {[-halfL * 0.45, 0, halfL * 0.45].map((xOff, i) => (
+      {/* ── 3. North Wall Conduction Heat Loss Vectors ── */}
+      {[-halfL * 0.42, 0, halfL * 0.42].map((xOff, i) => (
         <group key={`north-flow-${i}`}>
           <Line
             points={[
-              [xOff, H * 0.5, -halfW + 0.1],
-              [xOff, H * 0.5, -halfW - 0.45],
+              [xOff, H * 0.5, -halfW + 0.08],
+              [xOff, H * 0.5, -halfW - 0.48],
             ]}
-            color="#3b82f6"
-            lineWidth={2.8}
+            color="#2563eb"
+            lineWidth={3}
             transparent
-            opacity={0.75}
+            opacity={0.85}
           />
-          <mesh position={[xOff, H * 0.5, -halfW - 0.45]} rotation={[-Math.PI / 2, 0, 0]}>
-            <coneGeometry args={[0.065, 0.16, 10]} />
-            <meshBasicMaterial color="#3b82f6" transparent opacity={0.85} />
+          <mesh position={[xOff, H * 0.5, -halfW - 0.48]} rotation={[-Math.PI / 2, 0, 0]}>
+            <coneGeometry args={[0.065, 0.16, 12]} />
+            <meshBasicMaterial color="#2563eb" />
           </mesh>
         </group>
       ))}
 
-      {/* North Loss Callout — occluded from south */}
+      {/* North Wall Heat Loss Callout */}
       <Html
-        position={[0, H * 0.35, -halfW - 0.4]}
+        position={[0, H * 0.35, -halfW - 0.42]}
         center
-        distanceFactor={16}
+        distanceFactor={15}
         occlude
+        zIndexRange={[15, 0]}
         style={{ pointerEvents: "none" }}
       >
         <PillCallout
-          value={`${metrics.qNorthFlux}`}
-          label="← North Heat Loss"
-          sub={`U ${metrics.uNorth.toFixed(2)} W/m²K`}
+          value={`${qNorth} W/m²`}
+          label="← North Conduction Loss"
+          sub={`${northWatts} W · U ${metrics.uNorth.toFixed(2)} W/m²K`}
           status="cold"
         />
       </Html>
 
-      {/* ── Internal Convection Loop ── */}
-      <Line
-        points={[
-          [0, 0.3, halfW * 0.6],
-          [0, H * 0.85, halfW * 0.6],
-          [0, H * 0.85, -halfW * 0.6],
-          [0, 0.3, -halfW * 0.6],
-        ]}
-        color="#14b8a6"
-        lineWidth={2}
-        transparent
-        opacity={0.5}
-        dashed
-        dashSize={0.25}
-        gapSize={0.15}
-      />
+      {/* ── 4. East Wall Flux Vectors ── */}
+      {[-halfW * 0.35, halfW * 0.35].map((zOff, i) => {
+        const arrowStart: [number, number, number] = isEastGain
+          ? [halfL + 0.45, H * 0.5, zOff]
+          : [halfL - 0.08, H * 0.5, zOff];
+        const arrowEnd: [number, number, number] = isEastGain
+          ? [halfL - 0.08, H * 0.5, zOff]
+          : [halfL + 0.45, H * 0.5, zOff];
+        const coneRot: [number, number, number] = isEastGain
+          ? [0, 0, -Math.PI / 2]
+          : [0, 0, Math.PI / 2];
+        const flowColor = isEastGain ? "#f59e0b" : "#3b82f6";
 
-      {/* ── Cold Infiltration at Entry Doors ── */}
+        return (
+          <group key={`east-flow-${i}`}>
+            <Line
+              points={[arrowStart, arrowEnd]}
+              color={flowColor}
+              lineWidth={2.8}
+              transparent
+              opacity={0.8}
+            />
+            <mesh position={arrowEnd} rotation={coneRot}>
+              <coneGeometry args={[0.06, 0.15, 10]} />
+              <meshBasicMaterial color={flowColor} />
+            </mesh>
+          </group>
+        );
+      })}
+
+      {/* East Wall Callout */}
+      <Html
+        position={[halfL + 0.42, H * 0.72, 0]}
+        center
+        distanceFactor={15}
+        occlude
+        zIndexRange={[15, 0]}
+        style={{ pointerEvents: "none" }}
+      >
+        <PillCallout
+          value={`${isEastGain ? "+" : ""}${qEast} W/m²`}
+          label={isEastGain ? "East Morning Solar →" : "← East Conduction Loss"}
+          sub={`${isEastGain ? "+" : ""}${eastWatts} W · U ${metrics.uEast.toFixed(2)}`}
+          status={isEastGain ? "warm" : "cold"}
+        />
+      </Html>
+
+      {/* ── 5. West Wall Flux Vectors ── */}
+      {[-halfW * 0.35, halfW * 0.35].map((zOff, i) => {
+        const arrowStart: [number, number, number] = isWestGain
+          ? [-halfL - 0.45, H * 0.5, zOff]
+          : [-halfL + 0.08, H * 0.5, zOff];
+        const arrowEnd: [number, number, number] = isWestGain
+          ? [-halfL + 0.08, H * 0.5, zOff]
+          : [-halfL - 0.45, H * 0.5, zOff];
+        const coneRot: [number, number, number] = isWestGain
+          ? [0, 0, Math.PI / 2]
+          : [0, 0, -Math.PI / 2];
+        const flowColor = isWestGain ? "#f59e0b" : "#3b82f6";
+
+        return (
+          <group key={`west-flow-${i}`}>
+            <Line
+              points={[arrowStart, arrowEnd]}
+              color={flowColor}
+              lineWidth={2.8}
+              transparent
+              opacity={0.8}
+            />
+            <mesh position={arrowEnd} rotation={coneRot}>
+              <coneGeometry args={[0.06, 0.15, 10]} />
+              <meshBasicMaterial color={flowColor} />
+            </mesh>
+          </group>
+        );
+      })}
+
+      {/* West Wall Callout */}
+      <Html
+        position={[-halfL - 0.42, H * 0.72, 0]}
+        center
+        distanceFactor={15}
+        occlude
+        zIndexRange={[15, 0]}
+        style={{ pointerEvents: "none" }}
+      >
+        <PillCallout
+          value={`${isWestGain ? "+" : ""}${qWest} W/m²`}
+          label={isWestGain ? "West Afternoon Solar →" : "← West Conduction Loss"}
+          sub={`${isWestGain ? "+" : ""}${westWatts} W · U ${metrics.uWest.toFixed(2)}`}
+          status={isWestGain ? "warm" : "cold"}
+        />
+      </Html>
+
+      {/* ── 6. Roof Conduction & Sky Radiative Flux Vectors ── */}
+      {[-halfL * 0.35, 0, halfL * 0.35].map((xOff, i) => {
+        const roofBaseY = H + 0.12;
+        const arrowStart: [number, number, number] = isRoofGain
+          ? [xOff, roofBaseY + 0.52, 0]
+          : [xOff, roofBaseY, 0];
+        const arrowEnd: [number, number, number] = isRoofGain
+          ? [xOff, roofBaseY, 0]
+          : [xOff, roofBaseY + 0.52, 0];
+        const coneRot: [number, number, number] = isRoofGain
+          ? [Math.PI, 0, 0]
+          : [0, 0, 0];
+        const flowColor = isRoofGain ? "#f97316" : "#818cf8";
+
+        return (
+          <group key={`roof-flow-${i}`}>
+            <Line
+              points={[arrowStart, arrowEnd]}
+              color={flowColor}
+              lineWidth={2.8}
+              transparent
+              opacity={0.85}
+            />
+            <mesh position={arrowEnd} rotation={coneRot}>
+              <coneGeometry args={[0.065, 0.16, 12]} />
+              <meshBasicMaterial color={flowColor} />
+            </mesh>
+          </group>
+        );
+      })}
+
+      {/* Roof Heat Loss Callout */}
+      <Html
+        position={[0, roofApexY + 0.65, 0]}
+        center
+        distanceFactor={15}
+        occlude
+        zIndexRange={[15, 0]}
+        style={{ pointerEvents: "none" }}
+      >
+        <PillCallout
+          value={`${isRoofGain ? "+" : ""}${qRoof} W/m²`}
+          label={isRoofGain ? "↓ Roof Solar Inward Flux" : "↑ Roof Conduction & Sky Loss"}
+          sub={`${isRoofGain ? "+" : ""}${roofWatts} W · U ${metrics.uRoof.toFixed(2)} W/m²K`}
+          status={isRoofGain ? "hot" : "cold"}
+        />
+      </Html>
+
+      {/* ── 7. Ground Foundation Coupling Loss (ISO 13370) ── */}
+      {[-halfL * 0.35, halfL * 0.35].map((xOff, i) => (
+        <group key={`floor-flow-${i}`}>
+          <Line
+            points={[
+              [xOff, 0.05, 0],
+              [xOff, -0.42, 0],
+            ]}
+            color="#0284c7"
+            lineWidth={2.5}
+            transparent
+            opacity={0.75}
+          />
+          <mesh position={[xOff, -0.42, 0]} rotation={[Math.PI, 0, 0]}>
+            <coneGeometry args={[0.055, 0.14, 10]} />
+            <meshBasicMaterial color="#0284c7" />
+          </mesh>
+        </group>
+      ))}
+
+      <Html
+        position={[0, -0.35, halfW * 0.7]}
+        center
+        distanceFactor={15}
+        occlude
+        zIndexRange={[15, 0]}
+        style={{ pointerEvents: "none" }}
+      >
+        <PillCallout
+          value={`${qFloor} W/m²`}
+          label="↓ Ground Contact Loss"
+          sub={`${floorWatts} W · ISO 13370`}
+          status="cold"
+        />
+      </Html>
+
+      {/* ── 8. Window Glazing Solar Harvest & Conductive Loss Balance ── */}
+      {geom.windows.map((win) => {
+        const qWinSolar = metrics.qWindowSolarFlux ?? 280;
+        const qWinCond = metrics.qWindowCondFlux ?? -45;
+        const qWinNet = metrics.qWindowNetFlux ?? (qWinSolar + qWinCond);
+        const [wX, wY, wZ] = win.worldPosition;
+        const [normX, , normZ] = win.normal;
+
+        return (
+          <group key={`win-heat-flow-${win.id}`}>
+            {/* Entering Solar Flux Vector */}
+            {qWinSolar > 0 && (
+              <group>
+                <Line
+                  points={[
+                    [wX + normX * 0.45, wY, wZ + normZ * 0.45],
+                    [wX - normX * 0.15, wY, wZ - normZ * 0.15],
+                  ]}
+                  color="#fbbf24"
+                  lineWidth={3}
+                  transparent
+                  opacity={0.88}
+                />
+                <mesh
+                  position={[wX - normX * 0.15, wY, wZ - normZ * 0.15]}
+                  rotation={[0, Math.atan2(-normX, -normZ), 0]}
+                >
+                  <coneGeometry args={[0.055, 0.14, 10]} />
+                  <meshBasicMaterial color="#fbbf24" />
+                </mesh>
+              </group>
+            )}
+
+            {/* Exiting Conductive Heat Loss Vector */}
+            <Line
+              points={[
+                [wX - normX * 0.05, wY - 0.22, wZ - normZ * 0.05],
+                [wX + normX * 0.42, wY - 0.22, wZ + normZ * 0.42],
+              ]}
+              color="#38bdf8"
+              lineWidth={2.2}
+              transparent
+              opacity={0.8}
+            />
+            <mesh
+              position={[wX + normX * 0.42, wY - 0.22, wZ + normZ * 0.42]}
+              rotation={[0, Math.atan2(normX, normZ), 0]}
+            >
+              <coneGeometry args={[0.045, 0.12, 10]} />
+              <meshBasicMaterial color="#38bdf8" />
+            </mesh>
+
+            {/* Window Net Energy Balance Callout */}
+            <Html
+              position={[wX + normX * 0.45, wY + 0.35, wZ + normZ * 0.45]}
+              center
+              distanceFactor={14}
+              occlude
+              zIndexRange={[15, 0]}
+              style={{ pointerEvents: "none" }}
+            >
+              <PillCallout
+                value={`Net ${qWinNet >= 0 ? "+" : ""}${qWinNet} W/m²`}
+                label={qWinNet >= 0 ? "Aperture Net Solar Gain" : "Aperture Net Heat Loss"}
+                sub={`+${qWinSolar} solar · ${qWinCond} cond`}
+                status={qWinNet >= 0 ? "solar" : "cold"}
+              />
+            </Html>
+          </group>
+        );
+      })}
+
+      {/* ── 9. Internal Natural Convective Circulation Loop ── */}
+      <group>
+        <Line
+          points={[
+            [0, 0.35, halfW * 0.65],
+            [0, H * 0.88, halfW * 0.65],
+            [0, H * 0.88, -halfW * 0.65],
+            [0, 0.35, -halfW * 0.65],
+            [0, 0.35, halfW * 0.65],
+          ]}
+          color="#14b8a6"
+          lineWidth={2.2}
+          transparent
+          opacity={0.65}
+          dashed
+          dashSize={0.25}
+          gapSize={0.12}
+        />
+        {/* Convective loop apex indicators */}
+        <mesh position={[0, H * 0.88, 0]} rotation={[0, 0, Math.PI / 2]}>
+          <coneGeometry args={[0.045, 0.12, 8]} />
+          <meshBasicMaterial color="#14b8a6" transparent opacity={0.7} />
+        </mesh>
+      </group>
+
+      {/* ── 10. Cold Air Infiltration at Entry Doors ── */}
       {geom.doors.map((door) => (
         <group key={`draft-${door.id}`}>
           <Line
@@ -495,21 +820,22 @@ function HeatFlowAnnotations({
               [door.worldPosition[0], 0.05, door.worldPosition[2]],
             ]}
             color="#38bdf8"
-            lineWidth={2.5}
+            lineWidth={2.8}
             transparent
-            opacity={0.8}
+            opacity={0.85}
           />
           <Html
-            position={[door.worldPosition[0] + 0.35, 0.3, door.worldPosition[2]]}
+            position={[door.worldPosition[0] + 0.35, 0.32, door.worldPosition[2]]}
             center
-            distanceFactor={16}
+            distanceFactor={15}
             occlude
+            zIndexRange={[15, 0]}
             style={{ pointerEvents: "none" }}
           >
             <PillCallout
               value={`${metrics.infiltrationACH.toFixed(2)} ACH`}
-              label="Door Infiltration"
-              sub={`-${metrics.qInfiltrationLossW} W`}
+              label="Door Infiltration Draft"
+              sub={`-${metrics.qInfiltrationLossW} W sensible`}
               status="cold"
             />
           </Html>
@@ -752,6 +1078,7 @@ function SolarAnnotations({
               position={[surfacePoints[1][0], surfacePoints[1][1] + 0.35, surfacePoints[1][2]]}
               center
               distanceFactor={18}
+              zIndexRange={[15, 0]}
               style={{ pointerEvents: "none" }}
             >
               <PillCallout
@@ -830,6 +1157,7 @@ function SolarAnnotations({
                 center
                 distanceFactor={16}
                 occlude
+                zIndexRange={[15, 0]}
                 style={{ pointerEvents: "none" }}
               >
                 <PillCallout
@@ -887,6 +1215,7 @@ export function ThermalRadiationOverlay({
   exploded = false,
   sunHour = 12,
   solarDate = "2026-06-21",
+  suppressHtmlLabels = false,
 }: Props) {
   const modelMetrics = useMemo(() => calculateThermalMetrics(model), [model]);
 
@@ -905,16 +1234,23 @@ export function ThermalRadiationOverlay({
       tGlazing: hourlyStep.tGlazing,
       qSouthFlux: hourlyStep.qSouthFlux,
       qNorthFlux: hourlyStep.qNorthFlux,
+      qEastFlux: hourlyStep.qEastFlux,
+      qWestFlux: hourlyStep.qWestFlux,
+      qRoofFlux: hourlyStep.qRoofFlux,
+      qFloorFlux: hourlyStep.qFloorFlux,
+      qWindowNetFlux: hourlyStep.qWindowNetFlux,
+      qWindowSolarFlux: hourlyStep.qWindowSolarFlux,
+      qWindowCondFlux: hourlyStep.qWindowCondFlux,
       qWindowTotalW: hourlyStep.solarGainW,
       psiBridge: hourlyStep.psiBridge,
     };
   }, [modelMetrics, hourlyStep]);
 
-  // Suppress all fixed thermal badges and flux lines during exploded assembly view to prevent label overlap
-  if (exploded) return null;
+  // Suppress all fixed thermal badges and flux lines during exploded assembly view or when modal is open
+  if (exploded || suppressHtmlLabels) return null;
 
   if (mode === "thermal") return <ThermalAnnotations model={model} geom={geom} metrics={effectiveMetrics} />;
-  if (mode === "heat-flow") return <HeatFlowAnnotations model={model} geom={geom} metrics={effectiveMetrics} />;
+  if (mode === "heat-flow") return <HeatFlowAnnotations model={model} geom={geom} metrics={effectiveMetrics} hourlyStep={hourlyStep} />;
   if (mode === "solar") {
     return (
       <SolarAnnotations

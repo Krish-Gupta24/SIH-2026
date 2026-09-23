@@ -30,7 +30,7 @@ export function Dialog({
     <div
       role="dialog"
       aria-modal="true"
-      className="fixed inset-0 z-[99999] flex items-center justify-center p-4 isolate"
+      className="fixed inset-0 z-[999998] flex items-center justify-center p-4 isolate"
     >
       {/* Backdrop */}
       <div
@@ -40,7 +40,7 @@ export function Dialog({
       {/* Content Container */}
       <div
         className={cn(
-          "relative z-[100000] w-full max-w-lg rounded-2xl border border-border bg-card p-6 shadow-2xl animate-in zoom-in-[0.98] duration-200 text-card-foreground",
+          "relative z-[999999] w-full max-w-lg rounded-2xl border border-border bg-card p-6 shadow-2xl animate-in zoom-in-[0.98] duration-200 text-card-foreground",
           contentClassName
         )}
       >

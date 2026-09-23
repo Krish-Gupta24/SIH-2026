@@ -30,6 +30,7 @@ import {
   Mountain,
   UnfoldVertical,
   Wind,
+  Moon,
   Maximize2,
   Minimize2,
 } from "lucide-react";
@@ -500,80 +501,92 @@ export function Shelter3DDesigner({ model, step, onStepChange, onUpdate, onSimul
             </div>
           )}
 
-        {(settings.visualization === "model" && settings.showEnvironment) || settings.visualization === "solar" ||
-        (activeSim &&
-          hourlyStep &&
-          (settings.visualization === "thermal" ||
-            settings.visualization === "heat-flow")) ? (
+        {!materialsOpen && settings.visualization !== "model" ? (
           timelineMinimized ? (
             <button
               type="button"
               onClick={() => setTimelineMinimized(false)}
               className="cad-timeline-minimized-pill"
-              title="Expand 24h Solar Diurnal Timeline"
+              title="Expand 24h Diurnal Timeline"
             >
-              <Sun className="size-3.5 text-amber-400" />
-              <span>{hourlyStep?.timeLabel ?? formattedSolarTime} · Solar Timeline</span>
-              <Maximize2 className="size-3 text-slate-400" />
+              {sunTime < 5.5 || sunTime > 20.5 ? (
+                <Moon className="size-3.5 text-indigo-400" />
+              ) : (
+                <Sun className="size-3.5 text-amber-400" />
+              )}
+              <span>{hourlyStep?.timeLabel ?? formattedSolarTime} · 24h Timeline</span>
+              <Maximize2 className="size-3 text-slate-400 ml-0.5" />
             </button>
           ) : (
             <div
               className="cad-timeline-scrubber"
               role="region"
-              aria-label="24-Hour Diurnal Thermal Timeline"
+              aria-label="24-Hour Diurnal Timeline"
             >
-            <div className="cad-timeline-row-top">
-              <div className="cad-timeline-controls">
-                <button
-                  type="button"
-                  className="cad-timeline-btn"
-                  aria-label="Previous hour"
-                  title="Step back 1 hour"
-                  onClick={() => setSolarTime(sunTime - 1)}
-                >
-                  <SkipBack className="size-3.5" />
-                </button>
-                <button
-                  type="button"
-                  className={`cad-timeline-btn ${isPlaying ? "cad-timeline-btn-play" : ""}`}
-                  aria-label={isPlaying ? "Pause timeline playback" : "Play 24h diurnal cycle"}
-                  title={isPlaying ? "Pause daylight playback" : "Play a smooth 24-hour daylight cycle"}
-                  onClick={() => setIsPlaying((p) => !p)}
-                >
-                  {isPlaying ? (
-                    <Pause className="size-3.5" />
-                  ) : (
-                    <Play className="size-3.5 ml-0.5" />
-                  )}
-                </button>
-                <button
-                  type="button"
-                  className="cad-timeline-btn"
-                  aria-label="Next hour"
-                  title="Step forward 1 hour"
-                  onClick={() => setSolarTime(sunTime + 1)}
-                >
-                  <SkipForward className="size-3.5" />
-                </button>
-                <span className="cad-timeline-chip font-bold text-amber-600 dark:text-amber-400">
-                  <Clock className="size-3" />
+              {/* 1. Play / Pause Control */}
+              <button
+                type="button"
+                className={`cad-timeline-btn ${isPlaying ? "cad-timeline-btn-play" : ""}`}
+                aria-label={isPlaying ? "Pause timeline playback" : "Play 24h diurnal cycle"}
+                title={isPlaying ? "Pause daylight playback" : "Play smooth 24-hour cycle"}
+                onClick={() => setIsPlaying((p) => !p)}
+              >
+                {isPlaying ? <Pause className="size-3" /> : <Play className="size-3 ml-0.5" />}
+              </button>
+
+              {/* 2. Compact Time & Phase Pill */}
+              <div className="cad-timeline-time-display">
+                {sunTime < 5.5 || sunTime > 20.5 ? (
+                  <Moon className="size-3 text-indigo-400" />
+                ) : (
+                  <Sun className="size-3 text-amber-400" />
+                )}
+                <span className="cad-timeline-time-val">
                   {hourlyStep?.timeLabel ?? formattedSolarTime}
+                </span>
+                <span className="cad-timeline-phase-tag">
+                  {sunTime < 5.5 || sunTime > 21
+                    ? "Night"
+                    : sunTime <= siteDaylight.sunrise + 1
+                    ? "Dawn"
+                    : sunTime >= siteDaylight.sunset - 1
+                    ? "Dusk"
+                    : sunTime < 12
+                    ? "Morning"
+                    : sunTime < 14
+                    ? "Noon"
+                    : "Afternoon"}
                 </span>
               </div>
 
+              {/* 3. Slender Scrubber Track */}
+              <div className="cad-timeline-slider-wrap">
+                <input
+                  type="range"
+                  min="0"
+                  max="24"
+                  step="0.1"
+                  value={sunTime}
+                  onChange={(e) => setSolarTime(Number(e.target.value))}
+                  className="cad-timeline-slider"
+                  aria-label="Hour of day slider"
+                />
+              </div>
+
+              {/* 4. Quick Hour Jump Micro-Pills */}
               <div className="cad-timeline-quick-hours">
-                <span className="text-[10px] text-muted-foreground mr-1 hidden sm:inline">Jump:</span>
                 {[
-                  { h: 0, label: "00h Night" },
-                  { h: 6, label: "06h Dawn" },
-                  { h: 12, label: "12h Noon" },
-                  { h: 18, label: "18h Dusk" },
+                  { h: 0, label: "00h", title: "Midnight" },
+                  { h: 6, label: "06h", title: "Dawn" },
+                  { h: 12, label: "12h", title: "Noon" },
+                  { h: 18, label: "18h", title: "Dusk" },
                 ].map((item) => (
                   <button
                     key={item.h}
                     type="button"
                     className="cad-timeline-quick-btn"
-                    data-active={Math.abs(sunTime - item.h) < 0.15}
+                    data-active={Math.abs(sunTime - item.h) < 0.3}
+                    title={`Jump to ${item.title}`}
                     onClick={() => setSolarTime(item.h)}
                   >
                     {item.label}
@@ -581,91 +594,64 @@ export function Shelter3DDesigner({ model, step, onStepChange, onUpdate, onSimul
                 ))}
               </div>
 
-              <div className="cad-solar-context">
-                <label title="Solar date"><CalendarDays className="size-3" /><input type="date" value={solarDate} onChange={(event) => setSolarDate(event.target.value)} aria-label="Solar date" /></label>
-                <span title={`Sunrise ${formatSolarHour(siteDaylight.sunrise)}, sunset ${formatSolarHour(siteDaylight.sunset)}`}>
-                  {formatSolarHour(siteDaylight.sunrise)}–{formatSolarHour(siteDaylight.sunset)} · {siteDaylight.durationHours.toFixed(1)}h
-                </span>
-              </div>
-
-              <div className="flex items-center gap-1.5 ml-auto">
-                <span
-                  className="cad-timeline-chip"
-                  style={{
-                    background: activeSim
-                      ? "rgba(16, 185, 129, 0.12)"
-                      : "rgba(59, 130, 246, 0.12)",
-                    color: activeSim ? "#059669" : "#2563eb",
-                    borderColor: activeSim
-                      ? "rgba(16, 185, 129, 0.28)"
-                      : "rgba(59, 130, 246, 0.25)",
-                  }}
-                >
-                  {activeSim ? "⚡ ThermoShelter Sim" : "📐 ISO 6946 Sol-Air"}
-                </span>
-                <button
-                  type="button"
-                  onClick={() => setTimelineMinimized(true)}
-                  className="cad-timeline-btn"
-                  title="Minimize solar timeline"
-                  aria-label="Minimize solar timeline"
-                >
-                  <Minimize2 className="size-3.5" />
-                </button>
-              </div>
-            </div>
-
-            <div className="cad-timeline-slider-row">
-              <span className="text-[10px] font-mono text-muted-foreground w-7 text-right">00:00</span>
-              <input
-                type="range"
-                min="0"
-                max="24"
-                step="0.1"
-                value={sunTime}
-                onChange={(e) => setSolarTime(Number(e.target.value))}
-                className="cad-timeline-slider"
-                aria-label="Hour of day timeline slider"
-              />
-              <span className="text-[10px] font-mono text-muted-foreground w-7">23:00</span>
-
+              {/* 5. Telemetry Mini-Chip */}
               {hourlyStep ? (
-                <div className="hidden md:flex items-center gap-2 border-l border-slate-300 dark:border-slate-700 pl-3">
-                  <span className="cad-timeline-chip" title="Ambient outdoor Sol-Air temperature">
-                    ❄ Out:{" "}
-                    <strong className="ml-0.5">
-                      {hourlyStep.outdoorTemp > 0
-                        ? `+${hourlyStep.outdoorTemp}`
-                        : hourlyStep.outdoorTemp}
-                      °C
-                    </strong>
-                  </span>
-                  <span className="cad-timeline-chip" title="Indoor living zone temperature">
-                    🏠 In:{" "}
-                    <strong className="ml-0.5">
-                      {hourlyStep.indoorTemp > 0
-                        ? `+${hourlyStep.indoorTemp}`
-                        : hourlyStep.indoorTemp}
-                      °C
-                    </strong>
-                  </span>
-                  <span className="cad-timeline-chip" title="Aperture solar irradiance harvest">
-                    ☀️ Sun: <strong className="ml-0.5">{hourlyStep.solarGainW} W</strong>
-                  </span>
+                <div className="cad-timeline-metrics-chip" title="Outdoor / Indoor zone temperature">
+                  <span>❄ {hourlyStep.outdoorTemp > 0 ? `+${hourlyStep.outdoorTemp}` : hourlyStep.outdoorTemp}°</span>
+                  <span className="opacity-30">|</span>
+                  <span>🏠 +{hourlyStep.indoorTemp}°C</span>
                 </div>
               ) : (
-                <div className="hidden md:flex items-center gap-2 border-l border-slate-300 dark:border-slate-700 pl-3">
-                  <span className="cad-timeline-chip" title="Sun path for site latitude">
-                    ☀️ Solar timeline · scrub to move sun & shadows
-                  </span>
+                <div className="cad-timeline-metrics-chip" title={`Daylight duration: ${siteDaylight.durationHours.toFixed(1)}h`}>
+                  <span>☀️ {formatSolarHour(siteDaylight.sunrise)}–{formatSolarHour(siteDaylight.sunset)}</span>
                 </div>
               )}
+
+              {/* 6. Calendar Date Picker Icon Button */}
+              <label className="cad-timeline-date-btn" title={`Solar simulation date: ${solarDate}`}>
+                <CalendarDays className="size-3 text-slate-400" />
+                <input
+                  type="date"
+                  value={solarDate}
+                  onChange={(e) => setSolarDate(e.target.value)}
+                  aria-label="Solar simulation date"
+                />
+              </label>
+
+              {/* 7. Minimize Button */}
+              <button
+                type="button"
+                onClick={() => setTimelineMinimized(true)}
+                className="cad-timeline-btn cad-timeline-min-btn"
+                title="Minimize timeline"
+                aria-label="Minimize timeline"
+              >
+                <Minimize2 className="size-3" />
+              </button>
             </div>
-          </div>
           )
         ) : null}
-        <div className="cad-mode-label"><span>{settings.visualization === "model" ? "Geometry model" : `${settings.visualization.toUpperCase()} preview`}</span><strong>{settings.visualization === "thermal" ? "FLIR false-color IR thermography · Stefan-Boltzmann radiation emission" : settings.visualization === "solar" ? `Site sun · ${model.location.region} · ${solarDate}` : settings.visualization === "heat-flow" ? "Envelope thermal bridges & convective currents" : "Editable canonical geometry"}</strong></div>
-        <div className="cad-metrics"><span><small>Floor area</small><strong>{area.toFixed(1)} m²</strong></span><span><small>Volume</small><strong>{volume.toFixed(1)} m³</strong></span><span><small>South Glazing</small><strong>{southGlazingRatio.toFixed(1)}% WWR</strong></span><span><small>Solar Harvest</small><strong>~{estDailySolarGainKwh} kWh/d</strong></span><span><small>Openings</small><strong>{model.windows.length}W / {model.doors.length}D</strong></span></div>
+        {!materialsOpen && settings.visualization !== "model" && (
+          <div className="cad-mode-label" style={{ pointerEvents: "none" }}>
+            <span>{settings.visualization.toUpperCase()} preview</span>
+            <strong>
+              {settings.visualization === "thermal"
+                ? "FLIR false-color IR thermography · Stefan-Boltzmann radiation emission"
+                : settings.visualization === "solar"
+                ? `Site sun · ${model.location.region} · ${solarDate}`
+                : "Envelope thermal bridges & convective currents"}
+            </strong>
+          </div>
+        )}
+        {!materialsOpen && settings.visualization === "model" && (
+          <div className="cad-metrics">
+            <span><small>Floor area</small><strong>{area.toFixed(1)} m²</strong></span>
+            <span><small>Volume</small><strong>{volume.toFixed(1)} m³</strong></span>
+            <span><small>South Glazing</small><strong>{southGlazingRatio.toFixed(1)}% WWR</strong></span>
+            <span><small>Solar Harvest</small><strong>~{estDailySolarGainKwh} kWh/d</strong></span>
+            <span><small>Openings</small><strong>{model.windows.length}W / {model.doors.length}D</strong></span>
+          </div>
+        )}
         <button
           className="cad-inspector-toggle"
           aria-label={rightOpen ? "Collapse inspector panel" : "Expand inspector panel"}
@@ -683,7 +669,19 @@ export function Shelter3DDesigner({ model, step, onStepChange, onUpdate, onSimul
     <footer className="cad-statusbar">
       <div className="flex items-center gap-2">
         <span className="cad-status-dot" />
-        <span>Canonical model synchronized · Autosave Active</span>
+        <span className="font-semibold text-foreground/90 uppercase text-[10px] tracking-wider">
+          {settings.visualization === "model" ? "3D Geometry Model" : `${settings.visualization.toUpperCase()} Mode`}
+        </span>
+        <span className="text-muted-foreground/40">·</span>
+        <span className="text-[11px] text-muted-foreground truncate max-w-xs sm:max-w-md">
+          {settings.visualization === "thermal"
+            ? "FLIR IR Thermography · Stefan-Boltzmann Radiation"
+            : settings.visualization === "solar"
+            ? `Solar Irradiance · ${model.location.region} · ${solarDate}`
+            : settings.visualization === "heat-flow"
+            ? "Envelope Thermal Bridges & ISO Conduction Map"
+            : "Canonical Geometry Synchronized · Autosave Active"}
+        </span>
       </div>
       <div>{readiness}/4 simulation checks complete</div>
       <div className="cad-step-nav">

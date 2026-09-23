@@ -17,6 +17,7 @@ import type { VisualizationMode } from "../types";
 import type { ShelterModel } from "@/types/shelter";
 import {
   calculateThermalMetrics,
+  getHeatFlowColor,
   type DynamicThermalCalculations,
   type HourlyThermalStep,
 } from "../thermal-physics";
@@ -142,7 +143,9 @@ export function ThermalScaleLegend({ mode, model, hourlyStep, hasSimResults }: P
           <div style={{ marginTop: "10px" }}>
             {mode === "thermal" && <ThermalContent metrics={metrics} hourlyStep={hourlyStep} />}
             {mode === "solar" && <SolarContent metrics={metrics} hourlyStep={hourlyStep} />}
-            {mode === "heat-flow" && <HeatFlowContent metrics={metrics} hourlyStep={hourlyStep} />}
+            {mode === "heat-flow" && (
+              <HeatFlowContent metrics={metrics} hourlyStep={hourlyStep} model={model} />
+            )}
           </div>
         )}
       </div>
@@ -344,74 +347,188 @@ function SolarContent({
 function HeatFlowContent({
   metrics,
   hourlyStep,
+  model,
 }: {
   metrics?: DynamicThermalCalculations | null;
   hourlyStep?: HourlyThermalStep | null;
+  model?: ShelterModel;
 }) {
-  const southFlux = hourlyStep ? hourlyStep.qSouthFlux : (metrics?.iSouthIncident ?? 410);
+  const southFlux = hourlyStep ? hourlyStep.qSouthFlux : (metrics?.qSouthFlux ?? 52);
   const northFlux = hourlyStep ? hourlyStep.qNorthFlux : (metrics?.qNorthFlux ?? -88);
+  const eastFlux = hourlyStep ? hourlyStep.qEastFlux : (metrics?.qEastFlux ?? -Math.round((metrics?.uEast ?? 0.28) * (metrics?.deltaT ?? 33)));
+  const westFlux = hourlyStep ? hourlyStep.qWestFlux : (metrics?.qWestFlux ?? -Math.round((metrics?.uWest ?? 0.28) * (metrics?.deltaT ?? 33)));
+  const roofFlux = hourlyStep ? hourlyStep.qRoofFlux : (metrics?.qRoofFlux ?? -Math.round((metrics?.uRoof ?? 0.32) * (metrics?.deltaT ?? 33)));
+  const floorFlux = hourlyStep ? hourlyStep.qFloorFlux : (metrics?.qFloorFlux ?? -18);
+
+  const winNet = hourlyStep ? hourlyStep.qWindowNetFlux : (metrics?.qWindowNetFlux ?? 280);
+  const winSolar = hourlyStep ? hourlyStep.qWindowSolarFlux : (metrics?.qWindowSolarFlux ?? 340);
+  const winCond = hourlyStep ? hourlyStep.qWindowCondFlux : (metrics?.qWindowCondFlux ?? -60);
+
+  // Surface areas for net balance in Watts
+  const L = model?.geometry.length ?? 6;
+  const W = model?.geometry.width ?? 4;
+  const H = model?.geometry.height ?? 2.7;
+  const southArea = L * H;
+  const northArea = L * H;
+  const eastArea = W * H;
+  const westArea = W * H;
+  const roofArea = L * W * 1.05;
+  const floorArea = L * W;
+  const winArea = metrics?.totalWindowArea ?? 3.6;
+
+  const totalHeatGainW =
+    Math.max(0, southFlux) * southArea +
+    Math.max(0, eastFlux) * eastArea +
+    Math.max(0, westFlux) * westArea +
+    Math.max(0, roofFlux) * roofArea +
+    (winSolar * winArea);
+
+  const totalHeatLossW =
+    Math.abs(Math.min(0, southFlux) * southArea) +
+    Math.abs(northFlux * northArea) +
+    Math.abs(Math.min(0, eastFlux) * eastArea) +
+    Math.abs(Math.min(0, westFlux) * westArea) +
+    Math.abs(Math.min(0, roofFlux) * roofArea) +
+    Math.abs(floorFlux * floorArea) +
+    Math.abs(winCond * winArea) +
+    (metrics?.qInfiltrationLossW ?? 290);
+
+  const netBalanceW = Math.round(totalHeatGainW - totalHeatLossW);
+  const isNetGain = netBalanceW >= 0;
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-      {/* Legend items */}
+      {/* 1. Heat Flux Spectrum Bar */}
+      <div>
+        <div
+          style={{
+            height: "8px",
+            width: "100%",
+            borderRadius: "4px",
+            background:
+              "linear-gradient(90deg, #1e3a8a, #0284c7, #0d9488, #ea580c, #dc2626)",
+            boxShadow: "inset 0 1px 2px rgba(0,0,0,0.15)",
+          }}
+        />
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            marginTop: "5px",
+            fontSize: "9px",
+            fontFamily: "var(--font-geist-mono), monospace",
+            color: "#6e818f",
+          }}
+        >
+          <span>-60 W/m²</span>
+          <span>-20</span>
+          <span>0 (Eq)</span>
+          <span>+40</span>
+          <span>+80 W/m²</span>
+        </div>
+      </div>
+
+      {/* 2. Instantaneous Net Building Energy Balance Badge */}
+      <div
+        style={{
+          padding: "6px 9px",
+          borderRadius: "6px",
+          background: isNetGain ? "rgba(234, 88, 12, 0.12)" : "rgba(37, 99, 235, 0.12)",
+          border: `1px solid ${isNetGain ? "rgba(234, 88, 12, 0.3)" : "rgba(37, 99, 235, 0.3)"}`,
+          display: "flex",
+          flexDirection: "column",
+          gap: "2px",
+        }}
+      >
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <span style={{ fontSize: "10px", fontWeight: 700, color: isNetGain ? "#ea580c" : "#38bdf8" }}>
+            {isNetGain ? "🔥 Net Energy Gain" : "❄ Net Energy Loss"}
+          </span>
+          <span
+            style={{
+              fontSize: "11px",
+              fontWeight: 800,
+              fontFamily: "var(--font-geist-mono), monospace",
+              color: isNetGain ? "#ea580c" : "#38bdf8",
+            }}
+          >
+            {isNetGain ? `+${netBalanceW} W` : `${netBalanceW} W`}
+          </span>
+        </div>
+        <div style={{ fontSize: "8.5px", color: "#6e818f", display: "flex", justifyContent: "space-between" }}>
+          <span>Gains: +{Math.round(totalHeatGainW)} W</span>
+          <span>Losses: -{Math.round(totalHeatLossW)} W</span>
+        </div>
+      </div>
+
+      {/* 3. Envelope Surfaces Heat Flux Breakdown */}
       <div
         style={{
           display: "flex",
           flexDirection: "column",
-          gap: "6px",
+          gap: "5px",
           paddingTop: "2px",
         }}
       >
         <LegendRow
-          color="#dc2626"
-          label="South sol-air flux"
-          arrow={`${southFlux >= 0 ? "+" : ""}${southFlux} W/m²`}
+          color={getHeatFlowColor(southFlux)}
+          label="South Wall Sol-Air"
+          arrow={`${southFlux >= 0 ? "+" : ""}${southFlux} W/m² (${Math.round(southFlux * southArea)} W)`}
         />
         <LegendRow
-          color="#2563eb"
-          label="North conduction loss"
-          arrow={`${northFlux} W/m²`}
+          color={getHeatFlowColor(northFlux)}
+          label="North Wall Loss"
+          arrow={`${northFlux} W/m² (${Math.round(northFlux * northArea)} W)`}
         />
         <LegendRow
-          color="#a855f7"
-          label="Roof stack & sky loss"
-          arrow={`U ${metrics?.uRoof.toFixed(2) ?? "0.32"}`}
-        />
-        <LegendRow color="#14b8a6" label="Internal convection" arrow="↻ Loop" />
-        <LegendRow
-          color="#38bdf8"
-          label="Air infiltration"
-          arrow={`❄ ${metrics?.infiltrationACH.toFixed(2) ?? "0.35"} ACH`}
+          color={getHeatFlowColor(eastFlux)}
+          label="East Wall Conduction"
+          arrow={`${eastFlux >= 0 ? "+" : ""}${eastFlux} W/m² (${Math.round(eastFlux * eastArea)} W)`}
         />
         <LegendRow
-          color="#ef4444"
-          label="Corner thermal bridges"
-          arrow={`● Ψ ${(hourlyStep?.psiBridge ?? metrics?.psiBridge ?? 0.15).toFixed(2)}`}
+          color={getHeatFlowColor(westFlux)}
+          label="West Wall Conduction"
+          arrow={`${westFlux >= 0 ? "+" : ""}${westFlux} W/m² (${Math.round(westFlux * westArea)} W)`}
+        />
+        <LegendRow
+          color={getHeatFlowColor(roofFlux)}
+          label="Roof Exposure & Sky"
+          arrow={`${roofFlux >= 0 ? "+" : ""}${roofFlux} W/m² (${Math.round(roofFlux * roofArea)} W)`}
+        />
+        <LegendRow
+          color={getHeatFlowColor(floorFlux)}
+          label="Foundation Slab Coupling"
+          arrow={`${floorFlux} W/m² (${Math.round(floorFlux * floorArea)} W)`}
+        />
+        <LegendRow
+          color={getHeatFlowColor(winNet)}
+          label="Window Glazing Net"
+          arrow={`${winNet >= 0 ? "+" : ""}${winNet} W/m² (+${winSolar} / ${winCond})`}
         />
       </div>
 
-      {/* Key values */}
+      {/* 4. Convection, Infiltration & Thermal Bridges */}
       <div
         style={{
           display: "flex",
           flexDirection: "column",
           gap: "4px",
-          paddingTop: "8px",
+          paddingTop: "6px",
           borderTop: "1px solid rgba(110,129,143,0.18)",
         }}
       >
         <DataRow
-          label="Infiltration Rate"
-          value={`${metrics?.infiltrationACH.toFixed(2) ?? "0.35"} ACH (~${Math.round(metrics?.qInfiltrationLossW ?? 290)} W loss)`}
+          label="Air Infiltration"
+          value={`${metrics?.infiltrationACH.toFixed(2) ?? "0.35"} ACH (~${Math.round(metrics?.qInfiltrationLossW ?? 290)} W)`}
         />
         <DataRow
-          label="Thermal Bridges"
-          value={`Ψ = ${(hourlyStep?.psiBridge ?? metrics?.psiBridge ?? 0.15).toFixed(2)} W/(m·K)`}
+          label="Corner Bridges (ISO 10211)"
+          value={`Ψ ${(hourlyStep?.psiBridge ?? metrics?.psiBridge ?? 0.15).toFixed(2)} W/(m·K)`}
           highlight
         />
         <DataRow
-          label="Envelope Conduction"
-          value={`U_wall ${metrics?.uSouth.toFixed(2) ?? "0.28"} / U_roof ${metrics?.uRoof.toFixed(2) ?? "0.32"} W/m²K`}
+          label="Internal Convection"
+          value="↻ Natural Circulation Active"
         />
       </div>
     </div>

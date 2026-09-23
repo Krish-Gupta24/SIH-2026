@@ -115,7 +115,7 @@ export function ShelterCanvas({
           maxPolarAngle={Math.PI / 2 - 0.02}
         />
 
-        <SunLighting model={model} settings={settings} sunHour={sunHour} solarDate={solarDate} />
+        <SunLighting model={model} settings={settings} sunHour={sunHour} solarDate={solarDate} suppressHtmlLabels={suppressHtmlLabels} />
         <SceneEnvironment model={model} settings={settings} sunHour={sunHour} solarDate={solarDate} />
 
         {/* CAD Coordinate Grid */}
@@ -154,16 +154,19 @@ export function ShelterCanvas({
           hourlyStep={hourlyStep}
           sunHour={sunHour}
           solarDate={solarDate}
+          suppressHtmlLabels={suppressHtmlLabels}
         />
       </Canvas>
 
       {/* Thermographic & Solar Scale Legend HUD */}
-      <ThermalScaleLegend
-        mode={settings.visualization}
-        model={model}
-        hourlyStep={hourlyStep}
-        hasSimResults={hasSimResults}
-      />
+      {!suppressHtmlLabels ? (
+        <ThermalScaleLegend
+          mode={settings.visualization}
+          model={model}
+          hourlyStep={hourlyStep}
+          hasSimResults={hasSimResults}
+        />
+      ) : null}
     </div>
   );
 }

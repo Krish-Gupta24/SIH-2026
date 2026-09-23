@@ -23,6 +23,7 @@ interface Props {
   settings: ViewerSettings;
   sunHour: number;
   solarDate: string;
+  suppressHtmlLabels?: boolean;
 }
 
 /** Returns a human-readable solar phase label for the current time */
@@ -59,7 +60,7 @@ function landscapeKindFor(model: ShelterModel): "ladakh" | "desert" | "plains" {
   return "plains";
 }
 
-export function SunLighting({ model, settings, sunHour, solarDate }: Props) {
+export function SunLighting({ model, settings, sunHour, solarDate, suppressHtmlLabels = false }: Props) {
   const lightRef = useRef<THREE.DirectionalLight>(null);
   const discRef = useRef<THREE.Group>(null);
   const targetObj = useRef<THREE.Object3D>(new THREE.Object3D());
@@ -212,8 +213,8 @@ export function SunLighting({ model, settings, sunHour, solarDate }: Props) {
         </mesh>
 
         {/* Minimal Sun Indicator Badge positioned below the sun disc — never obscures the radiant sun */}
-        {renderAlt > -1.5 && (
-          <Html position={[0, -2.6, 0]} center distanceFactor={50} style={{ pointerEvents: "none" }}>
+        {!suppressHtmlLabels && renderAlt > -1.5 && (
+          <Html position={[0, -2.6, 0]} center distanceFactor={50} zIndexRange={[15, 0]} style={{ pointerEvents: "none" }}>
             <div
               className="cad-sun-mini-badge"
               title={`Solar Altitude: ${renderAlt.toFixed(1)}° · Azimuth: ${renderAz.toFixed(0)}° (${phaseLabel})`}

@@ -122,7 +122,11 @@ export interface DynamicThermalCalculations {
   qEastFlux: number;          // W/m² conduction loss leaving through East wall
   qWestFlux: number;          // W/m² conduction loss leaving through West wall
   qRoofFlux: number;          // W/m² conduction/radiation flux through Roof
+  qFloorFlux: number;         // W/m² ground conduction flux through Floor
   qGlazingTransmitted: number;// W/m² solar heat entering through window
+  qWindowNetFlux: number;     // W/m² net glazing heat flux (solar gain + conduction loss)
+  qWindowSolarFlux: number;   // W/m² transmitted solar flux
+  qWindowCondFlux: number;    // W/m² conductive loss through glass
 
   // Total Aperture Solar Harvest
   totalWindowArea: number;    // m²
@@ -133,6 +137,23 @@ export interface DynamicThermalCalculations {
   infiltrationACH: number;    // Air changes per hour
   qInfiltrationLossW: number; // Sensible infiltration loss (W)
   psiBridge: number;          // Corner linear thermal bridge Ψ (W/m·K)
+}
+
+/**
+ * Maps heat flux (W/m²) to authentic engineering heat flow analysis colors:
+ * - Red / Flame Orange (> 0): Net heat gain entering the envelope
+ * - Deep Blue / Ice Cyan (< 0): Net heat loss escaping the envelope
+ * - Teal / Emerald (~ 0): Equilibrium boundary
+ */
+export function getHeatFlowColor(fluxW_per_m2: number): string {
+  if (fluxW_per_m2 > 80) return "#dc2626";     // Peak solar gain (intense red)
+  if (fluxW_per_m2 > 40) return "#ea580c";     // High gain (orange)
+  if (fluxW_per_m2 > 15) return "#f59e0b";     // Moderate gain (amber)
+  if (fluxW_per_m2 > 0) return "#eab308";      // Mild solar warming (yellow-amber)
+  if (fluxW_per_m2 >= -8) return "#0d9488";    // Balanced boundary (teal)
+  if (fluxW_per_m2 >= -20) return "#0284c7";   // Low conduction loss (sky blue)
+  if (fluxW_per_m2 >= -50) return "#2563eb";   // Moderate conduction loss (vivid blue)
+  return "#1e3a8a";                            // Severe heat loss (deep sub-zero navy)
 }
 
 /**
@@ -276,7 +297,16 @@ export function calculateThermalMetrics(model: ShelterModel): DynamicThermalCalc
   const tGlazing = Math.round((tOutdoor + (0.22 * iSouthIncident) / 14.0) * 10) / 10;
   const tFloorMass = Math.round(Math.min(22.0, tIndoor + (qWindowTotalW > 400 ? 1.5 : 0.2)) * 10) / 10;
 
-  // 6. Infiltration & Thermal Bridge (ISO 10211 Linear Transmittance)
+  // 6. Ground coupling heat flux (ISO 13370 / EN 12831 subgrade heat transfer)
+  const tGround = Math.max(2.0, tOutdoor * 0.25 + 4.5);
+  const qFloorFlux = Math.round(floorRes.uValue * (tGround - tIndoor));
+
+  // Glazing conduction vs solar transmitted
+  const qWindowCondFlux = -Math.round(glassProps.uValue * deltaT);
+  const qWindowSolarFlux = qGlazingTransmitted;
+  const qWindowNetFlux = qWindowSolarFlux + qWindowCondFlux;
+
+  // 7. Infiltration & Thermal Bridge (ISO 10211 Linear Transmittance)
   const ach = model.ventilation?.infiltrationACH ?? 0.35;
   const geom = model.geometry;
   const L = geom?.length || 6;
@@ -326,7 +356,11 @@ export function calculateThermalMetrics(model: ShelterModel): DynamicThermalCalc
     qEastFlux,
     qWestFlux,
     qRoofFlux,
+    qFloorFlux,
     qGlazingTransmitted,
+    qWindowNetFlux,
+    qWindowSolarFlux,
+    qWindowCondFlux,
     totalWindowArea: Math.round(totalWindowArea * 100) / 100,
     qWindowTotalW,
     estDailySolarKwh,
@@ -352,6 +386,13 @@ export interface HourlyThermalStep {
   tGlazing: number;
   qSouthFlux: number;
   qNorthFlux: number;
+  qEastFlux: number;
+  qWestFlux: number;
+  qRoofFlux: number;
+  qFloorFlux: number;
+  qWindowNetFlux: number;
+  qWindowSolarFlux: number;
+  qWindowCondFlux: number;
   psiBridge: number;
 }
 
@@ -437,6 +478,18 @@ export function calculateHourlyThermalStep(
   const deltaT = Math.max(1, tIndoor - tOutdoor);
   const qSouthFlux = Math.round(baseMetrics.uSouth * (tSurfaceSouth - tIndoor));
   const qNorthFlux = -Math.round(baseMetrics.uNorth * deltaT);
+  const qEastFlux = Math.round(baseMetrics.uEast * (tSurfaceEast - tIndoor));
+  const qWestFlux = Math.round(baseMetrics.uWest * (tSurfaceWest - tIndoor));
+  const qRoofFlux = Math.round(baseMetrics.uRoof * (tSurfaceRoof - tIndoor));
+  const tGround = Math.max(2.0, tOutdoor * 0.25 + 4.5);
+  const qFloorFlux = Math.round(baseMetrics.uFloor * (tGround - tIndoor));
+
+  const primaryWindow = model.windows?.[0];
+  const glazingKey = primaryWindow?.glazingType || "double_low_e_argon";
+  const glassProps = GLAZING_PROPERTIES[glazingKey] || GLAZING_PROPERTIES.double_low_e_argon;
+  const qWindowCondFlux = -Math.round(glassProps.uValue * deltaT);
+  const qWindowSolarFlux = isDay ? Math.round(solarW / Math.max(0.1, baseMetrics.totalWindowArea)) : 0;
+  const qWindowNetFlux = qWindowSolarFlux + qWindowCondFlux;
 
   const hourStr = h.toString().padStart(2, "0");
   const ampm = h >= 12 ? "PM" : "AM";
@@ -459,6 +512,13 @@ export function calculateHourlyThermalStep(
     tGlazing,
     qSouthFlux,
     qNorthFlux,
+    qEastFlux,
+    qWestFlux,
+    qRoofFlux,
+    qFloorFlux,
+    qWindowNetFlux,
+    qWindowSolarFlux,
+    qWindowCondFlux,
     psiBridge: baseMetrics.psiBridge,
   };
 }
