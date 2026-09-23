@@ -21,6 +21,7 @@ import {
   FolderKanban,
   X,
   Box,
+  Download,
 } from "lucide-react";
 import { useShelterStore, SimulationJobItem, transformBackendJobToItem } from "@/lib/store/use-shelter-store";
 import { simulationApi } from "@/lib/api";
@@ -356,6 +357,19 @@ export function SimulationsView() {
     }
   };
 
+  const handleExportModelJson = () => {
+    const proj = targetProject || projects[0];
+    if (!proj) return;
+    const filename = `shelter_${(proj.project?.name || proj.name || "model").toLowerCase().replace(/[^a-z0-9]/g, "_")}_spec.json`;
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(proj, null, 2));
+    const downloadAnchor = document.createElement("a");
+    downloadAnchor.setAttribute("href", dataStr);
+    downloadAnchor.setAttribute("download", filename);
+    document.body.appendChild(downloadAnchor);
+    downloadAnchor.click();
+    downloadAnchor.remove();
+  };
+
   const [filterTab, setFilterTab] = useState<"all" | "active" | "completed" | "failed">("all");
 
   const totalRuns = simulations.length;
@@ -439,6 +453,14 @@ export function SimulationsView() {
         description="Send the canonical model to the physics simulation engine with explicit period, timestep resolution, and authentic weather provenance."
         action={
           <div className="flex flex-wrap items-center gap-2.5">
+            <ActionButton
+              tone="secondary"
+              onClick={handleExportModelJson}
+              className="rounded-full text-xs font-semibold"
+            >
+              <Download className="size-3.5" />
+              Export Model JSON
+            </ActionButton>
             <ActionButton
               tone="secondary"
               onClick={() => setAnsysModalOpen(true)}

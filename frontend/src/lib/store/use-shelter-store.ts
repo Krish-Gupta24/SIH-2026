@@ -2256,16 +2256,56 @@ export const useShelterStore = create<ShelterStoreState>()(
         set((state) => ({
           projects: state.projects.map((p) => {
             if (p.id === id) {
-              const merged = {
+              const merged: any = {
                 ...p,
                 ...updates,
                 project: {
                   ...p.project,
                   ...(updates.project || {}),
+                  updatedAt: new Date().toISOString(),
+                },
+                location: {
+                  ...p.location,
+                  ...(updates.location || {}),
                 },
                 geometry: {
                   ...p.geometry,
                   ...(updates.geometry || {}),
+                },
+                envelope: {
+                  ...p.envelope,
+                  ...(updates.envelope || {}),
+                  walls: {
+                    ...(p.envelope?.walls || {}),
+                    ...(updates.envelope?.walls || {}),
+                  },
+                  roof: {
+                    ...(p.envelope?.roof || {}),
+                    ...(updates.envelope?.roof || {}),
+                  },
+                  floor: {
+                    ...(p.envelope?.floor || {}),
+                    ...(updates.envelope?.floor || {}),
+                  },
+                },
+                windows: updates.windows !== undefined ? updates.windows : p.windows,
+                doors: updates.doors !== undefined ? updates.doors : p.doors,
+                thermalMass: updates.thermalMass !== undefined ? updates.thermalMass : p.thermalMass,
+                ventilation: {
+                  ...p.ventilation,
+                  ...(updates.ventilation || {}),
+                },
+                internalLoads: {
+                  ...p.internalLoads,
+                  ...(updates.internalLoads || {}),
+                },
+                designTargets: {
+                  ...p.designTargets,
+                  ...(updates.designTargets || {}),
+                },
+                simulationSettings: {
+                  ...p.simulationSettings,
+                  ...(updates.simulationSettings || {}),
                 },
               };
               updatedProject = normalizeShelterModel(merged);
@@ -2755,8 +2795,9 @@ export const useShelterStore = create<ShelterStoreState>()(
           if (Array.isArray(state.projects)) {
             state.projects = state.projects.map(normalizeShelterModel);
           }
+          const deletedIds = new Set(state.deletedProjectIds || []);
           const existingProjIds = new Set((state.projects || []).map((p: any) => p.id));
-          const missingPresets = DEFAULT_PRESET_PROJECTS.filter((dp) => !existingProjIds.has(dp.id));
+          const missingPresets = DEFAULT_PRESET_PROJECTS.filter((dp) => !existingProjIds.has(dp.id) && !deletedIds.has(dp.id));
           if (missingPresets.length > 0) {
             const mergedProjects = [...(state.projects || []), ...missingPresets];
             state.projects = mergedProjects;

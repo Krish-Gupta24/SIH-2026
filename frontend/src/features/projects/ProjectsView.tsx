@@ -211,6 +211,18 @@ export function ProjectsView() {
             const projectName = project.project?.name || project.name || "Untitled Shelter";
             const projectRegion = project.location?.region || "High-Altitude";
             const projectDesc = project.project?.description || (project as any).description || "Canonical shelter definition ready for thermal simulation.";
+            const completedStages = [
+              Boolean(project.project?.name), // 1. Overview
+              Boolean(project.location?.weatherSource), // 2. Climate
+              Boolean(project.envelope?.walls?.north?.layers?.length), // 3. 2D Designer
+              Boolean(project.geometry?.length && project.geometry?.width), // 4. 3D CAD
+              Boolean(run), // 5. Simulate
+              Boolean(run?.results?.summary), // 6. Results
+              Boolean(simulations.some((s) => s.projectId === project.id && (s.status === "completed" || s.engine?.includes("AI")))), // 7. Optimize
+              Boolean(simulations.length >= 2), // 8. Compare
+              Boolean(run), // 9. Report
+            ].filter(Boolean).length;
+            const projectProgressPct = Math.round((completedStages / 9) * 100);
             const isActive = project.id === activeProjectId;
 
             return (
@@ -263,7 +275,23 @@ export function ProjectsView() {
                   </p>
                 </button>
 
-                <dl className="mt-auto grid grid-cols-3 border-t border-border pt-6">
+                {/* Workflow Stage Progress */}
+                <div className="mt-4 pt-3 border-t border-border/40">
+                  <div className="flex items-center justify-between text-[11px] text-muted-foreground mb-1.5">
+                    <span>Workflow Progress</span>
+                    <span className="font-mono font-semibold text-emerald-600 dark:text-emerald-400">
+                      {completedStages}/9 Stages ({projectProgressPct}%)
+                    </span>
+                  </div>
+                  <div className="h-1.5 w-full rounded-full bg-secondary overflow-hidden border border-border">
+                    <div
+                      className="h-full bg-emerald-500 transition-all duration-300"
+                      style={{ width: `${projectProgressPct}%` }}
+                    />
+                  </div>
+                </div>
+
+                <dl className="mt-auto grid grid-cols-3 border-t border-border pt-4">
                   <DataPair
                     label="Elevation"
                     value={project.location?.elevation ? `${project.location.elevation.toLocaleString()} m` : "3,500 m"}

@@ -80,6 +80,10 @@ function Shelter3DPageContent() {
     addProject,
   } = useShelterStore();
 
+  const lastParamKeyRef = React.useRef<string | null>(
+    searchParams.get("stage") ?? searchParams.get("step")
+  );
+
   // Safely resolve initial 0-indexed stage from ?stage= (0..12) or ?step= (1..13 from 2D wizard)
   const resolveStageFromParams = React.useCallback((): number | null => {
     const stageQuery = searchParams.get("stage");
@@ -110,25 +114,53 @@ function Shelter3DPageContent() {
   const [savedToast, setSavedToast] = useState(false);
 
   const activeModel = projects.find((p) => p.id === activeProjectId) || projects[0];
+  const activeModelRef = React.useRef(activeModel);
+  activeModelRef.current = activeModel;
 
-  // Sync step if store or query param changes
+  // Ensure synchronous flush on browser back (popstate), tab close (beforeunload), pagehide, and unmount
   useEffect(() => {
-    const fromParams = resolveStageFromParams();
-    if (fromParams !== null) {
-      setStep(fromParams);
-      setActiveWizardStep(step3dTo2d(fromParams));
-      return;
+    const handleImmediateFlush = () => {
+      if (activeModelRef.current) {
+        updateProject(activeModelRef.current.id, activeModelRef.current);
+      }
+    };
+
+    window.addEventListener("beforeunload", handleImmediateFlush);
+    window.addEventListener("pagehide", handleImmediateFlush);
+    window.addEventListener("popstate", handleImmediateFlush);
+
+    return () => {
+      window.removeEventListener("beforeunload", handleImmediateFlush);
+      window.removeEventListener("pagehide", handleImmediateFlush);
+      window.removeEventListener("popstate", handleImmediateFlush);
+      handleImmediateFlush();
+    };
+  }, [updateProject]);
+
+  // Only sync when the incoming URL query param actually changes from external navigation
+  useEffect(() => {
+    const currentParamKey = searchParams.get("stage") ?? searchParams.get("step");
+    if (currentParamKey !== lastParamKeyRef.current) {
+      lastParamKeyRef.current = currentParamKey;
+      const fromParams = resolveStageFromParams();
+      if (fromParams !== null) {
+        setStep(fromParams);
+        setActiveWizardStep(step3dTo2d(fromParams));
+      }
     }
-    if (activeWizardStep) {
-      const step3d = step2dTo3d(activeWizardStep);
-      setStep(step3d);
-    }
-  }, [resolveStageFromParams, activeWizardStep, setActiveWizardStep]);
+  }, [searchParams, resolveStageFromParams, setActiveWizardStep]);
 
   const handleStepChange = (newStep: number) => {
     const validStep = Math.min(Math.max(0, newStep), 12);
     setStep(validStep);
     setActiveWizardStep(step3dTo2d(validStep));
+    lastParamKeyRef.current = String(validStep);
+    if (typeof window !== "undefined") {
+      const url = new URL(window.location.href);
+      url.searchParams.set("stage", String(validStep));
+      url.searchParams.delete("step");
+      window.history.replaceState(null, "", url.toString());
+    }
   };
 
   if (!activeModel) {
@@ -168,11 +200,20 @@ function Shelter3DPageContent() {
 
           {/* Action Area: Save Project + ANSYS Export + View Switcher */}
           <div className="flex flex-wrap items-center gap-2">
+            {/* Autosave Active Badge */}
+            <div
+              className="flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 text-xs text-muted-foreground shadow-xs"
+              title="Continuous autosave active: all edits are immediately saved to storage and project library"
+            >
+              <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+              <span className="text-[11px] font-medium hidden sm:inline">Autosave Active</span>
+            </div>
+
             <button
               type="button"
               onClick={() => {
                 if (activeModel) {
-                  addProject(activeModel);
+                  updateProject(activeModel.id, activeModel);
                   setSavedToast(true);
                   setTimeout(() => setSavedToast(false), 3000);
                 }
@@ -203,7 +244,12 @@ function Shelter3DPageContent() {
             <div className="flex items-center gap-1 rounded-full border border-border bg-secondary/40 p-0.5">
               <Link
                 href={`/designer?step=${step3dTo2d(step)}`}
-                onClick={() => setActiveWizardStep(step3dTo2d(step))}
+                onClick={() => {
+                  if (activeModel) {
+                    updateProject(activeModel.id, activeModel);
+                  }
+                  setActiveWizardStep(step3dTo2d(step));
+                }}
                 className="inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-semibold text-muted-foreground transition hover:text-foreground"
               >
                 <Sliders className="size-3.5" />

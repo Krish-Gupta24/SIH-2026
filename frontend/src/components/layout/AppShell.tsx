@@ -78,21 +78,31 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const getStepStatus = (stepId: string) => {
     switch (stepId) {
       case "overview":
-        return !!activeProject;
+        return Boolean(activeProject && activeProject.project?.name);
       case "climate":
-        return !!activeProject?.location?.weatherSource;
+        return Boolean(activeProject?.location?.weatherSource && (activeProject.location.elevation ?? 0) > 0);
       case "designer":
-        return !!activeProject?.geometry && !!activeProject?.envelope;
+        return Boolean(
+          activeProject?.envelope?.walls?.north?.layers?.length &&
+          activeProject?.envelope?.walls?.south?.layers?.length &&
+          activeProject?.envelope?.roof?.layers?.length
+        );
       case "3d":
-        return !!activeProject?.geometry;
+        return Boolean(
+          activeProject?.geometry?.length &&
+          activeProject?.geometry?.width &&
+          activeProject?.geometry?.height
+        );
       case "simulate":
         return completedRuns.length > 0;
       case "results":
-        return completedRuns.length > 0;
+        return completedRuns.some((r) => r.results?.summary);
       case "optimize":
-        return completedRuns.length > 0;
+        return simulations.some(
+          (s) => s.projectId === activeProject?.id && (s.status === "completed" || s.engine?.includes("AI") || s.engine?.includes("OPT"))
+        );
       case "compare":
-        return comparisonJobIds.length >= 2 || completedRuns.length >= 2;
+        return comparisonJobIds.length >= 2 || simulations.length >= 2;
       case "report":
         return completedRuns.length > 0;
       default:
@@ -281,9 +291,21 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   </div>
                 </div>
 
-                {/* Status and Next Recommended Step CTA */}
+                {/* Status, Live Progress Bar and Next Recommended Step CTA */}
                 <div className="flex flex-wrap items-center gap-3">
-                  <div className="hidden items-center gap-2 sm:flex">
+                  <div className="flex items-center gap-2.5">
+                    <div className="hidden sm:flex flex-col min-w-[120px]">
+                      <div className="flex items-center justify-between text-[10px] font-semibold text-muted-foreground">
+                        <span>Workflow Progress</span>
+                        <span className="font-mono text-emerald-600 dark:text-emerald-400 font-bold">{progressPercent}%</span>
+                      </div>
+                      <div className="h-1.5 w-full rounded-full bg-secondary overflow-hidden border border-border mt-0.5">
+                        <div
+                          className="h-full bg-emerald-500 transition-all duration-500 ease-out"
+                          style={{ width: `${progressPercent}%` }}
+                        />
+                      </div>
+                    </div>
                     <Status strong>{completedCount} of {WORKFLOW_PIPELINE.length} stages validated</Status>
                   </div>
 

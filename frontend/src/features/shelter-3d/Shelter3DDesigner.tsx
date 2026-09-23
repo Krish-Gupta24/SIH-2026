@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   ArrowRight,
   Box,
@@ -22,6 +23,7 @@ import {
   Save,
   SkipBack,
   SkipForward,
+  Sliders,
   Sparkles,
   Sun,
   Undo2,
@@ -29,6 +31,7 @@ import {
 } from "lucide-react";
 import type { ShelterModel } from "@/types/shelter";
 import { useShelterStore } from "@/lib/store/use-shelter-store";
+import { step3dTo2d } from "@/lib/store/shelter-model-adapter";
 import type { CameraPreset, SelectedElement, ViewerSettings, VisualizationMode } from "./types";
 import { calculateHourlyThermalStep } from "./thermal-physics";
 import { ShelterCanvas } from "./components/ShelterCanvas";
@@ -56,6 +59,7 @@ const modes: { id: VisualizationMode; label: string; icon: typeof Box }[] = [{ i
 interface Props { model: ShelterModel; step: number; onStepChange: (step: number) => void; onUpdate: (updates: Partial<ShelterModel>) => void; onSimulate: () => void; }
 
 export function Shelter3DDesigner({ model, step, onStepChange, onUpdate, onSimulate }: Props) {
+  const router = useRouter();
   const [selected, setSelected] = useState<SelectedElement>({ type: "shelter" });
   const [preset, setPreset] = useState<CameraPreset>("iso");
   const [leftOpen, setLeftOpen] = useState(true);
@@ -181,13 +185,36 @@ export function Shelter3DDesigner({ model, step, onStepChange, onUpdate, onSimul
             <span className="sm:hidden">Sim Required</span>
           </button>
         )}
+        <button
+          type="button"
+          onClick={() => {
+            onUpdate(model);
+            router.push(`/designer?step=${step3dTo2d(step)}`);
+          }}
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-secondary/80 hover:bg-secondary text-foreground border border-border transition-all cursor-pointer mr-1"
+          title="Return to 2D Engineering Wizard at this stage"
+        >
+          <Sliders className="size-3.5 text-sky-500" />
+          <span>2D Wizard</span>
+        </button>
         <button aria-label="Undo" disabled={!history.current.length} onClick={undo}><Undo2 /></button>
         <button aria-label="Redo" disabled={!future.current.length} onClick={redo}><Redo2 /></button>
         <button data-active={settings.showGrid} aria-label="Toggle grid" onClick={() => setSetting("showGrid", !settings.showGrid)}><Grid3X3 /></button>
         <button data-active={settings.showDimensions} aria-label="Toggle dimensions" onClick={() => setSetting("showDimensions", !settings.showDimensions)}><Ruler /></button>
         <button data-active={settings.showCompass} aria-label="Toggle compass" onClick={() => setSetting("showCompass", !settings.showCompass)}><Compass /></button>
         <button data-active={settings.wireframe} aria-label="Toggle wireframe" title="Toggle wireframe mode (W)" onClick={() => setSetting("wireframe", !settings.wireframe)}><Boxes /></button>
-        <button className="cad-save" onClick={() => { setSaved(true); window.setTimeout(() => setSaved(false), 1800); }}>{saved ? <Check /> : <Save />}{saved ? "Saved" : "Save"}</button>
+        <button
+          className="cad-save"
+          onClick={() => {
+            onUpdate(model);
+            setSaved(true);
+            window.setTimeout(() => setSaved(false), 2000);
+          }}
+          title="Persist model and sync to project library"
+        >
+          {saved ? <Check /> : <Save />}
+          {saved ? "Saved" : "Save"}
+        </button>
         <button className="cad-simulate" onClick={onSimulate}>Simulate <ArrowRight /></button>
       </div>
     </header>
@@ -429,7 +456,22 @@ export function Shelter3DDesigner({ model, step, onStepChange, onUpdate, onSimul
       <aside className="cad-property-panel" data-open={rightOpen}><PropertyInspector model={model} selected={selected} currentStep={step} onSelect={setSelected} onUpdate={update} onSimulate={onSimulate} /></aside>
     </div>
 
-    <footer className="cad-statusbar"><div><span className="cad-status-dot" />Canonical model synchronized</div><div>{readiness}/4 simulation checks complete</div><div className="cad-step-nav"><button disabled={step === 0} onClick={() => handleStageSelect(step - 1)}><ChevronLeft /> Previous</button><span>Stage {step + 1} of {stages.length}</span><button disabled={step === stages.length - 1} onClick={() => handleStageSelect(step + 1)}>Next <ChevronRight /></button></div></footer>
+    <footer className="cad-statusbar">
+      <div className="flex items-center gap-2">
+        <span className="cad-status-dot" />
+        <span>Canonical model synchronized · Autosave Active</span>
+      </div>
+      <div>{readiness}/4 simulation checks complete</div>
+      <div className="cad-step-nav">
+        <button disabled={step === 0} onClick={() => handleStageSelect(step - 1)}>
+          <ChevronLeft /> Previous
+        </button>
+        <span>Stage {step + 1} of {stages.length}</span>
+        <button disabled={step === stages.length - 1} onClick={() => handleStageSelect(step + 1)}>
+          Next <ChevronRight />
+        </button>
+      </div>
+    </footer>
     <MaterialWorkbenchDialog open={materialsOpen} model={model} onOpenChange={setMaterialsOpen} onUpdate={update} />
   </div>;
 }

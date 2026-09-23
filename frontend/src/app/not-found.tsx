@@ -1,5 +1,8 @@
-import React from "react";
+"use client";
+
+import React, { useState, useMemo } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   Compass,
   Box,
@@ -7,142 +10,326 @@ import {
   CloudSun,
   ShieldAlert,
   ArrowRight,
+  ArrowLeft,
   ChevronRight,
   FolderGit2,
+  Sliders,
+  Play,
+  Cpu,
+  FileText,
+  Search,
+  Layers,
+  Flame,
+  RotateCcw,
 } from "lucide-react";
 import { BrandMark } from "@/components/v0/platform-components";
 
-export default function NotFound() {
-  return (
-    <div className="relative min-h-screen w-full bg-[#06101E] text-white flex flex-col justify-between selection:bg-sky-500 selection:text-white overflow-hidden">
-      {/* Dynamic Background Atmosphere */}
-      <div className="absolute inset-0 pointer-events-none">
-        {/* Deep Alpine Radial Gradients */}
-        <div className="absolute -top-32 left-1/2 -translate-x-1/2 w-[900px] h-[500px] bg-gradient-to-b from-sky-600/15 via-indigo-600/10 to-transparent rounded-full blur-3xl" />
-        <div className="absolute top-1/3 -right-40 w-[600px] h-[600px] bg-sky-500/5 rounded-full blur-[140px]" />
-        <div className="absolute -bottom-40 -left-40 w-[600px] h-[600px] bg-blue-700/10 rounded-full blur-[140px]" />
+interface ModuleDirectoryItem {
+  id: string;
+  name: string;
+  category: string;
+  href: string;
+  description: string;
+  icon: React.ComponentType<{ className?: string }>;
+  badge: string;
+}
 
-        {/* Tactical Sub-Zero Grid Lines */}
+const PLATFORM_MODULES: ModuleDirectoryItem[] = [
+  {
+    id: "projects",
+    name: "Shelter Projects Library",
+    category: "Models & Library",
+    href: "/projects",
+    description: "Certified Himalayan baseline presets, user-created variants, and simulation histories.",
+    icon: FolderGit2,
+    badge: "Active Registry",
+  },
+  {
+    id: "designer-2d",
+    name: "2D Parametric Wizard",
+    category: "Engineering Designer",
+    href: "/designer",
+    description: "13-step guided engineering sequence from building geometry to solver settings.",
+    icon: Sliders,
+    badge: "13 Stages",
+  },
+  {
+    id: "designer-3d",
+    name: "3D CAD WebGL Studio",
+    category: "Spatial Modeling",
+    href: "/designer/3d",
+    description: "Interactive Three.js visualizer with diurnal solar tracking and FLIR thermography.",
+    icon: Box,
+    badge: "Three.js CAD",
+  },
+  {
+    id: "simulations",
+    name: "ThermoShelter Simulation Engine",
+    category: "Physics Dispatch",
+    href: "/simulations",
+    description: "Queue, execute, and monitor EnergyPlus and validated physics runs with authentic EPW weather.",
+    icon: Play,
+    badge: "Solver Ready",
+  },
+  {
+    id: "weather",
+    name: "Climate & Site Intelligence",
+    category: "Atmospheric Data",
+    href: "/weather",
+    description: "Authentic sub-zero meteorological data for Leh, Dras-Kargil, Spiti, and Tawang.",
+    icon: CloudSun,
+    badge: "WMO 427053",
+  },
+  {
+    id: "optimization",
+    name: "Envelope Optimization",
+    category: "Algorithmic Sizing",
+    href: "/optimization",
+    description: "Multi-objective genetic optimization balancing thermal comfort and insulation volume.",
+    icon: Sparkles,
+    badge: "Pareto Frontier",
+  },
+  {
+    id: "comparison",
+    name: "Design Comparison Benchmark",
+    category: "Validation",
+    href: "/comparison",
+    description: "Side-by-side delta analysis between baseline tin barracks and optimized passive solar shelters.",
+    icon: Layers,
+    badge: "Delta Matrix",
+  },
+  {
+    id: "reports",
+    name: "Certified Thermal Reports",
+    category: "Compliance",
+    href: "/reports",
+    description: "Download formal engineering documentation, heat loss breakdowns, and NBC 2016 verification.",
+    icon: FileText,
+    badge: "PDF Export",
+  },
+];
+
+export default function NotFound() {
+  const router = useRouter();
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const filteredModules = useMemo(() => {
+    if (!searchQuery.trim()) return PLATFORM_MODULES;
+    const q = searchQuery.toLowerCase();
+    return PLATFORM_MODULES.filter(
+      (m) =>
+        m.name.toLowerCase().includes(q) ||
+        m.description.toLowerCase().includes(q) ||
+        m.category.toLowerCase().includes(q)
+    );
+  }, [searchQuery]);
+
+  const handleGoBack = () => {
+    if (typeof window !== "undefined" && window.history.length > 1) {
+      router.back();
+    } else {
+      router.push("/dashboard");
+    }
+  };
+
+  return (
+    <div className="relative min-h-screen w-full bg-background text-foreground flex flex-col justify-between selection:bg-sky-500 selection:text-white transition-colors duration-300">
+      {/* Background Atmosphere */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        <div className="absolute -top-32 left-1/2 -translate-x-1/2 w-[900px] h-[450px] bg-gradient-to-b from-sky-500/10 via-indigo-500/5 to-transparent rounded-full blur-3xl dark:from-sky-600/15 dark:via-indigo-600/10" />
+        <div className="absolute top-1/3 -right-40 w-[500px] h-[500px] bg-sky-500/5 rounded-full blur-[120px]" />
+        <div className="absolute -bottom-40 -left-40 w-[500px] h-[500px] bg-blue-600/5 rounded-full blur-[120px]" />
+
+        {/* Engineering Grid Overlay */}
         <div
-          className="absolute inset-0 opacity-[0.03]"
+          className="absolute inset-0 opacity-[0.025] dark:opacity-[0.04]"
           style={{
-            backgroundImage: `linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg, #fff 1px, transparent 1px)`,
-            backgroundSize: "48px 48px",
+            backgroundImage: `linear-gradient(currentColor 1px, transparent 1px), linear-gradient(90deg, currentColor 1px, transparent 1px)`,
+            backgroundSize: "40px 40px",
           }}
         />
       </div>
 
       {/* Top Header */}
-      <header className="relative z-10 mx-auto w-full max-w-[1500px] px-6 py-6 sm:px-10 flex items-center justify-between">
+      <header className="relative z-10 mx-auto w-full max-w-[1500px] px-6 py-6 sm:px-10 flex items-center justify-between border-b border-border/60 backdrop-blur-md">
         <Link href="/" aria-label="Go to ThermoShelter home" className="flex items-center gap-2.5 transition-opacity hover:opacity-90">
-          <BrandMark inverse={true} />
+          <BrandMark />
         </Link>
 
-        <Link
-          href="/"
-          className="rounded-full border border-white/15 bg-white/5 px-4 py-1.5 text-xs font-medium text-white/80 backdrop-blur-md transition-all hover:bg-white/10 hover:text-white flex items-center gap-1.5"
-        >
-          <span>Command Center</span>
-          <ChevronRight className="size-3.5 text-white/50" />
-        </Link>
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={handleGoBack}
+            className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3.5 py-1.5 text-xs font-semibold text-foreground shadow-xs hover:bg-secondary transition cursor-pointer"
+          >
+            <ArrowLeft className="size-3.5" />
+            <span>Go Back</span>
+          </button>
+          <Link
+            href="/dashboard"
+            className="rounded-full bg-foreground px-4 py-1.5 text-xs font-semibold text-background shadow-xs hover:opacity-90 transition flex items-center gap-1.5"
+          >
+            <span>Dashboard</span>
+            <ChevronRight className="size-3.5" />
+          </Link>
+        </div>
       </header>
 
-      {/* Main 404 Canvas */}
-      <main className="relative z-10 mx-auto my-auto w-full max-w-4xl px-6 py-12 text-center flex flex-col items-center">
+      {/* Main 404 Content Container */}
+      <main className="relative z-10 mx-auto my-auto w-full max-w-5xl px-6 py-10 flex flex-col items-center">
         {/* Telemetry Status Pill */}
-        <div className="inline-flex items-center gap-2 rounded-full border border-rose-500/30 bg-rose-950/40 px-4 py-1 text-xs font-mono text-rose-300 backdrop-blur-md shadow-[0_0_20px_rgba(244,63,94,0.15)] mb-6 animate-in fade-in zoom-in-95 duration-500">
+        <div className="inline-flex items-center gap-2 rounded-full border border-rose-500/30 bg-rose-500/10 dark:bg-rose-950/40 px-3.5 py-1 text-xs font-mono text-rose-600 dark:text-rose-300 shadow-xs mb-4">
           <span className="relative flex h-2 w-2">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75" />
             <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-500" />
           </span>
-          <span>THERMAL_BOUNDARY_BREACH // ERROR 404</span>
+          <span>404 ERROR // SECTOR COORDINATES UNRESOLVED</span>
         </div>
 
-        {/* Big Editorial 404 Display */}
-        <div className="relative mb-2">
-          <span className="font-mono text-8xl sm:text-9xl font-bold tracking-tighter text-white/10 select-none block">
+        {/* Heading Section with Clean Spacing (Zero Text Overlap) */}
+        <div className="text-center space-y-2 max-w-2xl">
+          <div className="font-mono text-6xl sm:text-7xl font-bold tracking-tight text-foreground/20 select-none">
             404
-          </span>
-          <h1 className="font-editorial text-4xl sm:text-6xl font-medium tracking-tight text-white leading-tight absolute inset-0 flex items-center justify-center">
-            Sector Coordinates Unreachable
+          </div>
+          <h1 className="font-editorial text-3xl sm:text-5xl font-medium tracking-tight text-foreground">
+            Thermal Zone & Coordinates Not Found
           </h1>
+          <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
+            The requested high-altitude shelter model, simulation artifact, or parametric route could not be found.
+            At extreme alpine frontiers (-28°C ambient, 4,800m elevation), uncalibrated parameters fall outside registered design envelopes.
+          </p>
         </div>
 
-        <p className="max-w-xl text-sm sm:text-base text-white/70 leading-relaxed mt-4 font-normal">
-          The requested shelter route, simulation job, or parametric coordinate could not be resolved.
-          At extreme high-altitude frontiers (-28°C ambient, 4,800m elevation), uncalibrated vectors fall outside active engineering envelopes.
-        </p>
-
-        {/* Tactical HUD Telemetry Box */}
-        <div className="my-8 w-full max-w-lg rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-left font-mono text-xs backdrop-blur-xl shadow-2xl space-y-2.5">
-          <div className="flex items-center justify-between border-b border-white/10 pb-2 text-[10px] text-white/50 uppercase tracking-wider">
-            <span className="flex items-center gap-1.5 text-sky-400">
-              <ShieldAlert className="size-3.5" />
-              <span>Geodesic Telemetry Log</span>
-            </span>
-            <span>Signal: Disconnected</span>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3 text-[11px] text-white/80 pt-1">
-            <div>
-              <span className="text-white/40 block text-[9px] uppercase">Default Sector</span>
-              <span>Leh Cold Continental (34.15°N, 77.58°E)</span>
-            </div>
-            <div>
-              <span className="text-white/40 block text-[9px] uppercase">Base Elevation</span>
-              <span>3,500m ASL · Cold Alpine</span>
-            </div>
-            <div>
-              <span className="text-white/40 block text-[9px] uppercase">Simulation Solver</span>
-              <span className="text-emerald-400 font-semibold">ThermoShelter Core Ready</span>
-            </div>
-            <div>
-              <span className="text-white/40 block text-[9px] uppercase">System Status</span>
-              <span className="text-amber-400 font-semibold">Self-Healing Pipeline Active</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Fast Redirection Actions */}
-        <div className="flex flex-wrap items-center justify-center gap-3 w-full max-w-lg">
-          <Link
-            href="/"
-            className="flex-1 min-w-[180px] inline-flex items-center justify-center gap-2 rounded-xl bg-white px-5 py-3 text-xs font-bold text-black shadow-[0_10px_25px_rgba(255,255,255,0.15)] transition-all hover:bg-[#CBDCE6] hover:scale-[1.02] active:scale-[0.98]"
+        {/* Fast Action Buttons */}
+        <div className="mt-6 flex flex-wrap items-center justify-center gap-3 w-full max-w-xl">
+          <button
+            type="button"
+            onClick={handleGoBack}
+            className="flex-1 min-w-[160px] inline-flex items-center justify-center gap-2 rounded-full bg-foreground px-5 py-2.5 text-xs font-bold text-background shadow-md hover:opacity-90 transition cursor-pointer"
           >
-            <Compass className="size-4" />
-            <span>Return to Base</span>
+            <ArrowLeft className="size-4" />
+            <span>Go Back to Previous Screen</span>
+          </button>
+
+          <Link
+            href="/designer"
+            className="flex-1 min-w-[140px] inline-flex items-center justify-center gap-2 rounded-full border border-border bg-card px-5 py-2.5 text-xs font-semibold text-foreground hover:bg-secondary transition"
+          >
+            <Sliders className="size-4 text-sky-500" />
+            <span>2D Wizard</span>
           </Link>
 
           <Link
             href="/designer/3d"
-            className="flex-1 min-w-[180px] inline-flex items-center justify-center gap-2 rounded-xl border border-white/20 bg-white/10 px-5 py-3 text-xs font-semibold text-white backdrop-blur-md transition-all hover:bg-white/20 hover:scale-[1.02] active:scale-[0.98]"
+            className="flex-1 min-w-[140px] inline-flex items-center justify-center gap-2 rounded-full border border-border bg-card px-5 py-2.5 text-xs font-semibold text-foreground hover:bg-secondary transition"
           >
-            <Box className="size-4 text-sky-400" />
-            <span>Launch 3D CAD</span>
-          </Link>
-
-          <Link
-            href="/ai-designer"
-            className="flex-1 min-w-[180px] inline-flex items-center justify-center gap-2 rounded-xl border border-emerald-500/30 bg-emerald-950/40 px-5 py-3 text-xs font-semibold text-emerald-300 backdrop-blur-md transition-all hover:bg-emerald-900/50 hover:scale-[1.02] active:scale-[0.98]"
-          >
-            <Sparkles className="size-4 text-emerald-400" />
-            <span>AI Generative Studio</span>
+            <Box className="size-4 text-emerald-500" />
+            <span>3D CAD Studio</span>
           </Link>
 
           <Link
             href="/projects"
-            className="flex-1 min-w-[180px] inline-flex items-center justify-center gap-2 rounded-xl border border-white/15 bg-white/5 px-5 py-3 text-xs font-semibold text-white/80 backdrop-blur-md transition-all hover:bg-white/10 hover:text-white"
+            className="flex-1 min-w-[140px] inline-flex items-center justify-center gap-2 rounded-full border border-border bg-card px-5 py-2.5 text-xs font-semibold text-foreground hover:bg-secondary transition"
           >
-            <FolderGit2 className="size-4 text-indigo-400" />
-            <span>All Projects</span>
+            <FolderGit2 className="size-4 text-indigo-500" />
+            <span>Projects Library</span>
           </Link>
+        </div>
+
+        {/* Interactive Search & Platform Module Directory */}
+        <div className="mt-10 w-full space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border pb-3">
+            <div>
+              <h3 className="text-sm font-bold text-foreground">Available Engineering Workspaces</h3>
+              <p className="text-xs text-muted-foreground">Jump directly to any platform module or search by feature.</p>
+            </div>
+
+            {/* Quick Filter Box */}
+            <div className="relative w-full sm:w-64">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search modules..."
+                className="w-full rounded-full border border-border bg-card py-1.5 pl-8 pr-3 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-foreground"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            {filteredModules.map((item) => {
+              const Icon = item.icon;
+              return (
+                <Link
+                  key={item.id}
+                  href={item.href}
+                  className="group flex flex-col justify-between rounded-2xl border border-border bg-card/60 p-4 transition-all hover:bg-card hover:border-foreground/40 hover:shadow-md hover:-translate-y-0.5"
+                >
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div className="flex size-8 items-center justify-center rounded-xl bg-secondary text-foreground group-hover:bg-foreground group-hover:text-background transition-colors">
+                        <Icon className="size-4" />
+                      </div>
+                      <span className="rounded-full bg-secondary/80 px-2 py-0.5 text-[9px] font-mono font-bold text-muted-foreground">
+                        {item.badge}
+                      </span>
+                    </div>
+                    <div>
+                      <h4 className="text-xs font-bold text-foreground group-hover:text-sky-600 dark:group-hover:text-sky-400 transition-colors">
+                        {item.name}
+                      </h4>
+                      <p className="mt-1 text-[11px] text-muted-foreground leading-relaxed line-clamp-2">
+                        {item.description}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="mt-3 flex items-center gap-1 text-[10px] font-semibold text-foreground/80 group-hover:text-foreground">
+                    <span>Open Module</span>
+                    <ArrowRight className="size-3 transition-transform group-hover:translate-x-1" />
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Geodesic Telemetry Box */}
+        <div className="mt-8 w-full rounded-2xl border border-border bg-secondary/30 p-4 font-mono text-xs">
+          <div className="flex items-center justify-between border-b border-border pb-2 text-[10px] text-muted-foreground uppercase tracking-wider">
+            <span className="flex items-center gap-1.5 text-foreground font-semibold">
+              <ShieldAlert className="size-3.5 text-amber-500" />
+              <span>Platform Geodesic Status</span>
+            </span>
+            <span className="text-emerald-600 dark:text-emerald-400 font-bold">● System Operable</span>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-[11px] pt-3 text-muted-foreground">
+            <div>
+              <span className="block text-[9px] uppercase text-muted-foreground/70">Default Station</span>
+              <span className="text-foreground font-medium">Leh TMYx (427053)</span>
+            </div>
+            <div>
+              <span className="block text-[9px] uppercase text-muted-foreground/70">Elevation Reference</span>
+              <span className="text-foreground font-medium">3,500m ASL · Cold Alpine</span>
+            </div>
+            <div>
+              <span className="block text-[9px] uppercase text-muted-foreground/70">Simulation Core</span>
+              <span className="text-emerald-600 dark:text-emerald-400 font-medium">ThermoShelter v3.0</span>
+            </div>
+            <div>
+              <span className="block text-[9px] uppercase text-muted-foreground/70">Persistence Mode</span>
+              <span className="text-foreground font-medium">Continuous Autosave</span>
+            </div>
+          </div>
         </div>
       </main>
 
       {/* Footer */}
-      <footer className="relative z-10 mx-auto w-full max-w-[1500px] px-6 py-6 sm:px-10 text-center border-t border-white/5 text-[11px] font-mono text-white/40 flex flex-col sm:flex-row items-center justify-between gap-2">
+      <footer className="relative z-10 mx-auto w-full max-w-[1500px] px-6 py-6 sm:px-10 border-t border-border text-[11px] text-muted-foreground flex flex-col sm:flex-row items-center justify-between gap-2">
         <span>ThermoShelter — Smart High-Altitude Thermal Architecture</span>
-        <span className="text-white/30">SIH 2026 Problem Statement 26051</span>
+        <span>SIH 2026 Problem Statement 26051</span>
       </footer>
     </div>
   );

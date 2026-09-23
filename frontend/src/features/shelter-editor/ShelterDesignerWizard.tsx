@@ -12,7 +12,7 @@ import { useDesignerDraft } from "./use-designer-draft";
 import { useShelterStore, SimulationJobItem, transformBackendJobToItem } from "@/lib/store/use-shelter-store";
 import { simulationApi } from "@/lib/api";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { WorkflowFooter } from "@/components/layout/WorkflowFooter";
 
 // Step Components
@@ -76,6 +76,7 @@ export const WIZARD_STEPS = [
 import { modelToFormValues, formValuesToModel, toBackendPayload, step2dTo3d } from "@/lib/store/shelter-model-adapter";
 
 export function ShelterDesignerWizard() {
+  const router = useRouter();
   const {
     projects,
     activeProjectId,
@@ -87,11 +88,13 @@ export function ShelterDesignerWizard() {
     updateSimulationJob,
     weatherDatasets,
     setActiveWeather,
+    settings,
   } = useShelterStore();
   const activeModel = projects.find((p) => p.id === activeProjectId) || projects[0];
 
   const searchParams = useSearchParams();
   const stepParam = searchParams.get("step");
+  const lastParamStepRef = React.useRef<string | null>(stepParam);
 
   const [currentStep, setCurrentStep] = useState<number>(() => {
     if (stepParam !== null) {
@@ -159,26 +162,19 @@ export function ShelterDesignerWizard() {
     [projects, updateSimulationJob]
   );
 
-  // Sync step if store or query param changes
+  // Sync step if searchParams URL query param changes from external navigation
   React.useEffect(() => {
-    if (stepParam !== null) {
-      const parsed = parseInt(stepParam, 10);
-      if (!isNaN(parsed) && parsed >= 1 && parsed <= 13) {
-        setCurrentStep(parsed);
-        setActiveWizardStep(parsed);
-        return;
+    if (stepParam !== lastParamStepRef.current) {
+      lastParamStepRef.current = stepParam;
+      if (stepParam !== null) {
+        const parsed = parseInt(stepParam, 10);
+        if (!isNaN(parsed) && parsed >= 1 && parsed <= 13) {
+          setCurrentStep(parsed);
+          setActiveWizardStep(parsed);
+        }
       }
     }
-    if (activeWizardStep && activeWizardStep !== currentStep) {
-      setCurrentStep(activeWizardStep);
-    }
-  }, [stepParam, activeWizardStep, setActiveWizardStep]);
-
-  const handleStepSelect = (stepNumber: number) => {
-    const validStep = Math.min(Math.max(1, stepNumber), 13);
-    setCurrentStep(validStep);
-    setActiveWizardStep(validStep);
-  };
+  }, [stepParam, setActiveWizardStep]);
 
   const form = useForm<ShelterFormValues, any, ShelterFormValues>({
     resolver: zodResolver(shelterFormSchema) as any,
@@ -186,33 +182,32 @@ export function ShelterDesignerWizard() {
     mode: "onChange",
   });
 
-  const isEditingIn2D = React.useRef(false);
+  const lastLoadedProjectIdRef = React.useRef<string | null>(null);
+  const activeModelRef = React.useRef(activeModel);
+  activeModelRef.current = activeModel;
 
-  // Keep form updated whenever activeModel changes in store (e.g. from 3D CAD or storage hydration)
+  // Synchronize form when user switches active project or on initial mount
   React.useEffect(() => {
-    if (activeModel && !isEditingIn2D.current) {
+    if (activeModel && activeModel.id !== lastLoadedProjectIdRef.current) {
+      lastLoadedProjectIdRef.current = activeModel.id;
       form.reset(modelToFormValues(activeModel));
     }
-  }, [activeModel?.id, activeModel?.project?.updatedAt, form]);
+  }, [activeModel?.id, form]);
 
-  // Real-time bidirectional synchronization: push form edits directly to useShelterStore
-  React.useEffect(() => {
-    const subscription = form.watch((values) => {
-      if (activeModel && values.geometry?.length) {
+  const handleAutosave = React.useCallback(
+    (values: ShelterFormValues) => {
+      const model = activeModelRef.current;
+      if (model) {
         try {
-          isEditingIn2D.current = true;
-          const patch = formValuesToModel(values as ShelterFormValues, activeModel);
-          updateProject(activeModel.id, patch);
-          setTimeout(() => {
-            isEditingIn2D.current = false;
-          }, 80);
-        } catch {
-          // Ignore transient incomplete form states
+          const patch = formValuesToModel(values, model);
+          updateProject(model.id, patch);
+        } catch (err) {
+          console.warn("Autosave project update note:", err);
         }
       }
-    });
-    return () => subscription.unsubscribe();
-  }, [form, activeModel?.id, updateProject]);
+    },
+    [updateProject]
+  );
 
   const {
     advancedMode,
@@ -220,11 +215,29 @@ export function ShelterDesignerWizard() {
     lastSaved,
     saveStatus,
     saveDraft,
+    flushNow,
     loadDraft,
     exportJson,
     importJson,
     resetToDefaults,
-  } = useDesignerDraft(form);
+  } = useDesignerDraft(form, {
+    activeProjectId: activeModel?.id,
+    autoSaveIntervalSec: settings?.autoSaveIntervalSec || 30,
+    onAutosave: handleAutosave,
+  });
+
+  const handleStepSelect = (stepNumber: number) => {
+    flushNow();
+    const validStep = Math.min(Math.max(1, stepNumber), 13);
+    setCurrentStep(validStep);
+    setActiveWizardStep(validStep);
+    lastParamStepRef.current = String(validStep);
+    if (typeof window !== "undefined") {
+      const url = new URL(window.location.href);
+      url.searchParams.set("step", String(validStep));
+      window.history.replaceState(null, "", url.toString());
+    }
+  };
 
   // Live HUD Geometry values
   const length = form.watch("geometry.length") || 6.0;
@@ -246,6 +259,7 @@ export function ShelterDesignerWizard() {
 
   const handleSaveProject = () => {
     try {
+      flushNow();
       const values = form.getValues();
       const modelToSave = formValuesToModel(values, activeModel);
       addProject(modelToSave);
@@ -260,11 +274,8 @@ export function ShelterDesignerWizard() {
     // Validate current step before advancing
     const isValid = await form.trigger();
     if (isValid || advancedMode) {
+      flushNow();
       const currentVals = form.getValues();
-      if (activeModel) {
-        const patch = formValuesToModel(currentVals, activeModel);
-        updateProject(activeModel.id, patch);
-      }
       if (currentVals.location?.weatherSource) {
         const matchingStation = weatherDatasets.find((w) => w.epwFileName === currentVals.location?.weatherSource);
         if (matchingStation) {
@@ -276,6 +287,7 @@ export function ShelterDesignerWizard() {
   };
 
   const handlePrevious = () => {
+    flushNow();
     handleStepSelect(Math.max(currentStep - 1, 1));
   };
 
@@ -365,12 +377,38 @@ export function ShelterDesignerWizard() {
             </span>
             <Link
               href={`/designer/3d?stage=${step2dTo3d(currentStep)}`}
-              onClick={() => setActiveWizardStep(currentStep)}
+              onClick={() => {
+                flushNow();
+                setActiveWizardStep(currentStep);
+              }}
               className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold text-muted-foreground transition hover:text-foreground"
             >
               <Box className="size-3.5" />
               <span>3D CAD Studio</span>
             </Link>
+          </div>
+
+          {/* Continuous Autosave Live Badge */}
+          <div
+            className="flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1 text-xs text-muted-foreground shadow-xs"
+            title="Continuous autosave active: all edits are immediately saved to storage and project library"
+          >
+            <span
+              className={`h-2 w-2 rounded-full ${
+                saveStatus === "saving"
+                  ? "bg-amber-500 animate-ping"
+                  : saveStatus === "error"
+                  ? "bg-rose-500"
+                  : "bg-emerald-500 animate-pulse"
+              }`}
+            />
+            <span className="text-[11px] font-medium">
+              {saveStatus === "saving"
+                ? "Autosaving..."
+                : lastSaved
+                ? `Autosaved ${lastSaved}`
+                : "Autosave active"}
+            </span>
           </div>
 
           <button
@@ -420,15 +458,17 @@ export function ShelterDesignerWizard() {
             Load Draft
           </button>
 
-          <button
-            type="button"
-            onClick={exportJson}
-            className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3.5 py-1.5 text-xs font-semibold text-foreground shadow-sm hover:bg-secondary"
-            title="Export JSON file"
-          >
-            <Download className="size-3.5" />
-            Export
-          </button>
+          {currentStep === 12 && (
+            <button
+              type="button"
+              onClick={exportJson}
+              className="inline-flex items-center gap-1.5 rounded-full border border-blue-500/40 bg-blue-500/10 px-3.5 py-1.5 text-xs font-semibold text-blue-600 dark:text-blue-400 shadow-sm hover:bg-blue-500/20 transition"
+              title="Export complete 13-stage shelter definition JSON"
+            >
+              <Download className="size-3.5" />
+              Export Model JSON
+            </button>
+          )}
 
           <button
             type="button"
@@ -438,17 +478,32 @@ export function ShelterDesignerWizard() {
           >
             <RotateCcw className="size-3.5" />
           </button>
-
-          {saveStatus === "saved" && (
-            <span className="text-xs font-medium text-emerald-600 flex items-center gap-1 ml-2">
-              <CheckCircle2 className="size-3.5" /> Saved
-            </span>
-          )}
         </div>
       </div>
 
       {/* 1-Click Design Presets (Baseline vs Passive Solar vs Super-Insulated) */}
       <DesignPresetsDropdown />
+
+      {/* 13-Step Progress Bar Indicator */}
+      <div className="space-y-1.5 bg-secondary/30 border border-border p-3 rounded-2xl">
+        <div className="flex items-center justify-between text-xs text-muted-foreground">
+          <span className="font-semibold text-foreground flex items-center gap-1.5">
+            <span className="flex h-4 w-4 items-center justify-center rounded-full bg-foreground text-[9px] font-bold text-background">
+              {currentStep}
+            </span>
+            Stage {currentStep} of 13: {WIZARD_STEPS[currentStep - 1].name}
+          </span>
+          <span className="font-mono text-[11px] font-bold text-emerald-600 dark:text-emerald-400">
+            {Math.round((currentStep / 13) * 100)}% Engineering Sequence Completed
+          </span>
+        </div>
+        <div className="h-2 w-full rounded-full bg-secondary overflow-hidden border border-border">
+          <div
+            className="h-full bg-emerald-500 transition-all duration-300 ease-out"
+            style={{ width: `${(currentStep / 13) * 100}%` }}
+          />
+        </div>
+      </div>
 
       {/* Stepper Navigation Strip with V0 Pills */}
       <div className="overflow-x-auto pb-2">
@@ -505,7 +560,7 @@ export function ShelterDesignerWizard() {
             {currentStep === 9 && <Step9ThermalMass form={form} advancedMode={advancedMode} />}
             {currentStep === 10 && <Step10Ventilation form={form} advancedMode={advancedMode} />}
             {currentStep === 11 && <Step11InternalConditions form={form} advancedMode={advancedMode} />}
-            {currentStep === 12 && <Step12DesignTargets form={form} advancedMode={advancedMode} />}
+            {currentStep === 12 && <Step12DesignTargets form={form} advancedMode={advancedMode} onExport={exportJson} />}
             {currentStep === 13 && <Step13SimulationSettings form={form} advancedMode={advancedMode} />}
 
             {/* Submission Error Banner */}
@@ -708,7 +763,22 @@ export function ShelterDesignerWizard() {
       )}
 
       {/* Connected Linear Workflow Footer */}
-      <WorkflowFooter customNextLabel="Inspect in 3D CAD" customNextHref={`/designer/3d?stage=${step2dTo3d(currentStep)}`} />
+      <WorkflowFooter
+        customNextLabel="Inspect in 3D CAD"
+        customNextAction={() => {
+          try {
+            const vals = form.getValues();
+            if (activeModel) {
+              const patch = formValuesToModel(vals, activeModel);
+              updateProject(activeModel.id, patch);
+            }
+          } catch (e) {
+            console.warn("Flush before footer 3D transition note:", e);
+          }
+          setActiveWizardStep(currentStep);
+          router.push(`/designer/3d?stage=${step2dTo3d(currentStep)}`);
+        }}
+      />
     </div>
   );
 }

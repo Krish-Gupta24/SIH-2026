@@ -29,7 +29,7 @@ import { DeleteProjectModal } from "./DeleteProjectModal";
 
 export function ProjectDetailsView({ projectId }: { projectId: string }) {
   const router = useRouter();
-  const { projects, weatherDatasets, addSimulationJob, deleteProject } = useShelterStore();
+  const { projects, weatherDatasets, addSimulationJob, deleteProject, simulations } = useShelterStore();
   const [isSimulating, setIsSimulating] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
@@ -41,7 +41,7 @@ export function ProjectDetailsView({ projectId }: { projectId: string }) {
     return (
       <div className="flex flex-col items-center justify-center py-24 px-4 text-center space-y-4 max-w-md mx-auto">
         <div className="w-14 h-14 rounded-2xl bg-slate-900 border border-slate-800 flex items-center justify-center text-amber-400 shadow-xl">
-          <Layers className="w-7 h-7" />
+          <Layers className="h-7 w-7" />
         </div>
         <h2 className="text-xl font-bold text-white">Project Not Found</h2>
         <p className="text-sm text-slate-400">
@@ -98,6 +98,22 @@ export function ProjectDetailsView({ projectId }: { projectId: string }) {
     }
   };
 
+  const completedRuns = simulations.filter(
+    (s) => s.projectId === project.id && s.status === "completed"
+  );
+  const completedStages = [
+    Boolean(project.project?.name), // 1. Overview
+    Boolean(project.location?.weatherSource), // 2. Climate
+    Boolean(project.envelope?.walls?.north?.layers?.length), // 3. 2D Designer
+    Boolean(project.geometry?.length && project.geometry?.width), // 4. 3D CAD
+    Boolean(completedRuns.length > 0), // 5. Simulate
+    Boolean(completedRuns.some((r) => r.results?.summary)), // 6. Results
+    Boolean(simulations.some((s) => s.projectId === project.id && (s.status === "completed" || s.engine?.includes("AI")))), // 7. Optimize
+    Boolean(simulations.length >= 2), // 8. Compare
+    Boolean(completedRuns.length > 0), // 9. Report
+  ].filter(Boolean).length;
+  const projectProgressPct = Math.round((completedStages / 9) * 100);
+
   const walls = Object.entries(project.envelope?.walls || {});
   const windows = project.windows || [];
   const doors = project.doors || [];
@@ -149,6 +165,28 @@ export function ProjectDetailsView({ projectId }: { projectId: string }) {
             <Play className="h-4 w-4" />
             {isSimulating ? "Launching..." : "Simulate (ThermoShelter)"}
           </Button>
+        </div>
+      </div>
+
+      {/* Workflow Progress Banner */}
+      <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-300">Workflow Pipeline Progress</span>
+            <Badge variant="outline" className="text-emerald-400 border-emerald-500/30">
+              {completedStages}/9 Stages ({projectProgressPct}%)
+            </Badge>
+          </div>
+          <p className="text-xs text-slate-400">Continuous progression across climate downscaling, envelope assemblies, 3D CAD, simulation, and certified reporting.</p>
+        </div>
+        <div className="w-full sm:w-48 space-y-1">
+          <div className="h-2 w-full rounded-full bg-slate-950 overflow-hidden border border-slate-800">
+            <div className="h-full bg-emerald-500 transition-all duration-300" style={{ width: `${projectProgressPct}%` }} />
+          </div>
+          <div className="flex justify-between text-[10px] font-mono text-slate-400">
+            <span>Validated {completedStages} of 9</span>
+            <span>{projectProgressPct}%</span>
+          </div>
         </div>
       </div>
 

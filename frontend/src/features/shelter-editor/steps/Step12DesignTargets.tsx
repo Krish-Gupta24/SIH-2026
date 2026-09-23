@@ -1,14 +1,15 @@
 import React from "react";
 import { ShelterFormValues, ShelterFormReturn } from "../schema";
 import { FieldWrapper } from "../components/FieldWrapper";
-import { Target, Thermometer, ShieldCheck } from "lucide-react";
+import { Target, Thermometer, ShieldCheck, Download } from "lucide-react";
 
 interface StepProps {
   form: ShelterFormReturn;
   advancedMode: boolean;
+  onExport?: () => void;
 }
 
-export function Step12DesignTargets({ form, advancedMode }: StepProps) {
+export function Step12DesignTargets({ form, advancedMode, onExport }: StepProps) {
   const { register, watch, formState: { errors } } = form;
 
   const minComfort = watch("designTargets.comfortTempMinC");
@@ -178,6 +179,28 @@ export function Step12DesignTargets({ form, advancedMode }: StepProps) {
           />
         </FieldWrapper>
       </div>
+
+      {onExport && (
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-xl border border-blue-500/30 bg-blue-950/20 p-4">
+          <div className="space-y-0.5">
+            <h4 className="text-xs font-bold text-white flex items-center gap-2">
+              <Download className="size-4 text-blue-400" />
+              Export Fully Engineered Shelter Specification
+            </h4>
+            <p className="text-[11px] text-slate-400">
+              Download complete 13-stage JSON model definition with all envelope layers, climate boundary conditions, and design targets.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onExport}
+            className="inline-flex items-center justify-center gap-1.5 rounded-full bg-blue-600 hover:bg-blue-500 px-4 py-2 text-xs font-bold text-white shadow-md transition cursor-pointer shrink-0"
+          >
+            <Download className="size-3.5" />
+            Export Model JSON
+          </button>
+        </div>
+      )}
 
       <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-xs text-slate-600 dark:border-slate-800 dark:bg-slate-900/50 dark:text-slate-400">
         <span className="font-semibold text-slate-900 dark:text-slate-200">Engineering Notice: </span>

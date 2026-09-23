@@ -96,6 +96,23 @@ export function NewProjectView() {
   const [projectName, setProjectName] = useState("");
   const [selectedPreset, setSelectedPreset] = useState(PRESET_TEMPLATES[0].id);
 
+  const handleLaunchCustomWizard = () => {
+    const newId = `shelter-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`;
+    const cloned = JSON.parse(JSON.stringify(DEFAULT_LADAKH_PROJECT));
+    cloned.id = newId;
+    cloned.project = {
+      ...cloned.project,
+      id: newId,
+      name: projectName.trim() ? projectName.trim() : "Custom Cold-Climate Shelter",
+      description: "Parametrically engineered shelter designed with ThermoShelter 13-step sequence.",
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    addProject(cloned);
+    setActiveProject(newId);
+    router.push("/designer");
+  };
+
   const handleCreateWithPreset = (presetId: string) => {
     const presetMap: Record<string, typeof DEFAULT_LADAKH_PROJECT> = {
       "shelter-ladakh-01": DEFAULT_LADAKH_PROJECT,
@@ -105,8 +122,18 @@ export function NewProjectView() {
       "shelter-baseline-tin": DEFAULT_BASELINE_TIN_PROJECT,
     };
     const target = presetMap[presetId] || DEFAULT_LADAKH_PROJECT;
-    addProject(target);
-    setActiveProject(target.id);
+    const newId = `shelter-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`;
+    const cloned = JSON.parse(JSON.stringify(target));
+    cloned.id = newId;
+    cloned.project = {
+      ...target.project,
+      id: newId,
+      name: projectName.trim() ? projectName.trim() : `${target.project.name} (Custom)`,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    addProject(cloned);
+    setActiveProject(newId);
     router.push("/designer");
   };
 
@@ -119,6 +146,22 @@ export function NewProjectView() {
         </h1>
         <p className="text-xs text-slate-400 mt-1">
           Choose a pre-engineered cold-climate baseline template or launch the 13-step parametric designer.
+        </p>
+      </div>
+
+      {/* Project Name Input */}
+      <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-5 space-y-2">
+        <label className="text-xs font-semibold uppercase tracking-wider text-slate-300">
+          Project Name (Optional)
+        </label>
+        <Input
+          value={projectName}
+          onChange={(e) => setProjectName(e.target.value)}
+          placeholder="e.g. Siachen Forward Habitat Unit 4, Spiti Passive Solar Shelter..."
+          className="bg-slate-950/80 border-slate-700 text-sm placeholder:text-slate-500"
+        />
+        <p className="text-[11px] text-slate-500">
+          Your project and all changes will continuously autosave as you adjust parameters.
         </p>
       </div>
 
@@ -137,13 +180,15 @@ export function NewProjectView() {
           </p>
         </div>
 
-        <Link href="/designer">
-          <Button size="lg" className="font-bold gap-2 whitespace-nowrap shadow-lg shadow-blue-600/30">
-            <Wand2 className="h-4 w-4" />
-            Launch 13-Step Wizard
-            <ArrowRight className="h-4 w-4" />
-          </Button>
-        </Link>
+        <Button
+          size="lg"
+          onClick={handleLaunchCustomWizard}
+          className="font-bold gap-2 whitespace-nowrap shadow-lg shadow-blue-600/30 cursor-pointer"
+        >
+          <Wand2 className="h-4 w-4" />
+          Launch 13-Step Wizard
+          <ArrowRight className="h-4 w-4" />
+        </Button>
       </div>
 
       {/* Cold Climate Engineering Preset Templates */}

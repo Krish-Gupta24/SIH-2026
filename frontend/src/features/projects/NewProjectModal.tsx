@@ -143,12 +143,13 @@ export function NewProjectModal({ isOpen, onClose }: NewProjectModalProps) {
     const archetype = ARCHETYPE_PRESETS.find((a) => a.id === selectedArchetype) || ARCHETYPE_PRESETS[0];
     const base = archetype.baseModel;
     const finalWeather = weatherSource || archetype.weatherSource;
+    const clonedBase = JSON.parse(JSON.stringify(base));
 
     const newModel: ShelterModel = {
-      ...base,
+      ...clonedBase,
       id: projectId,
       project: {
-        ...base.project,
+        ...clonedBase.project,
         id: projectId,
         name: projectName,
         description,
@@ -157,7 +158,7 @@ export function NewProjectModal({ isOpen, onClose }: NewProjectModalProps) {
         updatedAt: new Date().toISOString(),
       },
       location: {
-        ...base.location,
+        ...clonedBase.location,
         latitude,
         longitude,
         elevation,

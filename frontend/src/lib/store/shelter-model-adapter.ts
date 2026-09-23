@@ -3,16 +3,48 @@ import { ShelterFormValues, defaultShelterFormValues } from "@/features/shelter-
 
 /**
  * Maps 1-indexed 2D wizard step (1 to 13) to 0-indexed 3D stage (0 to 12).
+ * Provides exact semantic alignment across all 13 engineering stages.
  */
 export function step2dTo3d(step2d: number): number {
-  return Math.max(0, Math.min(12, step2d - 1));
+  const map: Record<number, number> = {
+    1: 0,  // Project -> Stage 0 (Project)
+    2: 1,  // Location -> Stage 1 (Location)
+    3: 2,  // Geometry -> Stage 2 (Geometry)
+    4: 4,  // Walls -> Stage 4 (Walls)
+    5: 5,  // Roof -> Stage 5 (Roof)
+    6: 6,  // Floor -> Stage 6 (Floor)
+    7: 7,  // Windows -> Stage 7 (Windows)
+    8: 8,  // Doors -> Stage 8 (Doors)
+    9: 10, // Thermal Mass -> Stage 10 (Thermal Mass)
+    10: 11,// Ventilation -> Stage 11 (Ventilation)
+    11: 12,// Internal Loads -> Stage 12 (Simulation & Targets)
+    12: 12,// Design Targets -> Stage 12 (Simulation & Targets)
+    13: 12,// Simulation -> Stage 12 (Simulation & Targets)
+  };
+  return map[step2d] !== undefined ? map[step2d] : Math.max(0, Math.min(12, step2d - 1));
 }
 
 /**
  * Maps 0-indexed 3D stage (0 to 12) to 1-indexed 2D wizard step (1 to 13).
+ * Provides exact semantic alignment across all 13 engineering stages.
  */
 export function step3dTo2d(step3d: number): number {
-  return Math.max(1, Math.min(13, step3d + 1));
+  const map: Record<number, number> = {
+    0: 1,  // Stage 0 (Project) -> Step 1 (Project)
+    1: 2,  // Stage 1 (Location) -> Step 2 (Location)
+    2: 3,  // Stage 2 (Geometry) -> Step 3 (Geometry)
+    3: 3,  // Stage 3 (Orientation) -> Step 3 (Geometry - Orientation slider)
+    4: 4,  // Stage 4 (Walls) -> Step 4 (Walls)
+    5: 5,  // Stage 5 (Roof) -> Step 5 (Roof)
+    6: 6,  // Stage 6 (Floor) -> Step 6 (Floor)
+    7: 7,  // Stage 7 (Windows) -> Step 7 (Windows)
+    8: 8,  // Stage 8 (Doors) -> Step 8 (Doors)
+    9: 7,  // Stage 9 (Shading) -> Step 7 (Windows - Shading overhang)
+    10: 9, // Stage 10 (Thermal Mass) -> Step 9 (Thermal Mass)
+    11: 10,// Stage 11 (Ventilation) -> Step 10 (Ventilation)
+    12: 13,// Stage 12 (Simulation) -> Step 13 (Simulation)
+  };
+  return map[step3d] !== undefined ? map[step3d] : Math.max(1, Math.min(13, step3d + 1));
 }
 
 /**
@@ -61,9 +93,9 @@ export function modelToFormValues(model: ShelterModel): ShelterFormValues {
     },
     roof: model.envelope?.roof || defaultShelterFormValues.roof,
     floor: model.envelope?.floor || defaultShelterFormValues.floor,
-    windows: model.windows && model.windows.length > 0 ? model.windows : defaultShelterFormValues.windows,
-    doors: model.doors && model.doors.length > 0 ? model.doors : defaultShelterFormValues.doors,
-    thermalMass: model.thermalMass || defaultShelterFormValues.thermalMass,
+    windows: Array.isArray(model.windows) ? model.windows : defaultShelterFormValues.windows,
+    doors: Array.isArray(model.doors) ? model.doors : defaultShelterFormValues.doors,
+    thermalMass: Array.isArray(model.thermalMass) ? model.thermalMass : defaultShelterFormValues.thermalMass,
     ventilation: {
       infiltrationACH: model.ventilation?.infiltrationACH ?? 0.35,
       naturalVentilationEnabled: model.ventilation?.naturalVentilationEnabled ?? true,
@@ -103,7 +135,8 @@ export function modelToFormValues(model: ShelterModel): ShelterFormValues {
 /**
  * Converts ShelterFormValues back into a canonical ShelterModel.
  *
- * Reconstructs the `envelope` nesting from the form's flat `envelopeWalls`, `roof`, `floor` keys.
+ * Reconstructs the `envelope` nesting from the form's flat `envelopeWalls`, `roof`, `floor` keys,
+ * ensuring all unedited faces, windows, and thermal attributes are safely preserved.
  */
 export function formValuesToModel(
   values: ShelterFormValues,
@@ -117,10 +150,12 @@ export function formValuesToModel(
     schemaVersion: base.schemaVersion || "1.0.0",
     project: {
       id: values.project?.id || base.id || "shelter-model",
-      name: values.project?.name || "Shelter Model",
-      description: values.project?.description || "",
-      tags: values.project?.tags || [],
-      version: values.project?.version || "1.0.0",
+      name: values.project?.name || base.project?.name || "Shelter Model",
+      description: values.project?.description ?? base.project?.description ?? "",
+      tags: values.project?.tags || base.project?.tags || [],
+      version: values.project?.version || base.project?.version || "1.0.0",
+      createdAt: base.project?.createdAt || new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
     },
     location: {
       ...base.location,
@@ -131,13 +166,18 @@ export function formValuesToModel(
       ...values.geometry,
     },
     envelope: {
-      walls: values.envelopeWalls || base.envelope?.walls,
+      walls: {
+        north: values.envelopeWalls?.north || base.envelope?.walls?.north,
+        south: values.envelopeWalls?.south || base.envelope?.walls?.south,
+        east: values.envelopeWalls?.east || base.envelope?.walls?.east,
+        west: values.envelopeWalls?.west || base.envelope?.walls?.west,
+      },
       roof: values.roof || base.envelope?.roof,
       floor: values.floor || base.envelope?.floor,
     },
-    windows: values.windows || [],
-    doors: values.doors || [],
-    thermalMass: values.thermalMass || [],
+    windows: values.windows !== undefined ? values.windows : (base.windows || []),
+    doors: values.doors !== undefined ? values.doors : (base.doors || []),
+    thermalMass: values.thermalMass !== undefined ? values.thermalMass : (base.thermalMass || []),
     ventilation: {
       ...base.ventilation,
       ...values.ventilation,
