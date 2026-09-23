@@ -13,6 +13,12 @@ import {
   calculateThermalMetrics,
   type HourlyThermalStep,
 } from "../thermal-physics";
+import { useExplodeFactor } from "../use-explode-factor";
+import {
+  createMetalRoofTexture,
+  createMudPlasterWallTexture,
+  createStoneFoundationTexture,
+} from "../procedural-textures";
 
 interface Props {
   model: ShelterModel;
@@ -73,6 +79,13 @@ function getWallMaterialColor(
     return heatFlowColors[side];
   }
   return side === "south" ? "#ded9cb" : palette.paper;
+}
+
+function addPosition(
+  base: [number, number, number],
+  delta: [number, number, number]
+): [number, number, number] {
+  return [base[0] + delta[0], base[1] + delta[1], base[2] + delta[2]];
 }
 
 interface ThermalTextureParams {
@@ -373,8 +386,32 @@ export function ShelterMesh({ model, selected, onSelect, settings, hourlyStep }:
 
   const isXRay = settings.transparentWalls;
   const isThermal = settings.visualization === "thermal";
+  const isModelVisual = settings.visualization === "model";
   const xrayWallOpacity = 0.14;
   const xrayEdgeOpacity = 0.88;
+
+  const explodeRef = useExplodeFactor(settings.explodedView);
+  const explode = explodeRef.current;
+  const span = Math.max(model.geometry.length, model.geometry.width);
+  const wallExplode = (side: WallOrientation): [number, number, number] => {
+    const n = geom.walls[side].normal;
+    const scale = 0.35 + span * 0.11;
+    return [n[0] * scale * explode, 0.14 * explode, n[2] * scale * explode];
+  };
+  const roofExplodeY = (model.geometry.height * 0.38 + 0.75) * explode;
+  const floorExplodeY = -0.28 * explode;
+
+  const buildingTextures = useMemo(() => {
+    if (typeof window === "undefined") return null;
+    return {
+      south: createMudPlasterWallTexture("south"),
+      north: createMudPlasterWallTexture("north"),
+      east: createMudPlasterWallTexture("east"),
+      west: createMudPlasterWallTexture("west"),
+      roof: createMetalRoofTexture(),
+      floor: createStoneFoundationTexture(),
+    };
+  }, []);
 
   // Dynamically calibrated FLIR / Turbo thermal gradient maps for surfaces (ISO 6946 / ISO 10211)
   const thermalTextures = useMemo(() => {
@@ -470,9 +507,15 @@ export function ShelterMesh({ model, selected, onSelect, settings, hourlyStep }:
 
   return (
     <group rotation={[0, orientation, 0]}>
+      {explode > 0.35 ? (
+        <Html position={[0, model.geometry.height + 1.2 + roofExplodeY, 0]} center distanceFactor={14}>
+          <span className="cad-scene-label">Exploded assembly · drag orbit to inspect layers</span>
+        </Html>
+      ) : null}
+
       {/* 1. Ground Foundation Slab */}
       <mesh
-        position={geom.floor.center}
+        position={addPosition(geom.floor.center, [0, floorExplodeY, 0])}
         castShadow
         receiveShadow
         onClick={(e) => {
@@ -493,7 +536,13 @@ export function ShelterMesh({ model, selected, onSelect, settings, hourlyStep }:
               ? "#ffffff"
               : palette.ink
           }
-          map={!isXRay && isThermal ? thermalTextures?.floor : null}
+          map={
+            !isXRay && isThermal
+              ? thermalTextures?.floor
+              : isModelVisual && !isXRay
+              ? buildingTextures?.floor
+              : null
+          }
           emissiveMap={!isXRay && isThermal ? thermalTextures?.floor : null}
           emissive={!isXRay && isThermal ? "#ffffff" : "#000000"}
           emissiveIntensity={!isXRay && isThermal ? 0.45 : 0}
@@ -507,7 +556,7 @@ export function ShelterMesh({ model, selected, onSelect, settings, hourlyStep }:
 
       {/* Floor edge lines in X-Ray mode */}
       {isXRay && (
-        <lineSegments position={geom.floor.center}>
+        <lineSegments position={addPosition(geom.floor.center, [0, floorExplodeY, 0])}>
           <edgesGeometry args={[new THREE.BoxGeometry(...geom.floor.dimensions)]} />
           <lineBasicMaterial color="#38bdf8" transparent opacity={xrayEdgeOpacity} />
         </lineSegments>
@@ -519,12 +568,13 @@ export function ShelterMesh({ model, selected, onSelect, settings, hourlyStep }:
         const layers = model.envelope.walls[side].layers;
         const wallGeom = wallGeometries[side];
         const active = isActive(`wall-${side}`);
+        const wallPos = addPosition(wall.position, wallExplode(side));
 
         return (
           <group key={side}>
             <mesh
               geometry={wallGeom}
-              position={wall.position}
+              position={wallPos}
               rotation={wall.rotation}
               castShadow={!isXRay}
               receiveShadow
@@ -543,7 +593,13 @@ export function ShelterMesh({ model, selected, onSelect, settings, hourlyStep }:
                     ? "#ffffff"
                     : getWallMaterialColor(settings.visualization, side, active)
                 }
-                map={!isXRay && isThermal ? thermalTextures?.[side] : null}
+                map={
+                  !isXRay && isThermal
+                    ? thermalTextures?.[side]
+                    : isModelVisual && !isXRay
+                    ? buildingTextures?.[side]
+                    : null
+                }
                 emissiveMap={!isXRay && isThermal ? thermalTextures?.[side] : null}
                 emissive={!isXRay && isThermal ? "#ffffff" : "#000000"}
                 emissiveIntensity={!isXRay && isThermal ? 0.6 : 0}
@@ -559,7 +615,7 @@ export function ShelterMesh({ model, selected, onSelect, settings, hourlyStep }:
 
             {/* Architectural CAD Edge Lines in X-Ray mode */}
             {isXRay && (
-              <lineSegments position={wall.position} rotation={wall.rotation}>
+              <lineSegments position={wallPos} rotation={wall.rotation}>
                 <edgesGeometry args={[wallGeom]} />
                 <lineBasicMaterial
                   color={active ? palette.solar : "#38bdf8"}
@@ -579,9 +635,9 @@ export function ShelterMesh({ model, selected, onSelect, settings, hourlyStep }:
                     <mesh
                       key={`${layer.materialId}-${layerIndex}`}
                       position={[
-                        wall.position[0] + normal[0] * displacement,
-                        wall.position[1],
-                        wall.position[2] + normal[2] * displacement,
+                        wallPos[0] + normal[0] * displacement,
+                        wallPos[1],
+                        wallPos[2] + normal[2] * displacement,
                       ]}
                       rotation={wall.rotation}
                     >
@@ -613,6 +669,7 @@ export function ShelterMesh({ model, selected, onSelect, settings, hourlyStep }:
       })}
 
       {/* 3. Roof System (Gable, Shed, or Flat) with full architectural accuracy */}
+      <group position={[0, roofExplodeY, 0]}>
       {model.geometry.roofType === "Gable" && model.geometry.roofAngle > 0 ? (
         <group>
           {/* Pitch 1: South facing panel */}
@@ -645,7 +702,13 @@ export function ShelterMesh({ model, selected, onSelect, settings, hourlyStep }:
                     ? "#ffffff"
                     : palette.charcoal
                 }
-                map={!isXRay && isThermal ? thermalTextures?.roof : null}
+                map={
+                  !isXRay && isThermal
+                    ? thermalTextures?.roof
+                    : isModelVisual && !isXRay
+                    ? buildingTextures?.roof
+                    : null
+                }
                 emissiveMap={!isXRay && isThermal ? thermalTextures?.roof : null}
                 emissive={!isXRay && isThermal ? "#ffffff" : "#000000"}
                 emissiveIntensity={!isXRay && isThermal ? 0.55 : 0}
@@ -696,7 +759,13 @@ export function ShelterMesh({ model, selected, onSelect, settings, hourlyStep }:
                     ? "#ffffff"
                     : palette.charcoal
                 }
-                map={!isXRay && isThermal ? thermalTextures?.roof : null}
+                map={
+                  !isXRay && isThermal
+                    ? thermalTextures?.roof
+                    : isModelVisual && !isXRay
+                    ? buildingTextures?.roof
+                    : null
+                }
                 emissiveMap={!isXRay && isThermal ? thermalTextures?.roof : null}
                 emissive={!isXRay && isThermal ? "#ffffff" : "#000000"}
                 emissiveIntensity={!isXRay && isThermal ? 0.55 : 0}
@@ -839,7 +908,13 @@ export function ShelterMesh({ model, selected, onSelect, settings, hourlyStep }:
                     ? "#ffffff"
                     : palette.charcoal
                 }
-                map={!isXRay && isThermal ? thermalTextures?.roof : null}
+                map={
+                  !isXRay && isThermal
+                    ? thermalTextures?.roof
+                    : isModelVisual && !isXRay
+                    ? buildingTextures?.roof
+                    : null
+                }
                 emissiveMap={!isXRay && isThermal ? thermalTextures?.roof : null}
                 emissive={!isXRay && isThermal ? "#ffffff" : "#000000"}
                 emissiveIntensity={!isXRay && isThermal ? 0.55 : 0}
@@ -994,7 +1069,13 @@ export function ShelterMesh({ model, selected, onSelect, settings, hourlyStep }:
                   ? "#ffffff"
                   : palette.charcoal
               }
-              map={!isXRay && isThermal ? thermalTextures?.roof : null}
+              map={
+                !isXRay && isThermal
+                  ? thermalTextures?.roof
+                  : isModelVisual && !isXRay
+                  ? buildingTextures?.roof
+                  : null
+              }
               emissiveMap={!isXRay && isThermal ? thermalTextures?.roof : null}
               emissive={!isXRay && isThermal ? "#ffffff" : "#000000"}
               emissiveIntensity={!isXRay && isThermal ? 0.55 : 0}
@@ -1041,6 +1122,7 @@ export function ShelterMesh({ model, selected, onSelect, settings, hourlyStep }:
           )}
         </group>
       )}
+      </group>
 
       {/* 4. Windows Assemblies with Real Frames, Double Glazing & Sills */}
       {geom.windows.map((win, index) => {
@@ -1055,10 +1137,12 @@ export function ShelterMesh({ model, selected, onSelect, settings, hourlyStep }:
         const glassHeight = Math.max(0.1, wHeight - frameThickness * 2);
         const overhangProj = source?.shadingOverhang || 0;
 
+        const winPos = addPosition(win.worldPosition, wallExplode(win.wall));
+
         return (
           <group
             key={win.id}
-            position={win.worldPosition}
+            position={winPos}
             rotation={win.rotation}
             onClick={(e) => {
               e.stopPropagation();
@@ -1237,10 +1321,12 @@ export function ShelterMesh({ model, selected, onSelect, settings, hourlyStep }:
         const panelHeight = dHeight - frameThickness;
         const panelDepth = 0.06;
 
+        const doorPos = addPosition(door.worldPosition, wallExplode(door.wall));
+
         return (
           <group
             key={door.id}
-            position={door.worldPosition}
+            position={doorPos}
             rotation={door.rotation}
             onClick={(e) => {
               e.stopPropagation();

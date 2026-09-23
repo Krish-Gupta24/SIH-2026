@@ -17,6 +17,8 @@ export interface ViewerSettings {
   showDimensions: boolean;
   showCompass: boolean;
   showSunShadows: boolean;
+  showEnvironment: boolean;
+  explodedView: boolean;
   wireframe: boolean;
   transparentWalls: boolean;
   revealLayers: boolean;

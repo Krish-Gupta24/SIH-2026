@@ -11,6 +11,8 @@ import { ShelterMesh } from "./ShelterMesh";
 import { DimensionLines } from "./DimensionLines";
 import { CompassRose } from "./CompassRose";
 import { ThermalScaleLegend } from "./ThermalScaleLegend";
+import { SceneEnvironment } from "./SceneEnvironment";
+import { SunLighting } from "./SunLighting";
 
 interface ShelterCanvasProps {
   model: ShelterModel;
@@ -20,6 +22,7 @@ interface ShelterCanvasProps {
   activePreset: CameraPreset;
   hourlyStep?: HourlyThermalStep | null;
   hasSimResults?: boolean;
+  sunHour?: number;
 }
 
 function CameraController({
@@ -63,15 +66,16 @@ export function ShelterCanvas({
   activePreset,
   hourlyStep,
   hasSimResults,
+  sunHour = 12,
 }: ShelterCanvasProps) {
   const controlsRef = useRef<OrbitControlsImpl>(null);
   const compassRadius = Math.max(4.5, Math.max(model.geometry.length, model.geometry.width) * 0.72);
 
-  // Adapt background & fog based on active visualizer mode
+  const isAnalysis =
+    settings.visualization === "thermal" || settings.visualization === "heat-flow";
+  const envActive = settings.showEnvironment && !isAnalysis;
   const isSolar = settings.visualization === "solar";
-  const bgColor = isSolar ? "#d8e6ef" : "#dce7ed";
-  const fogNear = 24;
-  const fogFar = 65;
+  const bgColor = envActive ? "#c9d8e4" : isSolar ? "#d8e6ef" : "#dce7ed";
 
   return (
     <div className="cad-viewport relative size-full overflow-hidden">
@@ -83,7 +87,7 @@ export function ShelterCanvas({
         className="touch-none"
       >
         <color attach="background" args={[bgColor]} />
-        <fog attach="fog" args={[bgColor, fogNear, fogFar]} />
+        {!envActive ? <fog attach="fog" args={[bgColor, 24, 65]} /> : null}
 
         <CameraController preset={activePreset} controlsRef={controlsRef} model={model} />
 
@@ -93,38 +97,12 @@ export function ShelterCanvas({
           enableDamping
           dampingFactor={0.08}
           minDistance={3.5}
-          maxDistance={50}
+          maxDistance={55}
           maxPolarAngle={Math.PI / 2 - 0.02}
         />
 
-        <ambientLight intensity={0.8} />
-        <hemisphereLight
-          args={[
-            "#ffffff",
-            "#6e818f",
-            0.8,
-          ]}
-        />
-
-        {/* Alpine Solar Directional Light */}
-        <directionalLight
-          position={[isSolar ? 14 : 10, isSolar ? 22 : 16, isSolar ? 16 : 8]}
-          intensity={isSolar ? 2.2 : 1.65}
-          castShadow={settings.showSunShadows}
-          shadow-mapSize-width={2048}
-          shadow-mapSize-height={2048}
-          shadow-bias={-0.0002}
-        />
-
-        {/* Ground Terrain Plane */}
-        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.025, 0]} receiveShadow>
-          <planeGeometry args={[100, 100]} />
-          <meshStandardMaterial
-            color="#c8d7df"
-            roughness={1}
-            metalness={0}
-          />
-        </mesh>
+        <SunLighting model={model} settings={settings} sunHour={sunHour} />
+        <SceneEnvironment model={model} settings={settings} sunHour={sunHour} />
 
         {/* CAD Coordinate Grid */}
         {settings.showGrid ? (

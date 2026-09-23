@@ -27,7 +27,9 @@ import {
   Sparkles,
   Sun,
   Undo2,
+  UnfoldVertical,
   Wind,
+  Mountain,
 } from "lucide-react";
 import type { ShelterModel } from "@/types/shelter";
 import { useShelterStore } from "@/lib/store/use-shelter-store";
@@ -66,7 +68,18 @@ export function Shelter3DDesigner({ model, step, onStepChange, onUpdate, onSimul
   const [rightOpen, setRightOpen] = useState(true);
   const [saved, setSaved] = useState(false);
   const [materialsOpen, setMaterialsOpen] = useState(false);
-  const [settings, setSettings] = useState<ViewerSettings>({ showGrid: true, showDimensions: true, showCompass: true, showSunShadows: true, wireframe: false, transparentWalls: false, revealLayers: false, visualization: "model" });
+  const [settings, setSettings] = useState<ViewerSettings>({
+    showGrid: true,
+    showDimensions: true,
+    showCompass: true,
+    showSunShadows: true,
+    showEnvironment: true,
+    explodedView: false,
+    wireframe: false,
+    transparentWalls: false,
+    revealLayers: false,
+    visualization: "model",
+  });
   const [selectedHour, setSelectedHour] = useState(12);
   const [isPlaying, setIsPlaying] = useState(false);
 
@@ -262,6 +275,22 @@ export function Shelter3DDesigner({ model, step, onStepChange, onUpdate, onSimul
             <Boxes />
             Wireframe
           </button>
+          <button
+            data-active={settings.showEnvironment}
+            title="Ladakh site context, sky, and mountains"
+            onClick={() => setSetting("showEnvironment", !settings.showEnvironment)}
+          >
+            <Mountain />
+            Environment
+          </button>
+          <button
+            data-active={settings.explodedView}
+            title="Exploded assembly view"
+            onClick={() => setSetting("explodedView", !settings.explodedView)}
+          >
+            <UnfoldVertical />
+            Exploded
+          </button>
         </div>
 
         <ShelterCanvas
@@ -272,6 +301,7 @@ export function Shelter3DDesigner({ model, step, onStepChange, onUpdate, onSimul
           activePreset={preset}
           hourlyStep={hourlyStep}
           hasSimResults={Boolean(activeSim)}
+          sunHour={selectedHour}
         />
 
         {!activeSim &&
@@ -309,11 +339,12 @@ export function Shelter3DDesigner({ model, step, onStepChange, onUpdate, onSimul
             </div>
           )}
 
-        {activeSim &&
+        {(settings.visualization === "model" && settings.showEnvironment) ||
+        (activeSim &&
           hourlyStep &&
           (settings.visualization === "thermal" ||
             settings.visualization === "heat-flow" ||
-            settings.visualization === "solar") ? (
+            settings.visualization === "solar")) ? (
           <div
             className="cad-timeline-scrubber"
             role="region"
@@ -354,7 +385,7 @@ export function Shelter3DDesigner({ model, step, onStepChange, onUpdate, onSimul
                 </button>
                 <span className="cad-timeline-chip font-bold text-amber-600 dark:text-amber-400">
                   <Clock className="size-3" />
-                  {hourlyStep.timeLabel}
+                  {hourlyStep?.timeLabel ?? `${selectedHour.toString().padStart(2, "0")}:00`}
                 </span>
               </div>
 
@@ -410,29 +441,37 @@ export function Shelter3DDesigner({ model, step, onStepChange, onUpdate, onSimul
               />
               <span className="text-[10px] font-mono text-muted-foreground w-7">23:00</span>
 
-              <div className="hidden md:flex items-center gap-2 border-l border-slate-300 dark:border-slate-700 pl-3">
-                <span className="cad-timeline-chip" title="Ambient outdoor Sol-Air temperature">
-                  ❄ Out:{" "}
-                  <strong className="ml-0.5">
-                    {hourlyStep.outdoorTemp > 0
-                      ? `+${hourlyStep.outdoorTemp}`
-                      : hourlyStep.outdoorTemp}
-                    °C
-                  </strong>
-                </span>
-                <span className="cad-timeline-chip" title="Indoor living zone temperature">
-                  🏠 In:{" "}
-                  <strong className="ml-0.5">
-                    {hourlyStep.indoorTemp > 0
-                      ? `+${hourlyStep.indoorTemp}`
-                      : hourlyStep.indoorTemp}
-                    °C
-                  </strong>
-                </span>
-                <span className="cad-timeline-chip" title="Aperture solar irradiance harvest">
-                  ☀️ Sun: <strong className="ml-0.5">{hourlyStep.solarGainW} W</strong>
-                </span>
-              </div>
+              {hourlyStep ? (
+                <div className="hidden md:flex items-center gap-2 border-l border-slate-300 dark:border-slate-700 pl-3">
+                  <span className="cad-timeline-chip" title="Ambient outdoor Sol-Air temperature">
+                    ❄ Out:{" "}
+                    <strong className="ml-0.5">
+                      {hourlyStep.outdoorTemp > 0
+                        ? `+${hourlyStep.outdoorTemp}`
+                        : hourlyStep.outdoorTemp}
+                      °C
+                    </strong>
+                  </span>
+                  <span className="cad-timeline-chip" title="Indoor living zone temperature">
+                    🏠 In:{" "}
+                    <strong className="ml-0.5">
+                      {hourlyStep.indoorTemp > 0
+                        ? `+${hourlyStep.indoorTemp}`
+                        : hourlyStep.indoorTemp}
+                      °C
+                    </strong>
+                  </span>
+                  <span className="cad-timeline-chip" title="Aperture solar irradiance harvest">
+                    ☀️ Sun: <strong className="ml-0.5">{hourlyStep.solarGainW} W</strong>
+                  </span>
+                </div>
+              ) : (
+                <div className="hidden md:flex items-center gap-2 border-l border-slate-300 dark:border-slate-700 pl-3">
+                  <span className="cad-timeline-chip" title="Sun path for site latitude">
+                    ☀️ Solar timeline · scrub to move sun & shadows
+                  </span>
+                </div>
+              )}
             </div>
           </div>
         ) : null}
