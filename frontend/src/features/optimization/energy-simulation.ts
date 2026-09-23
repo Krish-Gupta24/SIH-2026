@@ -32,6 +32,7 @@ import {
   DEFAULT_LOGISTICS_CONFIG,
   DEFAULT_KEROSENE_CONFIG,
   calculateComparativeEconomics,
+  calculateFuelLogistics,
 } from "./fuel-logistics";
 
 export const DEFAULT_COMFORT_CONFIG: ComfortConfig = {
@@ -188,19 +189,14 @@ function extractProposedShelterEnvelope(model: ShelterModel, energyConfig: Energ
 
   // 4. Rooftop Solar PV Module Array
   const roofSolarConfig = model.envelope?.roof?.solarPanels;
+  const isRoofSolarEnabled = roofSolarConfig?.enabled === true;
   let rooftopPvKw = 0;
   let rooftopPanelCount = 0;
 
-  if (energyConfig.includeRooftopSolar) {
-    if (roofSolarConfig?.enabled !== false && (roofSolarConfig?.panelCount || 0) > 0) {
-      rooftopPanelCount = roofSolarConfig!.panelCount;
-      const wattage = roofSolarConfig!.panelWattageW || 400;
-      rooftopPvKw = (rooftopPanelCount * wattage) / 1000;
-    } else {
-      // Default from energyConfig
-      rooftopPvKw = energyConfig.solarPvCapacityKw;
-      rooftopPanelCount = Math.max(2, Math.round((rooftopPvKw * 1000) / 400));
-    }
+  if (energyConfig.includeRooftopSolar && isRoofSolarEnabled) {
+    rooftopPanelCount = roofSolarConfig!.panelCount || 6;
+    const wattage = roofSolarConfig!.panelWattageW || 400;
+    rooftopPvKw = (rooftopPanelCount * wattage) / 1000;
   }
 
   const totalSolarCapacityKw = rooftopPvKw + windowBipvKw;
@@ -570,6 +566,41 @@ export function runIntegratedEnergySimulation(
     );
   }
 
+  // Solar PV Opportunity & Cost Saving Advisory (calculated whether solar is active or disabled)
+  const isSolarInstalled = proposed.rooftopPanelCount > 0;
+  const recPanelCount = Math.max(4, Math.min(8, Math.floor(((model.geometry?.length || 6) * 0.72) / 1.15))) || 6;
+  const recKw = Number(((recPanelCount * 400) / 1000).toFixed(1));
+  const recTiltDeg = 45; // 45° optimal winter angle for Ladakh (latitude ~34°N)
+  const estDailyYieldKwh = Number((recKw * 4.6).toFixed(1));
+  const estMonthlyKeroseneSavedL = Math.round(estDailyYieldKwh * 30 * 0.11);
+  const logisticsEstimate = calculateFuelLogistics(estMonthlyKeroseneSavedL || 50, logisticsConfig, true);
+  const costPerLDelivered = (keroseneConfig.kerosenePricePerLitre || 95) +
+    logisticsEstimate.effectiveLogisticsPerLitre +
+    (keroseneConfig.handlingStorageCostPerLitre || 5.0);
+  const estAnnualCostSavingsInr = Math.round(estMonthlyKeroseneSavedL * 8 * costPerLDelivered);
+  const estPaybackYears = Number(((recKw * 52000) / Math.max(8000, estAnnualCostSavingsInr)).toFixed(1));
+
+  const solarOpportunityAdvisory = {
+    isSolarInstalled,
+    recommendedKw: recKw,
+    recommendedPanelCount: recPanelCount,
+    recommendedTiltDeg: recTiltDeg,
+    estDailyYieldKwh,
+    estMonthlyKeroseneSavedL,
+    estAnnualCostSavingsInr,
+    estPaybackYears,
+    optimalOrientation: "True South (180° Azimuth)",
+    rationale: isSolarInstalled
+      ? `Active Solar PV is installed (${proposed.rooftopPvKw.toFixed(1)} kWp) with optimal tilt. It generates ~${totalRooftopKwh.toFixed(1)} kWh/day of clean electricity, reducing fossil fuel consumption.`
+      : `Operating in 100% pure passive mode. Installing a recommended ${recKw} kWp rooftop solar array at ${recTiltDeg}° winter tilt would displace ~${estMonthlyKeroseneSavedL} L of kerosene per winter month, saving ~₹${estAnnualCostSavingsInr.toLocaleString()}/year with a ${estPaybackYears}-year payback.`,
+  };
+
+  if (!isSolarInstalled) {
+    recommendations.unshift(
+      `Solar Upgrade Opportunity: Currently operating in 100% passive mode. Installing a ${recKw} kWp rooftop solar PV array (${recTiltDeg}° winter tilt) can save ~${estMonthlyKeroseneSavedL} L/month of kerosene and ~₹${Math.round(estAnnualCostSavingsInr / 12).toLocaleString()}/month in fuel and logistics costs.`
+    );
+  }
+
   recommendations.push(
     `Estimated total heating and logistics cost is ₹${costBreakdown.totalHeatingCostPerMonth.toLocaleString()}/month, representing an estimated net saving of ₹${costBreakdown.moneySavedPerMonth.toLocaleString()}/month (${costBreakdown.costReductionPercentage}% cost reduction).`
   );
@@ -592,6 +623,7 @@ export function runIntegratedEnergySimulation(
       windowSolarPanesCount: proposed.windowSolarPanesCount,
       totalSolarCapacityKw: proposed.totalSolarCapacityKw,
     },
+    solarOpportunityAdvisory,
     thermalPerformance,
     baselineThermalPerformance,
     energyMetrics,

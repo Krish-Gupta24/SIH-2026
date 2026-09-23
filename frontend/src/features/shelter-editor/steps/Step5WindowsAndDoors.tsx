@@ -353,53 +353,89 @@ export function Step5WindowsAndDoors({ form, advancedMode }: StepProps) {
 
                     {/* BIPV Solar Pane Glass Option */}
                     {(() => {
-                      const solarPane = win.solarPane || {
-                        enabled: false,
-                        transparencyPct: 30,
-                        powerDensityWpM2: 90,
-                        efficiencyPct: 12.5,
-                        shgc: 0.35,
-                        uValue: 1.20,
-                      };
-                      const hasSolarPane = solarPane.enabled === true;
+                      const solarPane = win.solarPane;
+                      const hasSolarPane = solarPane?.enabled === true;
                       const wArea = ((win.width || 1.4) * (win.height || 1.2)).toFixed(2);
-                      const peakW = (Number(wArea) * (solarPane.powerDensityWpM2 ?? 90)).toFixed(1);
+                      const peakW = (Number(wArea) * (solarPane?.powerDensityWpM2 ?? 90)).toFixed(1);
+
+                      const toggleBipv = (active: boolean) => {
+                        const updated = [...windows];
+                        updated[idx] = {
+                          ...updated[idx],
+                          solarPane: {
+                            enabled: active,
+                            transparencyPct: solarPane?.transparencyPct ?? 30,
+                            powerDensityWpM2: solarPane?.powerDensityWpM2 ?? 90,
+                            efficiencyPct: solarPane?.efficiencyPct ?? 12.5,
+                            shgc: solarPane?.shgc ?? 0.35,
+                            uValue: solarPane?.uValue ?? 1.20,
+                          },
+                        };
+                        setValue("windows", updated);
+                      };
 
                       return (
-                        <div className="mt-3.5 rounded-lg border border-sky-300/80 bg-sky-50/50 p-3 dark:border-sky-900/60 dark:bg-sky-950/30">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                              <Zap className="h-4 w-4 text-sky-600 dark:text-sky-400" />
-                              <span className="text-xs font-bold text-slate-900 dark:text-white">
-                                Photovoltaic Solar Window Pane (BIPV)
-                              </span>
-                              <span className="rounded-full bg-sky-100 px-2 py-0.5 text-[9px] font-semibold text-sky-800 dark:bg-sky-900/60 dark:text-sky-300">
-                                See-Through Solar Glazing
-                              </span>
+                        <div className={`mt-3.5 rounded-xl border-2 transition-all p-3.5 ${
+                          hasSolarPane
+                            ? "border-sky-400 bg-sky-50/60 dark:border-sky-700 dark:bg-sky-950/30"
+                            : "border-slate-200 bg-slate-50/50 dark:border-slate-800 dark:bg-slate-900/30"
+                        }`}>
+                          <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
+                            <div className="flex items-center gap-2.5">
+                              <div className={`flex h-8 w-8 items-center justify-center rounded-lg transition ${
+                                hasSolarPane
+                                  ? "bg-sky-600 text-white shadow-xs shadow-sky-600/30"
+                                  : "bg-slate-200 text-slate-500 dark:bg-slate-800 dark:text-slate-400"
+                              }`}>
+                                <Zap className="h-4 w-4" />
+                              </div>
+                              <div>
+                                <div className="flex items-center gap-2">
+                                  <span className="text-xs font-bold text-slate-900 dark:text-white">
+                                    Window Glazing Option
+                                  </span>
+                                  <span className={`rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider ${
+                                    hasSolarPane
+                                      ? "bg-sky-100 text-sky-800 dark:bg-sky-950 dark:text-sky-300 ring-1 ring-sky-500/30"
+                                      : "bg-slate-200 text-slate-600 dark:bg-slate-800 dark:text-slate-400"
+                                  }`}>
+                                    {hasSolarPane ? "● BIPV Active" : "Standard Glass"}
+                                  </span>
+                                </div>
+                                <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                                  {hasSolarPane
+                                    ? `Generating up to ${peakW} Wp electricity while providing insulation.`
+                                    : "Standard clear or low-E passive window aperture (no on-site generation)."}
+                                </p>
+                              </div>
                             </div>
 
-                            <label className="relative inline-flex cursor-pointer items-center">
-                              <input
-                                type="checkbox"
-                                checked={hasSolarPane}
-                                onChange={(e) => {
-                                  const updated = [...windows];
-                                  updated[idx] = {
-                                    ...updated[idx],
-                                    solarPane: {
-                                      ...solarPane,
-                                      enabled: e.target.checked,
-                                    },
-                                  };
-                                  setValue("windows", updated);
-                                }}
-                                className="peer sr-only"
-                              />
-                              <div className="peer h-5 w-9 rounded-full bg-slate-300 after:absolute after:top-[2px] after:left-[2px] after:h-4 after:w-4 after:rounded-full after:border after:border-gray-300 after:bg-white after:transition-all after:content-[''] peer-checked:bg-sky-600 peer-checked:after:translate-x-full peer-checked:after:border-white peer-focus:outline-none dark:bg-slate-700"></div>
-                              <span className="ml-1.5 text-[11px] font-semibold text-slate-700 dark:text-slate-200">
-                                {hasSolarPane ? "BIPV Active" : "Standard Glass"}
-                              </span>
-                            </label>
+                            {/* Prominent High-Visibility Switcher */}
+                            <div className="flex items-center rounded-lg border border-slate-300 bg-white p-0.5 shadow-xs dark:border-slate-700 dark:bg-slate-950">
+                              <button
+                                type="button"
+                                onClick={() => toggleBipv(false)}
+                                className={`rounded px-2.5 py-1 text-[11px] font-bold transition ${
+                                  !hasSolarPane
+                                    ? "bg-slate-700 text-white shadow-xs dark:bg-slate-800"
+                                    : "text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
+                                }`}
+                              >
+                                Standard Glass
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => toggleBipv(true)}
+                                className={`flex items-center gap-1 rounded px-2.5 py-1 text-[11px] font-bold transition ${
+                                  hasSolarPane
+                                    ? "bg-sky-600 text-white shadow-xs ring-1 ring-sky-700"
+                                    : "text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
+                                }`}
+                              >
+                                <Zap className="h-3 w-3" />
+                                <span>BIPV Solar Pane</span>
+                              </button>
+                            </div>
                           </div>
 
                           {hasSolarPane && (

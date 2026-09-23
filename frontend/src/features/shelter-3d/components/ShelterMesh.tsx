@@ -623,7 +623,10 @@ export function ShelterMesh({
   const slopeDepthShed = (model.geometry.width + overhang * 2) / Math.cos(roofAngle || 0.001);
 
   const roofSolarPanels = model.envelope?.roof?.solarPanels;
-  const hasRoofSolar = roofSolarPanels?.enabled !== false;
+  const hasRoofSolar = roofSolarPanels?.enabled === true;
+  const roofSolarTiltDeg = Math.max(0, Math.min(85, roofSolarPanels?.tiltAngleDeg ?? 30));
+  const roofSolarTiltRad = THREE.MathUtils.degToRad(roofSolarTiltDeg);
+  const roofSolarMounting = roofSolarPanels?.mountingType ?? "UnistrutElevated";
   const roofPanelCount = roofSolarPanels?.panelCount || Math.max(2, Math.min(6, Math.floor((roofSpan * 0.72) / 1.15)));
   const roofPanelWattage = roofSolarPanels?.panelWattageW || 400;
   const roofArrayKw = ((roofPanelCount * roofPanelWattage) / 1000).toFixed(1);
@@ -1469,41 +1472,63 @@ export function ShelterMesh({
             ) : null}
 
             {/* High-Efficiency South-Facing Photovoltaic Solar Array mounted on outermost roof plane */}
-            {hasRoofSolar && (
-              <group position={[0, roofThickness / 2 + 0.038 + (isRevealingRoofLayers ? topRoofLayerDisp : 0), 0]}>
-                <SolarArray
-                  span={roofSpan}
-                  rafterDepth={rafterLengthGable}
-                  texture={solarTexture}
-                  isXRay={isXRay}
-                  panelCount={roofPanelCount}
-                  onPointerOver={(e) => {
-                    e.stopPropagation();
-                    setHoveredRoofFeature("solar");
-                  }}
-                  onPointerOut={() => setHoveredRoofFeature(null)}
-                />
-                {hoveredRoofFeature === "solar" && !suppressHtmlLabels && (
-                  <Html
-                    position={[0, 0.45, 0]}
-                    center
-                    distanceFactor={14}
-                    zIndexRange={[15, 0]}
-                    style={{ pointerEvents: "none" }}
-                  >
-                    <div className="cad-minimal-tooltip cad-solar-callout" style={{ minWidth: 190 }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: "0.35rem" }}>
-                        <span style={{ fontSize: "0.9rem" }}>⚡</span>
-                        <strong>Rooftop Solar PV Array</strong>
+            {hasRoofSolar && (() => {
+              const gableExtraTiltDeg = roofSolarMounting === "FlushMount"
+                ? 0
+                : Math.max(0, roofSolarTiltDeg - (model.geometry.roofAngle || 0));
+              const gableExtraTiltRad = THREE.MathUtils.degToRad(gableExtraTiltDeg);
+              return (
+                <group
+                  position={[
+                    0,
+                    roofThickness / 2 + 0.038 + (isRevealingRoofLayers ? topRoofLayerDisp : 0) + Math.sin(gableExtraTiltRad) * 0.14,
+                    0,
+                  ]}
+                  rotation={[gableExtraTiltRad, 0, 0]}
+                >
+                  {/* Elevated unistrut rear standoff struts if extra tilt is present */}
+                  {gableExtraTiltDeg > 2 && (
+                    [-roofSpan * 0.28, 0, roofSpan * 0.28].map((rx, idx) => (
+                      <mesh key={`gable-standoff-${idx}`} position={[rx, -Math.sin(gableExtraTiltRad) * 0.10, -rafterLengthGable * 0.22]}>
+                        <cylinderGeometry args={[0.012, 0.012, Math.max(0.04, Math.sin(gableExtraTiltRad) * 0.40), 8]} />
+                        <meshStandardMaterial color="#94a3b8" metalness={0.9} roughness={0.2} />
+                      </mesh>
+                    ))
+                  )}
+                  <SolarArray
+                    span={roofSpan}
+                    rafterDepth={rafterLengthGable}
+                    texture={solarTexture}
+                    isXRay={isXRay}
+                    panelCount={roofPanelCount}
+                    onPointerOver={(e) => {
+                      e.stopPropagation();
+                      setHoveredRoofFeature("solar");
+                    }}
+                    onPointerOut={() => setHoveredRoofFeature(null)}
+                  />
+                  {hoveredRoofFeature === "solar" && !suppressHtmlLabels && (
+                    <Html
+                      position={[0, 0.45, 0]}
+                      center
+                      distanceFactor={14}
+                      zIndexRange={[15, 0]}
+                      style={{ pointerEvents: "none" }}
+                    >
+                      <div className="cad-minimal-tooltip cad-solar-callout" style={{ minWidth: 190 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "0.35rem" }}>
+                          <span style={{ fontSize: "0.9rem" }}>⚡</span>
+                          <strong>Rooftop Solar PV Array</strong>
+                        </div>
+                        <span>{roofPanelCount} Monocrystalline Modules ({roofSolarTiltDeg}° Tilt)</span>
+                        <span>Peak Capacity: {roofArrayKw} kWp · 21.5% Efficiency</span>
+                        <small>South-Facing Gable · {roofSolarMounting}</small>
                       </div>
-                      <span>{roofPanelCount} Monocrystalline Modules</span>
-                      <span>Peak Capacity: {roofArrayKw} kWp · 21.5% Efficiency</span>
-                      <small>South-Facing Pitch · Unistrut Rails</small>
-                    </div>
-                  </Html>
-                )}
-              </group>
-            )}
+                    </Html>
+                  )}
+                </group>
+              );
+            })()}
           </group>
 
           {/* Pitch 2: North facing panel */}
@@ -1768,41 +1793,52 @@ export function ShelterMesh({
             ) : null}
 
             {/* Monocrystalline Solar PV Array mounted on Shed Roof */}
-            {hasRoofSolar && (
-              <group position={[0, roofThickness / 2 + 0.038 + (isRevealingRoofLayers ? topRoofLayerDisp : 0), slopeDepthShed * 0.06]}>
-                <SolarArray
-                  span={roofSpan}
-                  rafterDepth={slopeDepthShed * 0.65}
-                  texture={solarTexture}
-                  isXRay={isXRay}
-                  panelCount={roofPanelCount}
-                  onPointerOver={(e) => {
-                    e.stopPropagation();
-                    setHoveredRoofFeature("solar");
-                  }}
-                  onPointerOut={() => setHoveredRoofFeature(null)}
-                />
-                {hoveredRoofFeature === "solar" && !suppressHtmlLabels && (
-                  <Html
-                    position={[0, 0.45, 0]}
-                    center
-                    distanceFactor={14}
-                    zIndexRange={[15, 0]}
-                    style={{ pointerEvents: "none" }}
-                  >
-                    <div className="cad-minimal-tooltip cad-solar-callout" style={{ minWidth: 190 }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: "0.35rem" }}>
-                        <span style={{ fontSize: "0.9rem" }}>⚡</span>
-                        <strong>Rooftop Solar PV Array</strong>
+            {hasRoofSolar && (() => {
+              const shedRelativeTiltDeg = Math.min(80, roofSolarTiltDeg + (model.geometry.roofAngle || 0));
+              const shedRelativeTiltRad = THREE.MathUtils.degToRad(shedRelativeTiltDeg);
+              return (
+                <group
+                  position={[
+                    0,
+                    roofThickness / 2 + 0.038 + (isRevealingRoofLayers ? topRoofLayerDisp : 0) + Math.sin(shedRelativeTiltRad) * 0.12,
+                    slopeDepthShed * 0.06,
+                  ]}
+                  rotation={[shedRelativeTiltRad, 0, 0]}
+                >
+                  <SolarArray
+                    span={roofSpan}
+                    rafterDepth={slopeDepthShed * 0.65}
+                    texture={solarTexture}
+                    isXRay={isXRay}
+                    panelCount={roofPanelCount}
+                    onPointerOver={(e) => {
+                      e.stopPropagation();
+                      setHoveredRoofFeature("solar");
+                    }}
+                    onPointerOut={() => setHoveredRoofFeature(null)}
+                  />
+                  {hoveredRoofFeature === "solar" && !suppressHtmlLabels && (
+                    <Html
+                      position={[0, 0.45, 0]}
+                      center
+                      distanceFactor={14}
+                      zIndexRange={[15, 0]}
+                      style={{ pointerEvents: "none" }}
+                    >
+                      <div className="cad-minimal-tooltip cad-solar-callout" style={{ minWidth: 190 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "0.35rem" }}>
+                          <span style={{ fontSize: "0.9rem" }}>⚡</span>
+                          <strong>Rooftop Solar PV Array</strong>
+                        </div>
+                        <span>{roofPanelCount} Monocrystalline Modules ({roofSolarTiltDeg}° Tilt)</span>
+                        <span>Peak Capacity: {roofArrayKw} kWp · 21.5% Efficiency</span>
+                        <small>Shed Slope Mounted · {roofSolarMounting}</small>
                       </div>
-                      <span>{roofPanelCount} Monocrystalline Modules</span>
-                      <span>Peak Capacity: {roofArrayKw} kWp · 21.5% Efficiency</span>
-                      <small>Shed Slope Mounted · Unistrut Rails</small>
-                    </div>
-                  </Html>
-                )}
-              </group>
-            )}
+                    </Html>
+                  )}
+                </group>
+              );
+            })()}
           </group>
 
           {/* Alpine Class-A Insulated Chimney Flue on Shed Roof */}
@@ -2016,59 +2052,71 @@ export function ShelterMesh({
             </group>
           ) : null}
 
-          {/* Flat Roof: 30° South-Tilted Ballast-Mounted Photovoltaic Solar Array */}
+          {/* Flat Roof: South-Tilted Ballast-Mounted Photovoltaic Solar Array */}
           {hasRoofSolar && (
-            <group
-              position={[0, roofThickness / 2 + 0.22 + (isRevealingRoofLayers ? topRoofLayerDisp : 0), model.geometry.width * 0.08]}
-              rotation={[THREE.MathUtils.degToRad(30), 0, 0]}
-            >
-              {/* Concrete Ballast Blocks & Aluminum Racking Legs */}
-              {[-roofSpan * 0.28, 0, roofSpan * 0.28].map((rx, idx) => (
-                <group key={`ballast-${idx}`} position={[rx, -0.11, 0]}>
-                  {/* Precast concrete ballast pad */}
-                  <mesh position={[0, -0.05, 0]}>
-                    <boxGeometry args={[0.22, 0.08, 0.44]} />
-                    <meshStandardMaterial color="#64748b" roughness={0.9} />
-                  </mesh>
-                  {/* Rear support diagonal aluminum strut */}
-                  <mesh position={[0, 0.07, -0.14]} rotation={[0.42, 0, 0]}>
-                    <cylinderGeometry args={[0.015, 0.015, 0.28, 8]} />
-                    <meshStandardMaterial color="#94a3b8" metalness={0.9} roughness={0.2} />
-                  </mesh>
-                </group>
-              ))}
+            <group position={[0, roofThickness / 2 + (isRevealingRoofLayers ? topRoofLayerDisp : 0), model.geometry.width * 0.08]}>
+              {/* Unrotated Precast Concrete Ballast Footings (Sitting Flat on Roof Deck) */}
+              {[-roofSpan * 0.28, 0, roofSpan * 0.28].map((rx, idx) => {
+                const rafterD = Math.min(1.85, model.geometry.width * 0.5);
+                const rearStrutH = Math.max(0.08, Math.min(1.1, rafterD * 0.72 * Math.sin(roofSolarTiltRad)));
+                return (
+                  <group key={`flat-ballast-${idx}`} position={[rx, 0, 0]}>
+                    {/* Concrete ballast block sitting flat on roof deck */}
+                    <mesh position={[0, 0.04, 0]}>
+                      <boxGeometry args={[0.24, 0.08, 0.52]} />
+                      <meshStandardMaterial color="#64748b" roughness={0.9} />
+                    </mesh>
+                    {/* Front low pivot bracket */}
+                    <mesh position={[0, 0.09, 0.16]}>
+                      <boxGeometry args={[0.06, 0.05, 0.06]} />
+                      <meshStandardMaterial color="#94a3b8" metalness={0.9} roughness={0.2} />
+                    </mesh>
+                    {/* Rear vertical/diagonal aluminum strut rising to tilted rack */}
+                    <mesh position={[0, 0.08 + rearStrutH / 2, -0.16]}>
+                      <cylinderGeometry args={[0.016, 0.016, rearStrutH, 8]} />
+                      <meshStandardMaterial color="#94a3b8" metalness={0.9} roughness={0.2} />
+                    </mesh>
+                  </group>
+                );
+              })}
 
-              <SolarArray
-                span={roofSpan}
-                rafterDepth={Math.min(1.85, model.geometry.width * 0.5)}
-                texture={solarTexture}
-                isXRay={isXRay}
-                panelCount={roofPanelCount}
-                onPointerOver={(e) => {
-                  e.stopPropagation();
-                  setHoveredRoofFeature("solar");
-                }}
-                onPointerOut={() => setHoveredRoofFeature(null)}
-              />
-              {hoveredRoofFeature === "solar" && !suppressHtmlLabels && (
-                <Html
-                  position={[0, 0.45, 0]}
-                  center
-                  distanceFactor={14}
-                  zIndexRange={[15, 0]}
-                  style={{ pointerEvents: "none" }}
-                >
-                  <div className="cad-minimal-tooltip cad-solar-callout" style={{ minWidth: 195 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "0.35rem" }}>
-                      <span style={{ fontSize: "0.9rem" }}>⚡</span>
-                      <strong>Ballasted Solar PV Array</strong>
+              {/* Dynamic Tilted Array Group */}
+              <group
+                position={[0, 0.10 + Math.sin(roofSolarTiltRad) * 0.18, 0]}
+                rotation={[roofSolarTiltRad, 0, 0]}
+              >
+                <SolarArray
+                  span={roofSpan}
+                  rafterDepth={Math.min(1.85, model.geometry.width * 0.5)}
+                  texture={solarTexture}
+                  isXRay={isXRay}
+                  panelCount={roofPanelCount}
+                  onPointerOver={(e) => {
+                    e.stopPropagation();
+                    setHoveredRoofFeature("solar");
+                  }}
+                  onPointerOut={() => setHoveredRoofFeature(null)}
+                />
+                {hoveredRoofFeature === "solar" && !suppressHtmlLabels && (
+                  <Html
+                    position={[0, 0.45, 0]}
+                    center
+                    distanceFactor={14}
+                    zIndexRange={[15, 0]}
+                    style={{ pointerEvents: "none" }}
+                  >
+                    <div className="cad-minimal-tooltip cad-solar-callout" style={{ minWidth: 195 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "0.35rem" }}>
+                        <span style={{ fontSize: "0.9rem" }}>⚡</span>
+                        <strong>Ballasted Solar PV Array</strong>
+                      </div>
+                      <span>{roofPanelCount} Monocrystalline Modules ({roofSolarTiltDeg}° Tilt)</span>
+                      <span>Peak Capacity: {roofArrayKw} kWp · 21.5% Efficiency</span>
+                      <small>{roofSolarMounting} · South-Facing Racking</small>
                     </div>
-                    <span>{roofPanelCount} Monocrystalline Modules</span>
-                    <span>Peak Capacity: {roofArrayKw} kWp · 21.5% Efficiency</span>
-                    <small>30° South Tilt Racking · Ballast Mount</small>
-                  </div>
-                </Html>
-              )}
+                  </Html>
+                )}
+              </group>
             </group>
           )}
 

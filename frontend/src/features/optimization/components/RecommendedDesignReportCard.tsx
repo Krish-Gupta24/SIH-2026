@@ -72,29 +72,26 @@ export function RecommendedDesignReportCard({
   };
 
   return (
-    <div className="rounded-[2rem] border border-purple-500/30 bg-card p-7 shadow-[0_20px_55px_rgba(0,0,0,.04)] relative overflow-hidden space-y-6">
-      {/* Background Accent Glow */}
-      <div className="absolute top-0 right-1/4 w-96 h-96 bg-purple-500/5 rounded-full blur-3xl pointer-events-none" />
-
+    <div className="rounded-[2rem] border border-border bg-card p-7 shadow-[0_20px_55px_rgba(0,0,0,.04)] relative overflow-hidden space-y-6">
       {/* Top Header & Recommended Design Spotlight */}
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 pb-5 border-b border-border">
         <div className="flex items-start gap-3.5">
-          <div className="h-12 w-12 rounded-2xl bg-purple-500/10 flex items-center justify-center text-purple-600 dark:text-purple-400 border border-purple-500/20 shadow-sm shrink-0">
+          <div className="h-12 w-12 rounded-2xl bg-secondary flex items-center justify-center text-foreground border border-border shadow-sm shrink-0">
             <Award className="h-6 w-6" />
           </div>
           <div>
             <div className="flex flex-wrap items-center gap-2">
-              <span className="text-xs font-bold uppercase tracking-wider text-purple-600 dark:text-purple-400">
-                RECOMMENDED DESIGN
+              <span className="micro-label text-emerald-600 dark:text-emerald-400">
+                Recommended Design
               </span>
-              <span className="rounded-full border border-purple-500/20 bg-purple-500/10 text-purple-600 dark:text-purple-400 font-semibold px-2.5 py-0.5 text-[10px] font-mono">
+              <span className="rounded-full border border-border bg-secondary/60 text-foreground font-semibold px-2.5 py-0.5 text-[10px] font-mono">
                 Rank #1 (Conditional Optimum)
               </span>
               <span className="rounded-full border border-amber-500/20 bg-amber-500/10 text-amber-600 dark:text-amber-400 font-semibold px-2.5 py-0.5 text-[10px] font-mono">
                 Score: {report.objective.achievedScore.toFixed(1)} pts
               </span>
             </div>
-            <h2 className="text-xl font-bold text-foreground tracking-tight mt-1">
+            <h2 className="font-editorial text-2xl font-medium text-foreground tracking-tight mt-1">
               {report.conditionalTitle}
             </h2>
             <p className="text-xs text-muted-foreground mt-0.5">
@@ -108,7 +105,7 @@ export function RecommendedDesignReportCard({
           <Button
             size="sm"
             onClick={() => onApplyToProject(rawCandidate)}
-            className="rounded-full text-xs font-semibold bg-foreground text-background hover:bg-foreground/90 shadow-sm gap-1.5 px-4 h-9"
+            className="rounded-full text-xs font-semibold bg-black text-white hover:bg-[#6E818F] shadow-sm gap-1.5 px-5 h-9"
           >
             <Sparkles className="h-3.5 w-3.5" />
             <span>Apply to Active Project</span>
@@ -118,10 +115,10 @@ export function RecommendedDesignReportCard({
             variant="outline"
             size="sm"
             onClick={handleDownloadMarkdown}
-            className="rounded-full text-xs border-border bg-secondary/80 hover:bg-secondary text-foreground gap-1.5 px-4 h-9"
+            className="rounded-full text-xs border-border bg-card hover:bg-secondary text-foreground gap-1.5 px-4 h-9 shadow-sm"
             title="Download full engineering report as Markdown"
           >
-            <Download className="h-3.5 w-3.5 text-purple-600 dark:text-purple-400" />
+            <Download className="h-3.5 w-3.5 text-muted-foreground" />
             <span>Report (MD)</span>
           </Button>
 
@@ -129,16 +126,16 @@ export function RecommendedDesignReportCard({
             variant="outline"
             size="sm"
             onClick={handleDownloadJson}
-            className="rounded-full text-xs border-border bg-secondary/80 hover:bg-secondary text-foreground gap-1.5 px-3.5 h-9"
+            className="rounded-full text-xs border-border bg-card hover:bg-secondary text-foreground gap-1.5 px-3.5 h-9 shadow-sm"
             title="Export complete schema JSON"
           >
-            <FileText className="h-3.5 w-3.5 text-sky-500" />
+            <FileText className="h-3.5 w-3.5 text-muted-foreground" />
             <span>JSON</span>
           </Button>
 
-          <Button variant="outline" size="sm" asChild className="rounded-full text-xs border-border bg-secondary/80 hover:bg-secondary text-foreground gap-1.5 px-4 h-9">
+          <Button variant="outline" size="sm" asChild className="rounded-full text-xs border-border bg-card hover:bg-secondary text-foreground gap-1.5 px-4 h-9 shadow-sm">
             <Link href="/designer/3d">
-              <Box className="h-3.5 w-3.5 text-sky-500" />
+              <Box className="h-3.5 w-3.5 text-muted-foreground" />
               <span>Inspect in 3D</span>
             </Link>
           </Button>

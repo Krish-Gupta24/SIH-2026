@@ -88,11 +88,11 @@ export function ParetoAndSensitivityCharts({
         <div>
           <div className="flex items-center justify-between">
             <span className="micro-label text-muted-foreground">Frontier Analysis</span>
-            <div className="h-8 w-8 rounded-xl bg-purple-500/10 flex items-center justify-center text-purple-500">
+            <div className="h-9 w-9 rounded-xl bg-secondary flex items-center justify-center text-foreground border border-border">
               <Target className="h-4 w-4" />
             </div>
           </div>
-          <h3 className="font-medium tracking-tight text-xl mt-2 text-foreground">
+          <h3 className="font-editorial text-2xl font-medium tracking-tight mt-2 text-foreground">
             Multi-Objective Pareto Frontier
           </h3>
           <p className="text-xs text-muted-foreground mt-1">
@@ -184,11 +184,11 @@ export function ParetoAndSensitivityCharts({
         <div>
           <div className="flex items-center justify-between">
             <span className="micro-label text-muted-foreground">Parametric Sensitivity</span>
-            <div className="h-8 w-8 rounded-xl bg-indigo-500/10 flex items-center justify-center text-indigo-500">
+            <div className="h-9 w-9 rounded-xl bg-secondary flex items-center justify-center text-foreground border border-border">
               <TrendingDown className="h-4 w-4" />
             </div>
           </div>
-          <h3 className="font-medium tracking-tight text-xl mt-2 text-foreground">
+          <h3 className="font-editorial text-2xl font-medium tracking-tight mt-2 text-foreground">
             Insulation Diminishing Returns
           </h3>
           <p className="text-xs text-muted-foreground mt-1">

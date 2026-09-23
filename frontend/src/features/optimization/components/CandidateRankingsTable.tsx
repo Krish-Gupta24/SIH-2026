@@ -72,12 +72,13 @@ export function CandidateRankingsTable({
   return (
     <div className="rounded-[2rem] border border-border bg-card p-7 shadow-[0_20px_55px_rgba(0,0,0,.04)] space-y-5">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-3 border-b border-border">
-        <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-2xl bg-purple-500/10 flex items-center justify-center text-purple-600 dark:text-purple-400 border border-purple-500/20">
-            <Layers className="h-4 w-4" />
+        <div className="flex items-center gap-3.5">
+          <div className="h-11 w-11 rounded-2xl bg-secondary flex items-center justify-center text-foreground border border-border">
+            <Layers className="h-5 w-5" />
           </div>
           <div>
-            <h3 className="text-base font-semibold text-foreground tracking-tight">
+            <span className="micro-label">Evaluated Design Space</span>
+            <h3 className="font-editorial text-2xl font-medium text-foreground tracking-tight mt-0.5">
               Design Space Candidate Rankings
             </h3>
             <p className="text-xs text-muted-foreground mt-0.5">
@@ -103,7 +104,7 @@ export function CandidateRankingsTable({
             <TableRow className="border-b border-border text-xs">
               <TableHead className="w-16 font-semibold text-muted-foreground">Rank</TableHead>
               <TableHead className="w-24 font-semibold text-muted-foreground">Candidate</TableHead>
-              <TableHead className="font-semibold text-purple-600 dark:text-purple-400">Objective Score</TableHead>
+              <TableHead className="font-semibold text-foreground">Objective Score</TableHead>
               <TableHead className="font-semibold text-foreground">Parameters</TableHead>
               <TableHead className="font-semibold text-rose-600 dark:text-rose-400">Heating Demand</TableHead>
               <TableHead className="font-semibold text-emerald-600 dark:text-emerald-400">Comfort %</TableHead>
@@ -117,7 +118,7 @@ export function CandidateRankingsTable({
               <TableRow
                 key={c.id}
                 className={`border-b border-border hover:bg-secondary/40 text-xs font-mono transition-colors ${
-                  c.rank === 1 ? "bg-purple-500/10 font-semibold" : ""
+                  c.rank === 1 ? "bg-emerald-500/10 font-semibold" : ""
                 }`}
               >
                 <TableCell className="font-bold">

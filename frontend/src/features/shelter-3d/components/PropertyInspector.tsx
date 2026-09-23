@@ -115,17 +115,13 @@ function RoofSolarPanelsEditor({
   model: ShelterModel;
   onUpdate: (updates: Partial<ShelterModel>) => void;
 }) {
-  const solar = model.envelope?.roof?.solarPanels || {
-    enabled: true,
-    panelCount: 6,
-    panelWattageW: 400,
-    panelEfficiencyPct: 21.5,
-    tiltAngleDeg: 30,
-    mountingType: "UnistrutElevated",
-  };
-  const isEnabled = solar.enabled !== false;
-  const count = solar.panelCount ?? 6;
-  const wattage = solar.panelWattageW ?? 400;
+  const solar = model.envelope?.roof?.solarPanels;
+  const isEnabled = solar?.enabled === true;
+  const count = solar?.panelCount ?? 6;
+  const wattage = solar?.panelWattageW ?? 400;
+  const tilt = solar?.tiltAngleDeg ?? 30;
+  const efficiency = solar?.panelEfficiencyPct ?? 21.5;
+  const mounting = solar?.mountingType ?? "UnistrutElevated";
   const totalKw = ((count * wattage) / 1000).toFixed(2);
   const totalArea = (count * 1.95).toFixed(1);
 
@@ -136,7 +132,12 @@ function RoofSolarPanelsEditor({
         roof: {
           ...model.envelope.roof,
           solarPanels: {
-            ...solar,
+            enabled: isEnabled,
+            panelCount: count,
+            panelWattageW: wattage,
+            panelEfficiencyPct: efficiency,
+            tiltAngleDeg: tilt,
+            mountingType: mounting,
             ...patch,
           },
         },
@@ -145,25 +146,56 @@ function RoofSolarPanelsEditor({
   };
 
   return (
-    <div className="mt-3 rounded-lg border border-amber-500/40 bg-amber-500/10 p-2.5">
-      <div className="flex items-center justify-between">
-        <span className="flex items-center gap-1.5 text-xs font-semibold text-amber-300">
-          <Sun className="size-3.5 text-amber-400" />
-          Rooftop Solar Array
-        </span>
-        <label className="flex items-center gap-1.5 text-[11px] text-slate-300 cursor-pointer">
-          <input
-            type="checkbox"
-            checked={isEnabled}
-            onChange={(e) => updateSolar({ enabled: e.target.checked })}
-            className="rounded border-slate-700 bg-slate-800 text-amber-500 focus:ring-0"
-          />
-          {isEnabled ? "Installed" : "Off"}
-        </label>
+    <div className={`mt-3 rounded-xl border p-3 transition-all ${
+      isEnabled
+        ? "border-amber-500/60 bg-amber-500/10"
+        : "border-slate-800 bg-slate-900/60"
+    }`}>
+      <div className="flex flex-col gap-2.5">
+        <div className="flex items-center justify-between">
+          <span className="flex items-center gap-1.5 text-xs font-bold text-amber-300">
+            <Sun className="size-4 text-amber-400" />
+            Rooftop Solar PV Option
+          </span>
+          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider ${
+            isEnabled
+              ? "bg-emerald-950 text-emerald-300 border border-emerald-500/40"
+              : "bg-slate-800 text-slate-400 border border-slate-700"
+          }`}>
+            {isEnabled ? "● Active Solar" : "Disabled (Passive)"}
+          </span>
+        </div>
+
+        {/* 2-Way High-Visibility Segmented Switcher */}
+        <div className="grid grid-cols-2 gap-1 rounded-lg bg-slate-950/80 p-1 border border-slate-700/80">
+          <button
+            type="button"
+            onClick={() => updateSolar({ enabled: true })}
+            className={`flex items-center justify-center gap-1.5 rounded py-1.5 text-xs font-bold transition ${
+              isEnabled
+                ? "bg-amber-500 text-slate-950 shadow-xs"
+                : "text-slate-400 hover:text-white"
+            }`}
+          >
+            <Zap className="size-3.5" />
+            <span>Installed (Active)</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => updateSolar({ enabled: false })}
+            className={`rounded py-1.5 text-xs font-bold transition ${
+              !isEnabled
+                ? "bg-slate-700 text-white shadow-xs"
+                : "text-slate-400 hover:text-white"
+            }`}
+          >
+            <span>Disabled (No PV)</span>
+          </button>
+        </div>
       </div>
 
       {isEnabled && (
-        <div className="mt-2 space-y-2">
+        <div className="mt-3 space-y-2.5 border-t border-amber-500/20 pt-2.5">
           <div className="cad-field-grid">
             <label className="cad-field">
               <span>Panel Count <small>pcs</small></span>
@@ -187,43 +219,55 @@ function RoofSolarPanelsEditor({
               />
             </label>
           </div>
-          <div className="cad-field-grid">
-            <label className="cad-field">
-              <span>Racking Tilt <small>deg</small></span>
+
+          {/* Interactive Tilt Angle Slider with Real-Time Degrees Display */}
+          <div className="cad-field">
+            <div className="flex items-center justify-between text-xs text-slate-300">
+              <span>Racking Tilt Angle</span>
+              <strong className="text-amber-400 font-bold">{tilt}° from horizon</strong>
+            </div>
+            <div className="flex items-center gap-2 mt-1.5">
+              <input
+                type="range"
+                min={0}
+                max={75}
+                step={1}
+                value={tilt}
+                onChange={(e) => updateSolar({ tiltAngleDeg: Number(e.target.value) })}
+                className="h-1.5 w-full accent-amber-500 cursor-pointer bg-slate-800 rounded"
+              />
               <input
                 type="number"
                 min={0}
                 max={85}
-                value={solar.tiltAngleDeg ?? 30}
+                value={tilt}
                 onChange={(e) => updateSolar({ tiltAngleDeg: Math.max(0, Math.min(85, Number(e.target.value) || 30)) })}
+                className="w-14 px-1 py-0.5 text-center text-xs bg-slate-800 rounded border border-slate-700 text-white font-bold"
               />
-            </label>
-            <label className="cad-field">
-              <span>Efficiency <small>%</small></span>
-              <input
-                type="number"
-                min={10}
-                max={30}
-                step={0.5}
-                value={solar.panelEfficiencyPct ?? 21.5}
-                onChange={(e) => updateSolar({ panelEfficiencyPct: Math.max(10, Number(e.target.value) || 21.5) })}
-              />
-            </label>
+            </div>
+            <div className="flex justify-between text-[9px] text-slate-400 mt-1">
+              <button type="button" onClick={() => updateSolar({ tiltAngleDeg: 15 })} className="hover:text-amber-400">15°</button>
+              <button type="button" onClick={() => updateSolar({ tiltAngleDeg: 30 })} className="hover:text-amber-400 font-bold text-amber-500">30° (Std)</button>
+              <button type="button" onClick={() => updateSolar({ tiltAngleDeg: 45 })} className="hover:text-amber-400">45° (Winter)</button>
+              <button type="button" onClick={() => updateSolar({ tiltAngleDeg: 60 })} className="hover:text-amber-400">60° (Snow)</button>
+            </div>
           </div>
+
           <label className="cad-field">
-            <span>Mounting Frame</span>
+            <span>Mounting Frame System</span>
             <select
-              value={solar.mountingType || "UnistrutElevated"}
+              value={mounting}
               onChange={(e) => updateSolar({ mountingType: e.target.value as any })}
             >
-              <option value="UnistrutElevated">Elevated Racking (Snow Clear)</option>
-              <option value="FlushMount">Flush Roof Clamp</option>
-              <option value="BallastedRacking">Heavy Ballasted</option>
+              <option value="UnistrutElevated">Elevated Unistrut Frame (Snow Clearance)</option>
+              <option value="FlushMount">Flush Seam-Clamped to Roof</option>
+              <option value="BallastedRacking">Heavy Ballasted Non-Penetrating</option>
             </select>
           </label>
+
           <div className="cad-property-summary">
-            <span>{totalKw} kWp Rated</span>
-            <span>{totalArea} m² Collector</span>
+            <span>{totalKw} kWp Peak Array</span>
+            <span>{totalArea} m² Active Collector</span>
           </div>
         </div>
       )}
@@ -238,43 +282,72 @@ function WindowSolarPaneEditor({
   windowItem: WindowModel;
   onUpdateWindow: (patch: Partial<WindowModel>) => void;
 }) {
-  const pane = windowItem.solarPane || {
-    enabled: false,
-    transparencyPct: 30,
-    powerDensityWpM2: 90,
-    efficiencyPct: 12.5,
-    shgc: 0.35,
-    uValue: 1.20,
-  };
-  const isEnabled = pane.enabled === true;
+  const pane = windowItem.solarPane;
+  const isEnabled = pane?.enabled === true;
   const wArea = ((windowItem.width || 1.4) * (windowItem.height || 1.2)).toFixed(2);
-  const peakW = (Number(wArea) * (pane.powerDensityWpM2 ?? 90)).toFixed(1);
+  const peakW = (Number(wArea) * (pane?.powerDensityWpM2 ?? 90)).toFixed(1);
 
   const updatePane = (patch: Partial<WindowSolarPaneConfig>) => {
     onUpdateWindow({
       solarPane: {
-        ...pane,
+        enabled: isEnabled,
+        transparencyPct: pane?.transparencyPct ?? 30,
+        powerDensityWpM2: pane?.powerDensityWpM2 ?? 90,
+        efficiencyPct: pane?.efficiencyPct ?? 12.5,
+        shgc: pane?.shgc ?? 0.35,
+        uValue: pane?.uValue ?? 1.20,
         ...patch,
       },
     });
   };
 
   return (
-    <div className="mt-3 rounded-lg border border-sky-500/40 bg-sky-500/10 p-2.5">
-      <div className="flex items-center justify-between">
-        <span className="flex items-center gap-1.5 text-xs font-semibold text-sky-300">
-          <Zap className="size-3.5 text-sky-400" />
-          BIPV Solar Pane Glazing
-        </span>
-        <label className="flex items-center gap-1.5 text-[11px] text-slate-300 cursor-pointer">
-          <input
-            type="checkbox"
-            checked={isEnabled}
-            onChange={(e) => updatePane({ enabled: e.target.checked })}
-            className="rounded border-slate-700 bg-slate-800 text-sky-500 focus:ring-0"
-          />
-          {isEnabled ? "Active" : "Off"}
-        </label>
+    <div className={`mt-3 rounded-xl border p-3 transition-all ${
+      isEnabled
+        ? "border-sky-500/60 bg-sky-500/10"
+        : "border-slate-800 bg-slate-900/60"
+    }`}>
+      <div className="flex flex-col gap-2.5">
+        <div className="flex items-center justify-between">
+          <span className="flex items-center gap-1.5 text-xs font-bold text-sky-300">
+            <Zap className="size-4 text-sky-400" />
+            BIPV Photovoltaic Glazing
+          </span>
+          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider ${
+            isEnabled
+              ? "bg-sky-950 text-sky-300 border border-sky-500/40"
+              : "bg-slate-800 text-slate-400 border border-slate-700"
+          }`}>
+            {isEnabled ? "● BIPV Active" : "Standard Glass"}
+          </span>
+        </div>
+
+        {/* 2-Way High-Visibility Switcher */}
+        <div className="grid grid-cols-2 gap-1 rounded-lg bg-slate-950/80 p-1 border border-slate-700/80">
+          <button
+            type="button"
+            onClick={() => updatePane({ enabled: false })}
+            className={`rounded py-1.5 text-xs font-bold transition ${
+              !isEnabled
+                ? "bg-slate-700 text-white shadow-xs"
+                : "text-slate-400 hover:text-white"
+            }`}
+          >
+            <span>Standard Glass</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => updatePane({ enabled: true })}
+            className={`flex items-center justify-center gap-1.5 rounded py-1.5 text-xs font-bold transition ${
+              isEnabled
+                ? "bg-sky-600 text-white shadow-xs"
+                : "text-slate-400 hover:text-white"
+            }`}
+          >
+            <Zap className="size-3.5" />
+            <span>BIPV Solar Pane</span>
+          </button>
+        </div>
       </div>
 
       {isEnabled && (

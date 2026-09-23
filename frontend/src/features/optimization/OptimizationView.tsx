@@ -318,17 +318,20 @@ export function OptimizationView() {
       />
 
       {/* AI Generative Designer Flagship Banner */}
-      <div className="rounded-[2rem] border border-border bg-gradient-to-r from-blue-900/10 via-purple-900/10 to-emerald-900/10 p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm">
-        <div className="flex items-center gap-3">
-          <span className="flex size-10 shrink-0 items-center justify-center rounded-2xl bg-foreground text-background">
+      <div className="rounded-[2rem] border border-border bg-card p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-[0_20px_55px_rgba(0,0,0,.04)]">
+        <div className="flex items-center gap-3.5">
+          <span className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-foreground text-background">
             <Sparkles className="size-5 text-emerald-400" />
           </span>
           <div>
-            <h3 className="text-sm font-bold tracking-tight flex items-center gap-2">
-              <span>Flagship AI: Generative Inverse Thermal Designer</span>
-              <Badge variant="outline" className="text-[10px] py-0 border-emerald-500/30 text-emerald-600 dark:text-emerald-400">
+            <div className="flex items-center gap-2">
+              <span className="micro-label">Inverse Design Studio</span>
+              <Badge variant="outline" className="text-[10px] py-0 border-emerald-500/30 text-emerald-600 dark:text-emerald-400 font-mono">
                 Surrogate ML + NSGA-II
               </Badge>
+            </div>
+            <h3 className="font-editorial text-xl font-medium tracking-tight text-foreground mt-0.5">
+              Generative Inverse Thermal Designer
             </h3>
             <p className="text-xs text-muted-foreground mt-0.5">
               Explore thousands of candidate shelter shapes and envelope assemblies in under 4 seconds with SHAP explainability.
@@ -337,7 +340,7 @@ export function OptimizationView() {
         </div>
         <Link
           href="/ai-designer"
-          className="inline-flex items-center gap-2 rounded-xl bg-foreground text-background px-4 py-2 text-xs font-semibold hover:opacity-90 transition-opacity shrink-0 shadow-md"
+          className="inline-flex items-center gap-2 rounded-full bg-black px-5 py-2.5 text-xs font-semibold text-white shadow-sm transition-colors hover:bg-[#6E818F] shrink-0"
         >
           <span>Launch AI Designer</span>
           <ArrowRight className="size-3.5" />

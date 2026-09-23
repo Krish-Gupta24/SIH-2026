@@ -193,62 +193,117 @@ export function Step5Roof({ form, advancedMode }: StepProps) {
 
       {/* ROOFTOP SOLAR PV ARRAY SECTION */}
       {(() => {
-        const solarPanels = watch("roof.solarPanels") || {
-          enabled: true,
-          panelCount: 6,
-          panelWattageW: 400,
-          panelEfficiencyPct: 21.5,
-          tiltAngleDeg: 30,
-          mountingType: "UnistrutElevated",
-        };
-        const isEnabled = solarPanels.enabled !== false;
-        const count = solarPanels.panelCount ?? 6;
-        const wattage = solarPanels.panelWattageW ?? 400;
-        const efficiency = solarPanels.panelEfficiencyPct ?? 21.5;
-        const tilt = solarPanels.tiltAngleDeg ?? 30;
-        const mounting = solarPanels.mountingType ?? "UnistrutElevated";
+        const solarPanels = watch("roof.solarPanels");
+        const isEnabled = solarPanels?.enabled === true;
+        const count = solarPanels?.panelCount ?? 6;
+        const wattage = solarPanels?.panelWattageW ?? 400;
+        const efficiency = solarPanels?.panelEfficiencyPct ?? 21.5;
+        const tilt = solarPanels?.tiltAngleDeg ?? 30;
+        const mounting = solarPanels?.mountingType ?? "UnistrutElevated";
         const totalKw = ((count * wattage) / 1000).toFixed(2);
         const estArea = (count * 1.95).toFixed(1);
         const estDailyKwh = (Number(totalKw) * 4.8 * (efficiency / 21.5)).toFixed(1);
 
+        const toggleSolar = (enabledState: boolean) => {
+          setValue("roof.solarPanels", {
+            enabled: enabledState,
+            panelCount: count,
+            panelWattageW: wattage,
+            panelEfficiencyPct: efficiency,
+            tiltAngleDeg: tilt,
+            mountingType: mounting,
+          });
+        };
+
         return (
-          <div className="rounded-xl border border-amber-300/80 bg-amber-50/40 p-4 shadow-xs dark:border-amber-900/50 dark:bg-amber-950/20">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-amber-200/60 pb-3 dark:border-amber-900/40">
-              <div className="flex items-center gap-2.5">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-500 text-white shadow-xs">
-                  <Sun className="h-4 w-4" />
+          <div className={`rounded-xl border-2 transition-all shadow-sm ${
+            isEnabled
+              ? "border-amber-400 bg-amber-50/50 p-5 dark:border-amber-700 dark:bg-amber-950/25"
+              : "border-slate-200 bg-slate-50/60 p-5 dark:border-slate-800 dark:bg-slate-900/40"
+          }`}>
+            {/* Header & Prominent High-Visibility Mode Switcher */}
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b pb-4 border-slate-200 dark:border-slate-800">
+              <div className="flex items-center gap-3">
+                <div className={`flex h-11 w-11 items-center justify-center rounded-xl shadow-xs transition ${
+                  isEnabled
+                    ? "bg-amber-500 text-white shadow-amber-500/25 ring-2 ring-amber-400/40"
+                    : "bg-slate-200 text-slate-500 dark:bg-slate-800 dark:text-slate-400"
+                }`}>
+                  <Sun className="h-6 w-6" />
                 </div>
                 <div>
-                  <h4 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                    Rooftop Solar Photovoltaic (PV) Array
-                    <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-800 dark:bg-amber-900/60 dark:text-amber-300">
-                      Active Solar Hardware
+                  <div className="flex items-center gap-2">
+                    <h4 className="text-sm font-bold text-slate-900 dark:text-white">
+                      Rooftop Solar Photovoltaic (PV) Option
+                    </h4>
+                    <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${
+                      isEnabled
+                        ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 ring-1 ring-emerald-500/30"
+                        : "bg-slate-200 text-slate-600 dark:bg-slate-800 dark:text-slate-400"
+                    }`}>
+                      {isEnabled ? "● Active & Generating" : "Optional · Not Installed"}
                     </span>
-                  </h4>
+                  </div>
                   <p className="text-xs text-slate-500 dark:text-slate-400">
-                    Mount high-efficiency monocrystalline PV modules on the roof to power electric heaters and recharge thermal batteries.
+                    Passive design is the foundation. Rooftop solar PV is an optional upgrade to generate on-site electricity for heaters and batteries.
                   </p>
                 </div>
               </div>
 
-              <label className="relative inline-flex cursor-pointer items-center">
-                <input
-                  type="checkbox"
-                  checked={isEnabled}
-                  onChange={(e) => {
-                    setValue("roof.solarPanels", {
-                      ...solarPanels,
-                      enabled: e.target.checked,
-                    });
-                  }}
-                  className="peer sr-only"
-                />
-                <div className="peer h-6 w-11 rounded-full bg-slate-300 after:absolute after:top-[2px] after:left-[2px] after:h-5 after:w-5 after:rounded-full after:border after:border-gray-300 after:bg-white after:transition-all after:content-[''] peer-checked:bg-amber-500 peer-checked:after:translate-x-full peer-checked:after:border-white peer-focus:outline-none dark:bg-slate-700"></div>
-                <span className="ml-2 text-xs font-semibold text-slate-700 dark:text-slate-200">
-                  {isEnabled ? "Installed" : "Disabled"}
-                </span>
-              </label>
+              {/* HIGH-VISIBILITY 2-WAY SEGMENTED PILL SWITCH */}
+              <div className="flex items-center rounded-xl border border-slate-300 bg-white p-1 shadow-xs dark:border-slate-700 dark:bg-slate-950">
+                <button
+                  type="button"
+                  onClick={() => toggleSolar(true)}
+                  className={`flex items-center gap-1.5 rounded-lg px-3.5 py-1.5 text-xs font-bold transition ${
+                    isEnabled
+                      ? "bg-amber-500 text-white shadow-xs ring-1 ring-amber-600"
+                      : "text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
+                  }`}
+                >
+                  <Zap className="h-3.5 w-3.5" />
+                  <span>Installed (Active)</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => toggleSolar(false)}
+                  className={`flex items-center gap-1.5 rounded-lg px-3.5 py-1.5 text-xs font-bold transition ${
+                    !isEnabled
+                      ? "bg-slate-700 text-white shadow-xs dark:bg-slate-800"
+                      : "text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
+                  }`}
+                >
+                  <span>Disabled (No Solar)</span>
+                </button>
+              </div>
             </div>
+
+            {/* DISABLED STATE: Prominent 1-Click Banner */}
+            {!isEnabled && (
+              <div className="mt-4 flex flex-col items-center justify-between gap-3 rounded-lg border border-dashed border-slate-300 bg-white/70 p-4 text-center sm:flex-row sm:text-left dark:border-slate-700 dark:bg-slate-900/60">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-slate-100 text-slate-400 dark:bg-slate-800">
+                    <Sun className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                      Rooftop Solar PV is currently disabled for this shelter
+                    </p>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                      Operating in 100% passive solar mode. Enable solar panels anytime to simulate on-site electric generation.
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => toggleSolar(true)}
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-amber-500 px-3.5 py-2 text-xs font-bold text-white shadow-xs hover:bg-amber-600 active:scale-95 transition"
+                >
+                  <Zap className="h-3.5 w-3.5" />
+                  + Install Rooftop Solar Panels
+                </button>
+              </div>
+            )}
 
             {isEnabled && (
               <div className="mt-4 space-y-4">
@@ -350,20 +405,44 @@ export function Step5Roof({ form, advancedMode }: StepProps) {
                     unit="°"
                     tooltip="Tilt relative to horizontal horizon. In high-altitude Ladakh (lat ~34°N), 30° to 45° optimizes winter harvest and self-clearing snow shed."
                   >
-                    <input
-                      type="number"
-                      min={0}
-                      max={85}
-                      step={1}
-                      value={tilt}
-                      onChange={(e) => {
-                        setValue("roof.solarPanels", {
-                          ...solarPanels,
-                          tiltAngleDeg: Math.max(0, Math.min(85, Number(e.target.value) || 30)),
-                        });
-                      }}
-                      className="w-full rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs text-slate-900 shadow-sm focus:border-amber-500 focus:outline-none dark:border-slate-700 dark:bg-slate-900 dark:text-white"
-                    />
+                    <div className="space-y-1.5">
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="range"
+                          min={0}
+                          max={75}
+                          step={1}
+                          value={tilt}
+                          onChange={(e) => {
+                            setValue("roof.solarPanels", {
+                              ...solarPanels,
+                              tiltAngleDeg: Number(e.target.value),
+                            });
+                          }}
+                          className="h-1.5 w-full cursor-pointer appearance-none rounded-lg bg-slate-300 accent-amber-500 dark:bg-slate-700"
+                        />
+                        <input
+                          type="number"
+                          min={0}
+                          max={85}
+                          step={1}
+                          value={tilt}
+                          onChange={(e) => {
+                            setValue("roof.solarPanels", {
+                              ...solarPanels,
+                              tiltAngleDeg: Math.max(0, Math.min(85, Number(e.target.value) || 30)),
+                            });
+                          }}
+                          className="w-16 rounded-md border border-slate-300 bg-white px-2 py-1 text-center text-xs font-bold text-slate-900 shadow-sm focus:border-amber-500 focus:outline-none dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+                        />
+                      </div>
+                      <div className="flex items-center justify-between text-[10px] text-slate-400">
+                        <button type="button" onClick={() => setValue("roof.solarPanels", { ...solarPanels, tiltAngleDeg: 15 })} className="hover:text-amber-500 transition">15°</button>
+                        <button type="button" onClick={() => setValue("roof.solarPanels", { ...solarPanels, tiltAngleDeg: 30 })} className="hover:text-amber-500 font-semibold text-amber-600 transition">30° (Std)</button>
+                        <button type="button" onClick={() => setValue("roof.solarPanels", { ...solarPanels, tiltAngleDeg: 45 })} className="hover:text-amber-500 transition">45° (Winter)</button>
+                        <button type="button" onClick={() => setValue("roof.solarPanels", { ...solarPanels, tiltAngleDeg: 60 })} className="hover:text-amber-500 transition">60° (Snow)</button>
+                      </div>
+                    </div>
                   </FieldWrapper>
 
                   <FieldWrapper

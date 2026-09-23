@@ -37,24 +37,22 @@ export function OptimalCandidateCard({
   );
 
   return (
-    <div className="rounded-[2rem] border border-purple-500/30 bg-card p-7 shadow-[0_20px_55px_rgba(0,0,0,.04)] relative overflow-hidden space-y-6">
-      <div className="absolute top-0 right-0 w-80 h-80 bg-purple-500/5 rounded-full blur-3xl pointer-events-none" />
-
+    <div className="rounded-[2rem] border border-border bg-card p-7 shadow-[0_20px_55px_rgba(0,0,0,.04)] relative overflow-hidden space-y-6">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 pb-4 border-b border-border">
-        <div className="flex items-center gap-3">
-          <div className="h-11 w-11 rounded-2xl bg-purple-500/10 flex items-center justify-center text-purple-600 dark:text-purple-400 border border-purple-500/20 shadow-sm">
+        <div className="flex items-start gap-3.5">
+          <div className="h-11 w-11 rounded-2xl bg-secondary flex items-center justify-center text-foreground border border-border shadow-sm shrink-0">
             <Award className="h-5 w-5" />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <span className="text-xs font-bold uppercase tracking-wider text-purple-600 dark:text-purple-400">
+              <span className="micro-label text-emerald-600 dark:text-emerald-400">
                 Rank #1 Pareto-Optimal Design
               </span>
-              <span className="rounded-full border border-purple-500/20 bg-purple-500/10 text-purple-600 dark:text-purple-400 font-semibold px-2.5 py-0.5 text-[10px] font-mono">
+              <span className="rounded-full border border-border bg-secondary/60 text-foreground font-semibold px-2.5 py-0.5 text-[10px] font-mono">
                 Score: {candidate.objectiveScore} pts
               </span>
             </div>
-            <h2 className="text-lg font-bold text-foreground mt-0.5 tracking-tight">
+            <h2 className="font-editorial text-2xl font-medium text-foreground mt-0.5 tracking-tight">
               Optimal Parameter Assignment Candidate ({candidate.id})
             </h2>
           </div>
@@ -65,15 +63,15 @@ export function OptimalCandidateCard({
           <Button
             size="sm"
             onClick={() => onApplyToProject(candidate)}
-            className="rounded-full text-xs font-semibold bg-foreground text-background hover:bg-foreground/90 shadow-sm gap-1.5 px-4 h-9"
+            className="rounded-full text-xs font-semibold bg-black text-white hover:bg-[#6E818F] shadow-sm gap-1.5 px-5 h-9"
           >
             <Sparkles className="h-3.5 w-3.5" />
             <span>Apply to Active Project</span>
           </Button>
 
-          <Button variant="outline" size="sm" asChild className="rounded-full text-xs border-border bg-secondary/80 hover:bg-secondary text-foreground gap-1.5 px-4 h-9">
+          <Button variant="outline" size="sm" asChild className="rounded-full text-xs border-border bg-card hover:bg-secondary text-foreground gap-1.5 px-4 h-9 shadow-sm">
             <Link href="/designer/3d">
-              <Box className="h-3.5 w-3.5 text-sky-500" />
+              <Box className="h-3.5 w-3.5 text-muted-foreground" />
               <span>Inspect in 3D</span>
             </Link>
           </Button>

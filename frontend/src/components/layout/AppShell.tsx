@@ -29,6 +29,7 @@ const GLOBAL_NAV: NavItem[] = [
   { id: "dashboard", label: "Dashboard", href: "/dashboard" },
   { id: "ai-designer", label: "AI Studio", href: "/ai-designer" },
   { id: "projects", label: "Projects", href: "/projects" },
+  { id: "fuel-costs", label: "Fuel & Costs", href: "/fuel-costs" },
   { id: "materials", label: "Materials", href: "/materials" },
   { id: "settings", label: "Settings", href: "/settings" },
 ];

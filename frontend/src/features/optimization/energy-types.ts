@@ -170,6 +170,20 @@ export interface EnergySimulationResult {
     totalSolarCapacityKw: number;
   };
 
+  // Solar PV Opportunity & Cost Saving Advisory (Active especially when solar is disabled or undersized)
+  solarOpportunityAdvisory?: {
+    isSolarInstalled: boolean;
+    recommendedKw: number;
+    recommendedPanelCount: number;
+    recommendedTiltDeg: number;
+    estDailyYieldKwh: number;
+    estMonthlyKeroseneSavedL: number;
+    estAnnualCostSavingsInr: number;
+    estPaybackYears: number;
+    optimalOrientation: string;
+    rationale: string;
+  };
+
   // Aggregated Key Performance Metrics
   thermalPerformance: ThermalPerformanceSummary;
   baselineThermalPerformance: ThermalPerformanceSummary;

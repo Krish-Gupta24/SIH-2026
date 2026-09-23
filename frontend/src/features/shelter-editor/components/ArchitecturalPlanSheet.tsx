@@ -904,7 +904,8 @@ function ModernArchitecturalTitleBlock({
         </div>
         {(() => {
           const roofSolar = model.envelope?.roof?.solarPanels;
-          const roofSolarKw = roofSolar?.enabled !== false
+          const isRoofSolar = roofSolar?.enabled === true;
+          const roofSolarKw = isRoofSolar
             ? (((roofSolar?.panelCount ?? 6) * (roofSolar?.panelWattageW ?? 400)) / 1000).toFixed(2)
             : "0.00";
           const bipvTotalWatts = (model.windows || [])
@@ -912,10 +913,19 @@ function ModernArchitecturalTitleBlock({
             .reduce((sum, w) => sum + (w.width || 1.4) * (w.height || 1.2) * (w.solarPane?.powerDensityWpM2 || 90), 0)
             .toFixed(0);
 
+          if (!isRoofSolar && Number(bipvTotalWatts) === 0) {
+            return (
+              <div className="flex justify-between text-slate-500 font-semibold">
+                <span>Active Solar PV:</span>
+                <span>Disabled (Pure Passive)</span>
+              </div>
+            );
+          }
+
           return (
             <div className="flex justify-between text-amber-600 dark:text-amber-400 font-bold">
               <span>Active Solar PV:</span>
-              <span>{roofSolarKw} kWp + {bipvTotalWatts} Wp BIPV</span>
+              <span>{isRoofSolar ? `${roofSolarKw} kWp (${roofSolar?.tiltAngleDeg ?? 30}° tilt)` : "0 kWp"}{Number(bipvTotalWatts) > 0 ? ` + ${bipvTotalWatts} Wp BIPV` : ""}</span>
             </div>
           );
         })()}
@@ -1241,17 +1251,20 @@ function SouthElevationSvg({
 
       {/* ROOFTOP SOLAR PV ARRAY RACKING */}
       {(() => {
-        const isSolar = roofSolarPanels?.enabled !== false;
+        const isSolar = roofSolarPanels?.enabled === true;
         if (!isSolar) return null;
-        const panelCount = Math.min(16, Math.max(2, roofSolarPanels?.panelCount ?? 6));
+        const panelCount = Math.min(16, Math.max(1, roofSolarPanels?.panelCount ?? 6));
         const panelWattage = roofSolarPanels?.panelWattageW ?? 400;
         const totalKw = (((roofSolarPanels?.panelCount ?? 6) * panelWattage) / 1000).toFixed(2);
-        const tilt = roofSolarPanels?.tiltAngleDeg ?? 30;
+        const tilt = Math.max(0, Math.min(85, roofSolarPanels?.tiltAngleDeg ?? 30));
+        const tiltRad = (tilt * Math.PI) / 180;
         const arrayWidth = wallW * 0.85;
         const arrayStartX = startX + (wallW - arrayWidth) / 2;
         const panelW = (arrayWidth - (panelCount - 1) * 3) / panelCount;
-        const panelH = 13 * scaleFactor;
-        const rackY = topWallY - 10 * scaleFactor - panelH - 3;
+        // Projected height facing South elevation = Module Length * sin(tilt)
+        const panelH = Math.max(4, Math.round(18 * scaleFactor * Math.sin(tiltRad)));
+        const stanchionH = Math.max(2, Math.round(8 * scaleFactor * Math.sin(tiltRad)));
+        const rackY = topWallY - 10 * scaleFactor - panelH - stanchionH - 2;
 
         return (
           <g>
@@ -1304,9 +1317,9 @@ function SouthElevationSvg({
             })}
             {/* Capacity Annotation Tag */}
             <g transform={`translate(${startX + wallW / 2}, ${rackY - 5})`}>
-              <rect x="-85" y="-8" width="170" height="11" rx="2.5" fill="#0369a1" fillOpacity="0.9" />
+              <rect x="-92" y="-8" width="184" height="11" rx="2.5" fill="#0369a1" fillOpacity="0.9" />
               <text x="0" y="0" textAnchor="middle" fontSize="6" fontWeight="bold" fill="#ffffff">
-                ROOF SOLAR PV: {panelCount} PANELS ({totalKw} kWp @ {tilt}°)
+                ROOF SOLAR PV: {panelCount} PANELS ({totalKw} kWp @ {tilt}° TILT)
               </text>
             </g>
           </g>
@@ -2014,26 +2027,40 @@ function TechnicalSectionSvg({
 
       {/* Rooftop Solar PV Elevated Racking (Cross-Section) */}
       {(() => {
-        const isSolar = roofSolarPanels?.enabled !== false;
+        const isSolar = roofSolarPanels?.enabled === true;
         if (!isSolar) return null;
-        const tilt = roofSolarPanels?.tiltAngleDeg ?? 30;
-        const totalKw = (((roofSolarPanels?.panelCount ?? 6) * (roofSolarPanels?.panelWattageW ?? 400)) / 1000).toFixed(2);
+        const tilt = Math.max(0, Math.min(85, roofSolarPanels?.tiltAngleDeg ?? 30));
+        const tiltRad = (tilt * Math.PI) / 180;
+        const panelCount = roofSolarPanels?.panelCount ?? 6;
+        const panelWattage = roofSolarPanels?.panelWattageW ?? 400;
+        const totalKw = ((panelCount * panelWattage) / 1000).toFixed(2);
+
+        const rackSpan = Math.min(wallW * 0.58, 110);
+        const xFront = startX + wallW - 35; // South front edge (low)
+        const xRear = xFront - rackSpan;    // North rear edge (high)
+        const baseDeckY = topWallY - 16;
+        const frontStanchionH = 4;
+        const yFront = baseDeckY - frontStanchionH;
+        // Slope rise = rackSpan * 0.45 * sin(tilt)
+        const rise = Math.max(3, Math.min(38, Math.round(rackSpan * 0.45 * Math.sin(tiltRad))));
+        const yRear = yFront - rise;
+
         return (
           <g>
             {/* Tilted Solar PV Array Cut Section */}
             <line
-              x1={startX + 30}
-              y1={topWallY - 20}
-              x2={startX + wallW - 30}
-              y2={topWallY - 32}
+              x1={xRear}
+              y1={yRear}
+              x2={xFront}
+              y2={yFront}
               stroke="#0284c7"
               strokeWidth="3.5"
             />
             {/* Racking Stanchions */}
-            <line x1={startX + 50} y1={topWallY - 16} x2={startX + 50} y2={topWallY - 21} stroke="#64748b" strokeWidth="1.5" />
-            <line x1={startX + wallW / 2} y1={topWallY - 16} x2={startX + wallW / 2} y2={topWallY - 26} stroke="#64748b" strokeWidth="1.5" />
-            <line x1={startX + wallW - 50} y1={topWallY - 16} x2={startX + wallW - 50} y2={topWallY - 31} stroke="#64748b" strokeWidth="1.5" />
-            <text x={startX + wallW / 2} y={topWallY - 36} textAnchor="middle" fontSize="6.5" fontWeight="bold" fill="#0284c7">
+            <line x1={xFront - 4} y1={baseDeckY} x2={xFront - 4} y2={yFront} stroke="#64748b" strokeWidth="1.5" />
+            <line x1={(xFront + xRear) / 2} y1={baseDeckY} x2={(xFront + xRear) / 2} y2={(yFront + yRear) / 2} stroke="#64748b" strokeWidth="1.5" />
+            <line x1={xRear + 4} y1={baseDeckY} x2={xRear + 4} y2={yRear} stroke="#64748b" strokeWidth="1.5" />
+            <text x={(xFront + xRear) / 2} y={yRear - 6} textAnchor="middle" fontSize="6.5" fontWeight="bold" fill="#0284c7">
               ROOFTOP SOLAR PV ARRAY ({totalKw} kWp · {tilt}° TILT RACKING)
             </text>
           </g>
@@ -2084,7 +2111,7 @@ function MaterialReferenceSchedule({
   detailedMode?: boolean;
 }) {
   const primaryWindow = windows[0];
-  const isRoofSolar = roofSolarPanels?.enabled !== false;
+  const isRoofSolar = roofSolarPanels?.enabled === true;
   const roofSolarKw = isRoofSolar
     ? (((roofSolarPanels?.panelCount ?? 6) * (roofSolarPanels?.panelWattageW ?? 400)) / 1000).toFixed(2)
     : "0.00";
@@ -2174,19 +2201,29 @@ function MaterialReferenceSchedule({
         </div>
 
         {/* Ext-06: Active Solar Generation Assets */}
-        <div className="flex items-start gap-2.5 p-1.5 rounded-lg border border-amber-300 dark:border-amber-900 bg-amber-50/60 dark:bg-amber-950/30">
-          <div className="size-4 shrink-0 rounded bg-amber-500 text-white font-bold flex items-center justify-center text-[9px] mt-0.5">
+        <div className={`flex items-start gap-2.5 p-1.5 rounded-lg border ${
+          isRoofSolar || bipvWindows.length > 0
+            ? "border-amber-300 dark:border-amber-900 bg-amber-50/60 dark:bg-amber-950/30"
+            : "border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/40"
+        }`}>
+          <div className={`size-4 shrink-0 rounded font-bold flex items-center justify-center text-[9px] mt-0.5 ${
+            isRoofSolar || bipvWindows.length > 0
+              ? "bg-amber-500 text-white"
+              : "bg-slate-300 dark:bg-slate-700 text-slate-600 dark:text-slate-400"
+          }`}>
             ☀️
           </div>
           <div className="flex-1">
             <div className="flex justify-between items-baseline font-bold text-slate-900 dark:text-slate-100">
-              <span>EXT-06: ACTIVE SOLAR PV & BIPV HARDWARE</span>
-              <span className="text-amber-600 dark:text-amber-400 font-extrabold">
-                {roofSolarKw} kWp Rooftop + {bipvWatts} Wp BIPV
+              <span>{isRoofSolar || bipvWindows.length > 0 ? "EXT-06: ACTIVE SOLAR PV & BIPV HARDWARE" : "EXT-06: PASSIVE THERMAL CORE (NO ACTIVE SOLAR)"}</span>
+              <span className={isRoofSolar || bipvWindows.length > 0 ? "text-amber-600 dark:text-amber-400 font-extrabold" : "text-slate-500 font-semibold"}>
+                {isRoofSolar || bipvWindows.length > 0 ? `${roofSolarKw} kWp Rooftop + ${bipvWatts} Wp BIPV` : "0.00 kWp Generation"}
               </span>
             </div>
             <p className="text-[9px] text-slate-600 dark:text-slate-400">
-              Rooftop: {roofSolarPanels?.panelCount ?? 6} monocrystalline panels ({roofSolarPanels?.tiltAngleDeg ?? 30}° tilt) · Fenestration: {bipvWindows.length} see-through BIPV solar panes.
+              {isRoofSolar || bipvWindows.length > 0
+                ? `Rooftop: ${isRoofSolar ? `${roofSolarPanels?.panelCount ?? 6} monocrystalline panels (${roofSolarPanels?.tiltAngleDeg ?? 30}° tilt)` : "None"} · Fenestration: ${bipvWindows.length} see-through BIPV solar panes.`
+                : "100% Standalone passive thermal design · No active photovoltaic arrays or racking installed."}
             </p>
           </div>
         </div>

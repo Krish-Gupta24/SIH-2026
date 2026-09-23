@@ -48,6 +48,7 @@ import { FossilFuelDisplacementCard } from "./components/FossilFuelDisplacementC
 import { HeatFlowDeltaTChart } from "./components/HeatFlowDeltaTChart";
 import { AnsysMaterialComparisonTable } from "./components/AnsysMaterialComparisonTable";
 import { OpeningSensitivityPanel } from "./components/OpeningSensitivityPanel";
+import { EnergyOptimizationView } from "@/features/optimization/EnergyOptimizationView";
 
 export function ResultsView() {
   const searchParams = useSearchParams();
@@ -504,6 +505,45 @@ export function ResultsView() {
         projectName={activeJob.projectName}
       />
 
+      {/* 4.7. After Results Workflow Transition Card */}
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-5 rounded-2xl bg-gradient-to-r from-emerald-950/40 via-slate-900 to-slate-950 border border-emerald-500/30 shadow-lg">
+        <div className="flex items-center gap-3.5">
+          <div className="p-2.5 rounded-xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+            <Zap className="w-5 h-5" />
+          </div>
+          <div>
+            <h4 className="text-sm font-bold text-white flex items-center gap-2">
+              Next Stage: Thermal, Energy & Fuel Logistics Optimization
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-normal">
+                Passive First · Solar Dispatch
+              </span>
+            </h4>
+            <p className="text-xs text-slate-400 mt-0.5">
+              Simulate battery storage, hourly solar dispatch, and fuel logistics economics to eliminate diesel/kerosene dependence.
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2.5 shrink-0">
+          <button
+            type="button"
+            onClick={() => setActiveTab("optimization")}
+            className="px-3.5 py-2 rounded-xl text-xs font-bold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition cursor-pointer"
+          >
+            Explore in Tab
+          </button>
+          <Link href="/optimization">
+            <button
+              type="button"
+              className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold bg-emerald-500 hover:bg-emerald-400 text-slate-950 shadow-md shadow-emerald-500/20 transition cursor-pointer"
+            >
+              <span>Dedicated Optimization Page</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </button>
+          </Link>
+        </div>
+      </div>
+
       {/* 5. Tabbed Analytics Experience */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
         <TabsList className="bg-card/80 border border-border p-1.5 rounded-full w-full justify-start overflow-x-auto gap-1 backdrop-blur-sm shadow-sm h-auto">
@@ -534,6 +574,10 @@ export function ResultsView() {
           <TabsTrigger value="table" className="gap-2 text-xs font-semibold rounded-full px-4 py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
             <TableIcon className="h-3.5 w-3.5" />
             <span>Engineering Table</span>
+          </TabsTrigger>
+          <TabsTrigger value="optimization" className="gap-2 text-xs font-semibold rounded-full px-4 py-2 data-[state=active]:bg-emerald-600 data-[state=active]:text-white">
+            <Zap className="h-3.5 w-3.5 text-emerald-400" />
+            <span>Energy & Fuel Optimization</span>
           </TabsTrigger>
         </TabsList>
 
@@ -635,6 +679,11 @@ export function ResultsView() {
         {/* Tab 7: ANSYS Material Comparative Study (DRDO Core PS) */}
         <TabsContent value="ansys" className="space-y-6">
           <AnsysMaterialComparisonTable activeProject={activeJob.shelterModel} />
+        </TabsContent>
+
+        {/* Tab 8: Integrated Thermal, Energy, Fuel & Cost Optimization */}
+        <TabsContent value="optimization" className="space-y-6">
+          <EnergyOptimizationView />
         </TabsContent>
       </Tabs>
 
