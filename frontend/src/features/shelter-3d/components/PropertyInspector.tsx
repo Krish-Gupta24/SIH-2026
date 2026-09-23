@@ -529,89 +529,15 @@ export function PropertyInspector({
     }
   }
 
-  // --- STAGE-AWARE CONTEXTUAL INSPECTOR (Follows currentStep 0 to 12) ---
+  // --- STAGE-AWARE CONTEXTUAL INSPECTOR (Synchronized 1:1 with DESIGNER_9_STEPS: 0 to 8) ---
 
-  // Stage 0: Project Identity
+  // Stage 1 (index 0): Geometry & Spatial Envelope
   if (currentStep === 0) {
-    return (
-      <div className="cad-inspector-content">
-        <SectionTitle eyebrow="Stage 1 · Metadata" title="Project Identity" />
-        <label className="cad-field">
-          <span>Project Name</span>
-          <input
-            type="text"
-            value={model.project.name}
-            onChange={(e) =>
-              onUpdate({ project: { ...model.project, name: e.target.value } })
-            }
-          />
-        </label>
-        <label className="cad-field">
-          <span>Project Version</span>
-          <input
-            type="text"
-            value={model.project.version}
-            onChange={(e) =>
-              onUpdate({ project: { ...model.project, version: e.target.value } })
-            }
-          />
-        </label>
-        <div className="cad-property-summary mt-2">
-          <span>ID: {model.project.id}</span>
-          <span>{model.project.tags?.join(" · ") || "High-Altitude"}</span>
-        </div>
-      </div>
-    );
-  }
-
-  // Stage 1: Location & Climate
-  if (currentStep === 1) {
-    return (
-      <div className="cad-inspector-content">
-        <SectionTitle eyebrow="Stage 2 · Site Boundary" title="Location & Climate" />
-        <label className="cad-field">
-          <span>Region / Sector</span>
-          <input
-            type="text"
-            value={model.location.region}
-            onChange={(e) =>
-              onUpdate({ location: { ...model.location, region: e.target.value } })
-            }
-          />
-        </label>
-        <div className="cad-field-grid">
-          <NumberField
-            label="Elevation"
-            value={model.location.elevation}
-            unit="m"
-            min={0}
-            max={7000}
-            onChange={(v) => onUpdate({ location: { ...model.location, elevation: v } })}
-          />
-          <NumberField
-            label="Winter 99.6% Min"
-            value={model.location.designTempWinter ?? -20.5}
-            unit="°C"
-            min={-50}
-            max={10}
-            onChange={(v) => onUpdate({ location: { ...model.location, designTempWinter: v } })}
-          />
-        </div>
-        <div className="cad-property-summary mt-2">
-          <span>{model.location.climateZone}</span>
-          <span>EPW: {model.location.weatherSource?.split("/").pop() || "Leh ISHRAE"}</span>
-        </div>
-      </div>
-    );
-  }
-
-  // Stage 2: Geometry & Dimensions
-  if (currentStep === 2) {
     const area = model.geometry.length * model.geometry.width;
     const volume = area * model.geometry.height;
     return (
       <div className="cad-inspector-content">
-        <SectionTitle eyebrow="Stage 3 · Spatial Envelope" title="Geometry & Footprint" />
+        <SectionTitle eyebrow="Stage 1 · Spatial Massing" title="Geometry & Solar Axis" />
         <div className="cad-field-grid">
           <NumberField
             label="Length (EW)"
@@ -649,7 +575,41 @@ export function PropertyInspector({
             </select>
           </label>
         </div>
-        <div className="cad-property-summary mt-2">
+
+        <div className="mt-3">
+          <NumberField
+            label="Building Azimuth"
+            value={model.geometry.orientation}
+            unit="deg"
+            min={0}
+            max={359}
+            step={5}
+            onChange={(v) => updateGeometry("orientation", v)}
+          />
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            {[
+              { label: "0° (North)", val: 0 },
+              { label: "90° (East)", val: 90 },
+              { label: "180° (South)", val: 180 },
+              { label: "270° (West)", val: 270 },
+            ].map((item) => (
+              <button
+                key={item.label}
+                type="button"
+                onClick={() => updateGeometry("orientation", item.val)}
+                className={`rounded-lg border px-2.5 py-1 text-[10px] font-semibold transition ${
+                  model.geometry.orientation === item.val
+                    ? "border-foreground bg-foreground text-background"
+                    : "border-border hover:bg-secondary text-muted-foreground"
+                }`}
+              >
+                {item.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="cad-property-summary mt-3">
           <span>{area.toFixed(1)} m² Floor</span>
           <span>{volume.toFixed(1)} m³ Volume</span>
         </div>
@@ -657,57 +617,15 @@ export function PropertyInspector({
     );
   }
 
-  // Stage 3: Orientation & Solar Azimuth
-  if (currentStep === 3) {
-    return (
-      <div className="cad-inspector-content">
-        <SectionTitle eyebrow="Stage 4 · Solar Axis" title="Orientation & Azimuth" />
-        <NumberField
-          label="Building Azimuth"
-          value={model.geometry.orientation}
-          unit="deg"
-          min={0}
-          max={359}
-          step={5}
-          onChange={(v) => updateGeometry("orientation", v)}
-        />
-        <div className="mt-3 flex flex-wrap gap-1.5">
-          {[
-            { label: "0° (True North)", val: 0 },
-            { label: "90° (East)", val: 90 },
-            { label: "180° (True South)", val: 180 },
-            { label: "270° (West)", val: 270 },
-          ].map((item) => (
-            <button
-              key={item.label}
-              type="button"
-              onClick={() => updateGeometry("orientation", item.val)}
-              className={`rounded-lg border px-2.5 py-1 text-[10px] font-semibold transition ${
-                model.geometry.orientation === item.val
-                  ? "border-foreground bg-foreground text-background"
-                  : "border-border hover:bg-secondary text-muted-foreground"
-              }`}
-            >
-              {item.label}
-            </button>
-          ))}
-        </div>
-        <p className="mt-3 text-[11px] text-muted-foreground leading-relaxed">
-          Aligning primary glazing within ±15° of True South (180°) maximizes winter passive solar heat capture during severe Ladakh alpine freeze.
-        </p>
-      </div>
-    );
-  }
-
-  // Stage 4: Wall Assemblies
-  if (currentStep === 4) {
+  // Stage 2 (index 1): Wall Construction
+  if (currentStep === 1) {
     const wall = model.envelope.walls[activeWall];
     const span = ["north", "south"].includes(activeWall) ? model.geometry.length : model.geometry.width;
     const totalThickMm = Math.round(wall.layers.reduce((sum, l) => sum + l.thickness, 0) * 1000);
 
     return (
       <div className="cad-inspector-content">
-        <SectionTitle eyebrow="Stage 5 · Exterior Assemblies" title="Wall Construction" />
+        <SectionTitle eyebrow="Stage 2 · Exterior Envelope" title="Wall Construction" />
         <div className="flex gap-1 rounded-xl bg-secondary/40 p-1 border border-border">
           {(["north", "south", "east", "west"] as const).map((w) => (
             <button
@@ -767,11 +685,11 @@ export function PropertyInspector({
     );
   }
 
-  // Stage 5: Roof
-  if (currentStep === 5) {
+  // Stage 3 (index 2): Roof Assembly
+  if (currentStep === 2) {
     return (
       <div className="cad-inspector-content">
-        <SectionTitle eyebrow="Stage 6 · Overhead Envelope" title="Roof & Ceiling Assembly" />
+        <SectionTitle eyebrow="Stage 3 · Overhead Envelope" title="Roof & Ceiling Assembly" />
         <NumberField
           label="Roof Pitch"
           value={model.geometry.roofAngle}
@@ -802,11 +720,11 @@ export function PropertyInspector({
     );
   }
 
-  // Stage 6: Floor Foundation
-  if (currentStep === 6) {
+  // Stage 4 (index 3): Floor Foundation
+  if (currentStep === 3) {
     return (
       <div className="cad-inspector-content">
-        <SectionTitle eyebrow="Stage 7 · Subgrade Interface" title="Ground Floor Foundation" />
+        <SectionTitle eyebrow="Stage 4 · Subgrade Interface" title="Ground Floor Foundation" />
         <div className="cad-property-summary">
           <span>{(model.geometry.length * model.geometry.width).toFixed(1)} m² Slab Area</span>
           <span>{model.envelope.floor.groundContact ? "Ground Contact" : "Suspended"}</span>
@@ -824,18 +742,18 @@ export function PropertyInspector({
     );
   }
 
-  // Stage 7: Windows
-  if (currentStep === 7) {
+  // Stage 5 (index 4): Windows & Doors (Unified Apertures)
+  if (currentStep === 4) {
     const totalWinArea = model.windows.reduce((sum, w) => sum + w.width * w.height, 0);
     const wallArea = 2 * (model.geometry.length + model.geometry.width) * model.geometry.height;
     const wwr = wallArea > 0 ? ((totalWinArea / wallArea) * 100).toFixed(1) : "0";
 
     return (
       <div className="cad-inspector-content">
-        <SectionTitle eyebrow="Stage 8 · Solar Apertures" title="Windows & Glazing" />
+        <SectionTitle eyebrow="Stage 5 · Apertures & Ingress" title="Windows & Doors" />
         <div className="cad-property-summary">
-          <span>{model.windows.length} Windows</span>
-          <span>{wwr}% Total WWR</span>
+          <span>{model.windows.length} Windows ({wwr}% WWR)</span>
+          <span>{model.doors.length} Doors</span>
         </div>
 
         <div className="mt-3 flex flex-col gap-2">
@@ -850,7 +768,7 @@ export function PropertyInspector({
               ];
               const width = 1.4;
               const height = 1.2;
-              const sillHeight = 0.9; // 0.9 + 1.2 = 2.1m standard header
+              const sillHeight = 0.9;
               const positionX = findNextAvailableOpeningPosition(span, wallOpenings, width);
               const clamped = clampOpeningPlacement(span, model.geometry.height, positionX, width, sillHeight, height, false);
               const newId = `win-${Date.now()}`;
@@ -877,27 +795,43 @@ export function PropertyInspector({
             <Plus className="size-3.5" /> + Add South Solar Window
           </button>
 
-          {model.windows.filter((w) => w.wall === "south").length > 1 && (
-            <button
-              type="button"
-              className="flex w-full items-center justify-center gap-1.5 rounded-lg border border-slate-700 bg-slate-800/80 px-2 py-1.5 text-[11px] font-medium text-slate-200 hover:bg-slate-700 hover:text-white"
-              onClick={() => {
-                const southWins = model.windows.filter((w) => w.wall === "south");
-                const distributed = distributeOpeningsEvenly(model.geometry.length, southWins);
-                const posMap = new Map(distributed.map((d) => [d.id, d.positionX]));
-                onUpdate({
-                  windows: model.windows.map((w) =>
-                    posMap.has(w.id) ? { ...w, positionX: posMap.get(w.id)! } : w
-                  ),
-                });
-              }}
-            >
-              Evenly Distribute South Windows
-            </button>
-          )}
+          <button
+            type="button"
+            onClick={() => {
+              const wall = "east";
+              const span = model.geometry.width;
+              const wallOpenings = [
+                ...model.windows.filter((w) => w.wall === wall).map((w) => ({ positionX: w.positionX, width: w.width })),
+                ...model.doors.filter((d) => d.wall === wall).map((d) => ({ positionX: d.positionX, width: d.width })),
+              ];
+              const width = 0.95;
+              const height = 2.1;
+              const positionX = findNextAvailableOpeningPosition(span, wallOpenings, width);
+              const clamped = clampOpeningPlacement(span, model.geometry.height, positionX, width, 0, height, true);
+              const newId = `door-${Date.now()}`;
+              onUpdate({
+                doors: [
+                  ...model.doors,
+                  {
+                    id: newId,
+                    wall,
+                    positionX: clamped.positionX,
+                    width: clamped.width,
+                    height: clamped.height,
+                    construction: "Insulated timber door",
+                    airTightness: "HighPerformance_Airtight",
+                  },
+                ],
+              });
+              onSelect({ type: "door", id: newId });
+            }}
+            className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-border bg-card py-2 text-xs font-semibold text-foreground shadow-sm hover:bg-secondary"
+          >
+            <Plus className="size-3.5" /> + Add Entry Door
+          </button>
         </div>
 
-        <p className="cad-subhead mt-3">Active Window Schedule</p>
+        <p className="cad-subhead mt-3">Glazing Schedule ({model.windows.length})</p>
         <div className="cad-layer-stack">
           {model.windows.map((w, idx) => (
             <div
@@ -905,63 +839,13 @@ export function PropertyInspector({
               className="cursor-pointer hover:bg-secondary/40"
               onClick={() => onSelect({ type: "window", id: w.id })}
             >
-              <span>
-                #{idx + 1} {w.wall.toUpperCase()} · {w.width}×{w.height}m · Sill {w.sillHeight}m
-              </span>
+              <span>#{idx + 1} {w.wall.toUpperCase()} · {w.width}×{w.height}m</span>
               <strong>{w.glazingType?.replace(/_/g, " ")}</strong>
             </div>
           ))}
         </div>
-      </div>
-    );
-  }
 
-  // Stage 8: Doors
-  if (currentStep === 8) {
-    return (
-      <div className="cad-inspector-content">
-        <SectionTitle eyebrow="Stage 9 · Ingress & Air Barriers" title="Exterior Doors" />
-        <div className="cad-property-summary">
-          <span>{model.doors.length} Exterior Doors</span>
-          <span>Airtight Rating</span>
-        </div>
-
-        <button
-          type="button"
-          onClick={() => {
-            const wall = "east";
-            const span = model.geometry.width;
-            const wallOpenings = [
-              ...model.windows.filter((w) => w.wall === wall).map((w) => ({ positionX: w.positionX, width: w.width })),
-              ...model.doors.filter((d) => d.wall === wall).map((d) => ({ positionX: d.positionX, width: d.width })),
-            ];
-            const width = 0.95;
-            const height = 2.1;
-            const positionX = findNextAvailableOpeningPosition(span, wallOpenings, width);
-            const clamped = clampOpeningPlacement(span, model.geometry.height, positionX, width, 0, height, true);
-            const newId = `door-${Date.now()}`;
-            onUpdate({
-              doors: [
-                ...model.doors,
-                {
-                  id: newId,
-                  wall,
-                  positionX: clamped.positionX,
-                  width: clamped.width,
-                  height: clamped.height,
-                  construction: "Insulated timber door",
-                  airTightness: "HighPerformance_Airtight",
-                },
-              ],
-            });
-            onSelect({ type: "door", id: newId });
-          }}
-          className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-xl border border-foreground bg-foreground py-2 text-xs font-semibold text-background shadow-sm hover:opacity-90"
-        >
-          <Plus className="size-3.5" /> + Add East Entry Door
-        </button>
-
-        <p className="cad-subhead mt-3">Active Door Schedule</p>
+        <p className="cad-subhead mt-3">Door Schedule ({model.doors.length})</p>
         <div className="cad-layer-stack">
           {model.doors.map((d, idx) => (
             <div
@@ -969,9 +853,7 @@ export function PropertyInspector({
               className="cursor-pointer hover:bg-secondary/40"
               onClick={() => onSelect({ type: "door", id: d.id })}
             >
-              <span>
-                #{idx + 1} {d.wall.toUpperCase()} · {d.width}×{d.height}m
-              </span>
+              <span>#{idx + 1} {d.wall.toUpperCase()} · {d.width}×{d.height}m</span>
               <strong>{d.airTightness}</strong>
             </div>
           ))}
@@ -980,33 +862,11 @@ export function PropertyInspector({
     );
   }
 
-  // Stage 9: Shading
-  if (currentStep === 9) {
+  // Stage 6 (index 5): Thermal Mass
+  if (currentStep === 5) {
     return (
       <div className="cad-inspector-content">
-        <SectionTitle eyebrow="Stage 10 · Solar Cut-Off" title="Overhangs & Shading" />
-        <NumberField
-          label="South Roof Overhang"
-          value={model.envelope.roof.overhang}
-          unit="m"
-          min={0.1}
-          max={2.0}
-          onChange={(v) =>
-            onUpdate({ envelope: { ...model.envelope, roof: { ...model.envelope.roof, overhang: v } } })
-          }
-        />
-        <p className="mt-3 text-[11px] text-muted-foreground leading-relaxed">
-          In cold high-altitude Ladakh (Latitude ~34°N), an overhang of 0.4m–0.6m shades high summer sun (June noon altitude ~79°) while allowing deep winter penetration (December noon altitude ~32°).
-        </p>
-      </div>
-    );
-  }
-
-  // Stage 10: Thermal Mass
-  if (currentStep === 10) {
-    return (
-      <div className="cad-inspector-content">
-        <SectionTitle eyebrow="Stage 11 · Capacitive Flywheel" title="Internal Thermal Mass" />
+        <SectionTitle eyebrow="Stage 6 · Capacitive Flywheel" title="Internal Thermal Mass" />
         <div className="cad-property-summary">
           <span>{model.thermalMass?.length || 0} Mass Elements</span>
           <span>Diurnal Damping</span>
@@ -1023,76 +883,109 @@ export function PropertyInspector({
     );
   }
 
-  // Stage 11: Ventilation & Infiltration
-  if (currentStep === 11) {
+  // Stage 7 (index 6): Ventilation & Internal Loads
+  if (currentStep === 6) {
     return (
       <div className="cad-inspector-content">
-        <SectionTitle eyebrow="Stage 12 · Fluid Air Exchange" title="Infiltration & Ventilation" />
-        <NumberField
-          label="Infiltration Rate"
-          value={model.ventilation?.infiltrationACH ?? 0.35}
-          unit="ACH"
-          min={0.05}
-          max={3.0}
-          step={0.05}
-          onChange={(v) =>
-            onUpdate({ ventilation: { ...model.ventilation, infiltrationACH: v } as any })
-          }
-        />
-        <NumberField
-          label="HRV Heat Recovery"
-          value={Math.round((model.ventilation?.heatRecoveryEfficiency ?? 0.75) * 100)}
-          unit="%"
-          min={0}
-          max={95}
-          step={5}
-          onChange={(v) =>
-            onUpdate({
-              ventilation: { ...model.ventilation, heatRecoveryEfficiency: v / 100 } as any,
-            })
-          }
-        />
-        <p className="mt-3 text-[11px] text-muted-foreground leading-relaxed">
-          At -20°C outdoor freeze, reducing infiltration from 1.0 ACH to 0.25 ACH prevents over 45% of total building envelope heat loss.
-        </p>
+        <SectionTitle eyebrow="Stage 7 · Air Exchange & Loads" title="Ventilation & Internal Gains" />
+        <div className="cad-field-grid">
+          <NumberField
+            label="Infiltration Rate"
+            value={model.ventilation?.infiltrationACH ?? 0.35}
+            unit="ACH"
+            min={0.05}
+            max={3.0}
+            step={0.05}
+            onChange={(v) =>
+              onUpdate({ ventilation: { ...model.ventilation, infiltrationACH: v } as any })
+            }
+          />
+          <NumberField
+            label="HRV Efficiency"
+            value={Math.round((model.ventilation?.heatRecoveryEfficiency ?? 0.75) * 100)}
+            unit="%"
+            min={0}
+            max={95}
+            step={5}
+            onChange={(v) =>
+              onUpdate({
+                ventilation: { ...model.ventilation, heatRecoveryEfficiency: v / 100 } as any,
+              })
+            }
+          />
+        </div>
+        <div className="cad-field-grid mt-2">
+          <NumberField
+            label="Occupants"
+            value={model.internalLoads?.occupantsCount ?? 2}
+            unit="pax"
+            min={0}
+            max={20}
+            onChange={(v) =>
+              onUpdate({ internalLoads: { ...model.internalLoads, occupantsCount: v } as any })
+            }
+          />
+          <NumberField
+            label="Equipment Loads"
+            value={model.internalLoads?.equipmentPowerWatts ?? 150}
+            unit="W"
+            min={0}
+            max={2000}
+            step={50}
+            onChange={(v) =>
+              onUpdate({ internalLoads: { ...model.internalLoads, equipmentPowerWatts: v } as any })
+            }
+          />
+        </div>
       </div>
     );
   }
 
-  // Stage 12: Targets & Simulation Trigger
+  // Stage 8 (index 7): Targets
+  if (currentStep === 7) {
+    return (
+      <div className="cad-inspector-content">
+        <SectionTitle eyebrow="Stage 8 · Performance Boundaries" title="Thermal Comfort Targets" />
+        <div className="cad-field-grid">
+          <NumberField
+            label="Comfort Min"
+            value={model.designTargets?.comfortTempMinC ?? 18.0}
+            unit="°C"
+            min={10}
+            max={24}
+            onChange={(v) =>
+              onUpdate({
+                designTargets: { ...model.designTargets, comfortTempMinC: v } as any,
+              })
+            }
+          />
+          <NumberField
+            label="Comfort Max"
+            value={model.designTargets?.comfortTempMaxC ?? 26.0}
+            unit="°C"
+            min={20}
+            max={35}
+            onChange={(v) =>
+              onUpdate({
+                designTargets: { ...model.designTargets, comfortTempMaxC: v } as any,
+              })
+            }
+          />
+        </div>
+        <div className="cad-property-summary mt-2">
+          <span>Target: {model.designTargets?.targetComfortPercent ?? 85}% Year-Round Comfort</span>
+        </div>
+      </div>
+    );
+  }
+
+  // Stage 9 (index 8): Simulation Engine & Solver Execution
   return (
     <div className="cad-inspector-content">
-      <SectionTitle eyebrow="Stage 13 · Simulation Engine" title="Comfort Targets & Execution" />
-      <div className="cad-field-grid">
-        <NumberField
-          label="Comfort Min"
-          value={model.designTargets?.comfortTempMinC ?? 18.0}
-          unit="°C"
-          min={10}
-          max={24}
-          onChange={(v) =>
-            onUpdate({
-              designTargets: { ...model.designTargets, comfortTempMinC: v } as any,
-            })
-          }
-        />
-        <NumberField
-          label="Comfort Max"
-          value={model.designTargets?.comfortTempMaxC ?? 26.0}
-          unit="°C"
-          min={20}
-          max={35}
-          onChange={(v) =>
-            onUpdate({
-              designTargets: { ...model.designTargets, comfortTempMaxC: v } as any,
-            })
-          }
-        />
-      </div>
-
-      <div className="cad-property-summary mt-2">
+      <SectionTitle eyebrow="Stage 9 · Solver Execution" title="ThermoShelter Simulation" />
+      <div className="cad-property-summary">
         <span>Engine: ThermoShelter Core</span>
-        <span>Ready for Rerun</span>
+        <span>Validation: Ready</span>
       </div>
 
       <button

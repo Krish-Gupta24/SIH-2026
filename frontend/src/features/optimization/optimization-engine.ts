@@ -611,7 +611,7 @@ export async function runBackendThermalOptimizationSweep(
     objective,
     objectiveTitle: OPTIMIZATION_OBJECTIVES.find((o) => o.id === objective)?.label || "Maximize Comfort",
     baseProjectId: meta.base_project_id || model.id,
-    weatherDataset: meta.weather_dataset || "Weather EPW",
+    weatherDataset: (meta.weather_dataset || "Climate Dataset").replace(/\.epw$/i, ""),
     totalGenerated: meta.total_generated || ranked.length,
     validCount: meta.valid_count || ranked.length,
     feasibleCount: meta.feasible_count || ranked.filter((r) => r.isFeasible).length,

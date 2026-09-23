@@ -19,14 +19,14 @@ export const WORKFLOW_PIPELINE: WorkflowStep[] = [
     stepNumber: 2,
     label: "Climate & Site",
     href: "/weather",
-    description: "Leh Ladakh extreme cold weather dataset & authentic EPW",
+    description: "Leh Ladakh extreme cold meteorological climate dataset",
   },
   {
     id: "designer",
     stepNumber: 3,
     label: "2D Designer",
     href: "/designer",
-    description: "13-stage engineering envelope & assembly specification",
+    description: "9-stage engineering envelope & assembly specification",
   },
   {
     id: "3d",

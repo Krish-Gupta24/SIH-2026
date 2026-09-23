@@ -73,13 +73,13 @@ const DEMO_STEPS: DemoStep[] = [
     id: 2,
     title: "2. Load Climate Data",
     category: "Location & Climate",
-    shortSummary: "Load verified ISHRAE EPW meteorological dataset with sub-zero design extremes.",
+    shortSummary: "Load verified ISHRAE meteorological dataset with sub-zero design extremes.",
     defenseRationale: "Prevents fabricated assumptions by injecting authentic hourly dry-bulb temperatures, high-altitude direct solar radiation, and wind profiles.",
-    actionLabel: "Load IND_JK_Leh.420270_ISHRAE.epw",
+    actionLabel: "Load ISHRAE Leh Climate Dataset",
     targetRoute: "/weather",
     provenance: "MEASURED",
     parameters: [
-      { label: "Weather Dataset", value: "IND_JK_Leh.420270_ISHRAE.epw" },
+      { label: "Weather Dataset", value: "IND_JK_Leh.420270_ISHRAE" },
       { label: "Winter Design Minimum", value: "-20.0 °C (Night Peak -28.0 °C)", badge: "MEASURED" },
       { label: "Summer Design Maximum", value: "+28.0 °C" },
       { label: "Peak Direct Solar Beam", value: "920 W/m² (High Solar Resource)", badge: "MEASURED" },
@@ -419,7 +419,7 @@ const DEMO_STEPS: DemoStep[] = [
     parameters: [
       { label: "Report Title", value: "Defense Shelter Thermal Engineering Assessment" },
       { label: "Engine Provenance", value: "ThermoShelter Core Solver v3.0" },
-      { label: "Weather Citation", value: "IND_JK_Leh.420270_ISHRAE.epw" },
+      { label: "Weather Citation", value: "IND_JK_Leh.420270_ISHRAE" },
       { label: "Export Formats", value: "Vector PDF (ReportLab) | CSV Timeseries | JSON Schema" },
       { label: "SIH Problem Statement", value: "Compliant with SIH 2026 Problem 26051" },
     ],
@@ -883,7 +883,7 @@ export function DemoWorkflowView() {
               <span>SIH Reviewer Integrity Seal</span>
             </div>
             <p>
-              In accordance with defense audit directives, zero synthetic thermal values are displayed. All temperature curves are derived from genuine ThermoShelter simulation runs or authentic ISHRAE EPW climate files.
+              In accordance with defense audit directives, zero synthetic thermal values are displayed. All temperature curves are derived from genuine ThermoShelter simulation runs or authentic ISHRAE climate files.
             </p>
           </div>
         </div>

@@ -29,6 +29,9 @@ interface WorkflowFooterProps {
   customNextLabel?: string;
   customNextAction?: () => void;
   isNextLoading?: boolean;
+  customPrevHref?: string;
+  customPrevLabel?: string;
+  customPrevAction?: () => void;
 }
 
 export function WorkflowFooter({
@@ -36,6 +39,9 @@ export function WorkflowFooter({
   customNextLabel,
   customNextAction,
   isNextLoading = false,
+  customPrevHref,
+  customPrevLabel,
+  customPrevAction,
 }: WorkflowFooterProps) {
   const pathname = usePathname();
   const { projects, activeProjectId, simulations } = useShelterStore();
@@ -57,15 +63,27 @@ export function WorkflowFooter({
       <div className="flex flex-col gap-6 rounded-[2rem] border border-border bg-card p-6 sm:p-8 shadow-[0_20px_55px_rgba(0,0,0,.04)] sm:flex-row sm:items-center sm:justify-between">
         {/* Left: Previous Step */}
         <div>
-          {prevStep ? (
+          {customPrevAction ? (
+            <button
+              type="button"
+              onClick={customPrevAction}
+              className="group inline-flex items-center gap-3 rounded-full border border-black/20 bg-white px-5 py-2.5 text-xs font-semibold text-black transition-colors hover:bg-[#CBDCE6]"
+            >
+              <ArrowLeft className="size-3.5 transition-transform group-hover:-translate-x-0.5" />
+              <div className="text-left">
+                <p className="micro-label text-[8px] leading-tight">Previous Step</p>
+                <p className="font-semibold leading-tight">{customPrevLabel || (prevStep ? prevStep.label : "Back")}</p>
+              </div>
+            </button>
+          ) : prevStep ? (
             <Link
-              href={prevStep.href}
+              href={customPrevHref || prevStep.href}
               className="group inline-flex items-center gap-3 rounded-full border border-black/20 bg-white px-5 py-2.5 text-xs font-semibold text-black transition-colors hover:bg-[#CBDCE6]"
             >
               <ArrowLeft className="size-3.5 transition-transform group-hover:-translate-x-0.5" />
               <div className="text-left">
                 <p className="micro-label text-[8px] leading-tight">Step 0{prevStep.stepNumber}</p>
-                <p className="font-semibold leading-tight">{prevStep.label}</p>
+                <p className="font-semibold leading-tight">{customPrevLabel || prevStep.label}</p>
               </div>
             </Link>
           ) : (

@@ -73,7 +73,7 @@ export function sunPositionGeographic(site: SolarSite, hour: number, distance = 
 
 export function sunLightIntensity(altitudeDeg: number, visualization: string): number {
   if (altitudeDeg <= 0) return 0.08;
-  const base = visualization === "solar" ? 2.55 : 1.9;
+  const base = visualization === "solar" ? 3.8 : 3.2;
   return base * (0.28 + 0.72 * Math.min(1, altitudeDeg / 38));
 }
 
@@ -131,10 +131,10 @@ export function atmosphericColorTemperature(
     if (landscapeKind === "ladakh") return "#ffddaa";
     return "#ffcc99";
   }
-  // Midday — Ladakh is cleanest white, desert slightly yellow, plains neutral
-  if (isHighAltitude) return "#fffef8"; // ultra-crisp Ladakh
-  if (landscapeKind === "desert") return "#fff5e0"; // warm desert noon
-  return "#fffaf0"; // gentle plains noon
+  // Midday — warm golden amber sunlight (matching the orangish-gold sun)
+  if (isHighAltitude) return "#fff4d6"; // crisp warm golden light
+  if (landscapeKind === "desert") return "#ffe5b4"; // warm desert noon
+  return "#fff0cc"; // gentle warm plains noon
 }
 
 /**

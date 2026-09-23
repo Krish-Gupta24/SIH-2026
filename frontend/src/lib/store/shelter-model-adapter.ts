@@ -2,49 +2,28 @@ import { ShelterModel } from "@/types/shelter";
 import { ShelterFormValues, defaultShelterFormValues } from "@/features/shelter-editor/schema";
 
 /**
- * Maps 1-indexed 2D wizard step (1 to 13) to 0-indexed 3D stage (0 to 12).
- * Provides exact semantic alignment across all 13 engineering stages.
+ * Maps 1-indexed 2D wizard step (1 to 9) to 0-indexed 3D stage (0 to 8).
+ * Direct 1:1 synchronization between 2D and 3D CAD sequences:
+ * 1 (Geometry)           <-> 0 (Geometry)
+ * 2 (Walls)              <-> 1 (Walls)
+ * 3 (Roof)               <-> 2 (Roof)
+ * 4 (Floor)              <-> 3 (Floor)
+ * 5 (Windows & Doors)    <-> 4 (Windows & Doors)
+ * 6 (Thermal Mass)       <-> 5 (Thermal Mass)
+ * 7 (Ventilation & Loads)<-> 6 (Ventilation & Loads)
+ * 8 (Design Targets)     <-> 7 (Design Targets)
+ * 9 (Simulation)         <-> 8 (Simulation)
  */
 export function step2dTo3d(step2d: number): number {
-  const map: Record<number, number> = {
-    1: 0,  // Project -> Stage 0 (Project)
-    2: 1,  // Location -> Stage 1 (Location)
-    3: 2,  // Geometry -> Stage 2 (Geometry)
-    4: 4,  // Walls -> Stage 4 (Walls)
-    5: 5,  // Roof -> Stage 5 (Roof)
-    6: 6,  // Floor -> Stage 6 (Floor)
-    7: 7,  // Windows -> Stage 7 (Windows)
-    8: 8,  // Doors -> Stage 8 (Doors)
-    9: 10, // Thermal Mass -> Stage 10 (Thermal Mass)
-    10: 11,// Ventilation -> Stage 11 (Ventilation)
-    11: 12,// Internal Loads -> Stage 12 (Simulation & Targets)
-    12: 12,// Design Targets -> Stage 12 (Simulation & Targets)
-    13: 12,// Simulation -> Stage 12 (Simulation & Targets)
-  };
-  return map[step2d] !== undefined ? map[step2d] : Math.max(0, Math.min(12, step2d - 1));
+  return Math.max(0, Math.min(8, step2d - 1));
 }
 
 /**
- * Maps 0-indexed 3D stage (0 to 12) to 1-indexed 2D wizard step (1 to 13).
- * Provides exact semantic alignment across all 13 engineering stages.
+ * Maps 0-indexed 3D stage (0 to 8) to 1-indexed 2D wizard step (1 to 9).
+ * Direct 1:1 synchronization between 3D CAD and 2D sequences.
  */
 export function step3dTo2d(step3d: number): number {
-  const map: Record<number, number> = {
-    0: 1,  // Stage 0 (Project) -> Step 1 (Project)
-    1: 2,  // Stage 1 (Location) -> Step 2 (Location)
-    2: 3,  // Stage 2 (Geometry) -> Step 3 (Geometry)
-    3: 3,  // Stage 3 (Orientation) -> Step 3 (Geometry - Orientation slider)
-    4: 4,  // Stage 4 (Walls) -> Step 4 (Walls)
-    5: 5,  // Stage 5 (Roof) -> Step 5 (Roof)
-    6: 6,  // Stage 6 (Floor) -> Step 6 (Floor)
-    7: 7,  // Stage 7 (Windows) -> Step 7 (Windows)
-    8: 8,  // Stage 8 (Doors) -> Step 8 (Doors)
-    9: 7,  // Stage 9 (Shading) -> Step 7 (Windows - Shading overhang)
-    10: 9, // Stage 10 (Thermal Mass) -> Step 9 (Thermal Mass)
-    11: 10,// Stage 11 (Ventilation) -> Step 10 (Ventilation)
-    12: 13,// Stage 12 (Simulation) -> Step 13 (Simulation)
-  };
-  return map[step3d] !== undefined ? map[step3d] : Math.max(1, Math.min(13, step3d + 1));
+  return Math.max(1, Math.min(9, step3d + 1));
 }
 
 /**

@@ -195,7 +195,7 @@ export function DashboardView() {
             </span>
             <h3 className="mt-4 text-base font-semibold">Weather Intelligence</h3>
             <p className="mt-1 text-xs leading-5 text-muted-foreground">
-              NASA POWER and authentic Leh EPW climate files with full provenance.
+              NASA POWER and authentic Leh meteorological climate files with full provenance.
             </p>
           </div>
           <span className="mt-5 inline-flex items-center gap-1.5 text-xs font-semibold text-foreground">

@@ -15,7 +15,8 @@ import {
 } from "lucide-react";
 import { useShelterStore } from "@/lib/store/use-shelter-store";
 import { BrandMark, Status } from "@/components/v0/platform-components";
-import { WORKFLOW_PIPELINE, getWorkflowStepIndex } from "@/components/layout/WorkflowFooter";
+import { WORKFLOW_PIPELINE, getWorkflowStepIndex } from "@/components/layout/workflow-pipeline";
+import { WorkflowFloatingDock } from "@/components/layout/WorkflowFloatingDock";
 import { usePlatformInit } from "@/hooks/use-platform-init";
 
 interface NavItem {
@@ -223,19 +224,19 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </nav>
         )}
 
-        {/* Project Bar with Connected Flow Pipeline (Visible on project workflow routes) */}
+        {/* Project Bar (Streamlined: Identity, Live Progress & Next Step CTA) */}
         {isProjectView && activeProject && (
           <div className="project-bar border-t border-border bg-background/95">
             <div className="mx-auto max-w-[1500px] px-5 sm:px-8 lg:px-12">
-              <div className="flex flex-col gap-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex flex-col gap-3 py-2.5 sm:flex-row sm:items-center sm:justify-between">
                 {/* Active Project Identification */}
-                <div className="flex min-w-0 items-center gap-4">
+                <div className="flex min-w-0 items-center gap-3">
                   <Link
                     href="/projects"
-                    className="flex size-9 shrink-0 items-center justify-center rounded-full border border-border transition-colors hover:bg-secondary"
+                    className="flex size-8 shrink-0 items-center justify-center rounded-full border border-border transition-colors hover:bg-secondary"
                     aria-label="Back to projects"
                   >
-                    <ArrowLeft className="size-4" />
+                    <ArrowLeft className="size-3.5" />
                   </Link>
 
                   <div className="relative min-w-0">
@@ -322,61 +323,33 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   )}
                 </div>
               </div>
-
-              {/* Connected Chevron Workflow Stepper */}
-              <nav
-                className="workflow-tabs flex items-center gap-1.5 overflow-x-auto rounded-t-2xl bg-secondary/45 px-3 py-2"
-                aria-label="Connected engineering workflow"
-              >
-                {WORKFLOW_PIPELINE.map((item, idx) => {
-                  const isActive = idx === currentStepIndex;
-                  const isDone = getStepStatus(item.id);
-
-                  return (
-                    <React.Fragment key={item.id}>
-                      <Link
-                        href={item.href}
-                        className={`group relative flex shrink-0 items-center gap-2 rounded-full px-3.5 py-1.5 text-[11px] font-semibold transition-colors ${
-                          isActive
-                            ? "bg-black text-white shadow-sm"
-                            : isDone
-                            ? "bg-white/85 text-black border border-black/10 hover:bg-white"
-                            : "text-[#6E818F] hover:bg-white/50 hover:text-black"
-                        }`}
-                      >
-                        {/* Step Number / Checkmark Badge */}
-                        <span
-                          className={`flex size-4 items-center justify-center rounded-full text-[9px] font-bold ${
-                            isActive
-                              ? "bg-white text-black"
-                              : isDone
-                              ? "bg-[#CBDCE6] text-black"
-                              : "bg-black/5 text-[#6E818F]"
-                          }`}
-                        >
-                          {isDone ? "✓" : item.stepNumber}
-                        </span>
-
-                        <span>{item.label}</span>
-                      </Link>
-
-                      {/* Connected Flow Arrow between tabs */}
-                      {idx < WORKFLOW_PIPELINE.length - 1 && (
-                        <ChevronRight className="size-3 shrink-0 text-[#6E818F]/40" />
-                      )}
-                    </React.Fragment>
-                  );
-                })}
-              </nav>
             </div>
           </div>
         )}
       </header>
 
-      {/* Main Page Workspace Content */}
-      <main className={isImmersiveDesigner ? "workspace-content designer-3d-workspace-content" : "workspace-content mx-auto max-w-[1500px] px-5 py-8 sm:px-8 sm:py-10 lg:px-12"}>
-        {children}
-      </main>
+      {/* Connected Workspace Layout: Left Sidebar + Main Content */}
+      <div className="flex flex-1 min-h-[calc(100vh-124px)]">
+        {/* Engineering Workflow Left Sidebar */}
+        {isProjectView && activeProject && (
+          <WorkflowFloatingDock
+            completedStepIds={WORKFLOW_PIPELINE.filter((step) => getStepStatus(step.id)).map((s) => s.id)}
+            activeProjectName={activeProject.project?.name}
+            is3dView={isImmersiveDesigner}
+          />
+        )}
+
+        {/* Main Page Workspace Content */}
+        <main
+          className={
+            isImmersiveDesigner
+              ? "flex-1 min-w-0 workspace-content designer-3d-workspace-content"
+              : "flex-1 min-w-0 workspace-content mx-auto max-w-[1500px] px-5 py-6 sm:px-8 sm:py-8 lg:px-12"
+          }
+        >
+          {children}
+        </main>
+      </div>
     </div>
   );
 }

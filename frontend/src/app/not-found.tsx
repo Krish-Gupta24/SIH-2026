@@ -67,7 +67,7 @@ const PLATFORM_MODULES: ModuleDirectoryItem[] = [
     name: "ThermoShelter Simulation Engine",
     category: "Physics Dispatch",
     href: "/simulations",
-    description: "Queue, execute, and monitor ThermoShelter Core and validated physics runs with authentic EPW weather.",
+    description: "Queue, execute, and monitor ThermoShelter Core and validated physics runs with authentic meteorological weather datasets.",
     icon: Play,
     badge: "Solver Ready",
   },

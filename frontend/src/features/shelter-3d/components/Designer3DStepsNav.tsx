@@ -23,69 +23,17 @@ import {
   Sparkles,
 } from "lucide-react";
 
-export interface StepItem {
-  id: number; // 1-indexed (1 to 13)
-  index: number; // 0-indexed (0 to 12)
-  name: string;
-  shortName: string;
-  description: string;
-  icon: React.ComponentType<{ className?: string }>;
-  phaseId: string;
-}
+import {
+  DESIGNER_9_STEPS,
+  DESIGNER_13_STEPS,
+  WORKFLOW_PHASES,
+  type StepItem,
+} from "../designer-3d-config";
 
-export const DESIGNER_13_STEPS: StepItem[] = [
-  { id: 1, index: 0, name: "Project", shortName: "Project", description: "Identity, Version & Baselines", icon: FolderKanban, phaseId: "site" },
-  { id: 2, index: 1, name: "Location", shortName: "Location", description: "Climate, Weather & EPW Station", icon: MapPin, phaseId: "site" },
-  { id: 3, index: 2, name: "Geometry", shortName: "Geometry", description: "Dimensions & Roof Geometry", icon: BoxIcon, phaseId: "site" },
-  { id: 4, index: 3, name: "Orientation", shortName: "Orientation", description: "Solar Azimuth & Wind Axis", icon: Compass, phaseId: "site" },
-  { id: 5, index: 4, name: "Walls", shortName: "Walls", description: "Wall Layers, U-Values & Insulation", icon: Layers, phaseId: "envelope" },
-  { id: 6, index: 5, name: "Roof", shortName: "Roof", description: "Roof Pitch, Overhangs & Eaves", icon: Home, phaseId: "envelope" },
-  { id: 7, index: 6, name: "Floor", shortName: "Floor", description: "Foundation Slab & Subgrade Contact", icon: Grid, phaseId: "envelope" },
-  { id: 8, index: 7, name: "Windows", shortName: "Windows", description: "South Solar Glazing & WWR", icon: Square, phaseId: "openings" },
-  { id: 9, index: 8, name: "Doors", shortName: "Doors", description: "Entry Ingress & Airtight Barriers", icon: DoorOpen, phaseId: "openings" },
-  { id: 10, index: 9, name: "Shading", shortName: "Shading", description: "Solar Cutoff Overhangs & Fins", icon: Sun, phaseId: "openings" },
-  { id: 11, index: 10, name: "Thermal Mass", shortName: "Mass", description: "Capacitive Storage & Trombe Wall", icon: Mountain, phaseId: "openings" },
-  { id: 12, index: 11, name: "Ventilation", shortName: "Ventilation", description: "Infiltration ACH & Heat Recovery", icon: Wind, phaseId: "openings" },
-  { id: 13, index: 12, name: "Simulation", shortName: "Simulation", description: "Comfort Targets & Physics Run", icon: Target, phaseId: "performance" },
-];
-
-export const WORKFLOW_PHASES = [
-  {
-    id: "site",
-    name: "Site & Context",
-    shortName: "Site",
-    icon: "📍",
-    description: "Location, climate & building volume",
-    stepIndices: [0, 1, 2, 3],
-  },
-  {
-    id: "envelope",
-    name: "Building Envelope",
-    shortName: "Envelope",
-    icon: "🏗️",
-    description: "Wall assemblies, roof & foundation",
-    stepIndices: [4, 5, 6],
-  },
-  {
-    id: "openings",
-    name: "Openings & Systems",
-    shortName: "Openings",
-    icon: "🪟",
-    description: "Windows, doors, shading & air exchange",
-    stepIndices: [7, 8, 9, 10, 11],
-  },
-  {
-    id: "performance",
-    name: "Performance & Simulation",
-    shortName: "Targets",
-    icon: "🎯",
-    description: "Thermal targets & 24h physics validation",
-    stepIndices: [12],
-  },
-];
+export { DESIGNER_9_STEPS, DESIGNER_13_STEPS, WORKFLOW_PHASES, type StepItem };
 
 interface Designer3DStepsNavProps {
-  currentStep: number; // 0-indexed (0 to 12)
+  currentStep: number; // 0-indexed (0 to 8)
   onStepChange: (newStep: number) => void;
   className?: string;
 }
@@ -96,7 +44,7 @@ export function Designer3DStepsNav({
   className = "",
 }: Designer3DStepsNavProps) {
   const [expanded, setExpanded] = useState(false);
-  const activeStepItem = DESIGNER_13_STEPS[currentStep] || DESIGNER_13_STEPS[0];
+  const activeStepItem = DESIGNER_9_STEPS[currentStep] || DESIGNER_9_STEPS[0];
   const activePhase = WORKFLOW_PHASES.find((p) => p.stepIndices.includes(currentStep)) || WORKFLOW_PHASES[0];
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const activePillRef = useRef<HTMLButtonElement>(null);
@@ -131,7 +79,7 @@ export function Designer3DStepsNav({
           <div className="phase-text">
             <span className="phase-tag">Phase {WORKFLOW_PHASES.indexOf(activePhase) + 1} of 4: {activePhase.name}</span>
             <strong className="step-title">
-              Stage {currentStep + 1} of 13: {activeStepItem.name}
+              Stage {currentStep + 1} of {DESIGNER_9_STEPS.length}: {activeStepItem.name}
               <span className="step-desc-inline"> — {activeStepItem.description}</span>
             </strong>
           </div>
@@ -139,7 +87,7 @@ export function Designer3DStepsNav({
 
         <div className="steps-nav-actions">
           {/* Progress Pill */}
-          <div className="steps-nav-progress-badge" title={`${progressPercent}% of 13-stage sequence complete`}>
+          <div className="steps-nav-progress-badge" title={`${progressPercent}% of ${DESIGNER_9_STEPS.length}-stage sequence complete`}>
             <span className="progress-percent font-mono">{progressPercent}%</span>
             <div className="progress-mini-track">
               <div className="progress-mini-bar" style={{ width: `${progressPercent}%` }} />

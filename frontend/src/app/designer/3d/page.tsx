@@ -50,21 +50,19 @@ import { AnsysDeckExportModal } from "@/components/modals/AnsysDeckExportModal";
 import { DesignPresetsDropdown } from "@/features/shelter-editor/components/DesignPresetsDropdown";
 import { Designer3DStepsNav } from "@/features/shelter-3d/components/Designer3DStepsNav";
 
-const UNIFIED_13_STEPS = [
-  { id: 1, name: "Project", description: "Identity & Version", icon: FolderKanban },
-  { id: 2, name: "Location", description: "Climate & EPW", icon: MapPin },
-  { id: 3, name: "Geometry", description: "Dimensions & Roof Form", icon: BoxIcon },
-  { id: 4, name: "Orientation", description: "Solar Azimuth & Wind Axis", icon: Compass },
-  { id: 5, name: "Walls", description: "Envelope Assemblies & Insulation", icon: Layers },
-  { id: 6, name: "Roof", description: "Pitch, Overhang & Eaves", icon: Home },
-  { id: 7, name: "Floor", description: "Foundation Slab & Subgrade", icon: Grid },
-  { id: 8, name: "Windows", description: "South Solar Glazing & Apertures", icon: Square },
-  { id: 9, name: "Doors", description: "Ingress & Airtight Barriers", icon: DoorOpen },
-  { id: 10, name: "Shading", description: "Solar Cutoff Overhangs & Fins", icon: Sun },
-  { id: 11, name: "Thermal Mass", description: "Capacitive Storage & Trombe Wall", icon: Mountain },
-  { id: 12, name: "Ventilation", description: "Infiltration ACH & Heat Recovery", icon: Wind },
-  { id: 13, name: "Simulation", description: "Targets & ThermoShelter Run", icon: Target },
+const UNIFIED_9_STEPS = [
+  { id: 1, name: "Geometry", description: "Dimensions & Roof Form", icon: BoxIcon },
+  { id: 2, name: "Walls", description: "Envelope Assemblies & Insulation", icon: Layers },
+  { id: 3, name: "Roof", description: "Pitch, Overhang & Eaves", icon: Home },
+  { id: 4, name: "Floor", description: "Foundation Slab & Subgrade", icon: Grid },
+  { id: 5, name: "Windows & Doors", description: "Glazing Apertures, Ingress & Shading", icon: Square },
+  { id: 6, name: "Thermal Mass", description: "Flywheel Sensible Storage", icon: Mountain },
+  { id: 7, name: "Ventilation & Loads", description: "Infiltration ACH, HRV & Heat Gains", icon: Wind },
+  { id: 8, name: "Design Targets", description: "Comfort Performance Targets", icon: Target },
+  { id: 9, name: "Simulation", description: "Targets & ThermoShelter Run", icon: Cpu },
 ];
+
+const UNIFIED_13_STEPS = UNIFIED_9_STEPS;
 
 function Shelter3DPageContent() {
   const router = useRouter();
@@ -81,21 +79,20 @@ function Shelter3DPageContent() {
     searchParams.get("stage") ?? searchParams.get("step")
   );
 
-  // Safely resolve initial 0-indexed stage from ?stage= (0..12) or ?step= (1..13 from 2D wizard)
+  // Safely resolve initial 0-indexed stage from ?stage= (0..8) or ?step= (1..9 from 2D wizard)
   const resolveStageFromParams = React.useCallback((): number | null => {
     const stageQuery = searchParams.get("stage");
     if (stageQuery !== null) {
       const parsed = parseInt(stageQuery, 10);
-      if (!isNaN(parsed) && parsed >= 0 && parsed <= 12) return parsed;
+      if (!isNaN(parsed) && parsed >= 0 && parsed <= 8) return parsed;
     }
     const stepQuery = searchParams.get("step");
     if (stepQuery !== null) {
       const parsed = parseInt(stepQuery, 10);
       if (!isNaN(parsed)) {
-        // If 1-indexed (1..13) coming from 2D designer, convert to 0-indexed stage (0..12)
-        if (parsed >= 1 && parsed <= 13) return step2dTo3d(parsed);
-        // If already 0-indexed
-        if (parsed >= 0 && parsed <= 12) return parsed;
+        // If 1-indexed (1..9) coming from 2D designer, convert to 0-indexed stage (0..8)
+        if (parsed >= 1 && parsed <= 9) return step2dTo3d(parsed);
+        if (parsed >= 0 && parsed <= 8) return parsed;
       }
     }
     return null;
@@ -120,17 +117,34 @@ function Shelter3DPageContent() {
       }
     };
 
+    const handlePopState = () => {
+      handleImmediateFlush();
+      const params = new URLSearchParams(window.location.search);
+      const stageParam = params.get("stage") ?? params.get("step");
+      if (stageParam !== null) {
+        const parsed = parseInt(stageParam, 10);
+        if (!isNaN(parsed)) {
+          const resolved = parsed >= 1 && parsed <= 9 ? step2dTo3d(parsed) : parsed;
+          if (resolved >= 0 && resolved <= 12) {
+            lastParamKeyRef.current = String(resolved);
+            setStep(resolved);
+            setActiveWizardStep(step3dTo2d(resolved));
+          }
+        }
+      }
+    };
+
     window.addEventListener("beforeunload", handleImmediateFlush);
     window.addEventListener("pagehide", handleImmediateFlush);
-    window.addEventListener("popstate", handleImmediateFlush);
+    window.addEventListener("popstate", handlePopState);
 
     return () => {
       window.removeEventListener("beforeunload", handleImmediateFlush);
       window.removeEventListener("pagehide", handleImmediateFlush);
-      window.removeEventListener("popstate", handleImmediateFlush);
+      window.removeEventListener("popstate", handlePopState);
       handleImmediateFlush();
     };
-  }, [updateProject]);
+  }, [updateProject, setActiveWizardStep]);
 
   // Only sync when the incoming URL query param actually changes from external navigation
   useEffect(() => {
@@ -146,7 +160,7 @@ function Shelter3DPageContent() {
   }, [searchParams, resolveStageFromParams, setActiveWizardStep]);
 
   const handleStepChange = (newStep: number) => {
-    const validStep = Math.min(Math.max(0, newStep), 12);
+    const validStep = Math.min(Math.max(0, newStep), 8);
     setStep(validStep);
     setActiveWizardStep(step3dTo2d(validStep));
     lastParamKeyRef.current = String(validStep);
@@ -175,7 +189,7 @@ function Shelter3DPageContent() {
           <div className="designer-pagebar-title">
             <span className="micro-label">3D SHELTER DESIGNER</span>
             <h1>{activeModel.project.name}</h1>
-            <p>{UNIFIED_13_STEPS[step]?.name} · Stage {step + 1} of {UNIFIED_13_STEPS.length}</p>
+            <p>{UNIFIED_9_STEPS[step]?.name} · Stage {step + 1} of {UNIFIED_9_STEPS.length}</p>
           </div>
           <div className="designer-pagebar-actions">
             <DesignPresetsDropdown compact />

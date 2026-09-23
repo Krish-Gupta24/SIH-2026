@@ -44,49 +44,45 @@ import { PropertyInspector } from "./components/PropertyInspector";
 import { MaterialWorkbenchDialog } from "./components/MaterialWorkbenchDialog";
 
 const stages = [
-  "Project",
-  "Location",
   "Geometry",
-  "Orientation",
   "Walls",
   "Roof",
   "Floor",
-  "Windows",
-  "Doors",
-  "Shading",
+  "Windows & Doors",
   "Thermal mass",
-  "Ventilation",
+  "Ventilation & Loads",
   "Targets",
+  "Simulation",
 ];
 
 // Grouped workflow phases for cleaner navigation
 const workflowPhases = [
   { 
-    id: "site", 
-    label: "Site & Context", 
-    description: "Location, climate, and building form",
-    stages: [0, 1, 2, 3],
-    icon: "📍"
-  },
-  { 
     id: "envelope", 
     label: "Building Envelope", 
-    description: "Walls, roof, and floor assemblies",
-    stages: [4, 5, 6],
+    description: "Massing, walls, roof, and foundation slab",
+    stages: [0, 1, 2, 3],
     icon: "🏗️"
   },
   { 
-    id: "openings", 
-    label: "Openings & Systems", 
-    description: "Windows, doors, shading, and ventilation",
-    stages: [7, 8, 9, 10, 11],
+    id: "apertures", 
+    label: "Apertures & Solar", 
+    description: "Glazing openings, doors, and thermal storage",
+    stages: [4, 5],
     icon: "🪟"
   },
   { 
+    id: "climate", 
+    label: "Indoor Climate", 
+    description: "Ventilation, HRV, and internal heat gains",
+    stages: [6],
+    icon: "💨"
+  },
+  { 
     id: "performance", 
-    label: "Performance Goals", 
-    description: "Thermal comfort targets",
-    stages: [12],
+    label: "Performance & Simulation", 
+    description: "Thermal targets & physics solver",
+    stages: [7, 8],
     icon: "🎯"
   },
 ];
@@ -103,7 +99,7 @@ export function Shelter3DDesigner({ model, step, onStepChange, onUpdate, onSimul
   const [saved, setSaved] = useState(false);
   const [materialsOpen, setMaterialsOpen] = useState(false);
   const [viewOptionsOpen, setViewOptionsOpen] = useState(false);
-  const [openWorkflowGroup, setOpenWorkflowGroup] = useState(() => workflowPhases.find((phase) => phase.stages.includes(step))?.id ?? "site");
+  const [openWorkflowGroup, setOpenWorkflowGroup] = useState(() => workflowPhases.find((phase) => phase.stages.includes(step))?.id ?? "envelope");
 
   // Keep open phase group synced when step changes externally
   useEffect(() => {
@@ -206,15 +202,17 @@ export function Shelter3DDesigner({ model, step, onStepChange, onUpdate, onSimul
 
   // Handle stage change with auto-focusing elements in 3D
   const handleStageSelect = (idx: number) => {
-    setOpenWorkflowGroup(workflowPhases.find((phase) => phase.stages.includes(idx))?.id ?? "site");
-    onStepChange(idx);
-    if (idx === 3 || idx === 4) setSelected({ type: "wall", orientation: "south" });
-    else if (idx === 5) setSelected({ type: "roof" });
-    else if (idx === 6) setSelected({ type: "floor" });
-    else if (idx === 7) setSelected(model.windows[0] ? { type: "window", id: model.windows[0].id } : null);
-    else if (idx === 8) setSelected(model.doors[0] ? { type: "door", id: model.doors[0].id } : null);
-    else if (idx === 9) setSelected(model.windows[0] ? { type: "window", id: model.windows[0].id } : null);
-    else if (idx === 10) setSelected(model.thermalMass[0] ? { type: "thermalMass", id: model.thermalMass[0].id } : null);
+    const validIdx = Math.max(0, Math.min(stages.length - 1, idx));
+    setOpenWorkflowGroup(workflowPhases.find((phase) => phase.stages.includes(validIdx))?.id ?? "envelope");
+    onStepChange(validIdx);
+    if (validIdx === 0) setSelected({ type: "shelter" });
+    else if (validIdx === 1) setSelected({ type: "wall", orientation: "south" });
+    else if (validIdx === 2) setSelected({ type: "roof" });
+    else if (validIdx === 3) setSelected({ type: "floor" });
+    else if (validIdx === 4) setSelected(model.windows[0] ? { type: "window", id: model.windows[0].id } : model.doors[0] ? { type: "door", id: model.doors[0].id } : { type: "shelter" });
+    else if (validIdx === 5) setSelected(model.thermalMass[0] ? { type: "thermalMass", id: model.thermalMass[0].id } : { type: "shelter" });
+    else if (validIdx === 6) setSelected({ type: "shelter" });
+    else if (validIdx === 7) setSelected({ type: "shelter" });
     else setSelected({ type: "shelter" });
   };
 
@@ -269,11 +267,11 @@ export function Shelter3DDesigner({ model, step, onStepChange, onUpdate, onSimul
           type="button"
           onClick={() => setLeftOpen(!leftOpen)}
           className={`cad-step-nav-badge ${leftOpen ? "active" : ""}`}
-          title="Toggle 13-stage workflow panel"
+          title={`Toggle ${stages.length}-stage workflow panel`}
         >
           <Layers3 className="size-3.5 text-sky-400" />
-          <span className="cad-step-num font-mono">Stage {step + 1}/13</span>
-          <span className="cad-step-name">{stages[step]}</span>
+          <span className="cad-step-num font-mono">Stage {step + 1}/{stages.length}</span>
+          <span className="cad-step-name">{stages[step] || stages[0]}</span>
         </button>
         <button
           type="button"

@@ -120,7 +120,7 @@ export function ReportsView() {
   const preservedEngine = completedSim?.engine
     ? `${(!completedSim.engine || completedSim.engine.toLowerCase().includes("energyplus")) ? "ThermoShelter Core" : completedSim.engine} (v${completedSim.engineVersion || "3.0.0"})`
     : "ThermoShelter Core Solver v3.0";
-  const preservedWeather = activeWeather?.name || loc.weatherSource || "Leh Airport Station (3500m) IND_JK_Leh.420270_ISHRAE.epw";
+  const preservedWeather = (activeWeather?.name || loc.weatherSource || "Leh Airport Station (3500m) ISHRAE").replace(/\.epw$/i, "");
   const preservedProjectVer = `v${activeProject.project?.version || "1.0.0"}`;
   const preservedModelVer = `Canonical Schema ${activeProject.schemaVersion || "1.0.0"}`;
   const preservedAssumptions = "1D multi-layer conduction; lumped zone capacitance; 3500m barometric pressure (67.5 kPa); casual internal loads ~450W.";
@@ -216,7 +216,7 @@ export function ReportsView() {
           "20_optimization": optimizationData,
           "21_recommended_design": optimizationData.best_candidate,
           "22_assumptions": [preservedAssumptions],
-          "23_sources": ["ASHRAE Handbook of Fundamentals", "ISHRAE Leh EPW", "ISO 7730", "NBC 2016", "ECBC 2017"],
+          "23_sources": ["ASHRAE Handbook of Fundamentals", "ISHRAE Leh Climate Dataset", "ISO 7730", "NBC 2016", "ECBC 2017"],
           "24_validation_notes": validationData,
         },
       };
@@ -276,7 +276,7 @@ export function ReportsView() {
         ["20", "Optimization", "Evaluated Candidates", "25 Candidates (23 Feasible)"],
         ["21", "Recommended Design", "Winner", optimizationData.best_candidate.candidate_id],
         ["22", "Assumptions", "Core Simplification", preservedAssumptions],
-        ["23", "Sources", "Primary Standards", "ASHRAE 55, ISHRAE EPW, ISO 7730, NBC 2016"],
+        ["23", "Sources", "Primary Standards", "ASHRAE 55, ISHRAE Climate Standards, ISO 7730, NBC 2016"],
         ["24", "Validation Notes", "Audit Status", "PASSED (7/7 Controlled Tests Verified)"],
       ];
 
@@ -381,7 +381,7 @@ export function ReportsView() {
               Official Compliance & Engineering Defense Record
             </h3>
             <p className="text-xs text-[#536772] mt-1">
-              All 9 continuous stages from authentic Leh EPW climate context through ThermoShelter Core sub-hourly calculation and ECBC passive envelope standards are audited.
+              All 9 continuous stages from authentic Leh climate dataset context through ThermoShelter Core sub-hourly calculation and ECBC passive envelope standards are audited.
             </p>
           </div>
           <div className="shrink-0">
@@ -395,7 +395,7 @@ export function ReportsView() {
         <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-4 border-t border-border pt-5 text-xs">
           <div className="flex items-center gap-2.5">
             <span className="flex size-4.5 items-center justify-center rounded-full bg-[#CBDCE6] text-black text-[9px] font-bold">✓</span>
-            <span className="font-medium">Site & EPW Provenance</span>
+            <span className="font-medium">Site & Climate Provenance</span>
           </div>
           <div className="flex items-center gap-2.5">
             <span className="flex size-4.5 items-center justify-center rounded-full bg-[#CBDCE6] text-black text-[9px] font-bold">✓</span>
@@ -648,7 +648,7 @@ export function ReportsView() {
             {/* 23. Sources */}
             <div className="rounded-2xl border border-border bg-card p-4 hover:border-[#6E818F] transition-colors print:bg-slate-50 space-y-1.5 shadow-sm">
               <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">23. Sources</span>
-              <div className="font-semibold text-foreground print:text-black">ASHRAE 55, ISHRAE EPW</div>
+              <div className="font-semibold text-foreground print:text-black">ASHRAE 55, ISHRAE Climate Standards</div>
               <div className="text-xs text-muted-foreground print:text-slate-600">ISO 7730, NBC 2016, ECBC 2017</div>
             </div>
 

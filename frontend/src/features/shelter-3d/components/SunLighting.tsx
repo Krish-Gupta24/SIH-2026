@@ -2,7 +2,7 @@
 
 import { useRef } from "react";
 import { useFrame } from "@react-three/fiber";
-import { Html, Line } from "@react-three/drei";
+import { Billboard, Html, Line } from "@react-three/drei";
 import * as THREE from "three";
 import type { ShelterModel } from "@/types/shelter";
 import type { ViewerSettings } from "../types";
@@ -144,14 +144,17 @@ export function SunLighting({ model, settings, sunHour, solarDate, suppressHtmlL
   const sunTimeLabel = `${Math.floor(sunHour).toString().padStart(2, "0")}:${sunMinutes.toString().padStart(2, "0")}`;
   const phaseLabel = solarPhaseLabel(renderAlt, sunHour, daylight.sunrise, daylight.sunset);
 
-  // Disc colours — driven by render-time alt (updates each re-render / scrub)
-  const sunDiscColor = renderAlt < 5
-    ? (landscapeKind === "desert" ? "#ff8833" : "#ffaa55")
-    : "#fde68a";
-  const sunGlowColor = renderAlt < 5
-    ? (landscapeKind === "desert" ? "#ff6622" : "#ff8844")
-    : "#fbbf24";
-  const coronaRadius = landscapeKind === "desert" ? 2.4 : 2.0;
+  // Disc colours — soft warm orangish-amber sun (gentle, light, compact)
+  const sunCoreColor = renderAlt < 5
+    ? (landscapeKind === "desert" ? "#ea580c" : "#f97316")
+    : "#f59e0b"; // Warm soft amber-orange
+  const sunInnerCoronaColor = renderAlt < 5
+    ? (landscapeKind === "desert" ? "#c2410c" : "#ea580c")
+    : "#fb923c"; // Soft radiant warm orange
+  const sunOuterGlowColor = renderAlt < 5
+    ? (landscapeKind === "desert" ? "#9a3412" : "#c2410c")
+    : "#f97316"; // Soft outer amber
+  const coronaRadius = landscapeKind === "desert" ? 1.4 : 1.2;
 
   // Starting position for initial render (avoids flash at origin)
   const [initX, initY, initZ] = sunPositionGeographic(solarSite, sunHour, 48);
@@ -183,38 +186,90 @@ export function SunLighting({ model, settings, sunHour, solarDate, suppressHtmlL
         <Line
           points={sunPathPoints}
           color="#f59e0b"
-          lineWidth={1.0}
+          lineWidth={1.2}
           transparent
-          opacity={0.35}
+          opacity={0.4}
         />
       )}
 
-      {/* Sun disc & radiant coronal glow — visible across all modes including thermal simulation */}
+      {/* Sun disc & soft warm coronal glow — compact, lighter and shorter outer circle */}
       <group ref={discRef} position={[initX, initY, initZ]}>
-        {/* Core brilliant solar sphere */}
+        {/* Core solar sphere - soft warm amber-orange */}
         <mesh>
-          <sphereGeometry args={[1.35, 32, 32]} />
-          <meshBasicMaterial color={sunDiscColor} />
-        </mesh>
-        {/* Radiant inner plasma flare */}
-        <mesh>
-          <sphereGeometry args={[2.0, 24, 24]} />
-          <meshBasicMaterial color={sunGlowColor} transparent opacity={0.32} />
-        </mesh>
-        {/* Middle coronal glow */}
-        <mesh>
-          <sphereGeometry args={[coronaRadius + 0.6, 20, 20]} />
-          <meshBasicMaterial color={sunGlowColor} transparent opacity={0.14} />
-        </mesh>
-        {/* Soft outer atmospheric halo */}
-        <mesh>
-          <sphereGeometry args={[coronaRadius + 2.0, 16, 16]} />
-          <meshBasicMaterial color={sunGlowColor} transparent opacity={0.05} />
+          <sphereGeometry args={[0.75, 32, 32]} />
+          <meshBasicMaterial
+            color={sunCoreColor}
+            fog={false}
+          />
         </mesh>
 
-        {/* Minimal Sun Indicator Badge positioned below the sun disc — never obscures the radiant sun */}
+        {/* Soft inner corona rim - gentle translucent opacity */}
+        <mesh>
+          <sphereGeometry args={[0.98, 32, 32]} />
+          <meshBasicMaterial
+            color={sunInnerCoronaColor}
+            transparent
+            opacity={0.45}
+            depthWrite={false}
+            blending={THREE.AdditiveBlending}
+            fog={false}
+          />
+        </mesh>
+
+        {/* Short, soft outer corona ring */}
+        <mesh>
+          <sphereGeometry args={[1.35, 24, 24]} />
+          <meshBasicMaterial
+            color={sunOuterGlowColor}
+            transparent
+            opacity={0.22}
+            depthWrite={false}
+            blending={THREE.AdditiveBlending}
+            fog={false}
+          />
+        </mesh>
+
+        {/* Subtle, soft camera-facing circular halo (short radius, no long spike rays) */}
+        <Billboard follow lockX={false} lockY={false} lockZ={false}>
+          {/* Compact soft inner halo disc */}
+          <mesh>
+            <circleGeometry args={[1.4, 32]} />
+            <meshBasicMaterial
+              color="#fb923c"
+              transparent
+              opacity={0.35}
+              depthWrite={false}
+              blending={THREE.AdditiveBlending}
+              fog={false}
+            />
+          </mesh>
+
+          {/* Short outer circle halo */}
+          <mesh>
+            <circleGeometry args={[2.0, 32]} />
+            <meshBasicMaterial
+              color="#ea580c"
+              transparent
+              opacity={0.15}
+              depthWrite={false}
+              blending={THREE.AdditiveBlending}
+              fog={false}
+            />
+          </mesh>
+        </Billboard>
+
+        {/* Gentle omnidirectional sun point light (soft, balanced daylight) */}
+        <pointLight
+          position={[0, 0, 0]}
+          color={renderAlt < 5 ? "#ff7733" : "#f97316"}
+          intensity={renderAlt > 0 ? 2.4 : 0.8}
+          distance={160}
+          decay={1.2}
+        />
+
+        {/* Minimal Sun Indicator Badge positioned right below the sun disc */}
         {!suppressHtmlLabels && renderAlt > -1.5 && (
-          <Html position={[0, -2.6, 0]} center distanceFactor={50} zIndexRange={[15, 0]} style={{ pointerEvents: "none" }}>
+          <Html position={[0, -1.35, 0]} center distanceFactor={50} zIndexRange={[15, 0]} style={{ pointerEvents: "none" }}>
             <div
               className="cad-sun-mini-badge"
               title={`Solar Altitude: ${renderAlt.toFixed(1)}° · Azimuth: ${renderAz.toFixed(0)}° (${phaseLabel})`}

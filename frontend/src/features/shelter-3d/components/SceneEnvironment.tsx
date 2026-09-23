@@ -737,17 +737,16 @@ export function SceneEnvironment({ model, settings, sunHour, solarDate }: Props)
 
   const skySun = useMemo((): [number, number, number] => {
     const alt = Math.max(0.02, THREE.MathUtils.degToRad(altitudeDeg));
-    const az = THREE.MathUtils.degToRad(azimuthFromNorthDeg);
-    return [Math.cos(alt) * Math.sin(az), Math.sin(alt), Math.cos(alt) * Math.cos(az)];
+    const azFromSouth = THREE.MathUtils.degToRad(azimuthFromNorthDeg - 180);
+    return [Math.cos(alt) * Math.sin(azFromSouth), Math.sin(alt), Math.cos(alt) * Math.cos(azFromSouth)];
   }, [altitudeDeg, azimuthFromNorthDeg]);
 
   const dynamicTurbidity =
     kind === "desert" ? config.turbidity + (altitudeDeg < 15 ? 1.5 : 0) : config.turbidity;
 
-  const isAnalysis =
-    settings.visualization === "thermal" || settings.visualization === "heat-flow";
-
-  if (!settings.showEnvironment || isAnalysis) {
+  // Environment remains visible across ALL views (model, solar, thermal, heat-flow)
+  // until the user explicitly toggles it off via settings.showEnvironment
+  if (!settings.showEnvironment) {
     return (
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.025, 0]} receiveShadow>
         <planeGeometry args={[120, 120]} />
@@ -766,10 +765,10 @@ export function SceneEnvironment({ model, settings, sunHour, solarDate }: Props)
       <Sky
         distance={450000}
         sunPosition={skySun}
-        turbidity={snowy ? 1.1 : dynamicTurbidity}
-        rayleigh={snowy ? 0.82 : config.rayleigh}
-        mieCoefficient={kind === "desert" ? 0.008 : 0.0035}
-        mieDirectionalG={kind === "ladakh" ? 0.92 : 0.85}
+        turbidity={snowy ? 0.95 : dynamicTurbidity}
+        rayleigh={snowy ? 0.65 : config.rayleigh}
+        mieCoefficient={kind === "desert" ? 0.008 : 0.0048}
+        mieDirectionalG={kind === "ladakh" ? 0.96 : 0.88}
       />
       <fog attach="fog" args={[fogColor, fogNear, fogFar]} />
 

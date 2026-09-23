@@ -8,6 +8,7 @@ import type { VisualizationMode } from "../types";
 import type { Shelter3DRepresentation } from "../geometry-math";
 import {
   calculateThermalMetrics,
+  GLAZING_PROPERTIES,
   type DynamicThermalCalculations,
   type HourlyThermalStep,
 } from "../thermal-physics";
@@ -365,13 +366,16 @@ function HeatFlowAnnotations({
   const roofArea = L * W * (1.0 / Math.cos(roofSlopeRad));
   const floorArea = L * W;
 
-  // Face heat fluxes
+  // Face heat fluxes calculated from real boundary physics
   const qSouth = metrics.qSouthFlux;
   const qNorth = metrics.qNorthFlux;
   const qEast = metrics.qEastFlux ?? -Math.round(metrics.uEast * metrics.deltaT);
   const qWest = metrics.qWestFlux ?? -Math.round(metrics.uWest * metrics.deltaT);
   const qRoof = metrics.qRoofFlux ?? -Math.round(metrics.uRoof * metrics.deltaT);
-  const qFloor = metrics.qFloorFlux ?? -18;
+  const calculatedFloorFlux = Math.round(
+    metrics.uFloor * (Math.max(2.0, metrics.tOutdoor * 0.25 + 4.5) - metrics.tIndoor)
+  );
+  const qFloor = typeof metrics.qFloorFlux === "number" ? metrics.qFloorFlux : calculatedFloorFlux;
 
   const isSouthGain = qSouth >= 0;
   const isEastGain = qEast >= 0;
@@ -714,11 +718,17 @@ function HeatFlowAnnotations({
         />
       </Html>
 
-      {/* ── 8. Window Glazing Solar Harvest & Conductive Loss Balance ── */}
       {geom.windows.map((win) => {
-        const qWinSolar = metrics.qWindowSolarFlux ?? 280;
-        const qWinCond = metrics.qWindowCondFlux ?? -45;
-        const qWinNet = metrics.qWindowNetFlux ?? (qWinSolar + qWinCond);
+        const winModel = model.windows?.find((w) => w.id === win.id) || model.windows?.[0];
+        const gProps =
+          GLAZING_PROPERTIES[winModel?.glazingType || "double_low_e_argon"] ||
+          GLAZING_PROPERTIES.double_low_e_argon;
+        const physSolar = Math.round(metrics.iSouthIncident * gProps.shgc);
+        const physCond = -Math.round(gProps.uValue * metrics.deltaT);
+
+        const qWinSolar = typeof metrics.qWindowSolarFlux === "number" ? metrics.qWindowSolarFlux : physSolar;
+        const qWinCond = typeof metrics.qWindowCondFlux === "number" ? metrics.qWindowCondFlux : physCond;
+        const qWinNet = typeof metrics.qWindowNetFlux === "number" ? metrics.qWindowNetFlux : (qWinSolar + qWinCond);
         const [wX, wY, wZ] = win.worldPosition;
         const [normX, , normZ] = win.normal;
 

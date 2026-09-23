@@ -95,7 +95,7 @@ export function Step2Location({ form, advancedMode }: StepProps) {
     const elev = summary?.elevation_m || currentElevation;
     addWeatherDataset({
       id: stationId,
-      name: `${locName} (${Math.round(elev)}m · ML Synthesized EPW)`,
+      name: `${locName} (${Math.round(elev)}m · ML Synthesized Dataset)`,
       region: `${currentRegion} (Downscaled Microclimate)`,
       latitude: summary?.latitude ?? currentLatitude,
       longitude: summary?.longitude ?? currentLongitude,
@@ -178,7 +178,7 @@ export function Step2Location({ form, advancedMode }: StepProps) {
 
         setLiveFetchStatus({
           type: "success",
-          message: `Ingested ${res.dataset?.records_count || 72} hourly observations (${res.provider?.toUpperCase()}). Generated EPW: ${res.epw_file}`,
+          message: `Ingested ${res.dataset?.records_count || 72} hourly observations (${res.provider?.toUpperCase()}). Generated Dataset: ${res.epw_file?.replace(/\.epw$/i, "")}`,
         });
       } else {
         throw new Error("Invalid response received from weather pipeline.");
@@ -355,7 +355,7 @@ export function Step2Location({ form, advancedMode }: StepProps) {
 
         <FieldWrapper
           label="Weather Source Dataset"
-          tooltip="Associated EPW (Environmental Performance Weather) dataset used for annual or design-day simulation."
+          tooltip="Associated environmental performance meteorological dataset used for annual or design-day simulation."
           error={errors.location?.weatherSource?.message}
           warning={
             watch("location.weatherSource")?.toLowerCase().includes("test_weather")
@@ -368,7 +368,7 @@ export function Step2Location({ form, advancedMode }: StepProps) {
               <input
                 {...register("location.weatherSource")}
                 type="text"
-                placeholder="e.g. IND_JK_Leh.420270_ISHRAE.epw"
+                placeholder="e.g. IND_JK_Leh.420270_ISHRAE"
                 className="flex-1 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-emerald-500 focus:outline-none dark:border-slate-700 dark:bg-slate-900 dark:text-white"
               />
               <button
@@ -416,7 +416,7 @@ export function Step2Location({ form, advancedMode }: StepProps) {
                 </span>
               ) : watch("location.weatherSource")?.toLowerCase().includes("live_") ? (
                 <span className="inline-flex items-center rounded-full bg-cyan-500/10 px-2 py-0.5 text-[10px] font-bold tracking-wide text-cyan-400 ring-1 ring-inset ring-cyan-500/20">
-                  LIVE SATELLITE EPW
+                  LIVE SATELLITE WEATHER
                 </span>
               ) : (
                 <span className="inline-flex items-center rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold tracking-wide text-emerald-400 ring-1 ring-inset ring-emerald-500/20">

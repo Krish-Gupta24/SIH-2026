@@ -497,7 +497,7 @@ export function OpenFreeMapPicker({
       if (res && res.epw_file) {
         setSynthesizeStatus({
           type: "success",
-          message: `Generated localized 8,760h EPW: ${res.epw_file} (Min Temp: ${res.min_temperature_c}°C, Pressure: ${res.surface_pressure_hpa} hPa)`,
+          message: `Generated localized 8,760h Dataset: ${res.epw_file?.replace(/\.epw$/i, "")} (Min Temp: ${res.min_temperature_c}°C, Pressure: ${res.surface_pressure_hpa} hPa)`,
           summary: res,
         });
         onEpwGenerated?.(res.epw_file, res);
@@ -685,7 +685,7 @@ export function OpenFreeMapPicker({
                 High-Altitude Microclimate Weather Synthesizer (Physics-Informed ML)
               </div>
               <p className="text-xs text-muted-foreground mt-1 max-w-xl">
-                Official airport EPWs reflect lower elevations (Leh 3,500m). Downscale to frontline defense outposts ({Math.round(elevation)}m, {estimatedPressureKpa} kPa) using diurnal lapse rates and optical solar scaling.
+                Official airport stations reflect lower elevations (Leh 3,500m). Downscale to frontline defense outposts ({Math.round(elevation)}m, {estimatedPressureKpa} kPa) using diurnal lapse rates and optical solar scaling.
               </p>
             </div>
 
@@ -698,12 +698,12 @@ export function OpenFreeMapPicker({
               {isSynthesizing ? (
                 <>
                   <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  Synthesizing 8,760h EPW...
+                  Synthesizing 8,760h Dataset...
                 </>
               ) : (
                 <>
                   <Sparkles className="h-3.5 w-3.5" />
-                  Synthesize 8,760h Microclimate EPW
+                  Synthesize 8,760h Microclimate Dataset
                 </>
               )}
             </button>

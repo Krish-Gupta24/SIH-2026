@@ -243,7 +243,7 @@ export function WeatherView() {
 
       if (!res.ok) {
         const err = await res.json().catch(() => ({ detail: "Upload failed" }));
-        throw new Error(err.detail?.message || err.detail || "EPW validation failed.");
+        throw new Error(err.detail?.message || err.detail || "Dataset validation failed.");
       }
 
       const data = await res.json();
@@ -253,7 +253,7 @@ export function WeatherView() {
       const newStation: WeatherStation = {
         id: `wx-${ds.file_hash_sha256.slice(0, 8)}`,
         name: header.city || epwFile.name.replace(".epw", ""),
-        region: `${header.state_province || ""}, ${header.country || ""}`.trim() || "Uploaded EPW",
+        region: `${header.state_province || ""}, ${header.country || ""}`.trim() || "Uploaded Weather Dataset",
         latitude: header.latitude || 34.0,
         longitude: header.longitude || 77.0,
         elevationM: header.elevation_m || 3000,
@@ -271,10 +271,10 @@ export function WeatherView() {
       addWeatherDataset(newStation);
       setSelectedStationId(newStation.id);
       setActiveWeather(newStation.id);
-      setModalSuccess(`Successfully uploaded and validated ${ds.file_name}!`);
+      setModalSuccess(`Successfully uploaded and validated ${ds.file_name?.replace(/\.epw$/i, "")}!`);
       setTimeout(() => setActiveModal(null), 1500);
     } catch (err: any) {
-      setModalError(err.message || "Failed to upload EPW file.");
+      setModalError(err.message || "Failed to upload weather dataset.");
     } finally {
       setIsLoading(false);
     }
@@ -326,7 +326,7 @@ export function WeatherView() {
       addWeatherDataset(newStation);
       setSelectedStationId(newStation.id);
       setActiveWeather(newStation.id);
-      setModalSuccess(`Converted CSV into valid EPW: ${ds.file_name}!`);
+      setModalSuccess(`Converted CSV into valid climate dataset: ${ds.file_name?.replace(/\.epw$/i, "")}!`);
       setTimeout(() => setActiveModal(null), 1500);
     } catch (err: any) {
       setModalError(err.message || "Failed to convert CSV file.");
@@ -434,7 +434,7 @@ export function WeatherView() {
       addWeatherDataset(newStation);
       setSelectedStationId(newStation.id);
       setActiveWeather(newStation.id);
-      setModalSuccess(`Generated physics-consistent EPW: ${ds.file_name}!`);
+      setModalSuccess(`Generated physics-consistent dataset: ${ds.file_name?.replace(/\.epw$/i, "")}!`);
       setTimeout(() => setActiveModal(null), 1500);
     } catch (err: any) {
       setModalError(err.message || "Failed to generate custom weather dataset.");
@@ -458,7 +458,7 @@ export function WeatherView() {
               className="rounded-full text-xs font-semibold"
             >
               <Upload className="size-3.5" />
-              Upload EPW
+              Upload Dataset
             </ActionButton>
             <ActionButton
               tone="secondary"
@@ -495,7 +495,7 @@ export function WeatherView() {
             <ActionButton
               tone="secondary"
               onClick={() => {
-                if (window.confirm("Reset weather catalog to certified Himalayan benchmarks? This will remove custom uploaded EPWs.")) {
+                if (window.confirm("Reset weather catalog to certified Himalayan benchmarks? This will remove custom uploaded datasets.")) {
                   resetWeatherDatasetsToDefault();
                   setSelectedStationId("wx-leh-427053");
                 }
@@ -533,7 +533,7 @@ export function WeatherView() {
               label="Annual HDD18"
               value={activeStation.annualHDD18.toLocaleString()}
             />
-            <DataPair label="Source" value={activeStation.sourceType} />
+            <DataPair label="Source" value={activeStation.sourceType === "EPW" ? "Certified Meteorological" : activeStation.sourceType} />
           </dl>
         </div>
 
@@ -603,7 +603,7 @@ export function WeatherView() {
                 </div>
                 <div className="mt-3 flex justify-between border-t border-border/50 pt-2 text-[10px]">
                   <span>Min: <strong>{stn.designWinterMinC}°C</strong></span>
-                  <span>Src: <strong>{stn.sourceType}</strong></span>
+                  <span>Src: <strong>{stn.sourceType === "EPW" ? "Standard" : stn.sourceType}</strong></span>
                 </div>
               </div>
             );
@@ -653,7 +653,7 @@ export function WeatherView() {
             <div className="flex justify-between py-2 border-b border-border/50">
               <span className="text-muted-foreground">Dataset File:</span>
               <span className="font-mono text-muted-foreground line-clamp-1 max-w-[180px]">
-                {activeStation.epwFileName || "Internal EPW"}
+                {activeStation.epwFileName?.replace(/\.epw$/i, "") || "Internal Dataset"}
               </span>
             </div>
             <div className="flex justify-between py-2 border-b border-border/50">
@@ -987,14 +987,14 @@ export function WeatherView() {
         </div>
       </div>
 
-      {/* MODAL 1: Upload EPW File */}
+      {/* MODAL 1: Upload Weather Dataset */}
       {activeModal === "epw" && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
           <div className="w-full max-w-md rounded-[2rem] border border-border bg-card p-7 shadow-2xl space-y-5 text-foreground">
             <div className="flex items-center justify-between">
               <h3 className="text-base font-semibold flex items-center gap-2">
                 <Upload className="h-4 w-4 text-[#6E818F]" />
-                Upload Climate Weather Dataset (.epw)
+                Upload Climate Weather Dataset
               </h3>
               <button onClick={() => setActiveModal(null)} className="text-muted-foreground hover:text-foreground">
                 <X className="h-5 w-5" />
@@ -1002,13 +1002,13 @@ export function WeatherView() {
             </div>
 
             <p className="text-xs text-muted-foreground">
-              Select an authentic meteorological `.epw` file. The platform will validate header integrity, geographic coordinates, and physical variable bounds.
+              Select an authentic meteorological weather dataset file. The platform will validate header integrity, geographic coordinates, and physical variable bounds.
             </p>
 
             <div className="border-2 border-dashed border-border rounded-2xl p-6 text-center hover:border-[#6E818F] transition bg-secondary/30">
               <input
                 type="file"
-                accept=".epw"
+                accept=".epw,.csv"
                 onChange={(e) => setEpwFile(e.target.files?.[0] || null)}
                 className="hidden"
                 id="epw-file-input"
@@ -1016,9 +1016,9 @@ export function WeatherView() {
               <label htmlFor="epw-file-input" className="cursor-pointer space-y-2 block">
                 <Upload className="h-8 w-8 text-muted-foreground mx-auto" />
                 <span className="text-xs font-semibold text-foreground block">
-                  {epwFile ? epwFile.name : "Click to browse or drop .epw file"}
+                  {epwFile ? epwFile.name.replace(/\.epw$/i, "") : "Click to browse or drop weather data file"}
                 </span>
-                <span className="text-[10px] text-muted-foreground block">Standard EPW Weather format (35 columns)</span>
+                <span className="text-[10px] text-muted-foreground block">Standard hourly meteorological format (35 columns)</span>
               </label>
             </div>
 
@@ -1068,7 +1068,7 @@ export function WeatherView() {
             </div>
 
             <p className="text-xs text-muted-foreground">
-              Upload hourly tabular CSV meteorological records. The system will convert variables into standard EPW format with barometric altitude corrections.
+              Upload hourly tabular CSV meteorological records. The system will convert variables into standard climate dataset format with barometric altitude corrections.
             </p>
 
             <div className="space-y-3 text-xs">
@@ -1299,7 +1299,7 @@ export function WeatherView() {
                 disabled={isLoading}
               >
                 {isLoading && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
-                Query & Generate EPW
+                Query & Generate Dataset
               </ActionButton>
             </div>
           </div>
@@ -1505,7 +1505,7 @@ export function WeatherView() {
                 addWeatherDataset(newStation);
                 setSelectedStationId(newStation.id);
                 setActiveWeather(newStation.id);
-                setModalSuccess(`Generated & Selected Microclimate EPW: ${epwFile}!`);
+                setModalSuccess(`Generated & Selected Microclimate Dataset: ${epwFile.replace(/\.epw$/i, "")}!`);
                 setTimeout(() => setActiveModal(null), 1500);
               }}
               height="370px"
@@ -1541,8 +1541,8 @@ export function WeatherView() {
                 <span className="font-semibold text-foreground">{stationToDelete.name}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-muted-foreground">File:</span>
-                <span className="font-mono text-muted-foreground">{stationToDelete.epwFileName}</span>
+                <span className="text-muted-foreground">Dataset:</span>
+                <span className="font-mono text-muted-foreground">{stationToDelete.epwFileName?.replace(/\.epw$/i, "")}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Elevation / Min:</span>

@@ -357,7 +357,7 @@ export function NewProjectModal({ isOpen, onClose }: NewProjectModalProps) {
               <div className="rounded-2xl border border-border bg-secondary/20 p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
                 <div>
                   <span className="text-muted-foreground">Active Weather Dataset:</span>{" "}
-                  <span className="font-mono font-bold text-foreground">{weatherSource}</span>
+                  <span className="font-mono font-bold text-foreground">{weatherSource?.replace(/\.epw$/i, "")}</span>
                 </div>
                 <div className="text-[11px] text-muted-foreground">
                   Altitude: <span className="font-bold text-foreground">{Math.round(elevation)}m</span> · Locality:{" "}

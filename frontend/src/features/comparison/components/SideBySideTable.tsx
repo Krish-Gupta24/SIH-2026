@@ -53,7 +53,7 @@ export function SideBySideTable({ jobs }: SideBySideTableProps) {
     return lower.trim();
   };
 
-  const weatherNames = jobs.map((j) => j.weatherDatasetName || "Leh WMO 427053 EPW");
+  const weatherNames = jobs.map((j) => (j.weatherDatasetName || "Leh WMO 427053 Station").replace(/\.epw$/i, ""));
   const sameWeather = new Set(jobs.map((j) => normalizeWeather(j.weatherDatasetName))).size <= 1;
 
   const engines = jobs.map((j) => ((!j.engine || j.engine.toLowerCase().includes("energyplus")) ? "ThermoShelter Core" : j.engine));
@@ -238,7 +238,7 @@ export function SideBySideTable({ jobs }: SideBySideTableProps) {
                   <div className="flex flex-wrap gap-1 text-[9px] text-muted-foreground font-mono mt-0.5">
                     <span className="px-1.5 py-0.5 bg-background/80 rounded border border-border">ID: {baseline.id.slice(0, 8)}</span>
                     <span className="px-1.5 py-0.5 bg-background/80 rounded border border-border">{(!baseline.engine || baseline.engine.toLowerCase().includes("energyplus")) ? "ThermoShelter Core" : baseline.engine}</span>
-                    <span className="px-1.5 py-0.5 bg-background/80 rounded border border-border">{baseline.weatherDatasetName || "Leh EPW"}</span>
+                    <span className="px-1.5 py-0.5 bg-background/80 rounded border border-border">{(baseline.weatherDatasetName?.replace(/\.epw$/i, "")) || "Leh Station"}</span>
                   </div>
                 </div>
               </TableHead>
@@ -256,7 +256,7 @@ export function SideBySideTable({ jobs }: SideBySideTableProps) {
                     <div className="flex flex-wrap gap-1 text-[9px] text-muted-foreground font-mono mt-0.5">
                       <span className="px-1.5 py-0.5 bg-background/80 rounded border border-border">ID: {cand.id.slice(0, 8)}</span>
                       <span className="px-1.5 py-0.5 bg-background/80 rounded border border-border">{(!cand.engine || cand.engine.toLowerCase().includes("energyplus")) ? "ThermoShelter Core" : cand.engine}</span>
-                      <span className="px-1.5 py-0.5 bg-background/80 rounded border border-border">{cand.weatherDatasetName || "Leh EPW"}</span>
+                      <span className="px-1.5 py-0.5 bg-background/80 rounded border border-border">{(cand.weatherDatasetName?.replace(/\.epw$/i, "")) || "Leh Station"}</span>
                     </div>
                   </div>
                 </TableHead>

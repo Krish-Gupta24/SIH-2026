@@ -191,7 +191,7 @@ export function SimulationsView() {
       const reg = targetProject?.location?.region || targetProject?.project?.name || "Custom Himalayan Outpost";
       list.unshift({
         id: `wx-proj-custom-${targetProject.id}`,
-        name: `${reg.split(",")[0]} (${Math.round(elev)}m · Synthesized ML EPW)`,
+        name: `${reg.split(",")[0]} (${Math.round(elev)}m · Synthesized ML Dataset)`,
         region: `${reg} (Project Weather Source)`,
         latitude: targetProject?.location?.latitude || 34.15,
         longitude: targetProject?.location?.longitude || 77.58,
@@ -898,7 +898,7 @@ export function SimulationsView() {
                     {targetProject?.location?.weatherSource?.startsWith("MICROCLIMATE_") && (
                       <span className="text-[11px] font-semibold text-sky-600 dark:text-sky-400 bg-sky-500/10 border border-sky-500/25 px-2.5 py-0.5 rounded-full flex items-center gap-1.5">
                         <Sparkles className="size-3 text-sky-500 animate-pulse" />
-                        Custom Physics-Informed Microclimate EPW Active
+                        Custom Physics-Informed Microclimate Dataset Active
                       </span>
                     )}
                   </div>
@@ -1291,7 +1291,7 @@ export function SimulationsView() {
               </p>
               <p className="rounded-2xl bg-amber-500/10 p-4 border border-amber-500/20 text-amber-700 dark:text-amber-300">
                 Under platform engineering policy, production building simulations must NEVER silently use synthetic test weather.
-                Real high-altitude thermal sizing requires authentic climate data (EPW or NASA POWER).
+                Real high-altitude thermal sizing requires authentic climate data (Meteorological Station or NASA POWER).
               </p>
               <p>
                 Do you explicitly confirm that you want to execute a test simulation using this dataset?
