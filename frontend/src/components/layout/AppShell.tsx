@@ -18,6 +18,7 @@ import { BrandMark, Status } from "@/components/v0/platform-components";
 import { WORKFLOW_PIPELINE, getWorkflowStepIndex } from "@/components/layout/workflow-pipeline";
 import { WorkflowFloatingDock } from "@/components/layout/WorkflowFloatingDock";
 import { usePlatformInit } from "@/hooks/use-platform-init";
+import { ChatbotPanel } from "@/features/chatbot/ChatbotPanel";
 
 interface NavItem {
   id: string;
@@ -351,6 +352,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           {children}
         </main>
       </div>
+
+      {/* ThermoShelter Engineering AI Chatbot (Site-Wide Assistant) */}
+      <ChatbotPanel />
     </div>
   );
 }

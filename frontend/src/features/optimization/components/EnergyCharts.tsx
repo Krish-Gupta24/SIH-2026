@@ -191,7 +191,7 @@ export function EnergyCharts({
               onClick={() => setActiveTab(tab.id)}
               className={`rounded-full px-3.5 py-1 text-xs font-semibold transition cursor-pointer ${
                 activeTab === tab.id
-                  ? "bg-black text-white dark:bg-white dark:text-black shadow-sm"
+                  ? "bg-black text-white shadow-sm"
                   : "text-muted-foreground hover:text-foreground"
               }`}
             >

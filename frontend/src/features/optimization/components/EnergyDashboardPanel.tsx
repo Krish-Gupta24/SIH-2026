@@ -38,16 +38,16 @@ export function EnergyDashboardPanel({ simulationResult, onInstallSolar }: Energ
   return (
     <div className="space-y-6">
       {/* Disclaimer Banner */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 px-4 py-3 bg-amber-500/10 border border-amber-500/20 rounded-xl text-amber-300 text-xs">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 px-4 py-3 bg-amber-50 border border-amber-200 rounded-2xl text-amber-900 text-xs shadow-xs">
         <div className="flex items-center gap-2">
-          <Info className="w-4 h-4 shrink-0 text-amber-400" />
+          <Info className="w-4 h-4 shrink-0 text-amber-700" />
           <span>
             <strong>Physics & ML Simulation Notice:</strong> All performance figures and fuel reductions are{" "}
             <span className="underline decoration-dotted font-semibold">ML-based model estimates</span> derived from the
             calibrated thermal surrogate & RC engine. Economic figures reflect user-defined assumed logistics parameters.
           </span>
         </div>
-        <Badge variant="outline" className="text-amber-400 border-amber-500/40 text-[10px] whitespace-nowrap">
+        <Badge variant="outline" className="text-amber-800 border-amber-300 bg-white text-[10px] whitespace-nowrap">
           ML Model Estimates
         </Badge>
       </div>

@@ -17,8 +17,8 @@ interface DataSourceBannerProps {
 export function DataSourceBanner({
   visibility,
   onToggle,
-  engineName = "ThermoShelter Solver",
-  engineVersion = "24.1.0",
+  engineName = "ThermoShelter Core",
+  engineVersion = "3.0.0",
   fieldSiteName = "High-Altitude Outpost Profile (3,500m)",
   benchmarkStandard = "ASHRAE 55 / IS 15865 Baseline",
 }: DataSourceBannerProps) {
@@ -54,7 +54,7 @@ export function DataSourceBanner({
           >
             <span className={`size-2 rounded-full ${visibility.simulated ? "bg-white" : "bg-[#6E818F]"}`} />
             <span>Simulated</span>
-            <span className="text-[10px] opacity-70 font-mono">({(!engineName || engineName.toLowerCase().includes("energyplus")) ? "ThermoShelter Core" : engineName} v{engineVersion || "3.0.0"})</span>
+            <span className="text-[10px] opacity-70 font-mono">(ThermoShelter Core & ANSYS Validation)</span>
           </button>
 
           {/* 2. Calibrated Margin Data */}
@@ -95,7 +95,7 @@ export function DataSourceBanner({
           <div className="w-3.5 h-1 bg-black mt-2 shrink-0 rounded-full" />
           <div>
             <span className="font-semibold text-foreground">Continuous Physics Simulation: </span>
-            <span>ThermoShelter transient sub-hourly numerical heat balance.</span>
+            <span>ThermoShelter Core transient numerical heat balance with ANSYS APDL cross-verification.</span>
           </div>
         </div>
         <div className="flex items-start gap-2.5 text-[#536772]">

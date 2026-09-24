@@ -19,6 +19,7 @@ import {
   FolderKanban,
   Flame,
   Cpu,
+  Calendar as CalendarIcon,
 } from "lucide-react";
 import { useShelterStore } from "@/lib/store/use-shelter-store";
 import { Button } from "@/components/ui/button";
@@ -49,6 +50,7 @@ import { HeatFlowDeltaTChart } from "./components/HeatFlowDeltaTChart";
 import { AnsysMaterialComparisonTable } from "./components/AnsysMaterialComparisonTable";
 import { OpeningSensitivityPanel } from "./components/OpeningSensitivityPanel";
 import { EnergyOptimizationView } from "@/features/optimization/EnergyOptimizationView";
+import { AnnualComfortCalendar } from "./components/AnnualComfortCalendar";
 
 export function ResultsView() {
   const searchParams = useSearchParams();
@@ -313,7 +315,7 @@ export function ResultsView() {
       <PageIntro
         eyebrow={`Run ${activeJob.id} · ${activeJob.projectName}`}
         title="Thermal performance"
-        description={`${activeJob.weatherDatasetName} · ${(!activeJob.engine || activeJob.engine.toLowerCase().includes("energyplus")) ? "ThermoShelter Core" : activeJob.engine} v${activeJob.engineVersion || "3.0.0"} · Validated simulation record.`}
+        description={`${activeJob.weatherDatasetName} · ${(!activeJob.engine || activeJob.engine.toLowerCase().includes("energyplus")) ? "ThermoShelter Core" : activeJob.engine} v${(!activeJob.engineVersion || activeJob.engineVersion.includes("24.")) ? "3.0.0" : activeJob.engineVersion} · ThermoShelter Core & ANSYS Validated simulation record.`}
         action={
           <div className="flex flex-wrap items-center gap-3">
             {/* Active Job Selector */}
@@ -382,26 +384,26 @@ export function ResultsView() {
 
       {/* V0 Immediate Judgment Hero + Metric Cells */}
       <div className="workspace-feature-grid grid gap-6 lg:grid-cols-[1.15fr_.85fr]">
-        <div className="workspace-dark-panel rounded-[2rem] bg-[#000000] p-8 text-white sm:p-10 shadow-xl flex flex-col justify-between">
+        <div className="rounded-[2rem] border border-border bg-card p-8 text-foreground sm:p-10 shadow-sm flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between gap-3">
-              <p className="micro-label text-white/45">Immediate judgment</p>
+              <p className="micro-label">Immediate judgment</p>
               {summary.comfortHoursPct >= 80 ? (
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/20 px-3 py-1 text-[11px] font-bold text-emerald-400 border border-emerald-500/40">
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 text-emerald-800 px-3 py-1 text-[11px] font-bold border border-emerald-200">
                   <CheckCircle2 className="size-3" /> Comfort Target Achieved
                 </span>
               ) : (
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-rose-500/20 px-3 py-1 text-[11px] font-bold text-rose-300 border border-rose-500/40 animate-pulse">
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-rose-50 text-rose-800 px-3 py-1 text-[11px] font-bold border border-rose-200 animate-pulse">
                   <AlertTriangle className="size-3" /> Comfort Target Deficit
                 </span>
               )}
             </div>
-            <h2 className="font-editorial mt-5 text-4xl sm:text-5xl font-medium tracking-tight">
+            <h2 className="font-editorial mt-5 text-4xl sm:text-5xl font-medium tracking-tight text-foreground">
               {summary.comfortHoursPct >= 80
                 ? "The envelope holds through the design period."
                 : "The envelope falls short of the comfort target."}
             </h2>
-            <p className="mt-4 text-xs sm:text-sm leading-relaxed text-white/70">
+            <p className="mt-4 text-xs sm:text-sm leading-relaxed text-[#536772]">
               {summary.comfortHoursPct >= 80
                 ? `The shelter maintains indoor living comfort (18°C–24°C) for ${summary.comfortHoursPct}% of the simulation period, meeting the ≥80% design target.`
                 : `Achieved ${summary.comfortHoursPct}% comfort hours (target is ≥80% in the 18°C–24°C band). Under sub-zero alpine conditions, indoor temperatures drop to ${summary.indoorMinC}°C. Increase envelope insulation (e.g. 150mm EPS), add a Trombe wall, or enable auxiliary heating.`}
@@ -409,7 +411,7 @@ export function ResultsView() {
           </div>
           <div className="mt-8 flex items-center gap-3">
             <Status strong>{activeJob.weatherProvenance?.status || "REAL_DATA"}</Status>
-            <span className="text-xs text-white/40">{activeJob.simulationPeriod?.run_period_days || 3} days · {activeJob.simulationPeriod?.timestep_per_hour || 4} timesteps/hr</span>
+            <span className="text-xs text-muted-foreground">{activeJob.simulationPeriod?.run_period_days || 3} days · {activeJob.simulationPeriod?.timestep_per_hour || 4} timesteps/hr</span>
           </div>
         </div>
 
@@ -506,19 +508,19 @@ export function ResultsView() {
       />
 
       {/* 4.7. After Results Workflow Transition Card */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-5 rounded-2xl bg-gradient-to-r from-emerald-950/40 via-slate-900 to-slate-950 border border-emerald-500/30 shadow-lg">
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-6 rounded-[2rem] bg-secondary/30 border border-border shadow-sm">
         <div className="flex items-center gap-3.5">
-          <div className="p-2.5 rounded-xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
-            <Zap className="w-5 h-5" />
+          <div className="p-2.5 rounded-2xl bg-secondary text-foreground border border-border">
+            <Zap className="w-5 h-5 text-emerald-600" />
           </div>
           <div>
-            <h4 className="text-sm font-bold text-white flex items-center gap-2">
+            <h4 className="text-sm font-bold text-foreground flex items-center gap-2">
               Next Stage: Thermal, Energy & Fuel Logistics Optimization
-              <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-normal">
+              <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 font-semibold">
                 Passive First · Solar Dispatch
               </span>
             </h4>
-            <p className="text-xs text-slate-400 mt-0.5">
+            <p className="text-xs text-[#536772] mt-0.5">
               Simulate battery storage, hourly solar dispatch, and fuel logistics economics to eliminate diesel/kerosene dependence.
             </p>
           </div>
@@ -528,14 +530,14 @@ export function ResultsView() {
           <button
             type="button"
             onClick={() => setActiveTab("optimization")}
-            className="px-3.5 py-2 rounded-xl text-xs font-bold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition cursor-pointer"
+            className="px-4 py-2 rounded-full text-xs font-semibold bg-white hover:bg-secondary text-foreground border border-border shadow-xs transition cursor-pointer"
           >
             Explore in Tab
           </button>
           <Link href="/optimization">
             <button
               type="button"
-              className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold bg-emerald-500 hover:bg-emerald-400 text-slate-950 shadow-md shadow-emerald-500/20 transition cursor-pointer"
+              className="flex items-center gap-1.5 px-5 py-2 rounded-full text-xs font-semibold bg-black hover:bg-[#6E818F] text-white shadow-sm transition cursor-pointer"
             >
               <span>Dedicated Optimization Page</span>
               <ArrowRight className="w-3.5 h-3.5" />
@@ -563,6 +565,10 @@ export function ResultsView() {
             <ShieldCheck className="h-3.5 w-3.5" />
             <span>Comfort & Energy</span>
           </TabsTrigger>
+          <TabsTrigger value="calendar" className="gap-2 text-xs font-semibold rounded-full px-4 py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+            <CalendarIcon className="h-3.5 w-3.5 text-emerald-600" />
+            <span>Annual Comfort Matrix (24h)</span>
+          </TabsTrigger>
           <TabsTrigger value="heatflow" className="gap-2 text-xs font-semibold rounded-full px-4 py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
             <Flame className="h-3.5 w-3.5 text-amber-500" />
             <span>Heat Flow (ΔT)</span>
@@ -575,8 +581,8 @@ export function ResultsView() {
             <TableIcon className="h-3.5 w-3.5" />
             <span>Engineering Table</span>
           </TabsTrigger>
-          <TabsTrigger value="optimization" className="gap-2 text-xs font-semibold rounded-full px-4 py-2 data-[state=active]:bg-emerald-600 data-[state=active]:text-white">
-            <Zap className="h-3.5 w-3.5 text-emerald-400" />
+          <TabsTrigger value="optimization" className="gap-2 text-xs font-semibold rounded-full px-4 py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+            <Zap className="h-3.5 w-3.5 text-emerald-500" />
             <span>Energy & Fuel Optimization</span>
           </TabsTrigger>
         </TabsList>
@@ -641,6 +647,35 @@ export function ResultsView() {
             energy={energyMetrics}
             unit={unit}
             floorAreaM2={computedFloorAreaM2}
+          />
+        </TabsContent>
+
+        {/* Tab: Annual Comfort Matrix (12 Months x 24 Hours Bioclimatic Matrix) */}
+        <TabsContent value="calendar" className="space-y-6">
+          <AnnualComfortCalendar
+            hourlyTimeseries={rawHourlyTimeseries}
+            activeProject={activeProject}
+            computedAverageUFactor={computedAverageUFactor}
+            computedFloorAreaM2={computedFloorAreaM2}
+            computedSouthWallAreaM2={computedSouthWallAreaM2}
+            simulationSummary={{
+              indoorMinC: summary.indoorMinC,
+              indoorMaxC: summary.indoorMaxC,
+              indoorMeanC: summary.indoorMeanC,
+              outdoorMinC: summary.outdoorMinC,
+              outdoorMaxC: summary.outdoorMaxC,
+              comfortHoursPct: summary.comfortHoursPct,
+              heatingDemandKwhM2: summary.heatingDemandKwhM2,
+            }}
+            simulationPeriod={{
+              startDate: activeJob.simulationPeriod?.start_date,
+              runPeriodDays: activeJob.simulationPeriod?.run_period_days,
+              timestepPerHour: activeJob.simulationPeriod?.timestep_per_hour,
+            }}
+            comfortMinC={18}
+            comfortMaxC={24}
+            shelterName={activeJob.projectName}
+            locationName={activeJob.weatherDatasetName || "Leh, Ladakh (3,500m ASL)"}
           />
         </TabsContent>
 

@@ -511,16 +511,16 @@ export function WeatherView() {
 
       {/* Top Feature Grid: Dark Provenance Panel + Climate Profile */}
       <div className="workspace-feature-grid grid gap-6 lg:grid-cols-[.75fr_1.25fr]">
-        <div className="workspace-dark-panel rounded-[2rem] bg-[#000000] p-7 text-white sm:p-9 shadow-xl">
+        <div className="rounded-[2rem] border border-border bg-card p-7 text-foreground sm:p-9 shadow-sm">
           <div className="flex items-center justify-between">
             <Status strong>{activeStation.provenanceStatus || (activeStation.isTestData ? "TEST_DATA" : "REAL_DATA")}</Status>
-            {!activeStation.isTestData && <ShieldCheck className="size-5 text-[#CBDCE6]" />}
+            {!activeStation.isTestData && <ShieldCheck className="size-5 text-emerald-600" />}
           </div>
-          <p className="mt-12 text-6xl font-medium tracking-[-0.06em]">
+          <p className="font-editorial mt-12 text-6xl font-medium tracking-[-0.06em] text-foreground">
             {activeStation.designWinterMinC} °C
           </p>
-          <p className="mt-2 text-sm text-white/50">Winter design dry-bulb minimum</p>
-          <dl className="mt-10 grid grid-cols-2 gap-x-6 gap-y-7 border-t border-white/15 pt-7">
+          <p className="mt-2 text-sm text-[#536772]">Winter design dry-bulb minimum</p>
+          <dl className="mt-10 grid grid-cols-2 gap-x-6 gap-y-7 border-t border-border pt-7">
             <DataPair
               label="Coordinates"
               value={`${activeStation.latitude.toFixed(4)}°, ${activeStation.longitude.toFixed(4)}°`}
