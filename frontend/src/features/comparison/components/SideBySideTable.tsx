@@ -48,7 +48,7 @@ export function SideBySideTable({ jobs }: SideBySideTableProps) {
   const normalizeEngine = (engine?: string) => {
     if (!engine) return "thermoshelter_core";
     const lower = engine.toLowerCase();
-    if (lower.includes("thermoshelter") || lower.includes("core") || lower.includes("energyplus") || lower.includes("eplus")) return "thermoshelter_core";
+    if (lower.includes("thermoshelter") || lower.includes("core")) return "thermoshelter_core";
     if (lower.includes("rc") || lower.includes("lumped")) return "rc_network";
     return lower.trim();
   };
@@ -56,7 +56,7 @@ export function SideBySideTable({ jobs }: SideBySideTableProps) {
   const weatherNames = jobs.map((j) => (j.weatherDatasetName || "Leh WMO 427053 Station").replace(/\.epw$/i, ""));
   const sameWeather = new Set(jobs.map((j) => normalizeWeather(j.weatherDatasetName))).size <= 1;
 
-  const engines = jobs.map((j) => ((!j.engine || j.engine.toLowerCase().includes("energyplus")) ? "ThermoShelter Core" : j.engine));
+  const engines = jobs.map((j) => (j.engine || "ThermoShelter Core"));
   const sameEngine = new Set(jobs.map((j) => normalizeEngine(j.engine))).size <= 1;
 
   const METRIC_ROWS: MetricRowConfig[] = [
@@ -234,7 +234,7 @@ export function SideBySideTable({ jobs }: SideBySideTableProps) {
                   </div>
                   <div className="flex flex-wrap gap-1 text-[9px] text-muted-foreground font-mono mt-0.5">
                     <span className="px-1.5 py-0.5 bg-background/80 rounded border border-border">ID: {baseline.id.slice(0, 8)}</span>
-                    <span className="px-1.5 py-0.5 bg-background/80 rounded border border-border">{(!baseline.engine || baseline.engine.toLowerCase().includes("energyplus")) ? "ThermoShelter Core" : baseline.engine}</span>
+                    <span className="px-1.5 py-0.5 bg-background/80 rounded border border-border">{baseline.engine || "ThermoShelter Core"}</span>
                     <span className="px-1.5 py-0.5 bg-background/80 rounded border border-border">{(baseline.weatherDatasetName?.replace(/\.epw$/i, "")) || "Leh Station"}</span>
                   </div>
                 </div>
@@ -252,7 +252,7 @@ export function SideBySideTable({ jobs }: SideBySideTableProps) {
                     </div>
                     <div className="flex flex-wrap gap-1 text-[9px] text-muted-foreground font-mono mt-0.5">
                       <span className="px-1.5 py-0.5 bg-background/80 rounded border border-border">ID: {cand.id.slice(0, 8)}</span>
-                      <span className="px-1.5 py-0.5 bg-background/80 rounded border border-border">{(!cand.engine || cand.engine.toLowerCase().includes("energyplus")) ? "ThermoShelter Core" : cand.engine}</span>
+                      <span className="px-1.5 py-0.5 bg-background/80 rounded border border-border">{cand.engine || "ThermoShelter Core"}</span>
                       <span className="px-1.5 py-0.5 bg-background/80 rounded border border-border">{(cand.weatherDatasetName?.replace(/\.epw$/i, "")) || "Leh Station"}</span>
                     </div>
                   </div>

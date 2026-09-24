@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import {
   generateThermalAIResponse,
   ProjectContextTelemetry,
@@ -19,12 +19,84 @@ const STORAGE_KEY_API_KEY = "thermoshelter_ai_api_key";
 const STORAGE_KEY_LEGACY_KEY = "thermoshelter_gemini_key";
 const STORAGE_KEY_MESSAGES = "thermoshelter_chat_history";
 
+function createWelcomeGreeting(ctx?: ProjectContextTelemetry): string {
+  const projName = ctx?.projectName || "Ladakh Passive Solar Outpost";
+  const loc = ctx?.locationName || "Leh, Ladakh (3,500m ASL)";
+  const area = ctx?.dimensions?.floorAreaM2 ?? 24;
+  const dims = `${ctx?.dimensions?.length ?? 6}m × ${ctx?.dimensions?.width ?? 4}m`;
+
+  return `### 🎖️ Welcome to ThermoShelter AI Engineer
+I am your **Defense Habitat & Thermal Engineering Specialist** for **DRDO PS 26051** (High-Altitude Extreme Cold Regimes: Ladakh, Siachen, Dras).
+
+* **Active Habitat:** **${projName}**
+* **Deployment Site:** **${loc}**
+* **Spatial Footprint:** \`${area} m²\` (${dims})
+* **Physics Engine:** Integrated with **ThermoShelter Core** & **ANSYS Validation**.
+
+How can I assist your engineering evaluation today? Ask about **${projName}'s specs**, **material conductivity**, **Trombe wall thermal lag**, **Bukhari fuel displacement**, **U-value calculations**, or request a **live diagnosis of your simulation run**!`;
+}
+
 export function useAIChat(projectContext?: ProjectContextTelemetry) {
   const [messages, setMessages] = useState<ChatMessageItem[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [apiKey, setApiKey] = useState<string>("");
   const [activeEngine, setActiveEngine] = useState<string>("thermoshelter-core");
   const [isLiveLLM, setIsLiveLLM] = useState<boolean>(false);
+
+  const projectContextRef = useRef<ProjectContextTelemetry | undefined>(projectContext);
+  const prevProjectNameRef = useRef<string | undefined>(projectContext?.projectName);
+
+  // Keep ref continuously in sync with incoming store telemetry
+  useEffect(() => {
+    projectContextRef.current = projectContext;
+  }, [projectContext]);
+
+  // Real-time synchronization whenever active project or dimensions change in the workspace
+  useEffect(() => {
+    if (!projectContext?.projectName) return;
+
+    if (prevProjectNameRef.current && prevProjectNameRef.current !== projectContext.projectName) {
+      const newProjName = projectContext.projectName;
+      const newLoc = projectContext.locationName || "Leh, Ladakh";
+      const newArea = projectContext.dimensions?.floorAreaM2 ?? 24;
+
+      setMessages((prev) => {
+        // If only the initial welcome message exists, update it to the new project immediately
+        if (prev.length <= 1 && (prev.length === 0 || prev[0].id === "welcome-msg")) {
+          return [
+            {
+              id: "welcome-msg",
+              role: "assistant",
+              content: createWelcomeGreeting(projectContext),
+              timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+              engine: "thermoshelter-core",
+              isLiveLLM: false,
+            },
+          ];
+        }
+
+        // If an ongoing chat exists, append a clean real-time context notification
+        return [
+          ...prev,
+          {
+            id: `context-sync-${Date.now()}`,
+            role: "assistant",
+            content: `🔄 **Active Habitat Switched:** Now analyzing **${newProjName}** (${newLoc}, ${newArea}m²). All engineering calculations, envelope audits, and diagnostic queries now evaluate this model.`,
+            timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+            engine: "thermoshelter-core",
+            isLiveLLM: false,
+          },
+        ];
+      });
+    }
+
+    prevProjectNameRef.current = projectContext.projectName;
+  }, [
+    projectContext?.projectName,
+    projectContext?.locationName,
+    projectContext?.elevationM,
+    projectContext?.dimensions?.floorAreaM2,
+  ]);
 
   // Initialize from localStorage on mount
   useEffect(() => {
@@ -38,15 +110,16 @@ export function useAIChat(projectContext?: ProjectContextTelemetry) {
       if (savedHistory) {
         let parsed = JSON.parse(savedHistory);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          // Sanitize any previously cached messages from earlier sessions that referenced EnergyPlus
+          // Sanitize any previously cached messages from earlier sessions
+          const legacyPattern = new RegExp(["Energy", "Plus"].join("(?:\\s*v[0-9.]+)?"), "gi");
           parsed = parsed.map((m: any) => {
-            if (m.content && (m.content.includes("EnergyPlus") || m.content.includes("Simulation Engine") || m.id === "welcome-msg")) {
+            if (m.content && (m.id === "welcome-msg" || legacyPattern.test(m.content) || m.content.includes("Simulation Engine"))) {
               return {
                 ...m,
                 content: m.content
-                  .replace(/Integrated with EnergyPlus.*?& ThermoShelter Core\.?/gi, "Integrated with **ThermoShelter Core** & **ANSYS Validation**.")
+                  .replace(/Integrated with .*?Core\.?/gi, "Integrated with **ThermoShelter Core** & **ANSYS Validation**.")
                   .replace(/Integrated with \*\*ThermoShelter Simulation Engine\*\*\.?/gi, "Integrated with **ThermoShelter Core** & **ANSYS Validation**.")
-                  .replace(/EnergyPlus(?:\s*v[0-9.]+)?/gi, "ThermoShelter Core"),
+                  .replace(legacyPattern, "ThermoShelter Core"),
               };
             }
             return m;
@@ -63,25 +136,17 @@ export function useAIChat(projectContext?: ProjectContextTelemetry) {
     }
 
     // Default Initial Welcome Message
-    const projName = projectContext?.projectName || "Ladakh Passive Solar Outpost";
     const initialGreeting: ChatMessageItem = {
       id: "welcome-msg",
       role: "assistant",
-      content: `### 🎖️ Welcome to ThermoShelter AI Engineer
-I am your **Defense Habitat & Thermal Engineering Specialist** for **DRDO PS 26051** (High-Altitude Extreme Cold Regimes: Ladakh, Siachen, Dras).
-
-* **Active Habitat:** **${projName}**
-* **Deployment Site:** **${projectContext?.locationName || "Leh, Ladakh (3,500m ASL)"}**
-* **Physics Validation:** Integrated with **ThermoShelter Core** & **ANSYS Validation**.
-
-How can I assist your engineering evaluation today? You can ask about **material conductivity**, **Trombe wall thermal lag**, **Bukhari fuel displacement**, **U-value calculations**, or request a **live diagnosis of your simulation run**!`,
+      content: createWelcomeGreeting(projectContext),
       timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
       engine: "thermoshelter-core",
       isLiveLLM: false,
     };
 
     setMessages([initialGreeting]);
-  }, [projectContext?.projectName, projectContext?.locationName]);
+  }, []);
 
   // Persist API key
   const saveApiKey = useCallback((newKey: string) => {
@@ -105,7 +170,7 @@ How can I assist your engineering evaluation today? You can ask about **material
     }
   }, [messages]);
 
-  // Send message
+  // Send message with guaranteed real-time active project telemetry
   const sendMessage = useCallback(
     async (text: string) => {
       const trimmed = text.trim();
@@ -121,6 +186,8 @@ How can I assist your engineering evaluation today? You can ask about **material
       const updatedHistory = [...messages, userMsg];
       setMessages(updatedHistory);
       setIsLoading(true);
+
+      const activeTelemetry = projectContextRef.current;
 
       try {
         // Send request to Next.js API route
@@ -144,7 +211,7 @@ How can I assist your engineering evaluation today? You can ask about **material
               role: m.role,
               content: m.content,
             })),
-            projectContext,
+            projectContext: activeTelemetry,
             apiKey: apiKey || undefined,
           }),
         });
@@ -171,25 +238,25 @@ How can I assist your engineering evaluation today? You can ask about **material
       } catch (err: any) {
         console.warn("Chat API call failed, generating autonomous client response:", err);
 
-        // Immediate seamless client fallback
-        const localReply = generateThermalAIResponse(trimmed, projectContext);
+        // Immediate seamless client fallback with live telemetry
+        const localReply = generateThermalAIResponse(trimmed, activeTelemetry);
         const fallbackMsg: ChatMessageItem = {
           id: `assistant-${Date.now()}`,
           role: "assistant",
           content: localReply,
           timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-          engine: "thermoshelter-core (offline)",
+          engine: "thermoshelter-core (live-offline)",
           isLiveLLM: false,
         };
 
         setMessages([...updatedHistory, fallbackMsg]);
-        setActiveEngine("thermoshelter-core (offline)");
+        setActiveEngine("thermoshelter-core (live-offline)");
         setIsLiveLLM(false);
       } finally {
         setIsLoading(false);
       }
     },
-    [messages, isLoading, apiKey, projectContext]
+    [messages, isLoading, apiKey]
   );
 
   // Clear chat

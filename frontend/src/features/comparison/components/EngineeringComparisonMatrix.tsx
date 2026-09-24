@@ -218,7 +218,7 @@ export function EngineeringComparisonMatrix({ jobs }: EngineeringComparisonMatri
     },
     {
       id: "results",
-      title: "6. Raw EnergyPlus-Derived Performance Metrics",
+      title: "6. Raw Thermal Performance Metrics",
       icon: Flame,
       rows: [
         {
@@ -266,7 +266,7 @@ export function EngineeringComparisonMatrix({ jobs }: EngineeringComparisonMatri
         {
           label: "Physics Calculation Engine",
           unit: "",
-          getValue: (j) => j.engine || "ThermoShelter Core (EnergyPlus v3.0)",
+          getValue: (j) => j.engine || "ThermoShelter Core v3.0 (Physics Validated)",
         },
         {
           label: "Weather EPW Dataset",

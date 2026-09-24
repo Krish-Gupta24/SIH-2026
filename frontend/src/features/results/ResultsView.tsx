@@ -333,7 +333,7 @@ export function ResultsView() {
       {/* V0 Page Intro */}
       <PageIntro
         title="Thermal performance"
-        description={`${(!activeJob.engine || activeJob.engine.toLowerCase().includes("energyplus")) ? "ThermoShelter Core" : activeJob.engine} v${(!activeJob.engineVersion || activeJob.engineVersion.includes("24.")) ? "3.0.0" : activeJob.engineVersion} · ANSYS Validated simulation record.`}
+        description={`${activeJob.engine || "ThermoShelter Core"} v${(!activeJob.engineVersion || activeJob.engineVersion.includes("24.")) ? "3.0.0" : activeJob.engineVersion} · ANSYS Validated simulation record.`}
         action={
           <div className="flex flex-wrap items-center gap-3">
 

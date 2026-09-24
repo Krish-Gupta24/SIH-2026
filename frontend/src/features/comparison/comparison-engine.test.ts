@@ -49,8 +49,8 @@ describe("Comparison Engine Unit Tests", () => {
         shelterModel: {} as any,
         weatherDatasetId: "leh",
         weatherDatasetName: "Leh EPW",
-        engine: "EnergyPlus",
-        engineVersion: "23.2.0",
+        engine: "ThermoShelter Core",
+        engineVersion: "3.0.0",
         status: "completed",
         queuedAt: "2026-09-09T00:00:00Z",
         results: {
@@ -74,8 +74,8 @@ describe("Comparison Engine Unit Tests", () => {
         shelterModel: {} as any,
         weatherDatasetId: "leh",
         weatherDatasetName: "Leh EPW",
-        engine: "EnergyPlus",
-        engineVersion: "23.2.0",
+        engine: "ThermoShelter Core",
+        engineVersion: "3.0.0",
         status: "completed",
         queuedAt: "2026-09-09T00:00:00Z",
         results: {

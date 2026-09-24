@@ -26,6 +26,32 @@ import { useAIChat, ChatMessageItem } from "./use-ai-chat";
 import { QUICK_SUGGESTIONS } from "./chatbot-knowledge";
 import { ProjectContextTelemetry } from "./thermal-ai-engine";
 
+// Animated AI Video Avatar from frontend/public/aichatbot.mp4
+export function ChatbotVideoLogo({
+  className = "size-8 rounded-full",
+  indicatorClassName,
+}: {
+  className?: string;
+  indicatorClassName?: string;
+}) {
+  return (
+    <div
+      className={`relative flex items-center justify-center overflow-hidden shrink-0 border border-border/80 bg-slate-950 shadow-xs ${className}`}
+    >
+      <video
+        src="/aichatbot.mp4"
+        autoPlay
+        loop
+        muted
+        playsInline
+        aria-hidden="true"
+        className="size-full object-cover pointer-events-none select-none scale-105"
+      />
+      {indicatorClassName && <span className={indicatorClassName} />}
+    </div>
+  );
+}
+
 // Helper component to render markdown formatted message text
 function MarkdownContent({ content }: { content: string }) {
   const [copiedCodeIdx, setCopiedCodeIdx] = useState<number | null>(null);
@@ -284,19 +310,19 @@ export function ChatbotPanel() {
       },
       simulationResults: summary
         ? {
-            comfortHoursPct: summary.comfortHoursPct,
-            indoorMinC: summary.indoorMinC,
-            indoorMaxC: summary.indoorMaxC,
-            indoorMeanC: summary.indoorMeanC,
-            outdoorMinC: summary.outdoorMinC,
-            outdoorMaxC: summary.outdoorMaxC,
-            heatingDemandKwhM2: summary.heatingDemandKwhM2,
-            peakEnvelopeLossW: summary.peakEnvelopeLossW,
-            totalSolarGainKwh: summary.totalSolarGainKwh,
-            fuelDisplacementLiters: Math.round(
-              Math.max(1200, (4800 - summary.heatingDemandKwhM2 * floorArea) / 9.5)
-            ),
-          }
+          comfortHoursPct: summary.comfortHoursPct,
+          indoorMinC: summary.indoorMinC,
+          indoorMaxC: summary.indoorMaxC,
+          indoorMeanC: summary.indoorMeanC,
+          outdoorMinC: summary.outdoorMinC,
+          outdoorMaxC: summary.outdoorMaxC,
+          heatingDemandKwhM2: summary.heatingDemandKwhM2,
+          peakEnvelopeLossW: summary.peakEnvelopeLossW,
+          totalSolarGainKwh: summary.totalSolarGainKwh,
+          fuelDisplacementLiters: Math.round(
+            Math.max(1200, (4800 - summary.heatingDemandKwhM2 * floorArea) / 9.5)
+          ),
+        }
         : undefined,
     };
   }, [activeProject, latestSim, materials]);
@@ -405,71 +431,98 @@ export function ChatbotPanel() {
 
   return (
     <>
-      {/* Floating Action Button (FAB) - Aligned with ActionButton tone="secondary" */}
+      {/* Floating Action Button (FAB) - Anchored strictly to bottom-right with Animated Aurora & "Ask AI" Label */}
       {!isOpen && (
-        <button
-          type="button"
-          onClick={() => setIsOpen(true)}
-          className="fixed bottom-6 right-6 z-[200] group inline-flex items-center gap-2.5 rounded-full bg-white text-foreground px-5 py-3 text-xs font-semibold shadow-xl transition-all duration-300 border border-border hover:bg-[#CBDCE6] hover:scale-105 active:scale-95 cursor-pointer"
-          title="Open ThermoShelter AI Engineer"
+        <div
+          style={{ position: "fixed", right: "24px", bottom: "24px", left: "auto", top: "auto", zIndex: 9999 }}
+          className="flex items-center gap-2.5 select-none pointer-events-auto"
         >
-          <div className="relative flex items-center justify-center">
-            <Bot className="size-4 text-foreground group-hover:rotate-12 transition-transform" />
-            <span className="absolute -top-1 -right-1 size-2 rounded-full bg-emerald-500 animate-ping" />
-          </div>
-          <span className="tracking-tight font-semibold">ThermoShelter AI</span>
-          <span className="text-[10px] px-2 py-0.5 rounded-full bg-secondary text-foreground font-mono border border-border">
-            DRDO PS 26051
-          </span>
-        </button>
+          {/* Desktop "Ask AI" floating pill */}
+          <button
+            type="button"
+            onClick={() => setIsOpen(true)}
+            className="hidden sm:inline-flex items-center gap-2 px-3.5 py-2 rounded-full bg-card/95 backdrop-blur-md border border-border shadow-md text-xs font-semibold text-foreground hover:bg-secondary transition-all cursor-pointer group hover:border-sky-400/40"
+          >
+            <Sparkles className="size-3.5 text-amber-500 animate-pulse" />
+            <span>Ask AI</span>
+          </button>
+
+          {/* Main Orb Button with Animated Aurora Halo */}
+          <button
+            type="button"
+            onClick={() => setIsOpen(true)}
+            className="relative group size-22 sm:size-24 rounded-full flex items-center justify-center cursor-pointer transition-transform duration-300 hover:scale-105 active:scale-95 shrink-0"
+            title="Open ThermoShelter AI Engineer"
+            aria-label="Open ThermoShelter AI Engineer"
+          >
+            {/* Animated Aurora Bloom (Breathes gently behind the orb) */}
+            <div
+              aria-hidden="true"
+              className="absolute -inset-2.5 rounded-full chatbot-aurora-bloom pointer-events-none"
+            />
+
+            {/* Animated Aurora Conic Ring (Rotates smoothly) */}
+            <div
+              aria-hidden="true"
+              className="absolute -inset-0.5 rounded-full chatbot-aurora-spin pointer-events-none"
+            />
+
+            {/* Inner Video Container (Round avatar - Edge-to-Edge, completely borderless and seamless) */}
+            <div className="relative size-full rounded-full overflow-hidden shadow-xl">
+              <video
+                src="/aichatbot.mp4"
+                autoPlay
+                loop
+                muted
+                playsInline
+                aria-hidden="true"
+                className="size-full object-cover pointer-events-none select-none scale-105"
+              />
+            </div>
+
+            {/* Mobile "Ask AI" Badge */}
+            <span className="sm:hidden absolute -top-1.5 -left-1 px-2 py-0.5 rounded-full bg-card/95 text-foreground text-[9.5px] font-bold shadow-md border border-border flex items-center gap-1 z-10 backdrop-blur-xs">
+              <Sparkles className="size-2.5 text-amber-500" />
+              Ask AI
+            </span>
+          </button>
+        </div>
       )}
 
-      {/* Main Chatbot Floating Window */}
+      {/* Main Chatbot Floating Window - Minimized, clean & anchored to bottom-right */}
       {isOpen && (
         <div
-          className={`fixed bottom-6 right-6 z-[200] flex flex-col rounded-[2rem] bg-card border border-border shadow-2xl overflow-hidden transition-all duration-300 ease-out text-foreground ${
-            isExpanded
-              ? "w-[94vw] sm:w-[620px] h-[86vh] max-h-[760px]"
-              : "w-[92vw] sm:w-[420px] h-[80vh] max-h-[620px]"
-          }`}
+          style={{ position: "fixed", right: "24px", bottom: "24px", left: "auto", top: "auto", zIndex: 9999 }}
+          className={`fixed z-[9999] flex flex-col rounded-3xl bg-card border border-border shadow-2xl overflow-hidden transition-all duration-300 ease-out text-foreground ${isExpanded
+            ? "w-[94vw] sm:w-[560px] h-[640px] max-h-[86vh]"
+            : "w-[92vw] sm:w-[390px] h-[520px] max-h-[78vh]"
+            }`}
         >
-          {/* Header - Clean Light Project Theme */}
-          <div className="flex items-center justify-between px-5 py-4 border-b border-border bg-card text-foreground">
+          {/* Header - Clean Light Project Theme (No green dot) */}
+          <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-card text-foreground">
             <div className="flex items-center gap-3 min-w-0">
-              <div className="relative p-2 rounded-2xl bg-secondary text-foreground shrink-0 border border-border">
-                <Bot className="size-4" />
-                <span
-                  className={`absolute -bottom-0.5 -right-0.5 size-2 rounded-full ring-1 ring-white ${
-                    activeEngine.toLowerCase().includes("groq")
-                      ? "bg-amber-500 animate-pulse"
-                      : isLiveLLM
-                      ? "bg-cyan-500 animate-pulse"
-                      : "bg-emerald-500"
-                  }`}
-                  title={
-                    activeEngine.toLowerCase().includes("groq")
-                      ? "Groq (Llama 3.3 70B) Connected"
-                      : isLiveLLM
-                      ? "Gemini 1.5 Flash Connected"
-                      : "ThermoShelter Core Intelligence"
-                  }
+              <div className="relative size-10 sm:size-11 rounded-full overflow-hidden shrink-0 shadow-sm ring-1.5 ring-sky-400/30">
+                <video
+                  src="/aichatbot.mp4"
+                  autoPlay
+                  loop
+                  muted
+                  playsInline
+                  aria-hidden="true"
+                  className="size-full object-cover pointer-events-none select-none scale-105"
                 />
               </div>
 
               <div className="min-w-0">
-                <div className="flex items-center gap-2">
-                  <h3 className="text-sm font-semibold text-foreground tracking-tight truncate">
-                    ThermoShelter AI Engineer
+                <div className="flex items-center gap-1.5">
+                  <h3 className="text-xs sm:text-sm font-bold text-foreground tracking-tight truncate">
+                    ThermoShelter AI
                   </h3>
-                  <span className="text-[9px] px-2 py-0.5 rounded-full font-mono font-semibold shrink-0 bg-secondary text-foreground border border-border">
-                    {activeEngine.toLowerCase().includes("groq")
-                      ? "⚡ Groq (Llama 3.3)"
-                      : isLiveLLM
-                      ? "Gemini 1.5"
-                      : "Core Engine"}
+                  <span className="text-[9px] px-1.5 py-0.5 rounded-full font-mono font-medium shrink-0 bg-secondary text-muted-foreground border border-border/80">
+                    DRDO PS 26051
                   </span>
                 </div>
-                <p className="text-[11px] text-muted-foreground truncate mt-0.5">
+                <p className="text-[10px] text-muted-foreground truncate">
                   {projectTelemetry.projectName} · {projectTelemetry.elevationM}m ASL
                 </p>
               </div>
@@ -480,9 +533,8 @@ export function ChatbotPanel() {
               <button
                 type="button"
                 onClick={() => setShowSettings(!showSettings)}
-                className={`p-1.5 rounded-lg hover:text-foreground hover:bg-secondary transition cursor-pointer ${
-                  showSettings ? "text-foreground bg-secondary" : ""
-                }`}
+                className={`p-1.5 rounded-lg hover:text-foreground hover:bg-secondary transition cursor-pointer ${showSettings ? "text-foreground bg-secondary" : ""
+                  }`}
                 title="Model & API Key Settings"
               >
                 <SettingsIcon className="size-3.5" />
@@ -517,18 +569,47 @@ export function ChatbotPanel() {
             </div>
           </div>
 
+          {/* Real-time Project Telemetry Strip */}
+          <div className="px-3.5 py-1.5 bg-slate-900 text-white text-[10.5px] border-b border-border/40 flex items-center justify-between gap-2 shadow-xs shrink-0 select-none">
+            <div className="flex items-center gap-1.5 min-w-0">
+              <span className="relative flex h-2 w-2 shrink-0">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-sky-400 opacity-75" />
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-sky-500" />
+              </span>
+              <span className="text-[9.5px] font-mono uppercase tracking-wider text-sky-400 font-bold shrink-0">
+                Live:
+              </span>
+              <span className="font-semibold text-slate-100 truncate" title={projectTelemetry.projectName}>
+                {projectTelemetry.projectName}
+              </span>
+            </div>
+            <div className="flex items-center gap-1 text-[10px] font-mono text-slate-300 shrink-0">
+              <span className="hidden sm:inline">{(projectTelemetry.locationName || "").split(",")[0] || "Leh"} · </span>
+              <span>{(projectTelemetry.dimensions?.length ?? 6)}×{(projectTelemetry.dimensions?.width ?? 4)}m</span>
+              {projectTelemetry.simulationResults?.comfortHoursPct !== undefined ? (
+                <span className="text-emerald-400 font-bold bg-emerald-500/15 px-1.5 py-0.5 rounded border border-emerald-500/30 text-[9.5px]">
+                  {projectTelemetry.simulationResults.comfortHoursPct}% Comfort
+                </span>
+              ) : (
+                <span className="text-sky-400 bg-sky-500/10 px-1.5 py-0.5 rounded border border-sky-500/20 text-[9.5px]">
+                  {(projectTelemetry.dimensions?.floorAreaM2 ?? 24)}m²
+                </span>
+              )}
+            </div>
+          </div>
+
           {/* Collapsible Settings Drawer */}
           {showSettings && (
-            <div className="p-4 bg-secondary/30 border-b border-border text-xs space-y-2.5">
+            <div className="p-3 bg-secondary/30 border-b border-border text-xs space-y-2">
               <div className="flex items-center justify-between">
-                <span className="font-semibold text-foreground flex items-center gap-1.5">
+                <span className="font-semibold text-foreground flex items-center gap-1.5 text-[11px]">
                   <Key className="size-3.5" />
                   Groq or Gemini API Configuration
                 </span>
                 <span className="text-[10px] text-muted-foreground">Optional</span>
               </div>
-              <p className="text-[11px] text-[#536772] leading-relaxed">
-                Paste your <strong>Groq API key</strong> (<code className="font-mono text-black">gsk_...</code>) for ultra-fast Llama 3.3 70B reasoning (or Google Gemini key). If left empty, the built-in <strong>ThermoShelter High-Altitude Thermal Engineering AI Core</strong> operates at 100% capacity!
+              <p className="text-[10.5px] text-[#536772] leading-relaxed">
+                Paste your <strong>Groq API key</strong> (<code className="font-mono text-black">gsk_...</code>) for ultra-fast Llama 3.3 70B reasoning. If empty, the built-in <strong>ThermoShelter High-Altitude Thermal Engineering AI Core</strong> operates at 100% capacity!
               </p>
               <div className="flex gap-2">
                 <input
@@ -544,44 +625,42 @@ export function ChatbotPanel() {
                     setApiKey(tempApiKey);
                     setShowSettings(false);
                   }}
-                  className="px-4 py-1.5 rounded-full bg-black hover:bg-[#6E818F] text-white font-semibold text-xs transition cursor-pointer"
+                  className="px-3.5 py-1.5 rounded-full bg-black hover:bg-[#6E818F] text-white font-semibold text-xs transition cursor-pointer"
                 >
-                  Save Key
+                  Save
                 </button>
               </div>
             </div>
           )}
 
-          {/* Project Telemetry Context Banner */}
-          <div className="px-4 py-2 bg-secondary/30 border-b border-border flex items-center justify-between text-[11px] text-[#536772]">
-            <span className="flex items-center gap-1.5 truncate">
-              <ShieldCheck className="size-3.5 text-black" />
-              <span>Project: <strong className="text-foreground">{projectTelemetry.projectName}</strong></span>
-            </span>
-            <span className="font-mono font-semibold text-black shrink-0">
-              {projectTelemetry.simulationResults?.comfortHoursPct !== undefined
-                ? `${projectTelemetry.simulationResults.comfortHoursPct}% Comfort`
-                : "Active"}
-            </span>
-          </div>
-
-          {/* Quick Suggestions Chips */}
-          <div className="px-4 py-2.5 border-b border-border overflow-x-auto flex gap-2 scrollbar-none bg-card">
-            {QUICK_SUGGESTIONS.map((item, idx) => (
-              <button
-                key={idx}
-                type="button"
-                onClick={() => sendMessage(item)}
-                disabled={isLoading}
-                className="px-3.5 py-1.5 rounded-full bg-secondary/50 hover:bg-black hover:text-white border border-border text-[11px] font-semibold text-foreground whitespace-nowrap transition cursor-pointer shrink-0 disabled:opacity-50"
-              >
-                {item}
-              </button>
-            ))}
-          </div>
-
           {/* Messages Scroll Area */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-background">
+          <div className="flex-1 overflow-y-auto p-3.5 space-y-3.5 bg-background">
+            {messages.length <= 1 && (
+              <div className="pt-1 pb-1 space-y-2">
+                <p className="text-[11px] font-semibold text-muted-foreground px-1">
+                  Suggested inquiries for {projectTelemetry.projectName}:
+                </p>
+                <div className="flex flex-col gap-1.5">
+                  {[
+                    `What is my project name and shelter specs?`,
+                    `Analyze ${projectTelemetry.projectName} thermal performance`,
+                    `Audit wall & roof insulation layers for ${projectTelemetry.elevationM}m ASL`,
+                    `How much Bukhari kerosene does this design displace?`,
+                  ].map((item, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => sendMessage(item)}
+                      disabled={isLoading}
+                      className="text-left px-3 py-2 rounded-xl bg-secondary/40 hover:bg-secondary border border-border/60 text-xs text-foreground transition cursor-pointer hover:border-foreground/20 leading-relaxed"
+                    >
+                      {item}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {messages.map((msg) => {
               const isUser = msg.role === "user";
               return (
@@ -589,18 +668,32 @@ export function ChatbotPanel() {
                   key={msg.id}
                   className={`flex flex-col ${isUser ? "items-end" : "items-start"}`}
                 >
-                  <div
-                    className={`max-w-[88%] rounded-2xl px-4 py-3 text-xs leading-relaxed shadow-sm ${
-                      isUser
-                        ? "bg-black text-white font-medium rounded-tr-sm"
-                        : "bg-secondary/35 border border-border text-foreground rounded-tl-sm"
-                    }`}
-                  >
-                    {isUser ? (
-                      <p className="whitespace-pre-wrap">{msg.content}</p>
-                    ) : (
-                      <MarkdownContent content={msg.content} />
+                  <div className="flex items-start gap-2 max-w-[90%]">
+                    {!isUser && (
+                      <div className="size-7 sm:size-8 rounded-full overflow-hidden shrink-0 mt-0.5 shadow-xs ring-1 ring-sky-400/25">
+                        <video
+                          src="/aichatbot.mp4"
+                          autoPlay
+                          loop
+                          muted
+                          playsInline
+                          aria-hidden="true"
+                          className="size-full object-cover pointer-events-none select-none scale-105"
+                        />
+                      </div>
                     )}
+                    <div
+                      className={`rounded-2xl px-3.5 py-2.5 text-xs leading-relaxed shadow-xs ${isUser
+                        ? "bg-foreground text-background font-medium rounded-tr-xs"
+                        : "bg-secondary/40 border border-border text-foreground rounded-tl-xs flex-1"
+                        }`}
+                    >
+                      {isUser ? (
+                        <p className="whitespace-pre-wrap">{msg.content}</p>
+                      ) : (
+                        <MarkdownContent content={msg.content} />
+                      )}
+                    </div>
                   </div>
 
                   <div className="flex items-center gap-2 mt-1 px-1 text-[9px] text-[#6E818F]">
@@ -608,13 +701,13 @@ export function ChatbotPanel() {
                     {!isUser && (
                       <>
                         <span>·</span>
-                        <span className="font-mono text-black font-semibold">
+                        <span className="font-mono text-foreground font-semibold">
                           {msg.engine || "thermoshelter-core"}
                         </span>
                         <button
                           type="button"
                           onClick={() => handleCopyMessage(msg.content, msg.id)}
-                          className="hover:text-black transition cursor-pointer ml-1"
+                          className="hover:text-foreground transition cursor-pointer ml-1"
                           title="Copy message"
                         >
                           {copiedMsgId === msg.id ? (
@@ -626,7 +719,7 @@ export function ChatbotPanel() {
                         <button
                           type="button"
                           onClick={() => handleToggleSpeak(msg.content)}
-                          className="hover:text-black transition cursor-pointer"
+                          className="hover:text-foreground transition cursor-pointer"
                           title="Read aloud"
                         >
                           {isSpeaking ? (
@@ -644,14 +737,22 @@ export function ChatbotPanel() {
 
             {isLoading && (
               <div className="flex items-start gap-2">
-                <div className="p-2 rounded-full bg-secondary text-black shrink-0">
-                  <Bot className="size-3.5" />
+                <div className="size-7 sm:size-8 rounded-full overflow-hidden shrink-0 mt-0.5 shadow-xs ring-1 ring-sky-400/25">
+                  <video
+                    src="/aichatbot.mp4"
+                    autoPlay
+                    loop
+                    muted
+                    playsInline
+                    aria-hidden="true"
+                    className="size-full object-cover pointer-events-none select-none scale-105"
+                  />
                 </div>
-                <div className="p-3 rounded-2xl bg-secondary/35 border border-border text-xs text-muted-foreground flex items-center gap-2">
+                <div className="p-2.5 rounded-2xl bg-secondary/35 border border-border text-xs text-muted-foreground flex items-center gap-2">
                   <div className="flex gap-1">
-                    <span className="size-1.5 rounded-full bg-black animate-bounce" />
-                    <span className="size-1.5 rounded-full bg-black animate-bounce [animation-delay:0.2s]" />
-                    <span className="size-1.5 rounded-full bg-black animate-bounce [animation-delay:0.4s]" />
+                    <span className="size-1.5 rounded-full bg-foreground animate-bounce" />
+                    <span className="size-1.5 rounded-full bg-foreground animate-bounce [animation-delay:0.2s]" />
+                    <span className="size-1.5 rounded-full bg-foreground animate-bounce [animation-delay:0.4s]" />
                   </div>
                   <span className="text-[11px] font-medium text-foreground">
                     Evaluating thermal thermodynamics & envelope resistance...
@@ -663,17 +764,16 @@ export function ChatbotPanel() {
             <div ref={messagesEndRef} />
           </div>
 
-          {/* Input Box Footer */}
-          <div className="p-3.5 border-t border-border bg-card">
-            <div className="flex items-center gap-2 rounded-full border border-border bg-white px-3 py-1.5 focus-within:border-black transition">
+          {/* Input Box Footer - Minimal, clean, no clutter */}
+          <div className="p-2.5 sm:p-3 border-t border-border bg-card/80 backdrop-blur-xs">
+            <div className="flex items-center gap-1.5 rounded-full border border-border bg-background px-2.5 py-1 focus-within:border-foreground transition shadow-2xs">
               <button
                 type="button"
                 onClick={handleToggleDictation}
-                className={`p-2 rounded-full transition cursor-pointer shrink-0 ${
-                  isListening
-                    ? "bg-rose-500 text-white animate-pulse"
-                    : "text-[#6E818F] hover:text-black hover:bg-secondary/40"
-                }`}
+                className={`p-1.5 rounded-full transition cursor-pointer shrink-0 ${isListening
+                  ? "bg-rose-500 text-white animate-pulse"
+                  : "text-muted-foreground hover:text-foreground hover:bg-secondary"
+                  }`}
                 title={isListening ? "Stop recording" : "Voice dictation"}
               >
                 {isListening ? <MicOff className="size-3.5" /> : <Mic className="size-3.5" />}
@@ -685,7 +785,7 @@ export function ChatbotPanel() {
                 value={inputMessage}
                 onChange={(e) => setInputMessage(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder="Ask about materials, Trombe lag, U-value, or project results..."
+                placeholder="Ask ThermoShelter AI..."
                 className="flex-1 bg-transparent px-1 py-1 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none resize-none max-h-24 font-sans leading-relaxed"
               />
 
@@ -693,15 +793,11 @@ export function ChatbotPanel() {
                 type="button"
                 onClick={handleSend}
                 disabled={!inputMessage.trim() || isLoading}
-                className="p-2 rounded-full bg-black hover:bg-[#6E818F] disabled:opacity-30 disabled:hover:bg-black text-white font-semibold transition cursor-pointer shrink-0"
+                className="p-1.5 rounded-full bg-foreground text-background disabled:opacity-30 transition cursor-pointer shrink-0 hover:opacity-90"
                 title="Send message (Enter)"
               >
                 <Send className="size-3.5" />
               </button>
-            </div>
-            <div className="flex items-center justify-between mt-1.5 px-2 text-[9px] text-[#6E818F]">
-              <span>Press <strong>Enter</strong> to send, <strong>Shift+Enter</strong> for newline</span>
-              <span className="font-mono">DRDO PS 26051 AI</span>
             </div>
           </div>
         </div>

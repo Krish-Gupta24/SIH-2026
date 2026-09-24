@@ -135,6 +135,20 @@ export function Shelter3DDesigner({ model, step, onStepChange, onUpdate, onSimul
   const [saved, setSaved] = useState(false);
   const [materialsOpen, setMaterialsOpen] = useState(false);
   const [viewOptionsOpen, setViewOptionsOpen] = useState(false);
+  const viewMenuRef = useRef<HTMLDivElement>(null);
+
+  // Close view options when clicking outside
+  useEffect(() => {
+    if (!viewOptionsOpen) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (viewMenuRef.current && !viewMenuRef.current.contains(e.target as Node)) {
+        setViewOptionsOpen(false);
+      }
+    };
+    window.addEventListener("mousedown", handleClickOutside);
+    return () => window.removeEventListener("mousedown", handleClickOutside);
+  }, [viewOptionsOpen]);
+
   const [openWorkflowGroup, setOpenWorkflowGroup] = useState(() => workflowPhases.find((phase) => phase.stages.includes(step))?.id ?? "envelope");
 
   // Keep open phase group synced when step changes externally
@@ -461,7 +475,7 @@ export function Shelter3DDesigner({ model, step, onStepChange, onUpdate, onSimul
           </button>
 
           {/* 5. View Display Options Dropdown */}
-          <div className="cad-view-options-wrap">
+          <div className="cad-view-options-wrap relative" ref={viewMenuRef}>
             <button
               type="button"
               data-active={viewOptionsOpen || settings.transparentWalls || settings.wireframe}
@@ -469,18 +483,85 @@ export function Shelter3DDesigner({ model, step, onStepChange, onUpdate, onSimul
               aria-controls="designer-view-options"
               onClick={() => setViewOptionsOpen((open) => !open)}
               className="flex items-center gap-1.5"
+              title="Camera perspectives & display options"
             >
               <SlidersHorizontal className="size-3.5" />
               <span>View</span>
             </button>
             {viewOptionsOpen ? (
-              <div id="designer-view-options" className="cad-view-options" role="group" aria-label="View options">
-                <button data-active={settings.showEnvironment} onClick={() => setSetting("showEnvironment", !settings.showEnvironment)}><Mountain className="size-3.5" /> Site context</button>
-                <button data-active={settings.showGrid} onClick={() => setSetting("showGrid", !settings.showGrid)}><Grid3X3 className="size-3.5" /> Grid</button>
-                <button data-active={settings.showDimensions} onClick={() => setSetting("showDimensions", !settings.showDimensions)}><Ruler className="size-3.5" /> Dimensions</button>
-                <button data-active={settings.showCompass} onClick={() => setSetting("showCompass", !settings.showCompass)}><Compass className="size-3.5" /> Compass</button>
-                <button data-active={settings.transparentWalls} onClick={() => setSetting("transparentWalls", !settings.transparentWalls)}><Eye className="size-3.5" /> X-ray</button>
-                <button data-active={settings.wireframe} onClick={() => setSetting("wireframe", !settings.wireframe)}><Boxes className="size-3.5" /> Wireframe</button>
+              <div
+                id="designer-view-options"
+                className="cad-view-options absolute right-0 top-full mt-2 w-64 rounded-xl bg-slate-950/98 border border-white/20 p-2 shadow-2xl backdrop-blur-xl z-[1000] text-xs text-slate-200 divide-y divide-white/10"
+                role="menu"
+                aria-label="View options"
+              >
+                {/* Section A: Camera Perspectives */}
+                <div className="pb-2">
+                  <p className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                    Camera Perspectives
+                  </p>
+                  <div className="grid grid-cols-2 gap-1 mt-1">
+                    {views.map((v) => {
+                      const isActive = preset === v.id;
+                      return (
+                        <button
+                          key={v.id}
+                          type="button"
+                          onClick={() => {
+                            setPreset(v.id);
+                          }}
+                          className={`flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs font-medium transition cursor-pointer ${
+                            isActive
+                              ? "bg-sky-500/25 text-sky-300 font-bold border border-sky-400/40"
+                              : "text-slate-300 hover:text-white hover:bg-white/10"
+                          }`}
+                        >
+                          <span>{v.label}</span>
+                          {isActive && <Check className="size-3 text-sky-400" />}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Section B: Display Overlays */}
+                <div className="pt-2 space-y-0.5">
+                  <p className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                    Display Overlays
+                  </p>
+                  {[
+                    { key: "showEnvironment" as const, label: "Site Context / Terrain", icon: Mountain },
+                    { key: "showGrid" as const, label: "Coordinate Grid", icon: Grid3X3 },
+                    { key: "showDimensions" as const, label: "CAD Dimensions", icon: Ruler },
+                    { key: "showCompass" as const, label: "True North Compass", icon: Compass },
+                    { key: "transparentWalls" as const, label: "X-Ray Enclosures", icon: Eye },
+                    { key: "wireframe" as const, label: "Wireframe Mesh", icon: Boxes },
+                  ].map(({ key, label, icon: Icon }) => {
+                    const isActive = Boolean(settings[key]);
+                    return (
+                      <button
+                        key={key}
+                        type="button"
+                        onClick={() => setSetting(key, !isActive)}
+                        className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs font-medium transition cursor-pointer ${
+                          isActive
+                            ? "bg-white/15 text-white font-semibold"
+                            : "text-slate-400 hover:text-white hover:bg-white/10"
+                        }`}
+                      >
+                        <div className="flex items-center gap-2">
+                          <Icon className="size-3.5 shrink-0 text-slate-300" />
+                          <span>{label}</span>
+                        </div>
+                        <span
+                          className={`size-2 rounded-full transition-colors ${
+                            isActive ? "bg-sky-400 shadow-[0_0_8px_rgba(56,189,248,0.8)]" : "bg-slate-600"
+                          }`}
+                        />
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
             ) : null}
           </div>
@@ -616,7 +697,7 @@ export function Shelter3DDesigner({ model, step, onStepChange, onUpdate, onSimul
 
                 {/* Right: Quick Hour Jump Micro-Pills, Date Picker & Minimize */}
                 <div className="flex items-center gap-1.5 shrink-0 ml-auto">
-                  <div className="cad-timeline-quick-hours hidden sm:flex items-center gap-1">
+                  <div className="cad-timeline-quick-hours hidden md:flex items-center gap-1">
                     {[
                       { h: 0, label: "00h", title: "Midnight Freeze" },
                       { h: 6, label: "06h", title: "Sunrise Dawn" },
@@ -649,7 +730,7 @@ export function Shelter3DDesigner({ model, step, onStepChange, onUpdate, onSimul
                   <button
                     type="button"
                     onClick={() => setTimelineMinimized(true)}
-                    className="cad-timeline-btn cad-timeline-min-btn"
+                    className="cad-timeline-btn cad-timeline-min-btn shrink-0"
                     title="Minimize timeline"
                     aria-label="Minimize timeline"
                   >
@@ -672,7 +753,7 @@ export function Shelter3DDesigner({ model, step, onStepChange, onUpdate, onSimul
                     aria-label="Hour of day slider"
                   />
                 </div>
-                <div className="cad-timeline-ticks">
+                <div className="cad-timeline-ticks px-1 sm:px-1.5">
                   <span>00:00</span>
                   <span>03:00</span>
                   <span>06:00</span>

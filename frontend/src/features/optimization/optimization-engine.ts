@@ -624,4 +624,3 @@ export async function runBackendThermalOptimizationSweep(
   };
 }
 
-export const runBackendEnergyPlusSweep = runBackendThermalOptimizationSweep;

@@ -111,7 +111,7 @@ describe("Thermal Physics & 24h Timeseries Engine Tests", () => {
       targetComfortPercent: 85,
     },
     simulationSettings: {
-      engine: "EnergyPlus",
+      engine: "ThermoShelter Core",
       timestepsPerHour: 4,
       runPeriodDays: 1,
       startMonth: 1,
@@ -188,8 +188,8 @@ describe("Thermal Physics & 24h Timeseries Engine Tests", () => {
       expect(nightStep.timeLabel).toContain("2:00 AM");
     });
 
-    it("faithfully binds to simulated EnergyPlus hourly arrays when available", () => {
-      const mockEnergyPlusHourly = {
+    it("faithfully binds to simulated hourly arrays when available", () => {
+      const mockSimulatedHourly = {
         timestamps: Array.from({ length: 24 }, (_, i) => `2026-01-15T${String(i).padStart(2, "0")}:00:00Z`),
         indoorTemp: Array.from({ length: 24 }, (_, i) => (i >= 10 && i <= 16 ? 21.2 : 17.5)),
         outdoorTemp: Array.from({ length: 24 }, (_, i) => -18.0 + (i >= 7 && i <= 17 ? 6.0 : 0.0)),
@@ -197,12 +197,12 @@ describe("Thermal Physics & 24h Timeseries Engine Tests", () => {
         directNormalIrradiance: Array.from({ length: 24 }, (_, i) => (i >= 8 && i <= 16 ? 920 : 0)),
       };
 
-      const step12 = calculateHourlyThermalStep(mockModel, 12, mockEnergyPlusHourly);
+      const step12 = calculateHourlyThermalStep(mockModel, 12, mockSimulatedHourly);
       expect(step12.indoorTemp).toBe(21.2);
       expect(step12.solarGainW).toBe(640);
       expect(step12.dni).toBe(920);
 
-      const step03 = calculateHourlyThermalStep(mockModel, 3, mockEnergyPlusHourly);
+      const step03 = calculateHourlyThermalStep(mockModel, 3, mockSimulatedHourly);
       expect(step03.indoorTemp).toBe(17.5);
       expect(step03.solarGainW).toBe(0);
     });

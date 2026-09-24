@@ -82,7 +82,7 @@ export function WarningsAndErrorsAlert({
               </span>
             </div>
             <p className="text-xs text-[#536772] mt-0.5">
-              Engine: <strong className="text-foreground">{(!engineName || engineName.toLowerCase().includes("energyplus")) ? "ThermoShelter Core" : engineName}{engineVersion && !engineVersion.includes("24.") ? ` v${engineVersion}` : " v3.0.0"} (ANSYS Validated)</strong>
+              Engine: <strong className="text-foreground">{(engineName || "ThermoShelter Core")}{engineVersion && !engineVersion.includes("24.") ? ` v${engineVersion}` : " v3.0.0"} (ANSYS Validated)</strong>
               {typeof durationSeconds === "number" && !isNaN(durationSeconds) && (
                 <span>{` · Duration: ${durationSeconds}s`}</span>
               )}

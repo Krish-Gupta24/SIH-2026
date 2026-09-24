@@ -76,7 +76,7 @@ describe("3D Designer & Simulation Canonical ShelterModel Sync Tests", () => {
       targetComfortPercent: 85.0,
     },
     simulationSettings: {
-      engine: "EnergyPlus",
+      engine: "ThermoShelter Core",
       timestepsPerHour: 4,
       runPeriodDays: 3,
       startMonth: 1,

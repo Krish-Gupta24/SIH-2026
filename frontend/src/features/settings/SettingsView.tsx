@@ -11,7 +11,9 @@ export function SettingsView() {
 
   const [apiUrl, setApiUrl] = useState(settings.apiUrl);
   const [unitSystem, setUnitSystem] = useState(settings.unitSystem);
-  const [energyPlusVersion, setEnergyPlusVersion] = useState(settings.energyPlusVersion);
+  const [thermoShelterVersion, setThermoShelterVersion] = useState(
+    settings.thermoShelterVersion || "v3.0.0"
+  );
   const [autoSaveSec, setAutoSaveSec] = useState(settings.autoSaveIntervalSec);
 
   const handleSave = (e: React.FormEvent) => {
@@ -19,7 +21,7 @@ export function SettingsView() {
     updateSettings({
       apiUrl,
       unitSystem,
-      energyPlusVersion,
+      thermoShelterVersion,
       autoSaveIntervalSec: autoSaveSec,
     });
     setSavedSuccess(true);
@@ -79,8 +81,8 @@ export function SettingsView() {
             <span className="micro-label block mb-2">ThermoShelter Engine Version</span>
             <input
               type="text"
-              value={energyPlusVersion}
-              onChange={(e) => setEnergyPlusVersion(e.target.value)}
+              value={thermoShelterVersion}
+              onChange={(e) => setThermoShelterVersion(e.target.value)}
               className="h-12 w-full border-b border-border bg-transparent text-sm font-semibold outline-none"
             />
           </label>

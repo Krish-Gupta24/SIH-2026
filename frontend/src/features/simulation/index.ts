@@ -4,7 +4,7 @@
  * simulation run parameter configuration, job progress monitoring, and log streaming.
  */
 
-export type SimulationEngine = "ThermoShelter Core" | "EnergyPlus" | "OpenStudio" | "ANSYS";
+export type SimulationEngine = "ThermoShelter Core" | "OpenStudio" | "ANSYS";
 
 export interface SimulationJobConfig {
   shelterId: string;

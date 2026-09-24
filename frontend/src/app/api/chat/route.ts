@@ -59,20 +59,25 @@ export async function POST(req: NextRequest) {
     // Build context-rich prompt
     const contextPromptChunk = projectContext
       ? `
-CURRENT ACTIVE SHELTER TELEMETRY:
-- Project Name: ${projectContext.projectName || "Ladakh Passive Solar Outpost"}
+CURRENT ACTIVE SHELTER TELEMETRY (REAL-TIME WORKSPACE STATE):
+- Project Name: "${projectContext.projectName || "Ladakh Passive Solar Outpost"}"
 - Geographic Location: ${projectContext.locationName || "Leh, Ladakh, India"} (Elevation: ${projectContext.elevationM || 3500}m ASL)
-- Outdoor Design Winter Minimum: ${projectContext.winterMinC ?? -20}°C
-- Dimensions: ${projectContext.dimensions?.length ?? 6}m (L) x ${projectContext.dimensions?.width ?? 4}m (W) x ${projectContext.dimensions?.height ?? 2.8}m (H)
-- Floor Area: ${projectContext.dimensions?.floorAreaM2 ?? 24} m² | Volume: ${projectContext.dimensions?.volumeM3 ?? 67.2} m³
+- Outdoor Design Winter Minimum: ${projectContext.winterMinC ?? -20}°C | Summer Design Maximum: ${projectContext.summerMaxC ?? 28}°C
+- Dimensions: ${projectContext.dimensions?.length ?? 6}m (Length) x ${projectContext.dimensions?.width ?? 4}m (Width) x ${projectContext.dimensions?.height ?? 2.8}m (Height)
+- Floor Area: ${projectContext.dimensions?.floorAreaM2 ?? 24} m² | Heated Air Volume: ${projectContext.dimensions?.volumeM3 ?? 67.2} m³
 - Wall Assembly: ${projectContext.envelopeSummary?.wallLayers?.join(" + ") || "150mm EPS + 200mm Rammed Earth"}
 - Roof Assembly: ${projectContext.envelopeSummary?.roofLayers?.join(" + ") || "150mm Rockwool Insulated Deck"}
 - Glazing & Aperture: ${projectContext.envelopeSummary?.windowAreaM2 ?? 3.6} m² (${projectContext.envelopeSummary?.glazingType || "Triple Low-E Argon"}) facing ${projectContext.envelopeSummary?.orientationDeg ?? 0}° Azimuth
-- Passive Trombe Wall: ${projectContext.envelopeSummary?.hasTrombeWall ? "Active" : "Disabled / Not Installed"}
-- Latest Simulation Comfort: ${projectContext.simulationResults?.comfortHoursPct ?? 92}% hours in 18°C-24°C band
+- Passive Trombe Wall: ${projectContext.envelopeSummary?.hasTrombeWall ? "Active (8-10h nocturnal lag)" : "Disabled / Not Installed"}
+- Latest Simulation Comfort: ${projectContext.simulationResults?.comfortHoursPct !== undefined ? `${projectContext.simulationResults.comfortHoursPct}%` : "92% (Sol-Air estimate)"} hours in 18°C-24°C operative comfort band
 - Indoor Temperatures: Min ${projectContext.simulationResults?.indoorMinC ?? 18.2}°C, Mean ${projectContext.simulationResults?.indoorMeanC ?? 20.6}°C, Max ${projectContext.simulationResults?.indoorMaxC ?? 23.8}°C
-- Annual Heating Demand: ${projectContext.simulationResults?.heatingDemandKwhM2 ?? 14.2} kWh/m²
-- Bukhari Fuel Displaced: ~${projectContext.simulationResults?.fuelDisplacementLiters ?? 1680} Liters kerosene
+- Annual Heating Demand: ${projectContext.simulationResults?.heatingDemandKwhM2 ?? 14.2} kWh/m²·a
+- Bukhari Fuel Displaced: ~${projectContext.simulationResults?.fuelDisplacementLiters ?? 1680} Liters kerosene / year (~₹${Math.round((projectContext.simulationResults?.fuelDisplacementLiters ?? 1680) * 195).toLocaleString("en-IN")})
+
+CRITICAL GROUNDING DIRECTIVES:
+1. When asked about the project or shelter name, ALWAYS explicitly state "${projectContext.projectName || "Ladakh Passive Solar Outpost"}" and its deployment location "${projectContext.locationName}".
+2. Directly reference the active dimensions (${projectContext.dimensions?.length}m x ${projectContext.dimensions?.width}m, ${projectContext.dimensions?.floorAreaM2}m²), wall layers, and simulation metrics above.
+3. Keep answers technical, concise, military-grade, and actionable under DRDO PS 26051.
 `
       : "";
 

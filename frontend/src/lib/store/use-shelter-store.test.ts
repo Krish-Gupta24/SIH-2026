@@ -45,7 +45,7 @@ describe("Shelter Zustand Store Unit Tests", () => {
       ventilation: { infiltrationACH: 0.3, naturalVentilationEnabled: false, naturalSchedule: "DayOnly", mechanicalVentilationEnabled: false, mechanicalFlowRateLps: 0, heatRecoveryEfficiency: 0.75 },
       internalLoads: { occupantsCount: 2, activityLevelWatts: 120, lightingPowerDensityWpm2: 3.0, equipmentPowerWatts: 150, scheduleProfile: "Continuous" },
       designTargets: { comfortTempMinC: 18, comfortTempMaxC: 24, maxAnnualHeatingDemandKwhM2: 80, targetComfortPercent: 85 },
-      simulationSettings: { engine: "EnergyPlus", timestepsPerHour: 4, runPeriodDays: 3, startMonth: 1, startDay: 1, detailedComponentOutputs: true },
+      simulationSettings: { engine: "ThermoShelter Core", timestepsPerHour: 4, runPeriodDays: 3, startMonth: 1, startDay: 1, detailedComponentOutputs: true },
     };
 
     useShelterStore.getState().addProject(testModel);
@@ -116,7 +116,7 @@ describe("Shelter Zustand Store Unit Tests", () => {
       ventilation: { infiltrationACH: 0.3, naturalVentilationEnabled: false, naturalSchedule: "DayOnly", mechanicalVentilationEnabled: false, mechanicalFlowRateLps: 0, heatRecoveryEfficiency: 0.75 },
       internalLoads: { occupantsCount: 2, activityLevelWatts: 120, lightingPowerDensityWpm2: 3.0, equipmentPowerWatts: 150, scheduleProfile: "Continuous" },
       designTargets: { comfortTempMinC: 18, comfortTempMaxC: 24, maxAnnualHeatingDemandKwhM2: 80, targetComfortPercent: 85 },
-      simulationSettings: { engine: "EnergyPlus", timestepsPerHour: 4, runPeriodDays: 3, startMonth: 1, startDay: 1, detailedComponentOutputs: true },
+      simulationSettings: { engine: "ThermoShelter Core", timestepsPerHour: 4, runPeriodDays: 3, startMonth: 1, startDay: 1, detailedComponentOutputs: true },
     };
 
     const p2: ShelterModel = {
@@ -139,8 +139,8 @@ describe("Shelter Zustand Store Unit Tests", () => {
           weatherDatasetId: "w1",
           weatherDatasetName: "Leh",
           status: "completed",
-          engine: "EnergyPlus",
-          engineVersion: "24.1.0",
+          engine: "ThermoShelter Core",
+          engineVersion: "3.0.0",
         },
       ],
       comparisonJobIds: ["sim-p1"],

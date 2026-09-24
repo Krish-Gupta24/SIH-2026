@@ -1084,10 +1084,10 @@ export function SimulationsView() {
                       </TableCell>
                       <TableCell>
                         <span className="font-mono text-xs text-slate-400">
-                          {(!sim.engine || sim.engine.toLowerCase().includes("energyplus")) ? "ThermoShelter Core" : sim.engine}
+                          {sim.engine || "ThermoShelter Core"}
                         </span>
                         <span className="ml-1 text-[10px] text-slate-500">
-                          v{(!sim.engine || sim.engine.toLowerCase().includes("energyplus")) ? "3.0.0" : (sim.engineVersion || "3.0.0")}
+                          v{sim.engineVersion || "3.0.0"}
                         </span>
                       </TableCell>
                       <TableCell>{renderStatusBadge(sim.status, sim.error)}</TableCell>
