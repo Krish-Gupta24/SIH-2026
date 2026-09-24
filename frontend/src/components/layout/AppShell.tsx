@@ -17,6 +17,7 @@ import {
   User,
 } from "lucide-react";
 import { useShelterStore } from "@/lib/store/use-shelter-store";
+import { useUnitSystem } from "@/lib/unit-system";
 import { useAuthStore } from "@/lib/store/use-auth-store";
 import { filterProjectsForUser } from "@/lib/store/shelter-auth-filter";
 import { AuthAccountModal } from "@/features/auth/AuthAccountModal";
@@ -61,6 +62,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     settings,
     updateSettings,
   } = useShelterStore();
+  const { formatLength } = useUnitSystem();
 
   // Filter projects by authenticated user isolation
   const visibleProjects = filterProjectsForUser(projects, currentUser?.id);
@@ -208,7 +210,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               <button
                 type="button"
                 onClick={() => updateSettings({ unitSystem: "SI" })}
-                className={`rounded-full px-3 py-1 transition-colors ${settings.unitSystem === "SI"
+                className={`rounded-full px-3 py-1 transition-colors ${settings?.unitSystem !== "IP"
                   ? "bg-foreground text-background"
                   : "text-muted-foreground hover:text-foreground"
                   }`}
@@ -218,7 +220,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               <button
                 type="button"
                 onClick={() => updateSettings({ unitSystem: "IP" })}
-                className={`rounded-full px-3 py-1 transition-colors ${settings.unitSystem === "IP"
+                className={`rounded-full px-3 py-1 transition-colors ${settings?.unitSystem === "IP"
                   ? "bg-foreground text-background"
                   : "text-muted-foreground hover:text-foreground"
                   }`}
@@ -327,7 +329,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                     </button>
 
                     <p className="mt-0.5 text-[10px] uppercase tracking-[0.08em] text-muted-foreground">
-                      {activeProject.location.region} · {activeProject.location.elevation.toLocaleString()} m · v{activeProject.project.version}
+                      {activeProject.location.region} · {formatLength(activeProject.location.elevation, 0)} · v{activeProject.project.version}
                     </p>
 
                     {/* Project Picker Dropdown */}

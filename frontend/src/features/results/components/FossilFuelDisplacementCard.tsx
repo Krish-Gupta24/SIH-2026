@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { PulseBeacon } from "@/components/motion/MotionWrappers";
+import { useUnitSystem } from "@/lib/unit-system";
 
 export interface FossilFuelDisplacementCardProps {
   heatingDemandKwhM2?: number;
@@ -176,6 +177,17 @@ export function FossilFuelDisplacementCard({
   activeJobId,
   isBaselineTin = false,
 }: FossilFuelDisplacementCardProps) {
+  const {
+    formatTemp,
+    formatTempVal,
+    formatDeltaTempVal,
+    tempUnit,
+    deltaTempUnit,
+    formatEnergyDensity,
+    formatLength,
+    formatArea,
+  } = useUnitSystem();
+
   // Operational logistics state
   const [fuelType, setFuelType] = useState<"SKO" | "HSD" | "LPG">("SKO");
   const [selectedPresetId, setSelectedPresetId] = useState<string>("AUTO");
@@ -248,12 +260,14 @@ export function FossilFuelDisplacementCard({
   const drumsDisplaced = (fuelUnitsDisplaced / 200).toFixed(1);
   const haulageWeightKg = Math.round(fuelUnitsDisplaced * spec.densityKgPerUnit + (fuelUnitsDisplaced / 200) * 18);
   const minIndoorFormatted = indoorMinC !== undefined
-    ? (indoorMinC > 0 ? `+${indoorMinC.toFixed(1)}°C` : `${indoorMinC.toFixed(1)}°C`)
-    : "+8.0°C";
-  const outdoorMinFormatted = outdoorMinC !== undefined ? `${outdoorMinC.toFixed(1)}°C` : "-20.5°C";
+    ? `${indoorMinC > 0 ? "+" : ""}${formatTempVal(indoorMinC)} ${tempUnit}`
+    : `+${formatTempVal(8.0)} ${tempUnit}`;
+  const outdoorMinFormatted = outdoorMinC !== undefined
+    ? `${formatTempVal(outdoorMinC)} ${tempUnit}`
+    : `${formatTempVal(-20.5)} ${tempUnit}`;
   const thermalAdvantageDelta = indoorMinC !== undefined && outdoorMinC !== undefined
-    ? Math.round(indoorMinC - outdoorMinC)
-    : 28;
+    ? formatDeltaTempVal(indoorMinC - outdoorMinC, 0)
+    : formatDeltaTempVal(28, 0);
 
   return (
     <div className="rounded-[2rem] border border-border bg-card p-6 sm:p-9 shadow-sm relative overflow-hidden transition-all duration-300">
@@ -273,7 +287,7 @@ export function FossilFuelDisplacementCard({
           <span className="hidden sm:inline text-border">·</span>
           <span className="hidden sm:inline-flex items-center gap-1 text-[11px] text-muted-foreground">
             <MapPin className="size-3 text-amber-600" />
-            <strong className="text-foreground font-medium">{locationName}</strong> ({elevationM.toLocaleString()}m ASL)
+            <strong className="text-foreground font-medium">{locationName}</strong> ({formatLength(elevationM, 0)} ASL)
           </span>
         </div>
 
@@ -302,7 +316,7 @@ export function FossilFuelDisplacementCard({
           </h3>
           <p className="mt-1.5 text-xs text-muted-foreground max-w-2xl leading-relaxed">
             Quantified thermal displacement against uninsulated galvanized tin (CGI) defense barrack baseline under alpine winter conditions.
-            Real-time thermal physics derived from active simulation geometry ({floorAreaM2} m² footprint).
+            Real-time thermal physics derived from active simulation geometry ({formatArea(floorAreaM2, 1)} footprint).
           </p>
         </div>
 
@@ -347,7 +361,7 @@ export function FossilFuelDisplacementCard({
           <div className="leading-relaxed">
             <strong className="font-semibold">Notice: Active project is the Uninsulated CGI Tin Barrack baseline.</strong>
             <p className="mt-0.5 text-xs opacity-90">
-              The metrics below show the unmitigated fossil fuel burden ({baselineHeatingDemandKwhM2} kWh/m²). Switch to an insulated passive solar shelter (e.g. Leh Ladakh Outpost, Kargil, or Spiti) in the top bar to evaluate positive displacement metrics.
+              The metrics below show the unmitigated fossil fuel burden ({formatEnergyDensity(baselineHeatingDemandKwhM2)}). Switch to an insulated passive solar shelter (e.g. Leh Ladakh Outpost, Kargil, or Spiti) in the top bar to evaluate positive displacement metrics.
             </p>
           </div>
         </div>
@@ -657,7 +671,7 @@ export function FossilFuelDisplacementCard({
                 {minIndoorFormatted} <span className="text-xs font-sans text-muted-foreground">Min Indoor</span>
               </div>
               <p className="text-[11px] text-muted-foreground">
-                Maintains non-freezing living conditions even during {outdoorMinFormatted} peak pre-dawn freeze (+{thermalAdvantageDelta}°C passive thermal advantage).
+                Maintains non-freezing living conditions even during {outdoorMinFormatted} peak pre-dawn freeze (+{thermalAdvantageDelta}{deltaTempUnit} passive thermal advantage).
               </p>
             </div>
 
@@ -702,7 +716,7 @@ export function FossilFuelDisplacementCard({
                 <div className="space-y-1.5 text-[11px] text-foreground/80">
                   <div className="flex justify-between border-b border-red-500/10 pb-1">
                     <span>Heating Energy Demand:</span>
-                    <strong className="font-mono">{baselineHeatingDemandKwhM2} kWh/m²</strong>
+                    <strong className="font-mono">{formatEnergyDensity(baselineHeatingDemandKwhM2)}</strong>
                   </div>
                   <div className="flex justify-between border-b border-red-500/10 pb-1">
                     <span>Seasonal Fuel Required:</span>
@@ -718,7 +732,7 @@ export function FossilFuelDisplacementCard({
                   </div>
                   <div className="flex justify-between border-b border-red-500/10 pb-1">
                     <span>Nighttime Indoor Freeze:</span>
-                    <strong className="font-mono text-red-600 dark:text-red-400">Drops to -15°C to -25°C without fire</strong>
+                    <strong className="font-mono text-red-600 dark:text-red-400">Drops to {formatTemp(-15, 0)} to {formatTemp(-25, 0)} without fire</strong>
                   </div>
                   <div className="flex justify-between">
                     <span>Indoor Air Quality:</span>
@@ -736,7 +750,7 @@ export function FossilFuelDisplacementCard({
                 <div className="space-y-1.5 text-[11px] text-foreground/80">
                   <div className="flex justify-between border-b border-emerald-500/10 pb-1">
                     <span>Heating Energy Demand:</span>
-                    <strong className="font-mono text-emerald-600 dark:text-emerald-400">{actualHeatingDemandKwhM2} kWh/m²</strong>
+                    <strong className="font-mono text-emerald-600 dark:text-emerald-400">{formatEnergyDensity(actualHeatingDemandKwhM2)}</strong>
                   </div>
                   <div className="flex justify-between border-b border-emerald-500/10 pb-1">
                     <span>Auxiliary Fuel Required:</span>

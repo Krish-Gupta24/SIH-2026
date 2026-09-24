@@ -15,14 +15,14 @@ import {
 } from "recharts";
 import { Flame, ArrowDownRight, Thermometer, ShieldCheck, Moon } from "lucide-react";
 import { UnitSystem } from "@/types/simulation";
-import { convertTemperature, getTemperatureUnit } from "../unit-converter";
+import { useUnitSystem } from "@/lib/unit-system";
 import { computeDownsampleIndices, formatTimeLabel } from "../chart-downsample";
 
 interface HeatFlowDeltaTChartProps {
   timestamps: string[];
   indoorTemp: number[];
   outdoorTemp: number[];
-  unit: UnitSystem;
+  unit?: UnitSystem;
   envelopeAreaM2?: number;
   averageUFactor?: number;
 }
@@ -31,11 +31,20 @@ export function HeatFlowDeltaTChart({
   timestamps,
   indoorTemp,
   outdoorTemp,
-  unit,
   envelopeAreaM2 = 104.0,
   averageUFactor = 0.28,
 }: HeatFlowDeltaTChartProps) {
-  const tUnit = getTemperatureUnit(unit);
+  const {
+    toTemp,
+    toDeltaTemp,
+    toPower,
+    toFlux,
+    tempUnit,
+    deltaTempUnit,
+    powerUnit,
+    fluxUnit,
+    isIP,
+  } = useUnitSystem();
 
   const totalLength = Math.max(timestamps.length, indoorTemp.length, outdoorTemp.length);
   const { indices, stride } = useMemo(
@@ -66,15 +75,15 @@ export function HeatFlowDeltaTChart({
         index: idx,
         timestamp: ts,
         timeLabel: stride > 1 ? timeLabel : `H${idx + 1} (${timeLabel})`,
-        deltaT,
-        heatFlowWatts,
-        heatFlowFlux,
-        indoorTemp: Number(convertTemperature(rawIn, unit).toFixed(1)),
-        outdoorTemp: Number(convertTemperature(rawOut, unit).toFixed(1)),
+        deltaT: Number(toDeltaTemp(deltaT).toFixed(1)),
+        heatFlow: Math.round(toPower(heatFlowWatts)),
+        heatFlowFlux: Number(toFlux(heatFlowFlux).toFixed(1)),
+        indoorTemp: Number(toTemp(rawIn).toFixed(1)),
+        outdoorTemp: Number(toTemp(rawOut).toFixed(1)),
         isNight,
       };
     });
-  }, [indices, timestamps, indoorTemp, outdoorTemp, unit, envelopeAreaM2, averageUFactor, stride]);
+  }, [indices, timestamps, indoorTemp, outdoorTemp, envelopeAreaM2, averageUFactor, stride, toDeltaTemp, toPower, toFlux, toTemp]);
 
   const maxDeltaT = useMemo(
     () => Math.max(...chartData.map((d) => d.deltaT), 1),
@@ -88,10 +97,13 @@ export function HeatFlowDeltaTChart({
     () => (chartData.reduce((acc, d) => acc + d.deltaT, 0) / Math.max(chartData.length, 1)).toFixed(1),
     [chartData]
   );
-  const totalHeatLossKwh = useMemo(() => {
-    const sumWatts = chartData.reduce((acc, d) => acc + d.heatFlowWatts, 0);
-    return ((sumWatts * 1.0) / 1000).toFixed(1);
-  }, [chartData]);
+  const totalHeatLoss = useMemo(() => {
+    const sumPower = chartData.reduce((acc, d) => acc + d.heatFlow, 0);
+    if (isIP) {
+      return { val: Math.round(sumPower).toLocaleString(), unit: "Btu" };
+    }
+    return { val: ((sumPower * 1.0) / 1000).toFixed(1), unit: "kWh" };
+  }, [chartData, isIP]);
 
   return (
     <div className="rounded-[2rem] border border-border bg-card p-7 shadow-[0_20px_55px_rgba(0,0,0,.04)] space-y-6">
@@ -129,7 +141,7 @@ export function HeatFlowDeltaTChart({
             <span>Peak Thermal Lift (ΔT_max)</span>
           </div>
           <div className="text-xl font-bold font-mono text-foreground">
-            +{maxDeltaT.toFixed(1)}°C
+            +{maxDeltaT.toFixed(1)} {deltaTempUnit}
           </div>
           <div className="text-[10px] text-muted-foreground">Max buffer against ambient cold</div>
         </div>
@@ -140,7 +152,7 @@ export function HeatFlowDeltaTChart({
             <span>Mean Diurnal ΔT</span>
           </div>
           <div className="text-xl font-bold font-mono text-foreground">
-            +{meanDeltaT}°C
+            +{meanDeltaT} {deltaTempUnit}
           </div>
           <div className="text-[10px] text-muted-foreground">Average operational temperature buffer</div>
         </div>
@@ -151,7 +163,7 @@ export function HeatFlowDeltaTChart({
             <span>Peak Heat Loss Rate</span>
           </div>
           <div className="text-xl font-bold font-mono text-foreground">
-            {Math.max(...chartData.map((d) => d.heatFlowWatts)).toLocaleString()} W
+            {Math.max(...chartData.map((d) => d.heatFlow)).toLocaleString()} {powerUnit}
           </div>
           <div className="text-[10px] text-muted-foreground">At lowest outdoor ambient temperature</div>
         </div>
@@ -162,7 +174,7 @@ export function HeatFlowDeltaTChart({
             <span>Total 24h Heat Transfer</span>
           </div>
           <div className="text-xl font-bold font-mono text-foreground">
-            {totalHeatLossKwh} kWh
+            {totalHeatLoss.val} {totalHeatLoss.unit}
           </div>
           <div className="text-[10px] text-muted-foreground">Envelope conduction & infiltration</div>
         </div>
@@ -182,22 +194,22 @@ export function HeatFlowDeltaTChart({
               minTickGap={35}
               tickLine={false}
             />
-            {/* Left Y-Axis: Temperature Difference (°C) */}
+            {/* Left Y-Axis: Temperature Difference */}
             <YAxis
               yAxisId="left"
               stroke="#f59e0b"
               fontSize={11}
-              unit="°C"
+              unit={` ${deltaTempUnit}`}
               domain={[Math.floor(minDeltaT - 2), Math.ceil(maxDeltaT + 3)]}
               tickLine={false}
             />
-            {/* Right Y-Axis: Heat Flow (Watts) */}
+            {/* Right Y-Axis: Heat Flow */}
             <YAxis
               yAxisId="right"
               orientation="right"
               stroke="#8b5cf6"
               fontSize={11}
-              unit=" W"
+              unit={` ${powerUnit}`}
               tickLine={false}
             />
             <Tooltip
@@ -217,7 +229,7 @@ export function HeatFlowDeltaTChart({
                         Temperature Difference (ΔT):
                       </span>
                       <span className="font-mono font-bold text-amber-600 dark:text-amber-400">
-                        +{d.deltaT}°C
+                        +{d.deltaT} {deltaTempUnit}
                       </span>
                     </div>
 
@@ -227,20 +239,20 @@ export function HeatFlowDeltaTChart({
                         Heat Loss Rate (Q):
                       </span>
                       <span className="font-mono font-bold text-purple-600 dark:text-purple-400">
-                        {d.heatFlowWatts.toLocaleString()} W
+                        {d.heatFlow.toLocaleString()} {powerUnit}
                       </span>
                     </div>
 
                     <div className="flex items-center justify-between text-muted-foreground">
                       <span>Heat Flux per Area:</span>
                       <span className="font-mono font-medium text-foreground">
-                        {d.heatFlowFlux} W/m²
+                        {d.heatFlowFlux} {fluxUnit}
                       </span>
                     </div>
 
                     <div className="border-t border-border/60 pt-1.5 text-[10px] text-muted-foreground flex justify-between">
-                      <span>Indoor: {d.indoorTemp}{tUnit}</span>
-                      <span>Ambient: {d.outdoorTemp}{tUnit}</span>
+                      <span>Indoor: {d.indoorTemp} {tempUnit}</span>
+                      <span>Ambient: {d.outdoorTemp} {tempUnit}</span>
                     </div>
                   </div>
                 );
@@ -266,19 +278,19 @@ export function HeatFlowDeltaTChart({
               yAxisId="left"
               type="monotone"
               dataKey="deltaT"
-              name="Temperature Difference ΔT (°C)"
+              name={`Temperature Difference ΔT (${deltaTempUnit})`}
               stroke="#f59e0b"
               strokeWidth={3}
               dot={{ r: 2.5, fill: "#f59e0b" }}
               activeDot={{ r: 6, fill: "#d97706", stroke: "#ffffff", strokeWidth: 2 }}
             />
 
-            {/* Line 2: Heat Flow Rate (Watts) */}
+            {/* Line 2: Heat Flow Rate */}
             <Line
               yAxisId="right"
               type="monotone"
-              dataKey="heatFlowWatts"
-              name="Envelope Heat Flow Rate (W)"
+              dataKey="heatFlow"
+              name={`Envelope Heat Flow Rate (${powerUnit})`}
               stroke="#8b5cf6"
               strokeWidth={2}
               strokeDasharray="4 2"

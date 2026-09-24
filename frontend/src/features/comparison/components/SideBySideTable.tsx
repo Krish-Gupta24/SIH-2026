@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useMemo } from "react";
 import {
   Table,
   TableHeader,
@@ -14,6 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { ArrowUp, ArrowDown, Minus, Layers, HelpCircle } from "lucide-react";
 import { SimulationJobItem } from "@/lib/store/use-shelter-store";
 import { calculateDifference } from "../comparison-engine";
+import { useUnitSystem } from "@/lib/unit-system";
 
 interface SideBySideTableProps {
   jobs: SimulationJobItem[];
@@ -58,40 +59,41 @@ export function SideBySideTable({ jobs }: SideBySideTableProps) {
 
   const engines = jobs.map((j) => (j.engine || "ThermoShelter Core"));
   const sameEngine = new Set(jobs.map((j) => normalizeEngine(j.engine))).size <= 1;
+  const { toTemp, toEnergy, toEnergyDensity, toPower, toArea, tempUnit, energyUnit, energyDensityUnit, powerUnit, areaUnit, isIP } = useUnitSystem();
 
-  const METRIC_ROWS: MetricRowConfig[] = [
+  const METRIC_ROWS: MetricRowConfig[] = useMemo(() => [
     // 1. Thermal Performance
     {
       id: "indoorMin",
       category: "Thermal Performance",
       label: "Minimum Nocturnal Temp (Pre-Dawn)",
-      unit: "°C",
+      unit: tempUnit,
       higherIsBetter: true,
-      getValue: (j) => j.results?.summary?.indoorMinC ?? null,
+      getValue: (j) => typeof j.results?.summary?.indoorMinC === "number" ? toTemp(j.results.summary.indoorMinC) : null,
       formatDecimals: 1,
     },
     {
       id: "indoorMax",
       category: "Thermal Performance",
       label: "Peak Daytime Indoor Temp",
-      unit: "°C",
+      unit: tempUnit,
       higherIsBetter: true,
-      getValue: (j) => j.results?.summary?.indoorMaxC ?? null,
+      getValue: (j) => typeof j.results?.summary?.indoorMaxC === "number" ? toTemp(j.results.summary.indoorMaxC) : null,
       formatDecimals: 1,
     },
     {
       id: "indoorMean",
       category: "Thermal Performance",
       label: "Average Indoor Temperature",
-      unit: "°C",
+      unit: tempUnit,
       higherIsBetter: true,
-      getValue: (j) => j.results?.summary?.indoorMeanC ?? null,
+      getValue: (j) => typeof j.results?.summary?.indoorMeanC === "number" ? toTemp(j.results.summary.indoorMeanC) : null,
       formatDecimals: 1,
     },
     {
       id: "comfortHours",
       category: "Thermal Performance",
-      label: "Comfort Hours (18°C–24°C)",
+      label: isIP ? "Comfort Hours (64°F–75°F)" : "Comfort Hours (18°C–24°C)",
       unit: "%",
       higherIsBetter: true,
       getValue: (j) => j.results?.summary?.comfortHoursPct ?? null,
@@ -112,27 +114,30 @@ export function SideBySideTable({ jobs }: SideBySideTableProps) {
       id: "solarGains",
       category: "Solar & Envelope Losses",
       label: "Total Passive Solar Aperture Gains",
-      unit: "kWh",
+      unit: energyUnit,
       higherIsBetter: true,
-      getValue: (j) => (j.results?.summary as any)?.totalSolarGainKwh ?? null,
+      getValue: (j) => typeof (j.results?.summary as any)?.totalSolarGainKwh === "number" ? toEnergy((j.results?.summary as any).totalSolarGainKwh) : null,
       formatDecimals: 1,
     },
     {
       id: "peakEnvelopeLoss",
       category: "Solar & Envelope Losses",
       label: "Peak Conduction Loss Rate",
-      unit: "W",
+      unit: powerUnit,
       higherIsBetter: false,
-      getValue: (j) => (j.results?.summary as any)?.peakEnvelopeLossW ?? null,
+      getValue: (j) => typeof (j.results?.summary as any)?.peakEnvelopeLossW === "number" ? toPower((j.results?.summary as any).peakEnvelopeLossW) : null,
       formatDecimals: 0,
     },
     {
       id: "underheatingHours",
       category: "Solar & Envelope Losses",
-      label: "Underheating Degree-Hours (<18°C)",
-      unit: "°C·h",
+      label: isIP ? "Underheating Degree-Hours (<64°F)" : "Underheating Degree-Hours (<18°C)",
+      unit: isIP ? "°F·h" : "°C·h",
       higherIsBetter: false,
-      getValue: (j) => (j.results?.summary as any)?.underheatingDegreeHoursCh ?? null,
+      getValue: (j) => {
+        const val = (j.results?.summary as any)?.underheatingDegreeHoursCh;
+        return typeof val === "number" ? (isIP ? val * 1.8 : val) : null;
+      },
       formatDecimals: 1,
     },
 
@@ -141,9 +146,9 @@ export function SideBySideTable({ jobs }: SideBySideTableProps) {
       id: "heatingDemand",
       category: "Energy & Heating",
       label: "Annual Space Heating Demand",
-      unit: "kWh/m²·a",
+      unit: isIP ? "kBTU/ft²·a" : "kWh/m²·a",
       higherIsBetter: false,
-      getValue: (j) => j.results?.summary?.heatingDemandKwhM2 ?? null,
+      getValue: (j) => typeof j.results?.summary?.heatingDemandKwhM2 === "number" ? toEnergyDensity(j.results.summary.heatingDemandKwhM2) : null,
       formatDecimals: 1,
     },
 
@@ -152,11 +157,13 @@ export function SideBySideTable({ jobs }: SideBySideTableProps) {
       id: "floorArea",
       category: "Architectural Parameters",
       label: "Floor Usable Living Area",
-      unit: "m²",
+      unit: areaUnit,
       higherIsBetter: true,
       getValue: (j) => {
         const g = j.shelterModel?.geometry;
-        return g ? (g.length || 6) * (g.width || 4) : null;
+        if (!g) return null;
+        const areaM2 = (g.length || 6) * (g.width || 4);
+        return toArea(areaM2);
       },
       formatDecimals: 1,
     },
@@ -178,7 +185,7 @@ export function SideBySideTable({ jobs }: SideBySideTableProps) {
       getValue: (j) => j.shelterModel?.windows?.length ?? 0,
       formatDecimals: 0,
     },
-  ];
+  ], [tempUnit, energyUnit, powerUnit, energyDensityUnit, areaUnit, isIP, toTemp, toEnergy, toPower, toEnergyDensity, toArea]);
 
   const categories = Array.from(new Set(METRIC_ROWS.map((r) => r.category)));
 

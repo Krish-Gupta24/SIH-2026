@@ -37,6 +37,13 @@ import {
   Status,
 } from "@/components/v0/platform-components";
 import { WorkflowFooter } from "@/components/layout/WorkflowFooter";
+import {
+  convertTemperature,
+  convertEnergyDensity,
+  getTemperatureUnit,
+  getEnergyDensityUnit,
+  formatNumber,
+} from "./unit-converter";
 
 // Specialized Result Components
 import { DataSourceBanner } from "./components/DataSourceBanner";
@@ -411,8 +418,8 @@ export function ResultsView() {
             </h2>
             <p className="mt-4 text-xs sm:text-sm leading-relaxed text-[#536772]">
               {summary.comfortHoursPct >= 80
-                ? `The shelter maintains indoor living comfort (18°C–24°C) for ${summary.comfortHoursPct}% of the simulation period, meeting the ≥80% design target.`
-                : `Achieved ${summary.comfortHoursPct}% comfort hours (target is ≥80% in the 18°C–24°C band). Under sub-zero alpine conditions, indoor temperatures drop to ${summary.indoorMinC}°C. Increase envelope insulation (e.g. 150mm EPS), add a Trombe wall, or enable auxiliary heating.`}
+                ? `The shelter maintains indoor living comfort (${formatNumber(convertTemperature(18, unit), 0)}${getTemperatureUnit(unit)}–${formatNumber(convertTemperature(24, unit), 0)}${getTemperatureUnit(unit)}) for ${summary.comfortHoursPct}% of the simulation period, meeting the ≥80% design target.`
+                : `Achieved ${summary.comfortHoursPct}% comfort hours (target is ≥80% in the ${formatNumber(convertTemperature(18, unit), 0)}${getTemperatureUnit(unit)}–${formatNumber(convertTemperature(24, unit), 0)}${getTemperatureUnit(unit)} band). Under sub-zero alpine conditions, indoor temperatures drop to ${formatNumber(convertTemperature(summary.indoorMinC, unit), 1)}${getTemperatureUnit(unit)}. Increase envelope insulation (e.g. 150mm EPS), add a Trombe wall, or enable auxiliary heating.`}
             </p>
           </div>
           <div className="mt-8 flex items-center gap-3">
@@ -428,8 +435,10 @@ export function ResultsView() {
           >
             <span className="micro-label">Heating demand</span>
             <p>
-              <span className="text-3xl sm:text-4xl font-medium">{summary.heatingDemandKwhM2}</span>
-              <span className="ml-2 text-xs text-muted-foreground">kWh/m²</span>
+              <span className="text-3xl sm:text-4xl font-medium">
+                {typeof summary.heatingDemandKwhM2 === "number" ? formatNumber(convertEnergyDensity(summary.heatingDemandKwhM2, unit), 1) : "—"}
+              </span>
+              <span className="ml-2 text-xs text-muted-foreground">{getEnergyDensityUnit(unit)}</span>
             </p>
           </motion.div>
           <motion.div
@@ -448,8 +457,10 @@ export function ResultsView() {
           >
             <span className="micro-label">Indoor minimum</span>
             <p>
-              <span className="text-3xl sm:text-4xl font-medium">{summary.indoorMinC}</span>
-              <span className="ml-2 text-xs text-muted-foreground">°C</span>
+              <span className="text-3xl sm:text-4xl font-medium">
+                {typeof summary.indoorMinC === "number" ? formatNumber(convertTemperature(summary.indoorMinC, unit), 1) : "—"}
+              </span>
+              <span className="ml-2 text-xs text-muted-foreground">{getTemperatureUnit(unit)}</span>
             </p>
           </motion.div>
           <motion.div

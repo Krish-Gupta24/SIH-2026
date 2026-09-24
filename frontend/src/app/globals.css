@@ -4286,5 +4286,20 @@ input[type="range"].cad-timeline-slider,
   animation: chatbot-aurora-pulse 3.5s ease-in-out infinite;
 }
 
+/* Universal number input spinner suppression to prevent number clipping */
+input[type="number"].no-spinner::-webkit-inner-spin-button,
+input[type="number"].no-spinner::-webkit-outer-spin-button,
+input.no-spinner::-webkit-inner-spin-button,
+input.no-spinner::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type="number"].no-spinner,
+input.no-spinner {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+
 
 

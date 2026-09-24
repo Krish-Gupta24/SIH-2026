@@ -26,6 +26,7 @@ import {
   TrendingDown,
 } from "lucide-react";
 import { SimulationJobItem } from "@/lib/store/use-shelter-store";
+import { useUnitSystem } from "@/lib/unit-system";
 import { TRACE_COLORS } from "./ConfigurationComparisonStrip";
 
 interface ThermalResultsSectionProps {
@@ -36,6 +37,18 @@ export function ThermalResultsSection({ jobs }: ThermalResultsSectionProps) {
   if (!jobs || jobs.length === 0) return null;
 
   const baseline = jobs[0];
+  const {
+    toTemp,
+    toPower,
+    toEnergy,
+    toEnergyDensity,
+    tempUnit,
+    powerUnit,
+    energyUnit,
+    energyDensityUnit,
+    formatUnitNumber,
+    isIP,
+  } = useUnitSystem();
 
   // Visibility toggle states
   const [showComfortBand, setShowComfortBand] = useState(true);
@@ -75,14 +88,14 @@ export function ThermalResultsSection({ jobs }: ThermalResultsSectionProps) {
     const point: Record<string, any> = {
       hour: i,
       timeLabel: timeFormatted,
-      outdoor: typeof outdoorVal === "number" ? Number(outdoorVal.toFixed(1)) : -18.0,
+      outdoor: typeof outdoorVal === "number" ? Number((isIP ? outdoorVal * 1.8 + 32 : outdoorVal).toFixed(1)) : (isIP ? -0.4 : -18.0),
     };
 
     jobs.forEach((job) => {
       const indoorVal =
         job.results?.hourly?.indoorTemp?.[i] ??
         job.results?.hourlyTimeseries?.[i]?.indoorTempC;
-      point[job.id] = typeof indoorVal === "number" ? Number(indoorVal.toFixed(1)) : undefined;
+      point[job.id] = typeof indoorVal === "number" ? Number((isIP ? indoorVal * 1.8 + 32 : indoorVal).toFixed(1)) : undefined;
     });
 
     return point;
@@ -96,24 +109,24 @@ export function ThermalResultsSection({ jobs }: ThermalResultsSectionProps) {
     {
       id: "indoorMin",
       label: "Minimum Nocturnal Temperature",
-      unit: "°C",
+      unit: tempUnit,
       higherIsBetter: true,
       description: "Coldest living zone temperature at pre-dawn (~05:00). Critical freeze survival threshold.",
-      getValue: (s: any) => s?.indoorMinC,
-      format: (v: number) => `${v.toFixed(1)}°C`,
+      getValue: (s: any) => typeof s?.indoorMinC === "number" ? toTemp(s.indoorMinC) : undefined,
+      format: (v: number) => `${formatUnitNumber(v, 1)} ${tempUnit}`,
     },
     {
       id: "indoorMean",
       label: "Average Indoor Temperature",
-      unit: "°C",
+      unit: tempUnit,
       higherIsBetter: true,
       description: "24-hour time-weighted mean living zone temperature.",
-      getValue: (s: any) => s?.indoorMeanC,
-      format: (v: number) => `${v.toFixed(1)}°C`,
+      getValue: (s: any) => typeof s?.indoorMeanC === "number" ? toTemp(s.indoorMeanC) : undefined,
+      format: (v: number) => `${formatUnitNumber(v, 1)} ${tempUnit}`,
     },
     {
       id: "comfortHours",
-      label: "Adaptive Comfort Hours (18–24°C)",
+      label: `Adaptive Comfort Hours (${Math.round(toTemp(18))}–${Math.round(toTemp(24))}${tempUnit})`,
       unit: "%",
       higherIsBetter: true,
       description: "Percentage of the diurnal cycle maintaining comfort without auxiliary combustion.",
@@ -123,29 +136,29 @@ export function ThermalResultsSection({ jobs }: ThermalResultsSectionProps) {
     {
       id: "heatingDemand",
       label: "Annual Space Heating Demand",
-      unit: "kWh/m²",
+      unit: energyDensityUnit,
       higherIsBetter: false,
-      description: "Estimated annual heating energy required to maintain 20°C setpoint.",
-      getValue: (s: any) => s?.heatingDemandKwhM2,
-      format: (v: number) => `${Math.round(v)} kWh/m²`,
+      description: "Estimated annual heating energy required to maintain setpoint.",
+      getValue: (s: any) => typeof s?.heatingDemandKwhM2 === "number" ? toEnergyDensity(s.heatingDemandKwhM2) : undefined,
+      format: (v: number) => `${formatUnitNumber(v, 1)} ${energyDensityUnit}`,
     },
     {
       id: "peakEnvelopeLoss",
       label: "Peak Conduction Loss Rate",
-      unit: "W",
+      unit: powerUnit,
       higherIsBetter: false,
       description: "Maximum instantaneous thermal transmission rate through the envelope during freezing wind.",
-      getValue: (s: any) => s?.peakEnvelopeLossW,
-      format: (v: number) => `${Math.round(v)} W`,
+      getValue: (s: any) => typeof s?.peakEnvelopeLossW === "number" ? toPower(s.peakEnvelopeLossW) : undefined,
+      format: (v: number) => `${formatUnitNumber(v, 0)} ${powerUnit}`,
     },
     {
       id: "solarGain",
       label: "Diurnal Passive Solar Harvest",
-      unit: "kWh",
+      unit: energyUnit,
       higherIsBetter: true,
       description: "Total clean solar thermal energy collected through south glazed apertures.",
-      getValue: (s: any) => s?.totalSolarGainKwh,
-      format: (v: number) => `${v.toFixed(1)} kWh`,
+      getValue: (s: any) => typeof s?.totalSolarGainKwh === "number" ? toEnergy(s.totalSolarGainKwh) : undefined,
+      format: (v: number) => `${formatUnitNumber(v, 1)} ${energyUnit}`,
     },
   ];
 
@@ -243,8 +256,8 @@ export function ThermalResultsSection({ jobs }: ThermalResultsSectionProps) {
                 {/* Shaded Comfort Band (18°C - 24°C) */}
                 {showComfortBand && (
                   <ReferenceArea
-                    y1={18}
-                    y2={24}
+                    y1={isIP ? 64.4 : 18}
+                    y2={isIP ? 75.2 : 24}
                     fill="#10b981"
                     fillOpacity={0.08}
                     stroke="#10b981"
@@ -255,12 +268,12 @@ export function ThermalResultsSection({ jobs }: ThermalResultsSectionProps) {
 
                 {/* 0°C Freezing Line Reference */}
                 <ReferenceLine
-                  y={0}
+                  y={isIP ? 32 : 0}
                   stroke="#ef4444"
                   strokeOpacity={0.35}
                   strokeDasharray="4 4"
                   label={{
-                    value: "0°C Freezing Threshold",
+                    value: isIP ? "32°F Freezing Threshold" : "0°C Freezing Threshold",
                     position: "insideTopLeft",
                     fill: "#ef4444",
                     fontSize: 9,
@@ -281,8 +294,8 @@ export function ThermalResultsSection({ jobs }: ThermalResultsSectionProps) {
                   strokeOpacity={0.4}
                   fontSize={10}
                   tickLine={false}
-                  unit="°C"
-                  domain={[-24, 28]}
+                  unit={` ${tempUnit}`}
+                  domain={isIP ? [-15, 85] : [-24, 28]}
                 />
 
                 <Tooltip
@@ -307,7 +320,7 @@ export function ThermalResultsSection({ jobs }: ThermalResultsSectionProps) {
                                 />
                                 <span className="truncate">{name}</span>
                               </span>
-                              <strong className="font-mono text-foreground">{entry.value}°C</strong>
+                              <strong className="font-mono text-foreground">{entry.value} {tempUnit}</strong>
                             </div>
                           );
                         })}
@@ -354,10 +367,10 @@ export function ThermalResultsSection({ jobs }: ThermalResultsSectionProps) {
 
           <div className="mt-3 pt-3 border-t border-border/50 flex flex-wrap items-center justify-between gap-2 text-[11px] text-muted-foreground">
             <span>
-              ✦ Green shaded area indicates ASHRAE 55 Adaptive Comfort Zone (18°C–24°C).
+              ✦ Green shaded area indicates ASHRAE 55 Adaptive Comfort Zone ({Math.round(toTemp(18))}–{Math.round(toTemp(24))}{tempUnit}).
             </span>
             <span>
-              Red dashed line marks 0°C water freezing boundary.
+              Red dashed line marks {isIP ? "32°F" : "0°C"} water freezing boundary.
             </span>
           </div>
         </div>

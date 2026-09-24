@@ -20,6 +20,21 @@ const STORAGE_KEY_LEGACY_KEY = "thermoshelter_gemini_key";
 const STORAGE_KEY_MESSAGES = "thermoshelter_chat_history";
 
 function createWelcomeGreeting(ctx?: ProjectContextTelemetry): string {
+  const hasProject = ctx?.hasActiveProject !== false && Boolean(ctx?.projectName);
+
+  if (!hasProject) {
+    const pageTitle = ctx?.pageContext?.pageTitle || "Platform Overview";
+    return `### 🎖️ Welcome to ThermoShelter AI Engineer
+I am your **Defense Habitat & Thermal Engineering Specialist** for **DRDO PS 26051** (High-Altitude Extreme Cold Regimes: Ladakh, Siachen, Dras).
+
+* **Operational Mode:** **Platform Intelligence & Building Science**
+* **Active View:** **${pageTitle}**
+* **Physics Engine:** Integrated with **ThermoShelter Core** & **ANSYS Validation**.
+* **Core Domains:** High-altitude thermophysics, passive solar sizing, Trombe wall dynamics, composite insulation R-values, and military Bukhari fuel displacement.
+
+No specific shelter is currently active. You can explore **climate data**, evaluate **materials**, browse the **[Shelter Catalog](/projects)**, or ask any thermal engineering questions below!`;
+  }
+
   const projName = ctx?.projectName || "Ladakh Passive Solar Outpost";
   const loc = ctx?.locationName || "Leh, Ladakh (3,500m ASL)";
   const area = ctx?.dimensions?.floorAreaM2 ?? 24;
@@ -45,23 +60,30 @@ export function useAIChat(projectContext?: ProjectContextTelemetry) {
 
   const projectContextRef = useRef<ProjectContextTelemetry | undefined>(projectContext);
   const prevProjectNameRef = useRef<string | undefined>(projectContext?.projectName);
+  const prevHasProjectRef = useRef<boolean | undefined>(projectContext?.hasActiveProject);
+  const prevPathnameRef = useRef<string | undefined>(projectContext?.pageContext?.pathname);
 
   // Keep ref continuously in sync with incoming store telemetry
   useEffect(() => {
     projectContextRef.current = projectContext;
   }, [projectContext]);
 
-  // Real-time synchronization whenever active project or dimensions change in the workspace
+  // Real-time synchronization whenever page, active project, or dimensions change in the workspace
   useEffect(() => {
-    if (!projectContext?.projectName) return;
+    const hasActiveProj = projectContext?.hasActiveProject !== false && Boolean(projectContext?.projectName);
+    const currPath = projectContext?.pageContext?.pathname;
+    const currProj = projectContext?.projectName;
+    const prevProj = prevProjectNameRef.current;
+    const prevHasProj = prevHasProjectRef.current;
+    const prevPath = prevPathnameRef.current;
 
-    if (prevProjectNameRef.current && prevProjectNameRef.current !== projectContext.projectName) {
-      const newProjName = projectContext.projectName;
-      const newLoc = projectContext.locationName || "Leh, Ladakh";
-      const newArea = projectContext.dimensions?.floorAreaM2 ?? 24;
+    const pathChanged = prevPath !== undefined && prevPath !== currPath;
+    const projChanged = prevProj !== undefined && prevProj !== currProj;
+    const projectStateChanged = prevHasProj !== undefined && prevHasProj !== hasActiveProj;
 
+    if (pathChanged || projChanged || projectStateChanged) {
       setMessages((prev) => {
-        // If only the initial welcome message exists, update it to the new project immediately
+        // If only the welcome message exists, reactively morph it into the new page/project context
         if (prev.length <= 1 && (prev.length === 0 || prev[0].id === "welcome-msg")) {
           return [
             {
@@ -75,27 +97,37 @@ export function useAIChat(projectContext?: ProjectContextTelemetry) {
           ];
         }
 
-        // If an ongoing chat exists, append a clean real-time context notification
-        return [
-          ...prev,
-          {
-            id: `context-sync-${Date.now()}`,
-            role: "assistant",
-            content: `🔄 **Active Habitat Switched:** Now analyzing **${newProjName}** (${newLoc}, ${newArea}m²). All engineering calculations, envelope audits, and diagnostic queries now evaluate this model.`,
-            timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-            engine: "thermoshelter-core",
-            isLiveLLM: false,
-          },
-        ];
+        // If an ongoing chat exists and user just switched/opened a project:
+        if (hasActiveProj && currProj && (projChanged || (projectStateChanged && !prevHasProj))) {
+          const newLoc = projectContext?.locationName || "Leh, Ladakh";
+          const newArea = projectContext?.dimensions?.floorAreaM2 ?? 24;
+          return [
+            ...prev,
+            {
+              id: `context-sync-${Date.now()}`,
+              role: "assistant",
+              content: `🔄 **Active Habitat Connected:** Now analyzing **${currProj}** (${newLoc}, ${newArea}m²). All engineering calculations and diagnostic queries now evaluate this model.`,
+              timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+              engine: "thermoshelter-core",
+              isLiveLLM: false,
+            },
+          ];
+        }
+
+        return prev;
       });
     }
 
-    prevProjectNameRef.current = projectContext.projectName;
+    prevProjectNameRef.current = projectContext?.projectName;
+    prevHasProjectRef.current = projectContext?.hasActiveProject;
+    prevPathnameRef.current = projectContext?.pageContext?.pathname;
   }, [
+    projectContext?.hasActiveProject,
     projectContext?.projectName,
     projectContext?.locationName,
     projectContext?.elevationM,
     projectContext?.dimensions?.floorAreaM2,
+    projectContext?.pageContext?.pathname,
   ]);
 
   // Initialize from localStorage on mount
@@ -261,12 +293,10 @@ export function useAIChat(projectContext?: ProjectContextTelemetry) {
 
   // Clear chat
   const clearChat = useCallback(() => {
-    const projName = projectContext?.projectName || "Ladakh Passive Solar Outpost";
     const initialGreeting: ChatMessageItem = {
       id: "welcome-msg",
       role: "assistant",
-      content: `### 🎖️ ThermoShelter Engineering Chat Cleared
-Workspace reset. Ask any question regarding **${projName}**, thermal calculations, or material selections.`,
+      content: createWelcomeGreeting(projectContext),
       timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
       engine: "thermoshelter-core",
       isLiveLLM: false,

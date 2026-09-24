@@ -19,6 +19,7 @@ import {
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ShelterModel } from "@/types/shelter";
+import { useUnitSystem } from "@/lib/unit-system";
 
 export interface AnnualComfortCalendarProps {
   hourlyTimeseries?: any[];
@@ -81,6 +82,18 @@ export function AnnualComfortCalendar({
 }: AnnualComfortCalendarProps) {
   const [showValues, setShowValues] = useState<boolean>(false);
   const [selectedCell, setSelectedCell] = useState<DiurnalCellData | null>(null);
+  const {
+    toTemp,
+    toDeltaTemp,
+    tempUnit,
+    deltaTempUnit,
+    formatUValue,
+    formatTempVal,
+    formatDeltaTempVal,
+    toFlux,
+    fluxUnit,
+    formatUnitNumber,
+  } = useUnitSystem();
 
   // ---------------------------------------------------------------------------
   // 1. Real Simulation Hourly Aggregation (No Hardcoding)
@@ -325,7 +338,7 @@ export function AnnualComfortCalendar({
     });
 
     const annualComfortPct = Math.round((comfortCells / (totalCells || 1)) * 100);
-    const meanIndoor = (sumIn / (totalCells || 1)).toFixed(1);
+    const meanIndoor = sumIn / (totalCells || 1);
 
     return {
       annualComfortPct,
@@ -387,7 +400,7 @@ export function AnnualComfortCalendar({
               }`}
             >
               {showValues ? <Eye className="size-3.5" /> : <EyeOff className="size-3.5" />}
-              <span>{showValues ? "Hide Numbers" : "Show Values (°C)"}</span>
+              <span>{showValues ? "Hide Numbers" : `Show Values (${tempUnit})`}</span>
             </button>
           </div>
         </div>
@@ -402,10 +415,10 @@ export function AnnualComfortCalendar({
           </div>
           <div className="flex flex-wrap items-center gap-2 text-[11px] font-mono text-[#536772] shrink-0">
             <span className="px-2.5 py-1 rounded-full bg-white border border-border font-semibold text-foreground">
-              Model U: {computedAverageUFactor || 0.22} W/m²·K
+              Model U: {formatUValue(computedAverageUFactor || 0.22)}
             </span>
             <span className="px-2.5 py-1 rounded-full bg-white border border-border font-semibold text-emerald-700">
-              Sim &Delta;T: +{observedAverageDeltaT}°C
+              Sim &Delta;T: +{formatDeltaTempVal(observedAverageDeltaT)}{deltaTempUnit}
             </span>
             <span className="px-2.5 py-1 rounded-full bg-white border border-border font-semibold text-foreground">
               Simulated: {simulatedHoursCount} hrs parsed
@@ -427,17 +440,17 @@ export function AnnualComfortCalendar({
           <div className="flex min-h-32 flex-col justify-between rounded-2xl border border-border bg-card p-5 shadow-sm hover:border-[#6E818F] transition-colors">
             <span className="micro-label">Mean Indoor Temp</span>
             <p>
-              <span className="text-3xl sm:text-4xl font-medium font-mono text-foreground">{stats.meanIndoor}</span>
-              <span className="ml-2 text-xs text-muted-foreground">°C</span>
+              <span className="text-3xl sm:text-4xl font-medium font-mono text-foreground">{formatTempVal(stats.meanIndoor)}</span>
+              <span className="ml-2 text-xs text-muted-foreground">{tempUnit}</span>
             </p>
-            <span className="text-[11px] font-semibold text-[#536772]">Band: {comfortMinC}°C – {comfortMaxC}°C</span>
+            <span className="text-[11px] font-semibold text-[#536772]">Band: {formatTempVal(comfortMinC)}{tempUnit} – {formatTempVal(comfortMaxC)}{tempUnit}</span>
           </div>
 
           <div className="flex min-h-32 flex-col justify-between rounded-2xl border border-border bg-card p-5 shadow-sm hover:border-[#6E818F] transition-colors">
             <span className="micro-label">Passive Lift (&Delta;T)</span>
             <p>
-              <span className="text-3xl sm:text-4xl font-medium font-mono text-emerald-700">+{observedAverageDeltaT}</span>
-              <span className="ml-2 text-xs text-muted-foreground">°C</span>
+              <span className="text-3xl sm:text-4xl font-medium font-mono text-emerald-700">+{formatDeltaTempVal(observedAverageDeltaT)}</span>
+              <span className="ml-2 text-xs text-muted-foreground">{deltaTempUnit}</span>
             </p>
             <span className="text-[11px] font-semibold text-[#536772]">Envelope & Trombe Mass</span>
           </div>
@@ -498,7 +511,7 @@ export function AnnualComfortCalendar({
                         key={`${hourIdx}-${monthIdx}`}
                         type="button"
                         onClick={() => setSelectedCell(cell)}
-                        title={`${cell.monthName} ${cell.hourFormatted}: Indoor ${cell.indoorTempC}°C | Outdoor ${cell.outdoorTempC}°C | Status: ${cell.statusText} ${cell.isSimulated ? "(Real Simulation)" : ""}`}
+                        title={`${cell.monthName} ${cell.hourFormatted}: Indoor ${formatTempVal(cell.indoorTempC)}${tempUnit} | Outdoor ${formatTempVal(cell.outdoorTempC)}${tempUnit} | Status: ${cell.statusText} ${cell.isSimulated ? "(Real Simulation)" : ""}`}
                         className={`h-5 sm:h-5.5 rounded-[4px] transition-all duration-150 cursor-pointer relative flex items-center justify-center text-[9px] font-mono select-none ${colorClass} ${
                           isSelected
                             ? "ring-2 ring-black/70 ring-offset-2 ring-offset-white scale-105 z-20 shadow-md"
@@ -507,7 +520,7 @@ export function AnnualComfortCalendar({
                       >
                         {showValues && (
                           <span className="opacity-90 font-semibold text-[8.5px]">
-                            {Math.round(cell.indoorTempC)}°
+                            {Math.round(toTemp(cell.indoorTempC))}°
                           </span>
                         )}
                       </button>
@@ -525,23 +538,23 @@ export function AnnualComfortCalendar({
               <div className="flex flex-wrap items-center gap-3">
                 <div className="flex items-center gap-1.5">
                   <div className="w-5 h-3.5 rounded-[3px] bg-[#ee7388]" />
-                  <span className="text-[10px] text-foreground font-medium">Cold (&lt;14°C)</span>
+                  <span className="text-[10px] text-foreground font-medium">Cold (&lt;{Math.round(toTemp(14))}{tempUnit})</span>
                 </div>
                 <div className="flex items-center gap-1.5">
                   <div className="w-5 h-3.5 rounded-[3px] bg-[#f5b27a]" />
-                  <span className="text-[10px] text-foreground font-medium">Cool (14–17°C)</span>
+                  <span className="text-[10px] text-foreground font-medium">Cool ({Math.round(toTemp(14))}–{Math.round(toTemp(17))}{tempUnit})</span>
                 </div>
                 <div className="flex items-center gap-1.5">
                   <div className="w-5 h-3.5 rounded-[3px] bg-[#b5c1ce]" />
-                  <span className="text-[10px] text-foreground font-medium">Neutral (17–19°C)</span>
+                  <span className="text-[10px] text-foreground font-medium">Neutral ({Math.round(toTemp(17))}–{Math.round(toTemp(19))}{tempUnit})</span>
                 </div>
                 <div className="flex items-center gap-1.5">
                   <div className="w-5 h-3.5 rounded-[3px] bg-[#33bd7a]" />
-                  <span className="text-[10px] text-emerald-800 font-semibold">Comfort (19–23°C)</span>
+                  <span className="text-[10px] text-emerald-800 font-semibold">Comfort ({Math.round(toTemp(19))}–{Math.round(toTemp(23))}{tempUnit})</span>
                 </div>
                 <div className="flex items-center gap-1.5">
                   <div className="w-5 h-3.5 rounded-[3px] bg-[#90e4d5]" />
-                  <span className="text-[10px] text-teal-800 font-semibold">Peak (23–26°C)</span>
+                  <span className="text-[10px] text-teal-800 font-semibold">Peak ({Math.round(toTemp(23))}–{Math.round(toTemp(26))}{tempUnit})</span>
                 </div>
               </div>
             </div>
@@ -610,15 +623,15 @@ export function AnnualComfortCalendar({
             <div className="flex flex-col gap-1 rounded-2xl border border-border bg-secondary/30 p-4">
               <span className="micro-label">Indoor Operative Temp</span>
               <p className="text-2xl font-mono font-medium text-foreground">
-                {selectedCell.indoorTempC}°C
+                {formatTempVal(selectedCell.indoorTempC)}{tempUnit}
               </p>
-              <span className="text-[10px] text-muted-foreground">Target: {comfortMinC}°C – {comfortMaxC}°C</span>
+              <span className="text-[10px] text-muted-foreground">Target: {formatTempVal(comfortMinC)}{tempUnit} – {formatTempVal(comfortMaxC)}{tempUnit}</span>
             </div>
 
             <div className="flex flex-col gap-1 rounded-2xl border border-border bg-secondary/30 p-4">
               <span className="micro-label">Outdoor Ambient</span>
               <p className="text-2xl font-mono font-medium text-foreground">
-                {selectedCell.outdoorTempC}°C
+                {formatTempVal(selectedCell.outdoorTempC)}{tempUnit}
               </p>
               <span className="text-[10px] text-muted-foreground">Alpine site at 3,500m ASL</span>
             </div>
@@ -626,7 +639,7 @@ export function AnnualComfortCalendar({
             <div className="flex flex-col gap-1 rounded-2xl border border-border bg-secondary/30 p-4">
               <span className="micro-label">Passive Buffer (&Delta;T)</span>
               <p className="text-2xl font-mono font-medium text-emerald-700">
-                +{selectedCell.deltaTC}°C
+                +{formatDeltaTempVal(selectedCell.deltaTC)}{deltaTempUnit}
               </p>
               <span className="text-[10px] text-muted-foreground">Mass & insulation resistance</span>
             </div>
@@ -634,7 +647,7 @@ export function AnnualComfortCalendar({
             <div className="flex flex-col gap-1 rounded-2xl border border-border bg-secondary/30 p-4">
               <span className="micro-label">Solar Flux Irradiance</span>
               <p className="text-2xl font-mono font-medium text-amber-700">
-                {selectedCell.solarWm2} <span className="text-xs text-muted-foreground">W/m²</span>
+                {formatUnitNumber(toFlux(selectedCell.solarWm2), 0)} <span className="text-xs text-muted-foreground">{fluxUnit}</span>
               </p>
               <span className="text-[10px] text-muted-foreground">
                 {selectedCell.solarWm2 > 0 ? "Direct beam solar aperture" : "Nocturnal radiative cycle"}

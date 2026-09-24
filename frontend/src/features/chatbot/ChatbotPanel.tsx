@@ -21,10 +21,11 @@ import {
   ShieldCheck,
   Key,
 } from "lucide-react";
+import { usePathname } from "next/navigation";
 import { useShelterStore } from "@/lib/store/use-shelter-store";
 import { useAIChat, ChatMessageItem } from "./use-ai-chat";
 import { QUICK_SUGGESTIONS } from "./chatbot-knowledge";
-import { ProjectContextTelemetry } from "./thermal-ai-engine";
+import { ProjectContextTelemetry, PageContextInfo } from "./thermal-ai-engine";
 
 // Animated AI Video Avatar from frontend/public/aichatbot.mp4
 export function ChatbotVideoLogo({
@@ -233,6 +234,221 @@ function formatInline(text: string): React.ReactNode {
   });
 }
 
+export interface PageConfig {
+  title: string;
+  subtitle: string;
+  isProjectPage: boolean;
+  suggestedQueries: string[];
+}
+
+export function getPageConfig(
+  pathname: string,
+  projectName?: string,
+  elevationM: number = 3500
+): PageConfig {
+  const normalized = pathname.toLowerCase().replace(/\/$/, "") || "/";
+  const name = projectName || "Active Habitat";
+
+  if (normalized === "") {
+    return {
+      title: "Platform Overview",
+      subtitle: "Platform Mode · Habitat Engineering",
+      isProjectPage: false,
+      suggestedQueries: [
+        "What is ThermoShelter and DRDO PS 26051 compliance?",
+        "How does passive solar heating work in Ladakh & Siachen?",
+        "Compare Rammed Earth vs Aerogel vs PIR insulation",
+        "How do I start a shelter thermal simulation?",
+      ],
+    };
+  }
+
+  if (normalized.startsWith("/projects")) {
+    return {
+      title: "Shelter Catalog",
+      subtitle: "Fleet Management · Tactical Shelters",
+      isProjectPage: false,
+      suggestedQueries: [
+        "What standard military shelter templates are available?",
+        "How do I clone or create a new Siachen habitat?",
+        "Compare Ladakh Passive Solar Outpost vs Baseline Tin Shed",
+        "What are the sizing guidelines for extreme altitude shelters?",
+      ],
+    };
+  }
+
+  if (normalized.startsWith("/weather")) {
+    return {
+      title: "Climate Intelligence",
+      subtitle: "Meteorological & Solar Radiation Data",
+      isProjectPage: false,
+      suggestedQueries: [
+        "What are the design winter temperatures for Leh & Siachen?",
+        "How does solar irradiance at 3,500m ASL compare to sea level?",
+        "Explain Heating Degree Days (HDD) for extreme cold regimes",
+        "How does sub-zero air density affect infiltration heat loss?",
+      ],
+    };
+  }
+
+  if (normalized.startsWith("/materials")) {
+    return {
+      title: "Materials Library",
+      subtitle: "Thermophysical & Insulation Database",
+      isProjectPage: false,
+      suggestedQueries: [
+        "Which insulation material has the lowest conductivity for extreme cold?",
+        "Compare Silica Aerogel vs PUF/PIR vs XPS boards",
+        "What is the optimal thermal mass thickness for 8-10h lag?",
+        "Calculate U-value for 150mm EPS + 200mm Rammed Earth",
+      ],
+    };
+  }
+
+  if (normalized.startsWith("/settings")) {
+    return {
+      title: "Platform Settings",
+      subtitle: "Solver & Preference Configuration",
+      isProjectPage: false,
+      suggestedQueries: [
+        "How do I configure Groq Llama 3.3 70B reasoning?",
+        "Explain ASHRAE 55 Adaptive Comfort vs PMV Model",
+        "How does the finite-difference solver calculate nocturnal heat loss?",
+        "Switch between SI Metric and IP Imperial units",
+      ],
+    };
+  }
+
+  if (
+    normalized.startsWith("/designer/3d") ||
+    normalized.startsWith("/designer") ||
+    normalized.startsWith("/ai-designer")
+  ) {
+    return {
+      title: "3D Architecture & Envelope",
+      subtitle: `${name} · ${elevationM}m ASL`,
+      isProjectPage: true,
+      suggestedQueries: [
+        `What are the dimensions and solar orientation of ${name}?`,
+        `Audit south-facing glazing area and Trombe wall placement`,
+        `Check wall and roof layer thermal resistances (R-values)`,
+        `How to optimize envelope for extreme sub-zero winds?`,
+      ],
+    };
+  }
+
+  if (normalized.startsWith("/simulations")) {
+    return {
+      title: "Simulation Engine",
+      subtitle: `${name} · ${elevationM}m ASL`,
+      isProjectPage: true,
+      suggestedQueries: [
+        `Diagnose the 24h indoor temperature profile for ${name}`,
+        `What is the peak heating load during -25°C design night?`,
+        `How does solar heat gain perform across the diurnal cycle?`,
+        `How to increase thermal comfort above 90% without active fuel?`,
+      ],
+    };
+  }
+
+  if (normalized.startsWith("/results")) {
+    return {
+      title: "Thermal Results & Analytics",
+      subtitle: `${name} · ${elevationM}m ASL`,
+      isProjectPage: true,
+      suggestedQueries: [
+        `Summarize simulation findings for ${name}`,
+        `Explain solar heat gain vs envelope transmission losses`,
+        `What is the operative temperature band compliance?`,
+        `Evaluate nocturnal heat retention with Trombe wall mass`,
+      ],
+    };
+  }
+
+  if (normalized.startsWith("/fuel-costs")) {
+    return {
+      title: "Bukhari Fuel & Economics",
+      subtitle: `${name} · ${elevationM}m ASL`,
+      isProjectPage: true,
+      suggestedQueries: [
+        `How many liters of Bukhari kerosene does ${name} save?`,
+        `Calculate 10-year lifecycle savings vs standard tin shed`,
+        `What is the logistics cost savings of reduced airlifts?`,
+        `What is the carbon emission reduction for this habitat?`,
+      ],
+    };
+  }
+
+  if (normalized.startsWith("/comparison")) {
+    return {
+      title: "Multi-Model Benchmarking",
+      subtitle: `${name} · ${elevationM}m ASL`,
+      isProjectPage: true,
+      suggestedQueries: [
+        `Compare ${name} against the baseline tin shed`,
+        `Which variant achieves higher comfort hours in peak winter?`,
+        `What is the delta in heating demand between models?`,
+        `Recommendation for DRDO deployment prioritization`,
+      ],
+    };
+  }
+
+  if (normalized.startsWith("/optimization")) {
+    return {
+      title: "AI Design Optimization",
+      subtitle: `${name} · ${elevationM}m ASL`,
+      isProjectPage: true,
+      suggestedQueries: [
+        `Run multi-objective optimization analysis for ${name}`,
+        `What is the optimal insulation thickness vs weight trade-off?`,
+        `Evaluate window-to-wall ratio (WWR) optimization`,
+        `Recommend optimal Trombe wall thickness for 10-hour lag`,
+      ],
+    };
+  }
+
+  if (normalized.startsWith("/reports")) {
+    return {
+      title: "Compliance & Reports",
+      subtitle: `${name} · ${elevationM}m ASL`,
+      isProjectPage: true,
+      suggestedQueries: [
+        `Generate an executive summary for DRDO PS 26051 compliance`,
+        `Audit envelope U-values against NBC 2016 and ECBC guidelines`,
+        `What key metrics should be highlighted to Military Engineer Services (MES)?`,
+        `Export verification checklist for cold-climate deployment`,
+      ],
+    };
+  }
+
+  if (normalized.startsWith("/dashboard")) {
+    return {
+      title: "Habitat Overview",
+      subtitle: `${name} · ${elevationM}m ASL`,
+      isProjectPage: true,
+      suggestedQueries: [
+        `Provide a complete thermal summary for ${name}`,
+        `What is the annual heating demand and comfort compliance?`,
+        `How much Bukhari kerosene does this shelter displace?`,
+        `What are the top thermal vulnerabilities in this design?`,
+      ],
+    };
+  }
+
+  // Fallback for home or other unmapped pages
+  return {
+    title: "Platform Overview",
+    subtitle: "Platform Mode · Habitat Engineering",
+    isProjectPage: false,
+    suggestedQueries: [
+      "What is ThermoShelter and DRDO PS 26051 compliance?",
+      "How does passive solar heating work in Ladakh & Siachen?",
+      "Compare Rammed Earth vs Aerogel vs PIR insulation",
+      "How do I start a shelter thermal simulation?",
+    ],
+  };
+}
+
 export function ChatbotPanel() {
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const [isExpanded, setIsExpanded] = useState<boolean>(false);
@@ -245,14 +461,45 @@ export function ChatbotPanel() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
+  const pathname = usePathname() || "/";
   const { projects, activeProjectId, simulations, materials } = useShelterStore();
-  const activeProject = projects.find((p) => p.id === activeProjectId) || projects[0];
+
+  const rawActiveProject = projects.find((p) => p.id === activeProjectId) || projects[0];
+  const pageConfig = useMemo(
+    () =>
+      getPageConfig(
+        pathname,
+        rawActiveProject?.project?.name || rawActiveProject?.name,
+        rawActiveProject?.location?.elevation ?? 3500
+      ),
+    [pathname, rawActiveProject]
+  );
+
+  // If we are on Home page ("/") or non-project catalog/reference pages, no active project is open!
+  const hasActiveProject = pageConfig.isProjectPage && Boolean(rawActiveProject);
+  const activeProject = hasActiveProject ? rawActiveProject : null;
 
   const latestSim = simulations.find(
     (s) => s.projectId === activeProject?.id && s.status === "completed" && s.results
   );
 
   const projectTelemetry: ProjectContextTelemetry = useMemo(() => {
+    const pageContext: PageContextInfo = {
+      pathname,
+      pageTitle: pageConfig.title,
+      pageDescription: pageConfig.subtitle,
+      hasActiveProject,
+    };
+
+    if (!hasActiveProject || !activeProject) {
+      return {
+        hasActiveProject: false,
+        pageContext,
+        projectName: undefined,
+        locationName: undefined,
+      };
+    }
+
     const geom = activeProject?.geometry;
     const length = geom?.length ?? 6;
     const width = geom?.width ?? 4;
@@ -288,7 +535,9 @@ export function ChatbotPanel() {
       : "Triple Low-E Argon";
 
     return {
-      projectName: activeProject?.project?.name || "Ladakh Passive Solar Outpost",
+      hasActiveProject: true,
+      pageContext,
+      projectName: activeProject?.project?.name || activeProject?.name || "Ladakh Passive Solar Outpost",
       locationName: activeProject?.location?.region || "Leh, Ladakh, India",
       elevationM: activeProject?.location?.elevation ?? 3500,
       winterMinC: activeProject?.location?.designTempWinter ?? -20,
@@ -325,7 +574,7 @@ export function ChatbotPanel() {
         }
         : undefined,
     };
-  }, [activeProject, latestSim, materials]);
+  }, [hasActiveProject, activeProject, latestSim, materials, pathname, pageConfig]);
 
   const {
     messages,
@@ -434,16 +683,16 @@ export function ChatbotPanel() {
       {/* Floating Action Button (FAB) - Anchored strictly to bottom-right with Animated Aurora & "Ask AI" Label */}
       {!isOpen && (
         <div
-          style={{ position: "fixed", right: "24px", bottom: "24px", left: "auto", top: "auto", zIndex: 9999 }}
-          className="flex items-center gap-2.5 select-none pointer-events-auto"
+          style={{ position: "fixed", right: "20px", bottom: "20px", left: "auto", top: "auto", zIndex: 9999 }}
+          className="flex items-center gap-2 select-none pointer-events-auto"
         >
           {/* Desktop "Ask AI" floating pill */}
           <button
             type="button"
             onClick={() => setIsOpen(true)}
-            className="hidden sm:inline-flex items-center gap-2 px-3.5 py-2 rounded-full bg-card/95 backdrop-blur-md border border-border shadow-md text-xs font-semibold text-foreground hover:bg-secondary transition-all cursor-pointer group hover:border-sky-400/40"
+            className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-card/95 backdrop-blur-md border border-border shadow-md text-xs font-semibold text-foreground hover:bg-secondary transition-all cursor-pointer group hover:border-sky-400/40"
           >
-            <Sparkles className="size-3.5 text-amber-500 animate-pulse" />
+            <Sparkles className="size-3 text-amber-500 animate-pulse" />
             <span>Ask AI</span>
           </button>
 
@@ -451,14 +700,14 @@ export function ChatbotPanel() {
           <button
             type="button"
             onClick={() => setIsOpen(true)}
-            className="relative group size-22 sm:size-24 rounded-full flex items-center justify-center cursor-pointer transition-transform duration-300 hover:scale-105 active:scale-95 shrink-0"
+            className="relative group size-14 sm:size-16 rounded-full flex items-center justify-center cursor-pointer transition-transform duration-300 hover:scale-105 active:scale-95 shrink-0 shadow-lg"
             title="Open ThermoShelter AI Engineer"
             aria-label="Open ThermoShelter AI Engineer"
           >
             {/* Animated Aurora Bloom (Breathes gently behind the orb) */}
             <div
               aria-hidden="true"
-              className="absolute -inset-2.5 rounded-full chatbot-aurora-bloom pointer-events-none"
+              className="absolute -inset-1.5 rounded-full chatbot-aurora-bloom pointer-events-none"
             />
 
             {/* Animated Aurora Conic Ring (Rotates smoothly) */}
@@ -468,7 +717,7 @@ export function ChatbotPanel() {
             />
 
             {/* Inner Video Container (Round avatar - Edge-to-Edge, completely borderless and seamless) */}
-            <div className="relative size-full rounded-full overflow-hidden shadow-xl">
+            <div className="relative size-full rounded-full overflow-hidden shadow-md">
               <video
                 src="/aichatbot.mp4"
                 autoPlay
@@ -481,9 +730,9 @@ export function ChatbotPanel() {
             </div>
 
             {/* Mobile "Ask AI" Badge */}
-            <span className="sm:hidden absolute -top-1.5 -left-1 px-2 py-0.5 rounded-full bg-card/95 text-foreground text-[9.5px] font-bold shadow-md border border-border flex items-center gap-1 z-10 backdrop-blur-xs">
+            <span className="sm:hidden absolute -top-1 -left-1 px-1.5 py-0.5 rounded-full bg-card/95 text-foreground text-[9px] font-bold shadow-md border border-border flex items-center gap-0.5 z-10 backdrop-blur-xs">
               <Sparkles className="size-2.5 text-amber-500" />
-              Ask AI
+              AI
             </span>
           </button>
         </div>
@@ -492,16 +741,16 @@ export function ChatbotPanel() {
       {/* Main Chatbot Floating Window - Minimized, clean & anchored to bottom-right */}
       {isOpen && (
         <div
-          style={{ position: "fixed", right: "24px", bottom: "24px", left: "auto", top: "auto", zIndex: 9999 }}
+          style={{ position: "fixed", right: "20px", bottom: "20px", left: "auto", top: "auto", zIndex: 9999 }}
           className={`fixed z-[9999] flex flex-col rounded-3xl bg-card border border-border shadow-2xl overflow-hidden transition-all duration-300 ease-out text-foreground ${isExpanded
-            ? "w-[94vw] sm:w-[560px] h-[640px] max-h-[86vh]"
-            : "w-[92vw] sm:w-[390px] h-[520px] max-h-[78vh]"
+            ? "w-[94vw] sm:w-[500px] h-[580px] max-h-[82vh]"
+            : "w-[90vw] sm:w-[350px] h-[480px] max-h-[75vh]"
             }`}
         >
           {/* Header - Clean Light Project Theme (No green dot) */}
-          <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-card text-foreground">
-            <div className="flex items-center gap-3 min-w-0">
-              <div className="relative size-10 sm:size-11 rounded-full overflow-hidden shrink-0 shadow-sm ring-1.5 ring-sky-400/30">
+          <div className="flex items-center justify-between px-3.5 py-2.5 border-b border-border bg-card text-foreground">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="relative size-8 sm:size-9 rounded-full overflow-hidden shrink-0 shadow-sm ring-1.5 ring-sky-400/30">
                 <video
                   src="/aichatbot.mp4"
                   autoPlay
@@ -518,12 +767,14 @@ export function ChatbotPanel() {
                   <h3 className="text-xs sm:text-sm font-bold text-foreground tracking-tight truncate">
                     ThermoShelter AI
                   </h3>
-                  <span className="text-[9px] px-1.5 py-0.5 rounded-full font-mono font-medium shrink-0 bg-secondary text-muted-foreground border border-border/80">
+                  <span className="text-[8.5px] px-1.5 py-0.2 rounded-full font-mono font-medium shrink-0 bg-secondary text-muted-foreground border border-border/80">
                     DRDO PS 26051
                   </span>
                 </div>
-                <p className="text-[10px] text-muted-foreground truncate">
-                  {projectTelemetry.projectName} · {projectTelemetry.elevationM}m ASL
+                <p className="text-[9.5px] text-muted-foreground truncate">
+                  {hasActiveProject && projectTelemetry.projectName
+                    ? `${projectTelemetry.projectName} · ${projectTelemetry.elevationM}m ASL`
+                    : pageConfig.subtitle}
                 </p>
               </div>
             </div>
@@ -569,34 +820,36 @@ export function ChatbotPanel() {
             </div>
           </div>
 
-          {/* Real-time Project Telemetry Strip */}
-          <div className="px-3.5 py-1.5 bg-slate-900 text-white text-[10.5px] border-b border-border/40 flex items-center justify-between gap-2 shadow-xs shrink-0 select-none">
-            <div className="flex items-center gap-1.5 min-w-0">
-              <span className="relative flex h-2 w-2 shrink-0">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-sky-400 opacity-75" />
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-sky-500" />
-              </span>
-              <span className="text-[9.5px] font-mono uppercase tracking-wider text-sky-400 font-bold shrink-0">
-                Live:
-              </span>
-              <span className="font-semibold text-slate-100 truncate" title={projectTelemetry.projectName}>
-                {projectTelemetry.projectName}
-              </span>
-            </div>
-            <div className="flex items-center gap-1 text-[10px] font-mono text-slate-300 shrink-0">
-              <span className="hidden sm:inline">{(projectTelemetry.locationName || "").split(",")[0] || "Leh"} · </span>
-              <span>{(projectTelemetry.dimensions?.length ?? 6)}×{(projectTelemetry.dimensions?.width ?? 4)}m</span>
-              {projectTelemetry.simulationResults?.comfortHoursPct !== undefined ? (
-                <span className="text-emerald-400 font-bold bg-emerald-500/15 px-1.5 py-0.5 rounded border border-emerald-500/30 text-[9.5px]">
-                  {projectTelemetry.simulationResults.comfortHoursPct}% Comfort
+          {/* Real-time Project Telemetry Strip - Only rendered when an active project is open on a workspace page */}
+          {hasActiveProject && projectTelemetry.projectName && (
+            <div className="px-3.5 py-1.5 bg-slate-900 text-white text-[10.5px] border-b border-border/40 flex items-center justify-between gap-2 shadow-xs shrink-0 select-none">
+              <div className="flex items-center gap-1.5 min-w-0">
+                <span className="relative flex h-2 w-2 shrink-0">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-sky-400 opacity-75" />
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-sky-500" />
                 </span>
-              ) : (
-                <span className="text-sky-400 bg-sky-500/10 px-1.5 py-0.5 rounded border border-sky-500/20 text-[9.5px]">
-                  {(projectTelemetry.dimensions?.floorAreaM2 ?? 24)}m²
+                <span className="text-[9.5px] font-mono uppercase tracking-wider text-sky-400 font-bold shrink-0">
+                  Live:
                 </span>
-              )}
+                <span className="font-semibold text-slate-100 truncate" title={projectTelemetry.projectName}>
+                  {projectTelemetry.projectName}
+                </span>
+              </div>
+              <div className="flex items-center gap-1 text-[10px] font-mono text-slate-300 shrink-0">
+                <span className="hidden sm:inline">{(projectTelemetry.locationName || "").split(",")[0] || "Leh"} · </span>
+                <span>{(projectTelemetry.dimensions?.length ?? 6)}×{(projectTelemetry.dimensions?.width ?? 4)}m</span>
+                {projectTelemetry.simulationResults?.comfortHoursPct !== undefined ? (
+                  <span className="text-emerald-400 font-bold bg-emerald-500/15 px-1.5 py-0.5 rounded border border-emerald-500/30 text-[9.5px]">
+                    {projectTelemetry.simulationResults.comfortHoursPct}% Comfort
+                  </span>
+                ) : (
+                  <span className="text-sky-400 bg-sky-500/10 px-1.5 py-0.5 rounded border border-sky-500/20 text-[9.5px]">
+                    {(projectTelemetry.dimensions?.floorAreaM2 ?? 24)}m²
+                  </span>
+                )}
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Collapsible Settings Drawer */}
           {showSettings && (
@@ -638,15 +891,12 @@ export function ChatbotPanel() {
             {messages.length <= 1 && (
               <div className="pt-1 pb-1 space-y-2">
                 <p className="text-[11px] font-semibold text-muted-foreground px-1">
-                  Suggested inquiries for {projectTelemetry.projectName}:
+                  {hasActiveProject && projectTelemetry.projectName
+                    ? `Suggested inquiries for ${projectTelemetry.projectName}:`
+                    : `Suggested topics for ${pageConfig.title}:`}
                 </p>
                 <div className="flex flex-col gap-1.5">
-                  {[
-                    `What is my project name and shelter specs?`,
-                    `Analyze ${projectTelemetry.projectName} thermal performance`,
-                    `Audit wall & roof insulation layers for ${projectTelemetry.elevationM}m ASL`,
-                    `How much Bukhari kerosene does this design displace?`,
-                  ].map((item, idx) => (
+                  {pageConfig.suggestedQueries.map((item, idx) => (
                     <button
                       key={idx}
                       type="button"
@@ -670,7 +920,7 @@ export function ChatbotPanel() {
                 >
                   <div className="flex items-start gap-2 max-w-[90%]">
                     {!isUser && (
-                      <div className="size-7 sm:size-8 rounded-full overflow-hidden shrink-0 mt-0.5 shadow-xs ring-1 ring-sky-400/25">
+                      <div className="size-6 sm:size-7 rounded-full overflow-hidden shrink-0 mt-0.5 shadow-xs ring-1 ring-sky-400/25">
                         <video
                           src="/aichatbot.mp4"
                           autoPlay
@@ -683,7 +933,7 @@ export function ChatbotPanel() {
                       </div>
                     )}
                     <div
-                      className={`rounded-2xl px-3.5 py-2.5 text-xs leading-relaxed shadow-xs ${isUser
+                      className={`rounded-2xl px-3 py-2 text-xs leading-relaxed shadow-xs ${isUser
                         ? "bg-foreground text-background font-medium rounded-tr-xs"
                         : "bg-secondary/40 border border-border text-foreground rounded-tl-xs flex-1"
                         }`}
@@ -737,7 +987,7 @@ export function ChatbotPanel() {
 
             {isLoading && (
               <div className="flex items-start gap-2">
-                <div className="size-7 sm:size-8 rounded-full overflow-hidden shrink-0 mt-0.5 shadow-xs ring-1 ring-sky-400/25">
+                <div className="size-6 sm:size-7 rounded-full overflow-hidden shrink-0 mt-0.5 shadow-xs ring-1 ring-sky-400/25">
                   <video
                     src="/aichatbot.mp4"
                     autoPlay
@@ -748,13 +998,13 @@ export function ChatbotPanel() {
                     className="size-full object-cover pointer-events-none select-none scale-105"
                   />
                 </div>
-                <div className="p-2.5 rounded-2xl bg-secondary/35 border border-border text-xs text-muted-foreground flex items-center gap-2">
+                <div className="p-2 rounded-2xl bg-secondary/35 border border-border text-xs text-muted-foreground flex items-center gap-2">
                   <div className="flex gap-1">
                     <span className="size-1.5 rounded-full bg-foreground animate-bounce" />
                     <span className="size-1.5 rounded-full bg-foreground animate-bounce [animation-delay:0.2s]" />
                     <span className="size-1.5 rounded-full bg-foreground animate-bounce [animation-delay:0.4s]" />
                   </div>
-                  <span className="text-[11px] font-medium text-foreground">
+                  <span className="text-[10.5px] font-medium text-foreground">
                     Evaluating thermal thermodynamics & envelope resistance...
                   </span>
                 </div>
@@ -765,7 +1015,7 @@ export function ChatbotPanel() {
           </div>
 
           {/* Input Box Footer - Minimal, clean, no clutter */}
-          <div className="p-2.5 sm:p-3 border-t border-border bg-card/80 backdrop-blur-xs">
+          <div className="p-2 sm:p-2.5 border-t border-border bg-card/80 backdrop-blur-xs">
             <div className="flex items-center gap-1.5 rounded-full border border-border bg-background px-2.5 py-1 focus-within:border-foreground transition shadow-2xs">
               <button
                 type="button"

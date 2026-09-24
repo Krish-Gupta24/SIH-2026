@@ -242,11 +242,10 @@ export function NewProjectModal({ isOpen, onClose }: NewProjectModalProps) {
           <button
             type="button"
             onClick={() => setStep(1)}
-            className={`flex items-center gap-2 rounded-full px-4 py-1.5 font-semibold transition ${
-              step === 1
-                ? "bg-black text-white shadow-sm"
-                : "text-[#6E818F] hover:text-black hover:bg-white"
-            }`}
+            className={`flex items-center gap-2 rounded-full px-4 py-1.5 font-semibold transition ${step === 1
+              ? "bg-black text-white shadow-sm"
+              : "text-[#6E818F] hover:text-black hover:bg-white"
+              }`}
           >
             <span className="flex h-4 w-4 items-center justify-center rounded-full bg-white/20 text-[10px]">1</span>
             <span>Identity & Scope</span>
@@ -255,11 +254,10 @@ export function NewProjectModal({ isOpen, onClose }: NewProjectModalProps) {
           <button
             type="button"
             onClick={() => setStep(2)}
-            className={`flex items-center gap-2 rounded-full px-4 py-1.5 font-semibold transition ${
-              step === 2
-                ? "bg-black text-white shadow-sm"
-                : "text-[#6E818F] hover:text-black hover:bg-white"
-            }`}
+            className={`flex items-center gap-2 rounded-full px-4 py-1.5 font-semibold transition ${step === 2
+              ? "bg-black text-white shadow-sm"
+              : "text-[#6E818F] hover:text-black hover:bg-white"
+              }`}
           >
             <span className="flex h-4 w-4 items-center justify-center rounded-full bg-white/20 text-[10px]">2</span>
             <span>Map Coordinates</span>
@@ -268,11 +266,10 @@ export function NewProjectModal({ isOpen, onClose }: NewProjectModalProps) {
           <button
             type="button"
             onClick={() => setStep(3)}
-            className={`flex items-center gap-2 rounded-full px-4 py-1.5 font-semibold transition ${
-              step === 3
-                ? "bg-black text-white shadow-sm"
-                : "text-[#6E818F] hover:text-black hover:bg-white"
-            }`}
+            className={`flex items-center gap-2 rounded-full px-4 py-1.5 font-semibold transition ${step === 3
+              ? "bg-black text-white shadow-sm"
+              : "text-[#6E818F] hover:text-black hover:bg-white"
+              }`}
           >
             <span className="flex h-4 w-4 items-center justify-center rounded-full bg-white/20 text-[10px]">3</span>
             <span>Thermal Archetype</span>
@@ -336,11 +333,8 @@ export function NewProjectModal({ isOpen, onClose }: NewProjectModalProps) {
               <div>
                 <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
                   <MapPin className="h-4 w-4 text-black" />
-                  Tactical Geographic Positioning (OpenFreeMap)
+                  Tactical Geographic Positioning
                 </h3>
-                <p className="text-xs text-muted-foreground mt-0.5">
-                  Search any mountain post or click on the map. Coordinates, DEM altitude, and barometric pressure are auto-calculated in real time.
-                </p>
               </div>
 
               <OpenFreeMapPicker
@@ -393,19 +387,18 @@ export function NewProjectModal({ isOpen, onClose }: NewProjectModalProps) {
                   const ac = accentClasses[arch.accent] || accentClasses.emerald;
                   const comfortColor =
                     arch.comfortPct >= 85 ? "text-emerald-700 dark:text-emerald-300" :
-                    arch.comfortPct >= 50 ? "text-amber-700 dark:text-amber-300" :
-                    "text-rose-600 dark:text-rose-400";
+                      arch.comfortPct >= 50 ? "text-amber-700 dark:text-amber-300" :
+                        "text-rose-600 dark:text-rose-400";
 
                   return (
                     <button
                       key={arch.id}
                       type="button"
                       onClick={() => setSelectedArchetype(arch.id)}
-                      className={`rounded-2xl border text-left transition-all overflow-hidden flex flex-col group ${
-                        isSelected
-                          ? `border-black ring-2 ${ac.ring} bg-white dark:bg-slate-900 shadow-md`
-                          : "border-border bg-white dark:bg-slate-900/60 hover:border-black/30 hover:shadow-sm"
-                      }`}
+                      className={`rounded-2xl border text-left transition-all overflow-hidden flex flex-col group ${isSelected
+                        ? `border-black ring-2 ${ac.ring} bg-white dark:bg-slate-900 shadow-md`
+                        : "border-border bg-white dark:bg-slate-900/60 hover:border-black/30 hover:shadow-sm"
+                        }`}
                     >
                       {/* Color accent top bar */}
                       <div className={`h-1.5 w-full ${ac.bar}`} />

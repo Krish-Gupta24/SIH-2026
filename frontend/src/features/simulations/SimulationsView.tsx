@@ -658,7 +658,7 @@ export function SimulationsView() {
                         max={[31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][selectedMonth - 1] || 31}
                         value={selectedDay}
                         onChange={(e) => setSelectedDay(Math.max(1, Math.min([31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][selectedMonth - 1] || 31, Number(e.target.value))))}
-                        className="w-14 bg-card border border-border rounded-xl px-2.5 py-1 text-center text-foreground text-xs"
+                        className="w-18 min-w-[70px] bg-card border border-border rounded-xl px-2.5 py-1.5 text-center text-foreground text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-[#6E818F] tabular-nums no-spinner [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                       />
                     </div>
                     <span className="inline-flex items-center gap-1 rounded-full bg-sky-500/10 px-2.5 py-1 font-mono text-[10px] font-semibold text-sky-600 dark:text-sky-400 border border-sky-500/20">
@@ -702,7 +702,7 @@ export function SimulationsView() {
                         max={([31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][selectedMonth - 1] || 31) - (periodPreset === "multi_3" ? 2 : 6)}
                         value={selectedDay}
                         onChange={(e) => setSelectedDay(Math.max(1, Math.min(28, Number(e.target.value))))}
-                        className="w-14 bg-card border border-border rounded-xl px-2.5 py-1 text-center text-foreground text-xs"
+                        className="w-18 min-w-[70px] bg-card border border-border rounded-xl px-2.5 py-1.5 text-center text-foreground text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-[#6E818F] tabular-nums no-spinner [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                       />
                     </div>
                     <span className="text-muted-foreground text-[11px]">

@@ -45,6 +45,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useShelterStore } from "@/lib/store/use-shelter-store";
+import { useUnitSystem } from "@/lib/unit-system";
 import {
   ComfortConfig,
   EnergySystemConfig,
@@ -68,6 +69,7 @@ import {
 
 export function FuelCostsView() {
   const { projects, activeProjectId, setActiveProject, updateProject } = useShelterStore();
+  const { toTemp, tempUnit, isIP } = useUnitSystem();
 
   const activeProject = useMemo(() => {
     return projects.find((p) => p.id === activeProjectId) || projects[0] || null;
@@ -226,11 +228,11 @@ export function FuelCostsView() {
   const hourlyData = simulationResult?.hourlyData || [];
   const diurnalChart = hourlyData.map((d) => ({
     hour: `${String(d.hourOfDay).padStart(2, "0")}:00`,
-    indoor: parseFloat(d.proposedIndoorTempC.toFixed(1)),
-    outdoor: parseFloat(d.outdoorTempC.toFixed(1)),
-    baseline: parseFloat(d.baselineIndoorTempC.toFixed(1)),
+    indoor: isIP ? parseFloat((d.proposedIndoorTempC * 1.8 + 32).toFixed(1)) : parseFloat(d.proposedIndoorTempC.toFixed(1)),
+    outdoor: isIP ? parseFloat((d.outdoorTempC * 1.8 + 32).toFixed(1)) : parseFloat(d.outdoorTempC.toFixed(1)),
+    baseline: isIP ? parseFloat((d.baselineIndoorTempC * 1.8 + 32).toFixed(1)) : parseFloat(d.baselineIndoorTempC.toFixed(1)),
     solarYield: parseFloat((d.solarGeneratedKwh * 1.5).toFixed(2)),
-    heaterActive: d.keroseneBackupActivated ? 18 : null,
+    heaterActive: d.keroseneBackupActivated ? (isIP ? 64 : 18) : null,
   }));
 
   // Cost breakdown pie chart
@@ -262,30 +264,34 @@ export function FuelCostsView() {
         </div>
 
         {/* Shelter Switcher & Refresh */}
-        <div className="flex items-center gap-2 flex-wrap">
-          <div className="flex items-center gap-1.5 bg-secondary/60 p-1 rounded-full border border-border">
-            <span className="text-[11px] font-semibold text-muted-foreground pl-3 pr-1">Shelter:</span>
-            {projects.map((proj) => (
-              <button
-                key={proj.id}
-                type="button"
-                onClick={() => setActiveProject(proj.id)}
-                className={`px-3 py-1 rounded-full text-xs font-semibold transition cursor-pointer ${
-                  proj.id === activeProjectId
-                    ? "bg-foreground text-background shadow-xs"
-                    : "text-muted-foreground hover:text-foreground hover:bg-secondary"
-                }`}
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+          <div className="flex items-center gap-2.5 bg-card border border-border rounded-2xl px-3.5 py-2 shadow-xs">
+            <div className="size-8 rounded-xl bg-primary/10 flex items-center justify-center text-primary shrink-0">
+              <Building2 className="w-4 h-4" />
+            </div>
+            <div className="flex flex-col min-w-0">
+              <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider leading-none">
+                Active Shelter
+              </span>
+              <select
+                value={activeProjectId}
+                onChange={(e) => setActiveProject(e.target.value)}
+                className="bg-transparent text-xs sm:text-sm font-bold text-foreground outline-none cursor-pointer pr-4 py-0.5 hover:text-primary transition truncate max-w-[200px] sm:max-w-[260px]"
               >
-                {proj.project?.name?.split(" (")[0] || "Shelter"}
-              </button>
-            ))}
+                {projects.map((proj) => (
+                  <option key={proj.id} value={proj.id} className="bg-popover text-popover-foreground">
+                    {proj.project?.name || "Unnamed Shelter"}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
 
           <button
             type="button"
             onClick={runSimulation}
             disabled={isSimulating}
-            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold bg-primary text-primary-foreground hover:opacity-90 transition cursor-pointer shadow-xs"
+            className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-2xl text-xs sm:text-sm font-semibold bg-foreground text-background hover:opacity-90 transition cursor-pointer shadow-xs shrink-0 h-[46px]"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${isSimulating ? "animate-spin" : ""}`} />
             <span>{isSimulating ? "Calculating..." : "Re-calculate"}</span>
@@ -358,10 +364,10 @@ export function FuelCostsView() {
             </span>
           </div>
           <span className="text-3xl sm:text-4xl font-black text-foreground tracking-tight">
-            +{tp ? tp.averageIndoorTempC.toFixed(1) : "19.5"}°C Indoors
+            {toTemp(tp ? tp.averageIndoorTempC : 19.5) >= 0 ? "+" : ""}{toTemp(tp ? tp.averageIndoorTempC : 19.5).toFixed(1)} {tempUnit} Indoors
           </span>
           <p className="text-xs text-muted-foreground mt-1">
-            Maintains 18°C–22°C comfort zone even during <strong className="text-foreground">-17°C</strong> sub-zero Himalayan nights.
+            Maintains {toTemp(18).toFixed(0)}{tempUnit}–{toTemp(22).toFixed(0)}{tempUnit} comfort zone even during <strong className="text-foreground">{toTemp(-17).toFixed(0)}{tempUnit}</strong> sub-zero Himalayan nights.
           </p>
           <div className="mt-4 pt-3 border-t border-border/60 flex items-center justify-between text-xs">
             <span className="text-muted-foreground">Comfort hours:</span>
@@ -518,7 +524,7 @@ export function FuelCostsView() {
                 <div className="flex justify-between items-center py-1.5 border-b border-border/40">
                   <span className="text-muted-foreground">Average Room Temperature</span>
                   <span className="font-semibold text-rose-600 dark:text-rose-400 font-mono">
-                    +{btp ? btp.averageIndoorTempC.toFixed(1) : "8.2"}°C (Freezing nights)
+                    {toTemp(btp ? btp.averageIndoorTempC : 8.2) >= 0 ? "+" : ""}{toTemp(btp ? btp.averageIndoorTempC : 8.2).toFixed(1)} {tempUnit} (Freezing nights)
                   </span>
                 </div>
                 <div className="flex justify-between items-center py-1.5">
@@ -530,14 +536,16 @@ export function FuelCostsView() {
 
             {/* Right: Optimized ThermoShelter */}
             <div className="p-6 rounded-3xl bg-card border-2 border-emerald-500/40 shadow-sm space-y-4">
-              <div className="flex items-center justify-between pb-3 border-b border-border">
-                <div>
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
+              <div className="flex items-center justify-between pb-3 border-b border-border gap-3">
+                <div className="min-w-0 flex-1">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 block">
                     Optimized ThermoShelter
                   </span>
-                  <h3 className="text-base font-bold text-foreground">{activeProject.project?.name || "Active Design"}</h3>
+                  <h3 className="text-base font-bold text-foreground truncate" title={activeProject.project?.name}>
+                    {activeProject.project?.name || "Active Design"}
+                  </h3>
                 </div>
-                <Badge variant="outline" className="text-emerald-600 border-emerald-500/30 bg-emerald-500/5 text-[10px]">
+                <Badge variant="outline" className="text-emerald-600 border-emerald-500/30 bg-emerald-500/5 text-[10px] shrink-0">
                   Passive First · Solar Dispatch
                 </Badge>
               </div>
@@ -558,7 +566,7 @@ export function FuelCostsView() {
                 <div className="flex justify-between items-center py-1.5 border-b border-border/40">
                   <span className="text-muted-foreground">Average Room Temperature</span>
                   <span className="font-bold text-emerald-600 dark:text-emerald-400 font-mono">
-                    +{tp ? tp.averageIndoorTempC.toFixed(1) : "19.5"}°C (Warm & Cozy)
+                    {toTemp(tp ? tp.averageIndoorTempC : 19.5) >= 0 ? "+" : ""}{toTemp(tp ? tp.averageIndoorTempC : 19.5).toFixed(1)} {tempUnit} (Warm & Cozy)
                   </span>
                 </div>
                 <div className="flex justify-between items-center py-1.5">
@@ -751,10 +759,10 @@ export function FuelCostsView() {
               </div>
               <div className="flex items-center gap-3 text-xs">
                 <span className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 font-semibold">
-                  <span className="w-3 h-1 bg-emerald-500 rounded-full" /> Indoor Temp (~19°C)
+                  <span className="w-3 h-1 bg-emerald-500 rounded-full" /> Indoor Temp (~{toTemp(19).toFixed(0)}{tempUnit})
                 </span>
                 <span className="flex items-center gap-1.5 text-sky-500 font-semibold">
-                  <span className="w-3 h-1 bg-sky-400 rounded-full" /> Outdoor (-17°C)
+                  <span className="w-3 h-1 bg-sky-400 rounded-full" /> Outdoor ({toTemp(-17).toFixed(0)}{tempUnit})
                 </span>
                 <span className="flex items-center gap-1.5 text-amber-500 font-semibold">
                   <span className="w-3 h-1 bg-amber-400 rounded-full" /> Solar Heat Yield
@@ -768,7 +776,7 @@ export function FuelCostsView() {
                 <LineChart data={diurnalChart}>
                   <CartesianGrid strokeDasharray="3 3" opacity={0.15} />
                   <XAxis dataKey="hour" tick={{ fontSize: 11 }} />
-                  <YAxis unit="°C" domain={[-20, 25]} tick={{ fontSize: 11 }} />
+                  <YAxis unit={` ${tempUnit}`} domain={isIP ? [-10, 85] : [-20, 25]} tick={{ fontSize: 11 }} />
                   <Tooltip
                     contentStyle={{
                       backgroundColor: "rgba(15, 23, 42, 0.95)",
@@ -811,7 +819,7 @@ export function FuelCostsView() {
             <div className="p-4 rounded-2xl bg-secondary/30 border border-border/60 text-xs text-muted-foreground leading-relaxed flex items-start gap-2.5">
               <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
               <span>
-                <strong>Key Takeaway:</strong> Notice how between 08:00 AM and 05:00 PM, daylight solar gains naturally elevate the indoor temperature to a comfortable 20°C without burning a single drop of fuel. The automated backup heater only pulses briefly before dawn.
+                <strong>Key Takeaway:</strong> Notice how between 08:00 AM and 05:00 PM, daylight solar gains naturally elevate the indoor temperature to a comfortable {toTemp(20).toFixed(0)}{tempUnit} without burning a single drop of fuel. The automated backup heater only pulses briefly before dawn.
               </span>
             </div>
           </div>

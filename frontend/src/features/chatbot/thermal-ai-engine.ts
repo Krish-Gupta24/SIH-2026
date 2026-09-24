@@ -10,7 +10,16 @@ import {
   MaterialSpec,
 } from "./chatbot-knowledge";
 
+export interface PageContextInfo {
+  pathname: string;
+  pageTitle: string;
+  pageDescription?: string;
+  hasActiveProject: boolean;
+}
+
 export interface ProjectContextTelemetry {
+  hasActiveProject?: boolean;
+  pageContext?: PageContextInfo;
   projectName?: string;
   locationName?: string;
   elevationM?: number;
@@ -74,6 +83,20 @@ export function generateThermalAIResponse(
     query.includes("what are my walls") ||
     query.includes("what is my roof")
   ) {
+    if (context?.hasActiveProject === false) {
+      const pageTitle = context?.pageContext?.pageTitle || "Overview";
+      const pathname = context?.pageContext?.pathname || "/";
+      return `### ℹ️ No Active Shelter Loaded
+You are currently browsing **${pageTitle}** (\`${pathname}\`). There is no active shelter model currently open in the engineering workspace.
+
+#### How to Open a Shelter:
+1. Open the **[Shelter Catalog](/projects)** from the top navigation.
+2. Select any tactical model (e.g. **High-Altitude Solar Outpost**, **Siachen Extreme Bunk**, or **Kargil Barracks**) or create a custom model.
+3. Once opened, you can run real-time **3D Architectural Audits**, **24h Diurnal Simulations**, **Bukhari Fuel Displacement Analysis**, and **DRDO Compliance Checks**!
+
+Can I help you with high-altitude building physics, material conductivity, or passive solar principles in the meantime?`;
+    }
+
     const projName = context?.projectName || "Ladakh Passive Solar Outpost";
     const loc = context?.locationName || "Leh, Ladakh, India";
     const elev = context?.elevationM ?? 3500;
@@ -118,6 +141,20 @@ export function generateThermalAIResponse(
     query.includes("current shelter") ||
     query.includes("performance")
   ) {
+    if (context?.hasActiveProject === false) {
+      const pageTitle = context?.pageContext?.pageTitle || "Overview";
+      return `### 📊 High-Altitude Thermal Performance Benchmarks
+You are currently viewing **${pageTitle}** without an active project open in the simulation runner.
+
+#### DRDO PS 26051 Mandatory Compliance Benchmarks:
+* **Thermal Comfort Target:** ≥80% of annual hours within the 18°C–24°C operative comfort band without active fossil fuel heating.
+* **Peak Winter Extreme:** Under -20°C to -40°C blizzard conditions, indoor temperatures must not drop below +10°C even under zero active heating.
+* **Envelope U-Values:** Walls ≤ 0.20 W/m²K, Roof ≤ 0.15 W/m²K, Sub-grade Floor ≤ 0.22 W/m²K.
+* **Solar Heat Utilization:** Direct gain combined with Trombe wall mass must provide 8–10 hours of nocturnal thermal phase lag.
+
+To run a 24-hour diurnal heat balance calculation on a specific habitat, please open a shelter from the **[Shelter Catalog](/projects)** and launch **[Simulations](/simulations)**!`;
+    }
+
     const sim = context?.simulationResults;
     const projName = context?.projectName || "Active High-Altitude Shelter";
     const loc = context?.locationName || "Leh, Ladakh (3,500m ASL)";
@@ -511,18 +548,25 @@ High-altitude cold desert climates present unique thermodynamic conditions:
   }
 
   // 13. General thermal engineering query handling
+  const hasActiveProj = context?.hasActiveProject !== false && Boolean(context?.projectName);
+  const contextSection = hasActiveProj
+    ? `#### 🔑 Active Shelter Context & Parameters:
+* **Current Active Project:** \`${context?.projectName || "Ladakh Passive Solar Outpost"}\`
+* **Wall Assembly:** \`${context?.envelopeSummary?.wallLayers?.join(" + ") || "150mm EPS + 200mm Rammed Earth"}\`
+* **Roof Assembly:** \`${context?.envelopeSummary?.roofLayers?.join(" + ") || "150mm Rockwool Insulated Deck"}\`
+* **Glazing & Orientation:** \`${context?.envelopeSummary?.windowAreaM2 ?? 3.6} m²\` facing \`${context?.envelopeSummary?.orientationDeg ?? 0}°\`
+* **Comfort Performance:** \`${context?.simulationResults?.comfortHoursPct ?? 92}%\` hours in operative comfort band (18°C–24°C).`
+    : `#### 🔑 Workspace Context:
+* **Active View:** \`${context?.pageContext?.pageTitle || "Platform Overview"}\`
+* **Operational Mode:** General Building Science & Thermal Physics (No active habitat loaded)`;
+
   return `### 💡 ThermoShelter Engineering Assessment
 
 Regarding **"${userQuery}"**:
 
 In extreme alpine defense habitats (3,500m–5,500m ASL, winter temperatures down to -40°C), thermal comfort is governed by **passive envelope integrity**, **solar mass storage**, and **infiltration control**.
 
-#### 🔑 Active Shelter Context & Parameters:
-* **Current Active Project:** \`${context?.projectName || "Ladakh Passive Solar Outpost"}\`
-* **Wall Assembly:** \`${context?.envelopeSummary?.wallLayers?.join(" + ") || "150mm EPS + 200mm Rammed Earth"}\`
-* **Roof Assembly:** \`${context?.envelopeSummary?.roofLayers?.join(" + ") || "150mm Rockwool Insulated Deck"}\`
-* **Glazing & Orientation:** \`${context?.envelopeSummary?.windowAreaM2 ?? 3.6} m²\` facing \`${context?.envelopeSummary?.orientationDeg ?? 0}°\`
-* **Comfort Performance:** \`${context?.simulationResults?.comfortHoursPct ?? 92}%\` hours in operative comfort band (18°C–24°C).
+${contextSection}
 
 #### 🔑 Key Engineering Principles:
 1. **Passive First Strategy:** In extreme cold, the first line of defense is a super-insulated building envelope (\`U_wall <= 0.20 W/m²·K\`) with continuous exterior insulation to eliminate thermal bridging through structural studs.

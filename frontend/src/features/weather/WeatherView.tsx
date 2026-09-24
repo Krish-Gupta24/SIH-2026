@@ -46,6 +46,7 @@ import {
 } from "@/components/v0/platform-components";
 import { WorkflowFooter } from "@/components/layout/WorkflowFooter";
 import { api } from "@/lib/api-client";
+import { useUnitSystem, formatUnitNumber } from "@/lib/unit-system";
 
 interface MonthMeta {
   index: number;
@@ -98,6 +99,7 @@ export function WeatherView() {
     projects,
     activeProjectId,
   } = useShelterStore();
+  const { formatTemp, formatLength, toFlux, fluxUnit, tempUnit, toDeltaTemp, isIP, formatUnitNumber } = useUnitSystem();
   const activeProject = projects.find((p) => p.id === activeProjectId) || projects[0];
   const [selectedStationId, setSelectedStationId] = useState(activeWeatherId);
 
@@ -219,12 +221,12 @@ export function WeatherView() {
 
       data.push({
         hour: `${String(h).padStart(2, "0")}:00`,
-        temperatureC: Math.round(temp * 10) / 10,
-        solarRadiationWm2: Math.max(0, Math.round(solar)),
+        temperatureC: Math.round((isIP ? temp * 1.8 + 32 : temp) * 10) / 10,
+        solarRadiationWm2: Math.max(0, Math.round(isIP ? solar * 0.316998 : solar)),
       });
     }
     return data;
-  }, [activeMonthData]);
+  }, [activeMonthData, isIP]);
 
   const handleUploadCsv = async () => {
     if (!csvFile) return;
@@ -399,7 +401,7 @@ export function WeatherView() {
             {!activeStation.isTestData && <ShieldCheck className="size-5 text-emerald-600" />}
           </div>
           <p className="font-editorial mt-12 text-6xl font-medium tracking-[-0.06em] text-foreground">
-            {activeStation.designWinterMinC} °C
+            {formatTemp(activeStation.designWinterMinC)}
           </p>
           <p className="mt-2 text-sm text-[#536772]">Winter design dry-bulb minimum</p>
           <dl className="mt-10 grid grid-cols-2 gap-x-6 gap-y-7 border-t border-border pt-7">
@@ -409,7 +411,7 @@ export function WeatherView() {
             />
             <DataPair
               label="Elevation"
-              value={`${activeStation.elevationM.toLocaleString()} m`}
+              value={formatLength(activeStation.elevationM)}
             />
             <DataPair
               label="Annual HDD18"
@@ -468,7 +470,7 @@ export function WeatherView() {
                   <div className="flex items-center justify-between">
                     <Status strong={isSelected}>{stn.provenanceStatus}</Status>
                     <div className="flex items-center gap-1.5">
-                      <span className="text-xs font-semibold text-muted-foreground">{stn.elevationM}m</span>
+                      <span className="text-xs font-semibold text-muted-foreground">{formatLength(stn.elevationM)}</span>
                       {!isBuiltin && (
                         <button
                           type="button"
@@ -488,7 +490,7 @@ export function WeatherView() {
                   <p className="text-[10px] text-muted-foreground line-clamp-1">{stn.region}</p>
                 </div>
                 <div className="mt-3 flex justify-between border-t border-border/50 pt-2 text-[10px]">
-                  <span>Min: <strong>{stn.designWinterMinC}°C</strong></span>
+                  <span>Min: <strong>{formatTemp(stn.designWinterMinC)}</strong></span>
                   <span>Src: <strong>{stn.sourceType === "EPW" ? "Standard" : stn.sourceType}</strong></span>
                 </div>
               </div>
@@ -623,15 +625,15 @@ export function WeatherView() {
               </div>
               <div className="rounded-2xl border border-border bg-secondary/30 p-3.5">
                 <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">Min Dry-Bulb</span>
-                <span className="text-sm font-mono font-bold text-sky-500 mt-1 block">{activeMonthData.minTemp} °C</span>
+                <span className="text-sm font-mono font-bold text-sky-500 mt-1 block">{formatTemp(activeMonthData.minTemp)}</span>
               </div>
               <div className="rounded-2xl border border-border bg-secondary/30 p-3.5">
                 <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">Mean Temp</span>
-                <span className="text-sm font-mono font-bold text-foreground mt-1 block">{activeMonthData.avgTemp} °C</span>
+                <span className="text-sm font-mono font-bold text-foreground mt-1 block">{formatTemp(activeMonthData.avgTemp)}</span>
               </div>
               <div className="rounded-2xl border border-border bg-secondary/30 p-3.5">
                 <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">Peak Dry-Bulb</span>
-                <span className="text-sm font-mono font-bold text-amber-500 mt-1 block">{activeMonthData.maxTemp} °C</span>
+                <span className="text-sm font-mono font-bold text-amber-500 mt-1 block">{formatTemp(activeMonthData.maxTemp)}</span>
               </div>
               <div className="rounded-2xl border border-border bg-secondary/30 p-3.5">
                 <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">Daylight Window</span>
@@ -641,7 +643,7 @@ export function WeatherView() {
               </div>
               <div className="rounded-2xl border border-border bg-secondary/30 p-3.5">
                 <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">Peak Direct DNI</span>
-                <span className="text-sm font-mono font-bold text-amber-600 dark:text-amber-400 mt-1 block">{activeMonthData.peakSolar} W/m²</span>
+                <span className="text-sm font-mono font-bold text-amber-600 dark:text-amber-400 mt-1 block">{formatUnitNumber(toFlux(activeMonthData.peakSolar), 0)} {fluxUnit}</span>
               </div>
             </div>
 
@@ -725,7 +727,7 @@ export function WeatherView() {
                         strokeOpacity={0.4}
                         fontSize={11}
                         domain={["auto", "auto"]}
-                        unit="°C"
+                        unit={` ${tempUnit}`}
                         tickLine={false}
                         orientation="left"
                       />
@@ -737,7 +739,7 @@ export function WeatherView() {
                         stroke="currentColor"
                         strokeOpacity={0.4}
                         fontSize={11}
-                        unit=" W/m²"
+                        unit={` ${fluxUnit}`}
                         tickLine={false}
                         orientation="left"
                       />
@@ -749,7 +751,7 @@ export function WeatherView() {
                         stroke="currentColor"
                         strokeOpacity={0.4}
                         fontSize={11}
-                        unit=" W/m²"
+                        unit={` ${fluxUnit}`}
                         tickLine={false}
                         orientation="right"
                       />
@@ -771,7 +773,7 @@ export function WeatherView() {
                                   <span className="size-2 rounded-full bg-sky-500" />
                                   Dry-Bulb Temp:
                                 </span>
-                                <span className="font-mono font-bold text-sky-600 dark:text-sky-400">{d.temperatureC} °C</span>
+                                <span className="font-mono font-bold text-sky-600 dark:text-sky-400">{d.temperatureC} {tempUnit}</span>
                               </div>
                             )}
                             {(chartMetric === "solar" || chartMetric === "combined") && (
@@ -780,12 +782,12 @@ export function WeatherView() {
                                   <span className="size-2 rounded-full bg-amber-500" />
                                   Solar Flux:
                                 </span>
-                                <span className="font-mono font-bold text-amber-600 dark:text-amber-400">{d.solarRadiationWm2} W/m²</span>
+                                <span className="font-mono font-bold text-amber-600 dark:text-amber-400">{d.solarRadiationWm2} {fluxUnit}</span>
                               </div>
                             )}
                             <div className="flex items-center justify-between text-[11px] text-muted-foreground pt-0.5 border-t border-border/40">
                               <span>Diurnal Range:</span>
-                              <span className="font-mono">Δ{activeMonthData.diurnalSwing}°C</span>
+                              <span className="font-mono">Δ{formatUnitNumber(toDeltaTemp(activeMonthData.diurnalSwing), 1)}{tempUnit}</span>
                             </div>
                           </div>
                         );
@@ -797,7 +799,7 @@ export function WeatherView() {
                         yAxisId="temp"
                         type="monotone"
                         dataKey="temperatureC"
-                        name="Dry-Bulb Temp (°C)"
+                        name={`Dry-Bulb Temp (${tempUnit})`}
                         stroke="#0284c7"
                         strokeWidth={2.5}
                         fill="url(#weatherTempGradient)"
@@ -810,7 +812,7 @@ export function WeatherView() {
                         yAxisId="solar"
                         type="monotone"
                         dataKey="solarRadiationWm2"
-                        name="Direct Solar (W/m²)"
+                        name={`Direct Solar (${fluxUnit})`}
                         stroke="#f59e0b"
                         strokeWidth={2.5}
                         fill="url(#weatherSolarGradient)"
@@ -886,12 +888,12 @@ export function WeatherView() {
                             {m.season}
                           </span>
                         </td>
-                        <td className="py-2.5 px-3.5 font-mono text-sky-500">{m.minTemp}°C</td>
-                        <td className="py-2.5 px-3.5 font-mono">{m.avgTemp}°C</td>
-                        <td className="py-2.5 px-3.5 font-mono text-amber-500">{m.maxTemp}°C</td>
-                        <td className="py-2.5 px-3.5 font-mono text-muted-foreground">Δ{m.diurnalSwing}°C</td>
+                        <td className="py-2.5 px-3.5 font-mono text-sky-500">{formatTemp(m.minTemp)}</td>
+                        <td className="py-2.5 px-3.5 font-mono">{formatTemp(m.avgTemp)}</td>
+                        <td className="py-2.5 px-3.5 font-mono text-amber-500">{formatTemp(m.maxTemp)}</td>
+                        <td className="py-2.5 px-3.5 font-mono text-muted-foreground">Δ{formatUnitNumber(toDeltaTemp(m.diurnalSwing), 1)}{tempUnit}</td>
                         <td className="py-2.5 px-3.5 font-mono">{m.daylightHours}h</td>
-                        <td className="py-2.5 px-3.5 font-mono text-amber-600 dark:text-amber-400">{m.peakSolar} W/m²</td>
+                        <td className="py-2.5 px-3.5 font-mono text-amber-600 dark:text-amber-400">{formatUnitNumber(toFlux(m.peakSolar), 0)} {fluxUnit}</td>
                         <td className="py-2.5 px-3.5 text-right">
                           <button
                             type="button"
@@ -950,7 +952,7 @@ export function WeatherView() {
                   <div className="flex justify-between py-2 border-b border-border/40">
                     <span className="text-muted-foreground">Station Elevation:</span>
                     <span className="font-mono font-medium text-foreground">
-                      {activeStation.elevationM.toLocaleString()} meters MSL
+                      {formatLength(activeStation.elevationM, 0)} MSL
                     </span>
                   </div>
                   <div className="flex justify-between py-2 border-b border-border/40">
@@ -968,13 +970,13 @@ export function WeatherView() {
                   <div className="flex justify-between py-2 border-b border-border/40">
                     <span className="text-muted-foreground">Extreme Winter Min:</span>
                     <span className="font-mono font-bold text-sky-500">
-                      {activeStation.designWinterMinC} °C
+                      {formatTemp(activeStation.designWinterMinC)}
                     </span>
                   </div>
                   <div className="flex justify-between py-2 border-b border-border/40">
                     <span className="text-muted-foreground">Design Summer Max:</span>
                     <span className="font-mono font-bold text-amber-500">
-                      {activeStation.designSummerMaxC} °C
+                      {formatTemp(activeStation.designSummerMaxC)}
                     </span>
                   </div>
                   <div className="flex justify-between py-2">
@@ -1379,7 +1381,7 @@ export function WeatherView() {
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Elevation / Min:</span>
-                <span className="font-semibold text-foreground">{stationToDelete.elevationM}m / {stationToDelete.designWinterMinC}°C</span>
+                <span className="font-semibold text-foreground">{formatLength(stationToDelete.elevationM, 0)} / {formatTemp(stationToDelete.designWinterMinC)}</span>
               </div>
             </div>
 

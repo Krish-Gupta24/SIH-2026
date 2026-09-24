@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Check, RotateCcw, Save } from "lucide-react";
+import { Check, Save } from "lucide-react";
 import { useShelterStore } from "@/lib/store/use-shelter-store";
 import { ActionButton, PageIntro } from "@/components/v0/platform-components";
 
@@ -28,13 +28,6 @@ export function SettingsView() {
     setTimeout(() => setSavedSuccess(false), 2500);
   };
 
-  const handleResetDefaults = () => {
-    if (confirm("Reset all engineering preferences and local caches to factory defaults?")) {
-      localStorage.removeItem("shelter_thermal_engineering_store_v1");
-      window.location.reload();
-    }
-  };
-
   return (
     <div className="space-y-8 max-w-5xl mx-auto pb-12">
       <PageIntro
@@ -49,17 +42,6 @@ export function SettingsView() {
           <p className="mt-3 text-sm leading-6 text-muted-foreground">
             Preferences are persisted in the workspace store. New simulation dispatches inherit these defaults; stored historical evidence remains immutable.
           </p>
-
-          <div className="mt-8">
-            <button
-              type="button"
-              onClick={handleResetDefaults}
-              className="inline-flex items-center gap-1.5 text-xs font-semibold text-muted-foreground hover:text-red-500 transition-colors"
-            >
-              <RotateCcw className="size-3.5" />
-              Reset factory defaults
-            </button>
-          </div>
         </div>
 
         <div className="workspace-panel flex flex-col gap-8 rounded-2xl border border-border bg-card p-7 sm:p-9 shadow-sm">

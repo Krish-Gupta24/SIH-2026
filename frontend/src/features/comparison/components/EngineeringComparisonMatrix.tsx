@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import {
   ChevronDown,
   Download,
@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { SimulationJobItem } from "@/lib/store/use-shelter-store";
 import { TRACE_COLORS } from "./ConfigurationComparisonStrip";
+import { useUnitSystem } from "@/lib/unit-system";
 
 interface EngineeringComparisonMatrixProps {
   jobs: SimulationJobItem[];
@@ -50,7 +51,25 @@ export function EngineeringComparisonMatrix({ jobs }: EngineeringComparisonMatri
     }));
   };
 
-  const categories: MatrixCategory[] = [
+  const {
+    toTemp,
+    toPower,
+    toEnergyDensity,
+    toUValue,
+    toLength,
+    toArea,
+    toVolume,
+    tempUnit,
+    powerUnit,
+    energyDensityUnit,
+    uValueUnit,
+    lengthUnit,
+    areaUnit,
+    volumeUnit,
+    isIP,
+  } = useUnitSystem();
+
+  const categories: MatrixCategory[] = useMemo(() => [
     {
       id: "geometry",
       title: "1. Geometry & Spatial Form Factor",
@@ -58,31 +77,38 @@ export function EngineeringComparisonMatrix({ jobs }: EngineeringComparisonMatri
       rows: [
         {
           label: "Floor Plan Dimensions (L × W)",
-          unit: "m",
+          unit: lengthUnit,
           getValue: (j) => {
             const g = j.shelterModel?.geometry;
-            return `${g?.length ?? 6.0} × ${g?.width ?? 4.0}`;
+            const l = toLength(g?.length ?? 6.0);
+            const w = toLength(g?.width ?? 4.0);
+            return `${l.toFixed(1)} × ${w.toFixed(1)}`;
           },
         },
         {
           label: "Interior Wall Height",
-          unit: "m",
-          getValue: (j) => j.shelterModel?.geometry?.height ?? 2.8,
+          unit: lengthUnit,
+          getValue: (j) => {
+            const h = toLength(j.shelterModel?.geometry?.height ?? 2.8);
+            return h.toFixed(1);
+          },
         },
         {
           label: "Gross Living Zone Floor Area",
-          unit: "m²",
+          unit: areaUnit,
           getValue: (j) => {
             const g = j.shelterModel?.geometry;
-            return Math.round((g?.length ?? 6.0) * (g?.width ?? 4.0) * 10) / 10;
+            const areaM2 = (g?.length ?? 6.0) * (g?.width ?? 4.0);
+            return Math.round(toArea(areaM2) * 10) / 10;
           },
         },
         {
           label: "Conditioned Interior Volume",
-          unit: "m³",
+          unit: volumeUnit,
           getValue: (j) => {
             const g = j.shelterModel?.geometry;
-            return Math.round((g?.length ?? 6.0) * (g?.width ?? 4.0) * (g?.height ?? 2.8) * 10) / 10;
+            const volM3 = (g?.length ?? 6.0) * (g?.width ?? 4.0) * (g?.height ?? 2.8);
+            return Math.round(toVolume(volM3) * 10) / 10;
           },
         },
         {
@@ -99,33 +125,33 @@ export function EngineeringComparisonMatrix({ jobs }: EngineeringComparisonMatri
       rows: [
         {
           label: "North Wall Overall U-Value",
-          unit: "W/m²K",
-          getValue: (j) => (j.shelterModel?.id?.includes("tin") ? 3.20 : 0.28),
+          unit: uValueUnit,
+          getValue: (j) => toUValue(j.shelterModel?.id?.includes("tin") ? 3.20 : 0.28).toFixed(2),
         },
         {
           label: "South Wall Overall U-Value",
-          unit: "W/m²K",
-          getValue: (j) => (j.shelterModel?.id?.includes("tin") ? 3.20 : 0.28),
+          unit: uValueUnit,
+          getValue: (j) => toUValue(j.shelterModel?.id?.includes("tin") ? 3.20 : 0.28).toFixed(2),
         },
         {
           label: "East & West Walls U-Value",
-          unit: "W/m²K",
-          getValue: (j) => (j.shelterModel?.id?.includes("tin") ? 3.20 : 0.24),
+          unit: uValueUnit,
+          getValue: (j) => toUValue(j.shelterModel?.id?.includes("tin") ? 3.20 : 0.24).toFixed(2),
         },
         {
           label: "Roof Shell Assembly U-Value",
-          unit: "W/m²K",
-          getValue: (j) => (j.shelterModel?.id?.includes("tin") ? 4.10 : 0.16),
+          unit: uValueUnit,
+          getValue: (j) => toUValue(j.shelterModel?.id?.includes("tin") ? 4.10 : 0.16).toFixed(2),
         },
         {
           label: "Ground Floor Slab U-Value",
-          unit: "W/m²K",
-          getValue: (j) => (j.shelterModel?.id?.includes("tin") ? 2.80 : 0.20),
+          unit: uValueUnit,
+          getValue: (j) => toUValue(j.shelterModel?.id?.includes("tin") ? 2.80 : 0.20).toFixed(2),
         },
         {
           label: "Area-Weighted Mean Envelope Conductance (U_mean)",
-          unit: "W/m²K",
-          getValue: (j) => (j.shelterModel?.id?.includes("tin") ? 3.45 : 0.24),
+          unit: uValueUnit,
+          getValue: (j) => toUValue(j.shelterModel?.id?.includes("tin") ? 3.45 : 0.24).toFixed(2),
         },
       ],
     },
@@ -144,8 +170,8 @@ export function EngineeringComparisonMatrix({ jobs }: EngineeringComparisonMatri
         },
         {
           label: "Glazing Center U-Factor",
-          unit: "W/m²K",
-          getValue: (j) => (j.shelterModel?.id?.includes("tin") ? 5.80 : 1.40),
+          unit: uValueUnit,
+          getValue: (j) => toUValue(j.shelterModel?.id?.includes("tin") ? 5.80 : 1.40).toFixed(2),
         },
         {
           label: "Solar Heat Gain Coefficient (SHGC)",
@@ -154,13 +180,13 @@ export function EngineeringComparisonMatrix({ jobs }: EngineeringComparisonMatri
         },
         {
           label: "South Aperture Area",
-          unit: "m²",
-          getValue: (j) => (j.shelterModel?.id?.includes("tin") ? 2.4 : 4.8),
+          unit: areaUnit,
+          getValue: (j) => toArea(j.shelterModel?.id?.includes("tin") ? 2.4 : 4.8).toFixed(1),
         },
         {
           label: "Fixed Solar Shading Overhang Depth",
-          unit: "m",
-          getValue: (j) => (j.shelterModel?.id?.includes("tin") ? 0.0 : 0.45),
+          unit: lengthUnit,
+          getValue: (j) => toLength(j.shelterModel?.id?.includes("tin") ? 0.0 : 0.45).toFixed(2),
         },
       ],
     },
@@ -185,9 +211,9 @@ export function EngineeringComparisonMatrix({ jobs }: EngineeringComparisonMatri
           getValue: (j) => (j.shelterModel?.id?.includes("tin") ? 0 : 85),
         },
         {
-          label: "Air Leakage Heat Loss at -20°C Delta",
-          unit: "W",
-          getValue: (j) => (j.shelterModel?.id?.includes("tin") ? 2450 : 380),
+          label: "Air Leakage Heat Loss at Design Delta-T",
+          unit: powerUnit,
+          getValue: (j) => Math.round(toPower(j.shelterModel?.id?.includes("tin") ? 2450 : 380)),
         },
       ],
     },
@@ -206,8 +232,8 @@ export function EngineeringComparisonMatrix({ jobs }: EngineeringComparisonMatri
         },
         {
           label: "Effective Thermal Capacitance",
-          unit: "kJ/m²K",
-          getValue: (j) => (j.shelterModel?.id?.includes("tin") ? 15 : 250),
+          unit: isIP ? "Btu/ft²·°F" : "kJ/m²K",
+          getValue: (j) => (j.shelterModel?.id?.includes("tin") ? (isIP ? 0.7 : 15) : (isIP ? 12.2 : 250)),
         },
         {
           label: "Nocturnal Phase Shift Delay",
@@ -223,21 +249,21 @@ export function EngineeringComparisonMatrix({ jobs }: EngineeringComparisonMatri
       rows: [
         {
           label: "24-hr Minimum Nocturnal Temperature",
-          unit: "°C",
-          getValue: (j) => j.results?.summary?.indoorMinC?.toFixed(1) ?? "—",
+          unit: tempUnit,
+          getValue: (j) => typeof j.results?.summary?.indoorMinC === "number" ? toTemp(j.results.summary.indoorMinC).toFixed(1) : "—",
         },
         {
           label: "24-hr Peak Daytime Indoor Temperature",
-          unit: "°C",
-          getValue: (j) => j.results?.summary?.indoorMaxC?.toFixed(1) ?? "—",
+          unit: tempUnit,
+          getValue: (j) => typeof j.results?.summary?.indoorMaxC === "number" ? toTemp(j.results.summary.indoorMaxC).toFixed(1) : "—",
         },
         {
           label: "24-hr Average Living Zone Temperature",
-          unit: "°C",
-          getValue: (j) => j.results?.summary?.indoorMeanC?.toFixed(1) ?? "—",
+          unit: tempUnit,
+          getValue: (j) => typeof j.results?.summary?.indoorMeanC === "number" ? toTemp(j.results.summary.indoorMeanC).toFixed(1) : "—",
         },
         {
-          label: "Hours within Adaptive Comfort Band (18–24°C)",
+          label: isIP ? "Hours within Adaptive Comfort Band (64–75°F)" : "Hours within Adaptive Comfort Band (18–24°C)",
           unit: "%",
           getValue: (j) => (j.results?.summary?.comfortHoursPct !== undefined ? `${j.results.summary.comfortHoursPct}%` : "—"),
         },
@@ -248,13 +274,16 @@ export function EngineeringComparisonMatrix({ jobs }: EngineeringComparisonMatri
         },
         {
           label: "Annual Space Heating Demand Intensity",
-          unit: "kWh/m²·a",
-          getValue: (j) => j.results?.summary?.heatingDemandKwhM2 ?? "—",
+          unit: energyDensityUnit,
+          getValue: (j) => typeof j.results?.summary?.heatingDemandKwhM2 === "number" ? toEnergyDensity(j.results.summary.heatingDemandKwhM2).toFixed(1) : "—",
         },
         {
           label: "Peak Conduction Loss Rate through Envelope",
-          unit: "W",
-          getValue: (j) => (j.results?.summary as any)?.peakEnvelopeLossW ?? 1500,
+          unit: powerUnit,
+          getValue: (j) => {
+            const raw = (j.results?.summary as any)?.peakEnvelopeLossW ?? 1500;
+            return Math.round(toPower(raw));
+          },
         },
       ],
     },
@@ -290,7 +319,22 @@ export function EngineeringComparisonMatrix({ jobs }: EngineeringComparisonMatri
         },
       ],
     },
-  ];
+  ], [
+    toLength,
+    toArea,
+    toVolume,
+    toUValue,
+    toPower,
+    toEnergyDensity,
+    toTemp,
+    lengthUnit,
+    areaUnit,
+    volumeUnit,
+    uValueUnit,
+    powerUnit,
+    energyDensityUnit,
+    tempUnit,
+  ]);
 
   // CSV Export Function
   const handleExportCSV = () => {

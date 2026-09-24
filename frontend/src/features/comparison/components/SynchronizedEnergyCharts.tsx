@@ -19,6 +19,7 @@ import {
   Info,
 } from "lucide-react";
 import { SimulationJobItem } from "@/lib/store/use-shelter-store";
+import { useUnitSystem } from "@/lib/unit-system";
 import { TRACE_COLORS } from "./ConfigurationComparisonStrip";
 
 interface SynchronizedEnergyChartsProps {
@@ -29,6 +30,7 @@ export function SynchronizedEnergyCharts({ jobs }: SynchronizedEnergyChartsProps
   if (!jobs || jobs.length === 0) return null;
 
   const baseline = jobs[0];
+  const { toPower, powerUnit, isIP } = useUnitSystem();
   const [syncHour, setSyncHour] = useState<number | null>(null);
 
   // Build 24-hr synced dataset across Heat Loss, Solar Gain, and Net Balance
@@ -50,18 +52,20 @@ export function SynchronizedEnergyCharts({ jobs }: SynchronizedEnergyChartsProps
       const floorLoss = ts?.floorHeatTransferW ?? h?.floorHeatTransfer?.[i] ?? 0;
       const winLoss = ts?.windowHeatTransferW ?? h?.windowHeatTransfer?.[i] ?? 0;
       const infLoss = ts?.infiltrationHeatTransferW ?? h?.infiltrationHeatTransfer?.[i] ?? 0;
-      const totalHeatFlow = Math.round(wallLoss + roofLoss + floorLoss + winLoss + infLoss);
+      const rawTotalHeat = wallLoss + roofLoss + floorLoss + winLoss + infLoss;
+      const totalHeatFlow = Math.round(isIP ? rawTotalHeat * 3.41214 : rawTotalHeat);
 
       point[`heatFlow_${job.id}`] = totalHeatFlow;
 
-      // 2. Solar Gains (Watts)
-      const solarGain = Math.round(ts?.solarGainsW ?? h?.solarGains?.[i] ?? 0);
+      // 2. Solar Gains
+      const rawSolar = ts?.solarGainsW ?? h?.solarGains?.[i] ?? 0;
+      const solarGain = Math.round(isIP ? rawSolar * 3.41214 : rawSolar);
       point[`solar_${job.id}`] = solarGain;
 
-      // 3. Thermal Storage / Net Energy Balance (Watts)
-      // Net = Solar Gains + Internal Loads (480W) + Envelope Heat Flow
-      const internalW = 480;
-      const netBalance = Math.round(solarGain + internalW + totalHeatFlow);
+      // 3. Thermal Storage / Net Energy Balance
+      const rawInternalW = 480;
+      const rawNet = rawSolar + rawInternalW + rawTotalHeat;
+      const netBalance = Math.round(isIP ? rawNet * 3.41214 : rawNet);
       point[`balance_${job.id}`] = netBalance;
     });
 
@@ -91,7 +95,7 @@ export function SynchronizedEnergyCharts({ jobs }: SynchronizedEnergyChartsProps
               <Flame className="size-4 text-rose-500" />
             </div>
             <h3 className="text-sm font-bold text-foreground mt-1">
-              Hourly Envelope Heat Flow (W)
+              Hourly Envelope Heat Flow ({powerUnit})
             </h3>
             <p className="text-[10px] text-muted-foreground mt-0.5">
               Negative values indicate continuous heat escaping through walls, roof, and infiltration.
@@ -104,7 +108,7 @@ export function SynchronizedEnergyCharts({ jobs }: SynchronizedEnergyChartsProps
                 <CartesianGrid strokeDasharray="3 3" stroke="currentColor" strokeOpacity={0.06} />
                 <ReferenceLine y={0} stroke="currentColor" strokeOpacity={0.2} />
                 <XAxis dataKey="timeLabel" stroke="currentColor" strokeOpacity={0.4} fontSize={9} interval={5} />
-                <YAxis stroke="currentColor" strokeOpacity={0.4} fontSize={9} unit="W" />
+                <YAxis stroke="currentColor" strokeOpacity={0.4} fontSize={9} unit={` ${powerUnit}`} />
                 <Tooltip
                   content={({ active, payload, label }) => {
                     if (!active || !payload?.length) return null;
@@ -119,7 +123,7 @@ export function SynchronizedEnergyCharts({ jobs }: SynchronizedEnergyChartsProps
                                 <span className="size-2 rounded-full" style={{ backgroundColor: e.color }} />
                                 {job?.projectName.split(" ")[0]}
                               </span>
-                              <strong className="font-mono text-foreground">{e.value} W</strong>
+                              <strong className="font-mono text-foreground">{e.value} {powerUnit}</strong>
                             </div>
                           );
                         })}
@@ -158,7 +162,7 @@ export function SynchronizedEnergyCharts({ jobs }: SynchronizedEnergyChartsProps
               <Sun className="size-4 text-amber-500" />
             </div>
             <h3 className="text-sm font-bold text-foreground mt-1">
-              Passive Solar Harvest (W)
+              Passive Solar Harvest ({powerUnit})
             </h3>
             <p className="text-[10px] text-muted-foreground mt-0.5">
               Direct and diffuse solar radiation captured through south glazing and Trombe wall.
@@ -171,7 +175,7 @@ export function SynchronizedEnergyCharts({ jobs }: SynchronizedEnergyChartsProps
                 <CartesianGrid strokeDasharray="3 3" stroke="currentColor" strokeOpacity={0.06} />
                 <ReferenceLine y={0} stroke="currentColor" strokeOpacity={0.2} />
                 <XAxis dataKey="timeLabel" stroke="currentColor" strokeOpacity={0.4} fontSize={9} interval={5} />
-                <YAxis stroke="currentColor" strokeOpacity={0.4} fontSize={9} unit="W" />
+                <YAxis stroke="currentColor" strokeOpacity={0.4} fontSize={9} unit={` ${powerUnit}`} />
                 <Tooltip
                   content={({ active, payload, label }) => {
                     if (!active || !payload?.length) return null;
@@ -186,7 +190,7 @@ export function SynchronizedEnergyCharts({ jobs }: SynchronizedEnergyChartsProps
                                 <span className="size-2 rounded-full" style={{ backgroundColor: e.color }} />
                                 {job?.projectName.split(" ")[0]}
                               </span>
-                              <strong className="font-mono text-foreground">{e.value} W</strong>
+                              <strong className="font-mono text-foreground">{e.value} {powerUnit}</strong>
                             </div>
                           );
                         })}
@@ -225,7 +229,7 @@ export function SynchronizedEnergyCharts({ jobs }: SynchronizedEnergyChartsProps
               <Layers className="size-4 text-emerald-500" />
             </div>
             <h3 className="text-sm font-bold text-foreground mt-1">
-              Net Thermal Storage Balance (W)
+              Net Thermal Storage Balance ({powerUnit})
             </h3>
             <p className="text-[10px] text-muted-foreground mt-0.5">
               Positive = heat charging into mass core; Negative = heat deficit needing auxiliary stove.
@@ -238,7 +242,7 @@ export function SynchronizedEnergyCharts({ jobs }: SynchronizedEnergyChartsProps
                 <CartesianGrid strokeDasharray="3 3" stroke="currentColor" strokeOpacity={0.06} />
                 <ReferenceLine y={0} stroke="currentColor" strokeOpacity={0.3} strokeDasharray="2 2" />
                 <XAxis dataKey="timeLabel" stroke="currentColor" strokeOpacity={0.4} fontSize={9} interval={5} />
-                <YAxis stroke="currentColor" strokeOpacity={0.4} fontSize={9} unit="W" />
+                <YAxis stroke="currentColor" strokeOpacity={0.4} fontSize={9} unit={` ${powerUnit}`} />
                 <Tooltip
                   content={({ active, payload, label }) => {
                     if (!active || !payload?.length) return null;
@@ -253,7 +257,7 @@ export function SynchronizedEnergyCharts({ jobs }: SynchronizedEnergyChartsProps
                                 <span className="size-2 rounded-full" style={{ backgroundColor: e.color }} />
                                 {job?.projectName.split(" ")[0]}
                               </span>
-                              <strong className="font-mono text-foreground">{e.value} W</strong>
+                              <strong className="font-mono text-foreground">{e.value} {powerUnit}</strong>
                             </div>
                           );
                         })}
