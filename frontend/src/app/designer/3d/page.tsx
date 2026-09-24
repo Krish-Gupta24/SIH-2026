@@ -125,7 +125,7 @@ function Shelter3DPageContent() {
         const parsed = parseInt(stageParam, 10);
         if (!isNaN(parsed)) {
           const resolved = parsed >= 1 && parsed <= 9 ? step2dTo3d(parsed) : parsed;
-          if (resolved >= 0 && resolved <= 12) {
+          if (resolved >= 0 && resolved <= 8) {
             lastParamKeyRef.current = String(resolved);
             setStep(resolved);
             setActiveWizardStep(step3dTo2d(resolved));
@@ -185,26 +185,45 @@ function Shelter3DPageContent() {
   return (
     <AppShell>
       <div className="designer-3d-studio-page">
-        <section className="designer-pagebar">
-          <div className="designer-pagebar-title">
-            <span className="micro-label">3D SHELTER DESIGNER</span>
-            <h1>{activeModel.project.name}</h1>
-            <p>{UNIFIED_9_STEPS[step]?.name} · Stage {step + 1} of {UNIFIED_9_STEPS.length}</p>
+        {/* Studio Topbar: Project Identity & Actions */}
+        <header className="flex flex-col md:flex-row md:items-center justify-between gap-3 rounded-2xl border border-border bg-card p-3 sm:px-4 sm:py-2.5 shadow-xs mb-2">
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-sky-500/30 bg-sky-500/10 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-sky-700 dark:text-sky-300">
+                <Box className="size-3 text-sky-500" />
+                3D CAD Studio
+              </span>
+              <span className="text-[11px] font-medium text-muted-foreground">
+                {activeModel.location.region || "Leh Ladakh, India"} · {activeModel.location.elevation ? `${activeModel.location.elevation.toLocaleString()}m MSL` : "3,256m MSL"}
+              </span>
+            </div>
+            <h1 className="text-base sm:text-lg font-bold tracking-tight text-foreground truncate mt-0.5">
+              {activeModel.project.name}
+            </h1>
           </div>
-          <div className="designer-pagebar-actions">
+
+          <div className="flex flex-wrap items-center gap-2 shrink-0">
             <DesignPresetsDropdown compact />
             <Link
               href={`/designer?step=${step3dTo2d(step)}`}
               onClick={() => setActiveWizardStep(step3dTo2d(step))}
-              className="designer-pagebar-button"
+              className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3.5 py-1.5 text-xs font-semibold text-foreground shadow-xs hover:bg-secondary transition shrink-0"
+              title="Switch to 2D Blueprint & Parameters Studio"
             >
-              <Sliders className="size-3.5" /> 2D Designer
+              <Sliders className="size-3.5 text-muted-foreground" />
+              <span>2D Blueprint Studio</span>
             </Link>
-            <button type="button" onClick={() => setAnsysModalOpen(true)} className="designer-pagebar-button">
-              <Cpu className="size-3.5" /> Export
+            <button
+              type="button"
+              onClick={() => setAnsysModalOpen(true)}
+              className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3.5 py-1.5 text-xs font-semibold text-foreground shadow-xs hover:bg-secondary transition shrink-0"
+              title="Export ANSYS Mechanical / CFD validation deck"
+            >
+              <Cpu className="size-3.5 text-muted-foreground" />
+              <span>Export Deck</span>
             </button>
           </div>
-        </section>
+        </header>
         
         {/* 13-Stage Engineering Workflow Navigation Strip & Phase Cards */}
         <Designer3DStepsNav

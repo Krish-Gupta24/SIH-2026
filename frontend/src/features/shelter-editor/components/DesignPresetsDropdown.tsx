@@ -108,18 +108,26 @@ export function DesignPresetsDropdown({ onApplyPreset, compact = false }: Design
 
   if (compact) {
     return (
-      <div className="flex flex-wrap items-center gap-2 rounded-xl border border-border bg-secondary/30 px-3 py-2">
+      <div className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-3.5 py-1.5 shadow-xs hover:border-foreground/30 transition">
         <Sparkles className="size-3.5 shrink-0 text-amber-500" />
         <select
           aria-label="Apply a shelter design preset"
           value={selectedPresetId}
           onChange={(event) => handleSelect(event.target.value)}
-          className="min-w-0 flex-1 bg-transparent text-xs font-semibold text-foreground outline-none"
+          className="min-w-0 bg-transparent text-xs font-semibold text-foreground outline-none cursor-pointer pr-1"
         >
-          <option value="" disabled>Apply a climate-ready design preset</option>
-          {presets.map((preset) => <option key={preset.id} value={preset.id}>{preset.name} · {preset.comfort}</option>)}
+          <option value="" disabled className="bg-popover text-popover-foreground">Apply a climate-ready design preset</option>
+          {presets.map((preset) => (
+            <option key={preset.id} value={preset.id} className="bg-popover text-popover-foreground">
+              {preset.name} · {preset.comfort}
+            </option>
+          ))}
         </select>
-        {appliedPresetMessage ? <span className="text-[11px] font-semibold text-emerald-600">Preset applied</span> : null}
+        {appliedPresetMessage ? (
+          <span className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 flex items-center gap-1 animate-in fade-in">
+            <CheckCircle2 className="size-3" /> Applied
+          </span>
+        ) : null}
       </div>
     );
   }

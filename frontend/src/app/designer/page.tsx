@@ -3,7 +3,7 @@ import { AppShell } from "@/components/layout/AppShell";
 import { ShelterDesignerWizard } from "@/features/shelter-editor";
 
 export const metadata = {
-  title: "Shelter Designer | 13-Step Engineering Wizard",
+  title: "Shelter Designer | 9-Step Engineering Wizard",
   description: "Parametric cold-climate building thermal design wizard mapped to ThermoShelter Core.",
 };
 

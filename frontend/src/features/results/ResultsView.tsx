@@ -197,9 +197,9 @@ export function ResultsView() {
   const windowHeatTransfer: number[] = hasValidWindows
     ? rawWindowHeatTransfer
     : timestamps.map((_, i) => {
-        const deltaT = (indoorTemp[i] ?? 12) - (outdoorTemp[i] ?? -15);
-        return -Math.round(winUA * Math.max(0, deltaT));
-      });
+      const deltaT = (indoorTemp[i] ?? 12) - (outdoorTemp[i] ?? -15);
+      return -Math.round(winUA * Math.max(0, deltaT));
+    });
 
   // Calculate linear thermal bridge losses (framing studs, wall-roof perimeter joints)
   const thermalBridgeHeatTransfer: number[] = rawHourlyTimeseries.map((t: any, i: number) => {
@@ -257,7 +257,7 @@ export function ResultsView() {
   const envelopeLossesKwh = rawEnvelopeLosses && Object.keys(rawEnvelopeLosses).length > 0
     ? rawEnvelopeLosses
     : hasTimeseriesLosses
-    ? {
+      ? {
         walls: wallLoss,
         roof: roofLoss,
         floor: floorLoss,
@@ -266,7 +266,7 @@ export function ResultsView() {
         infiltration: infilLoss,
         thermalBridges: bridgeLoss,
       }
-    : {};
+      : {};
 
   const rawSolarGain = (summary as any)?.totalSolarGainKwh ?? (activeJob.results as any)?.solar?.useful_solar_gain_total_kwh;
   const totalSolarGainsKwh = typeof rawSolarGain === "number" ? rawSolarGain : 0;
@@ -313,23 +313,10 @@ export function ResultsView() {
     <div className="space-y-8 max-w-7xl mx-auto pb-12">
       {/* V0 Page Intro */}
       <PageIntro
-        eyebrow={`Run ${activeJob.id} · ${activeJob.projectName}`}
         title="Thermal performance"
-        description={`${activeJob.weatherDatasetName} · ${(!activeJob.engine || activeJob.engine.toLowerCase().includes("energyplus")) ? "ThermoShelter Core" : activeJob.engine} v${(!activeJob.engineVersion || activeJob.engineVersion.includes("24.")) ? "3.0.0" : activeJob.engineVersion} · ThermoShelter Core & ANSYS Validated simulation record.`}
+        description={`${(!activeJob.engine || activeJob.engine.toLowerCase().includes("energyplus")) ? "ThermoShelter Core" : activeJob.engine} v${(!activeJob.engineVersion || activeJob.engineVersion.includes("24.")) ? "3.0.0" : activeJob.engineVersion} · ANSYS Validated simulation record.`}
         action={
           <div className="flex flex-wrap items-center gap-3">
-            {/* Active Job Selector */}
-            <select
-              value={activeJob.id}
-              onChange={(e) => setSelectedJobId(e.target.value)}
-              className="rounded-full border border-border bg-card px-4 py-2 text-xs font-semibold text-foreground focus:outline-none focus:ring-1 focus:ring-ring shadow-sm cursor-pointer"
-            >
-              {completedJobs.map((j) => (
-                <option key={j.id} value={j.id}>
-                  {j.projectName} ({j.id})
-                </option>
-              ))}
-            </select>
 
             {/* Save to Projects Library */}
             {activeJob?.shelterModel && (
@@ -473,13 +460,13 @@ export function ResultsView() {
       />
 
       {/* 3. Multi-Source Telemetry Distinction Banner */}
-      <DataSourceBanner
+      {/* <DataSourceBanner
         visibility={traceVisibility}
         onToggle={toggleTrace}
         engineName={activeJob.engine}
         engineVersion={activeJob.engineVersion}
         fieldSiteName={activeJob.weatherDatasetName}
-      />
+      /> */}
 
       {/* 4. High-Level KPI Summary Cards */}
       <SummaryKpiCards
@@ -506,6 +493,14 @@ export function ResultsView() {
         comfortHoursPct={summary.comfortHoursPct}
         projectName={activeJob.projectName}
       />
+
+      <OpeningSensitivityPanel
+        initialSouthAreaM2={activeJob.shelterModel?.windows?.reduce((acc: number, w: any) => acc + (w.width * w.height), 0) || 3.6}
+        southWallAreaM2={computedSouthWallAreaM2}
+        locationName={activeJob.shelterModel?.location?.name || "Ladakh (3,500m ASL)"}
+        designWinterMinC={summary.outdoorMinC ?? -20.5}
+      />
+
 
       {/* 4.7. After Results Workflow Transition Card */}
       <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-6 rounded-[2rem] bg-secondary/30 border border-border shadow-sm">
@@ -561,10 +556,6 @@ export function ResultsView() {
             <Sun className="h-3.5 w-3.5" />
             <span>Solar & Glazing</span>
           </TabsTrigger>
-          <TabsTrigger value="comfort" className="gap-2 text-xs font-semibold rounded-full px-4 py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-            <ShieldCheck className="h-3.5 w-3.5" />
-            <span>Comfort & Energy</span>
-          </TabsTrigger>
           <TabsTrigger value="calendar" className="gap-2 text-xs font-semibold rounded-full px-4 py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
             <CalendarIcon className="h-3.5 w-3.5 text-emerald-600" />
             <span>Annual Comfort Matrix (24h)</span>
@@ -597,12 +588,6 @@ export function ResultsView() {
             visibility={traceVisibility}
             comfortMinC={18}
             comfortMaxC={24}
-          />
-          <OpeningSensitivityPanel
-            initialSouthAreaM2={activeJob.shelterModel?.windows?.reduce((acc: number, w: any) => acc + (w.width * w.height), 0) || 3.6}
-            southWallAreaM2={computedSouthWallAreaM2}
-            locationName={activeJob.shelterModel?.location?.name || "Ladakh (3,500m ASL)"}
-            designWinterMinC={summary.outdoorMinC ?? -20.5}
           />
         </TabsContent>
 
@@ -640,15 +625,7 @@ export function ResultsView() {
           />
         </TabsContent>
 
-        {/* Tab 4: Comfort & Energy Standards */}
-        <TabsContent value="comfort" className="space-y-6">
-          <ComfortAndEnergyPanel
-            comfort={comfortMetrics}
-            energy={energyMetrics}
-            unit={unit}
-            floorAreaM2={computedFloorAreaM2}
-          />
-        </TabsContent>
+
 
         {/* Tab: Annual Comfort Matrix (12 Months x 24 Hours Bioclimatic Matrix) */}
         <TabsContent value="calendar" className="space-y-6">

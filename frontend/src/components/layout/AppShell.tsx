@@ -138,11 +138,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 <Link
                   key={item.id}
                   href={item.href}
-                  className={`rounded-full px-4 py-2 text-[11px] font-semibold transition-colors ${
-                    isActive
-                      ? "bg-foreground text-background"
-                      : "text-muted-foreground hover:bg-secondary hover:text-foreground"
-                  }`}
+                  className={`rounded-full px-4 py-2 text-[11px] font-semibold transition-colors ${isActive
+                    ? "bg-foreground text-background"
+                    : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+                    }`}
                 >
                   {item.label}
                 </Link>
@@ -157,22 +156,20 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               <button
                 type="button"
                 onClick={() => updateSettings({ unitSystem: "SI" })}
-                className={`rounded-full px-3 py-1 transition-colors ${
-                  settings.unitSystem === "SI"
-                    ? "bg-foreground text-background"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
+                className={`rounded-full px-3 py-1 transition-colors ${settings.unitSystem === "SI"
+                  ? "bg-foreground text-background"
+                  : "text-muted-foreground hover:text-foreground"
+                  }`}
               >
                 SI
               </button>
               <button
                 type="button"
                 onClick={() => updateSettings({ unitSystem: "IP" })}
-                className={`rounded-full px-3 py-1 transition-colors ${
-                  settings.unitSystem === "IP"
-                    ? "bg-foreground text-background"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
+                className={`rounded-full px-3 py-1 transition-colors ${settings.unitSystem === "IP"
+                  ? "bg-foreground text-background"
+                  : "text-muted-foreground hover:text-foreground"
+                  }`}
               >
                 IP
               </button>
@@ -268,11 +265,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                                 setActiveProject(p.id);
                                 setProjectPickerOpen(false);
                               }}
-                              className={`flex w-full flex-col rounded-xl px-3 py-2 text-left text-xs transition-colors ${
-                                p.id === activeProject?.id
-                                  ? "bg-secondary font-semibold"
-                                  : "hover:bg-black/5"
-                              }`}
+                              className={`flex w-full flex-col rounded-xl px-3 py-2 text-left text-xs transition-colors ${p.id === activeProject?.id
+                                ? "bg-secondary font-semibold"
+                                : "hover:bg-black/5"
+                                }`}
                             >
                               <span>{p.project.name}</span>
                               <span className="text-[10px] text-muted-foreground">{p.location.region}</span>
@@ -293,36 +289,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                       </div>
                     )}
                   </div>
-                </div>
-
-                {/* Status, Live Progress Bar and Next Recommended Step CTA */}
-                <div className="flex flex-wrap items-center gap-3">
-                  <div className="flex items-center gap-2.5">
-                    <div className="hidden sm:flex flex-col min-w-[120px]">
-                      <div className="flex items-center justify-between text-[10px] font-semibold text-muted-foreground">
-                        <span>Workflow Progress</span>
-                        <span className="font-mono text-emerald-600 dark:text-emerald-400 font-bold">{progressPercent}%</span>
-                      </div>
-                      <div className="h-1.5 w-full rounded-full bg-secondary overflow-hidden border border-border mt-0.5">
-                        <div
-                          className="h-full bg-emerald-500 transition-all duration-500 ease-out"
-                          style={{ width: `${progressPercent}%` }}
-                        />
-                      </div>
-                    </div>
-                    <Status strong>{completedCount} of {WORKFLOW_PIPELINE.length} stages validated</Status>
-                  </div>
-
-                  {nextRecommendedStep && (
-                    <Link
-                      href={nextRecommendedStep.href}
-                      className="group inline-flex items-center gap-2 rounded-full bg-black px-4 py-1.5 text-xs font-semibold text-white shadow-sm transition-colors hover:bg-[#6E818F]"
-                    >
-                      <Sparkles className="size-3 text-[#CBDCE6]" />
-                      <span>Next: {nextRecommendedStep.label}</span>
-                      <ArrowRight className="size-3 transition-transform group-hover:translate-x-0.5" />
-                    </Link>
-                  )}
                 </div>
               </div>
             </div>

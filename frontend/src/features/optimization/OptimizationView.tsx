@@ -275,9 +275,8 @@ export function OptimizationView() {
     <div className="space-y-8 max-w-7xl mx-auto pb-12">
       {/* V0 Page Intro */}
       <PageIntro
-        eyebrow="Parametric Optimization Studio · Multi-Objective Design"
         title="Transparent optimization & recommendations"
-        description="Deterministic Cartesian exploration across thermal design variables with physics constraints, Pareto frontier ranking, and engineering recommendations."
+        description="Exploration across thermal design variables with physics constraints, Pareto frontier ranking, and engineering recommendations."
         action={
           <div className="flex flex-wrap items-center gap-2.5">
             {backendStatus === "online" ? (
@@ -295,23 +294,6 @@ export function OptimizationView() {
                 <Clock className="size-3 animate-spin" />
                 Checking Backend...
               </span>
-            )}
-
-            {projects.length > 1 && (
-              <div className="flex items-center gap-2 rounded-full border border-border bg-card px-4 py-2 text-xs font-semibold">
-                <FolderOpen className="size-3.5 text-muted-foreground" />
-                <select
-                  value={activeProjectId || ""}
-                  onChange={(e) => setActiveProject(e.target.value)}
-                  className="bg-transparent text-xs text-foreground focus:outline-none cursor-pointer"
-                >
-                  {projects.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.project.name} (v{p.project.version})
-                    </option>
-                  ))}
-                </select>
-              </div>
             )}
           </div>
         }
@@ -350,11 +332,10 @@ export function OptimizationView() {
       {/* Notification Banner */}
       {notification && (
         <div
-          className={`flex items-center justify-between p-4 rounded-2xl border text-xs font-semibold shadow-sm ${
-            notification.type === "success"
-              ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-700 dark:text-emerald-300"
-              : "bg-sky-500/10 border-sky-500/30 text-sky-700 dark:text-sky-300"
-          }`}
+          className={`flex items-center justify-between p-4 rounded-2xl border text-xs font-semibold shadow-sm ${notification.type === "success"
+            ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-700 dark:text-emerald-300"
+            : "bg-sky-500/10 border-sky-500/30 text-sky-700 dark:text-sky-300"
+            }`}
         >
           <div className="flex items-center gap-2.5">
             <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" />

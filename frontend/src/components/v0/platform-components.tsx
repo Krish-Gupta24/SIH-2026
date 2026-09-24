@@ -529,23 +529,47 @@ export function NextStep({
   label,
   detail,
   onClick,
+  bold = false,
+  className = "",
 }: {
   label: string;
   detail: string;
   onClick: () => void;
+  bold?: boolean;
+  className?: string;
 }) {
   return (
     <button
       onClick={onClick}
-      className="group flex w-full items-center justify-between rounded-2xl border border-border bg-white/75 p-5 text-left shadow-[0_12px_35px_rgba(0,0,0,.05)] transition-all hover:-translate-y-0.5 hover:border-[#6E818F] hover:shadow-[0_18px_42px_rgba(0,0,0,.08)]"
+      className={`group flex w-full items-center justify-between rounded-2xl border border-border bg-white/75 p-5 text-left shadow-[0_12px_35px_rgba(0,0,0,.05)] transition-all hover:-translate-y-0.5 hover:border-[#6E818F] hover:shadow-[0_18px_42px_rgba(0,0,0,.08)] ${className}`}
     >
       <span>
-        <span className="micro-label">Next step</span>
-        <span className="mt-1 block text-base font-semibold">{label}</span>
-        <span className="mt-1 block text-xs text-[#6b7c86]">{detail}</span>
+        <span
+          className={`micro-label ${
+            bold ? "font-black text-[#101820] dark:text-foreground tracking-wider" : ""
+          }`}
+        >
+          Next step
+        </span>
+        <span
+          className={`mt-1 block text-base ${
+            bold ? "font-bold text-foreground" : "font-semibold"
+          }`}
+        >
+          {label}
+        </span>
+        <span
+          className={`mt-1 block text-xs ${
+            bold ? "font-medium text-[#37474f] dark:text-gray-300" : "text-[#6b7c86]"
+          }`}
+        >
+          {detail}
+        </span>
       </span>
       <ArrowRight
-        className="size-5 transition-transform group-hover:translate-x-1"
+        className={`size-5 transition-transform group-hover:translate-x-1 ${
+          bold ? "stroke-[2.5]" : ""
+        }`}
         aria-hidden="true"
       />
     </button>

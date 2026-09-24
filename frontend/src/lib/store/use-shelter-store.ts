@@ -2235,16 +2235,39 @@ export const useShelterStore = create<ShelterStoreState>()(
 
       // Actions
       setActiveProject: (id: string) => {
-        set({ activeProjectId: id });
+        set((state) => {
+          const targetProj = state.projects.find((p) => p.id === id);
+          let matchedWeatherId = state.activeWeatherId;
+          if (targetProj?.location?.weatherSource) {
+            const matched = state.weatherDatasets.find((w) => w.epwFileName === targetProj.location?.weatherSource);
+            if (matched) {
+              matchedWeatherId = matched.id;
+            }
+          }
+          return {
+            activeProjectId: id,
+            activeWeatherId: matchedWeatherId,
+          };
+        });
       },
 
       addProject: (project: ShelterModel) => {
         const normalized = normalizeShelterModel(project);
-        set((state) => ({
-          deletedProjectIds: (state.deletedProjectIds || []).filter((did) => did !== normalized.id),
-          projects: [...state.projects.filter((p) => p.id !== normalized.id), normalized],
-          activeProjectId: normalized.id,
-        }));
+        set((state) => {
+          let matchedWeatherId = state.activeWeatherId;
+          if (normalized.location?.weatherSource) {
+            const matched = state.weatherDatasets.find((w) => w.epwFileName === normalized.location?.weatherSource);
+            if (matched) {
+              matchedWeatherId = matched.id;
+            }
+          }
+          return {
+            deletedProjectIds: (state.deletedProjectIds || []).filter((did) => did !== normalized.id),
+            projects: [...state.projects.filter((p) => p.id !== normalized.id), normalized],
+            activeProjectId: normalized.id,
+            activeWeatherId: matchedWeatherId,
+          };
+        });
         // Automatically persist to backend storage and DB
         api.projects.create(normalized).catch((err) => {
           console.warn("Backend project create sync note:", err);
@@ -2485,10 +2508,41 @@ export const useShelterStore = create<ShelterStoreState>()(
       },
 
       addWeatherDataset: (station: WeatherStation) => {
-        set((state) => ({
-          weatherDatasets: [...state.weatherDatasets.filter((w) => w.id !== station.id), station],
-          activeWeatherId: station.id,
-        }));
+        set((state) => {
+          const nextWeatherDatasets = [...state.weatherDatasets.filter((w) => w.id !== station.id), station];
+          const activeProj = state.projects.find((p) => p.id === state.activeProjectId);
+          let updatedProjects = state.projects;
+          if (activeProj) {
+            updatedProjects = state.projects.map((p) => {
+              if (p.id === state.activeProjectId) {
+                return {
+                  ...p,
+                  location: {
+                    ...p.location,
+                    weatherSource: station.epwFileName,
+                    region: station.region || p.location?.region,
+                    latitude: station.latitude ?? p.location?.latitude,
+                    longitude: station.longitude ?? p.location?.longitude,
+                    elevation: station.elevationM ?? p.location?.elevation,
+                    climateZone: station.climateZone || p.location?.climateZone,
+                    designTempWinter: station.designWinterMinC ?? p.location?.designTempWinter,
+                    designTempSummer: station.designSummerMaxC ?? p.location?.designTempSummer,
+                  },
+                };
+              }
+              return p;
+            });
+            const updatedActive = updatedProjects.find((p) => p.id === state.activeProjectId);
+            if (updatedActive) {
+              api.projects.update(updatedActive.id, updatedActive).catch(() => {});
+            }
+          }
+          return {
+            weatherDatasets: nextWeatherDatasets,
+            activeWeatherId: station.id,
+            projects: updatedProjects,
+          };
+        });
       },
 
       deleteWeatherDataset: (id: string) => {
@@ -2542,7 +2596,43 @@ export const useShelterStore = create<ShelterStoreState>()(
       },
 
       setActiveWeather: (id: string) => {
-        set({ activeWeatherId: id });
+        set((state) => {
+          const targetStation = state.weatherDatasets.find((w) => w.id === id);
+          if (!targetStation) {
+            return { activeWeatherId: id };
+          }
+          const activeProj = state.projects.find((p) => p.id === state.activeProjectId);
+          let updatedProjects = state.projects;
+          if (activeProj) {
+            updatedProjects = state.projects.map((p) => {
+              if (p.id === state.activeProjectId) {
+                return {
+                  ...p,
+                  location: {
+                    ...p.location,
+                    weatherSource: targetStation.epwFileName,
+                    region: targetStation.region || p.location?.region,
+                    latitude: targetStation.latitude ?? p.location?.latitude,
+                    longitude: targetStation.longitude ?? p.location?.longitude,
+                    elevation: targetStation.elevationM ?? p.location?.elevation,
+                    climateZone: targetStation.climateZone || p.location?.climateZone,
+                    designTempWinter: targetStation.designWinterMinC ?? p.location?.designTempWinter,
+                    designTempSummer: targetStation.designSummerMaxC ?? p.location?.designTempSummer,
+                  },
+                };
+              }
+              return p;
+            });
+            const updatedActive = updatedProjects.find((p) => p.id === state.activeProjectId);
+            if (updatedActive) {
+              api.projects.update(updatedActive.id, updatedActive).catch(() => {});
+            }
+          }
+          return {
+            activeWeatherId: id,
+            projects: updatedProjects,
+          };
+        });
       },
 
       resetProjectsToDefault: () => {

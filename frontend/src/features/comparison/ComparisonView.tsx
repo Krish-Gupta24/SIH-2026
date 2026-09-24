@@ -192,11 +192,10 @@ export function ComparisonView() {
               <button
                 key={job.id}
                 onClick={() => handleToggleJob(job.id)}
-                className={`comparison-card flex min-h-32 flex-col justify-between rounded-2xl border p-5 text-left transition-all ${
-                  isSelected
+                className={`comparison-card flex min-h-32 flex-col justify-between rounded-2xl border p-5 text-left transition-all ${isSelected
                     ? "border-[#6E818F] bg-[#CBDCE6] shadow-[0_15px_35px_rgba(0,0,0,.08)] text-black"
                     : "border-border bg-card hover:-translate-y-0.5 hover:border-[#6E818F]"
-                }`}
+                  }`}
               >
                 <div className="flex items-start justify-between w-full">
                   <div>
@@ -206,9 +205,8 @@ export function ComparisonView() {
                     </span>
                   </div>
                   <span
-                    className={`flex size-5 shrink-0 items-center justify-center rounded border ${
-                      isSelected ? "border-black bg-black text-white" : "border-black/20 bg-card"
-                    }`}
+                    className={`flex size-5 shrink-0 items-center justify-center rounded border ${isSelected ? "border-black bg-black text-white" : "border-black/20 bg-card"
+                      }`}
                   >
                     {isSelected ? <Check className="size-3" /> : null}
                   </span>
@@ -258,11 +256,6 @@ export function ComparisonView() {
 
       {/* 5. Comparative Visual Charts */}
       {comparedJobs.length >= 2 && <ComparisonCharts jobs={comparedJobs} />}
-
-      {/* 6. Engineering Scientific Reproducibility Manifest */}
-      {comparedJobs.length >= 2 && reproducibilityManifest && (
-        <ReproducibilityManifestCard manifest={reproducibilityManifest} />
-      )}
 
       {/* Save / Clone Version Modal */}
       <SaveVersionModal

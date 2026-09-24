@@ -45,7 +45,7 @@ export function ArchitecturalPlanSheet({
   onSelectView,
   compactMode = false,
 }: ArchitecturalPlanSheetProps) {
-  const [activeView, setActiveView] = useState<SheetViewMode>("consolidated");
+  const [activeView, setActiveView] = useState<SheetViewMode>("front");
   const [isFullscreen, setIsFullscreen] = useState(false);
 
   // Geometry dimensions in meters
@@ -113,11 +113,10 @@ export function ArchitecturalPlanSheet({
 
   return (
     <div
-      className={`flex flex-col gap-3 font-sans print:p-0 print:m-0 print:border-none print:shadow-none ${
-        isFullscreen
-          ? "fixed inset-0 z-50 overflow-y-auto bg-slate-900/95 p-4 sm:p-6 backdrop-blur-md"
-          : "relative"
-      }`}
+      className={`flex flex-col gap-3 font-sans print:p-0 print:m-0 print:border-none print:shadow-none ${isFullscreen
+        ? "fixed inset-0 z-50 overflow-y-auto bg-slate-900/95 p-4 sm:p-6 backdrop-blur-md"
+        : "relative"
+        }`}
     >
       {/* ─────────────────────────────────────────────────────────────
           SCREEN ONLY: Toolbar & Interactive Controls
@@ -127,78 +126,71 @@ export function ArchitecturalPlanSheet({
         <div className="flex flex-wrap items-center gap-1">
           <button
             type="button"
-            onClick={() => { setActiveView("consolidated"); onSelectView?.("consolidated"); }}
-            className={`rounded-xl px-3 py-1.5 font-semibold transition ${
-              activeView === "consolidated"
-                ? "bg-foreground text-background shadow-xs"
-                : "text-muted-foreground hover:bg-secondary hover:text-foreground"
-            }`}
-          >
-            Consolidated (1:100)
-          </button>
-          <button
-            type="button"
-            onClick={() => { setActiveView("plan"); onSelectView?.("plan"); }}
-            className={`rounded-xl px-3 py-1.5 font-semibold transition ${
-              activeView === "plan"
-                ? "bg-foreground text-background shadow-xs"
-                : "text-muted-foreground hover:bg-secondary hover:text-foreground"
-            }`}
-          >
-            Floor Plan (1:50)
-          </button>
-          <button
-            type="button"
             onClick={() => { setActiveView("front"); onSelectView?.("front"); }}
-            className={`rounded-xl px-3 py-1.5 font-semibold transition ${
-              activeView === "front"
-                ? "bg-foreground text-background shadow-xs"
-                : "text-muted-foreground hover:bg-secondary hover:text-foreground"
-            }`}
+            className={`rounded-xl px-3 py-1.5 font-semibold transition ${activeView === "front"
+              ? "bg-foreground text-background shadow-xs"
+              : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+              }`}
           >
             Front (North)
           </button>
           <button
             type="button"
             onClick={() => { setActiveView("rear"); onSelectView?.("rear"); }}
-            className={`rounded-xl px-3 py-1.5 font-semibold transition ${
-              activeView === "rear"
-                ? "bg-foreground text-background shadow-xs"
-                : "text-muted-foreground hover:bg-secondary hover:text-foreground"
-            }`}
+            className={`rounded-xl px-3 py-1.5 font-semibold transition ${activeView === "rear"
+              ? "bg-foreground text-background shadow-xs"
+              : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+              }`}
           >
             Rear (South Solar)
           </button>
           <button
             type="button"
             onClick={() => { setActiveView("side"); onSelectView?.("side"); }}
-            className={`rounded-xl px-3 py-1.5 font-semibold transition ${
-              activeView === "side"
-                ? "bg-foreground text-background shadow-xs"
-                : "text-muted-foreground hover:bg-secondary hover:text-foreground"
-            }`}
+            className={`rounded-xl px-3 py-1.5 font-semibold transition ${activeView === "side"
+              ? "bg-foreground text-background shadow-xs"
+              : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+              }`}
           >
             Side Elevations
           </button>
           <button
             type="button"
+            onClick={() => { setActiveView("plan"); onSelectView?.("plan"); }}
+            className={`rounded-xl px-3 py-1.5 font-semibold transition ${activeView === "plan"
+              ? "bg-foreground text-background shadow-xs"
+              : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+              }`}
+          >
+            Floor Plan (1:50)
+          </button>
+          <button
+            type="button"
             onClick={() => { setActiveView("section"); onSelectView?.("section"); }}
-            className={`rounded-xl px-3 py-1.5 font-semibold transition ${
-              activeView === "section"
-                ? "bg-foreground text-background shadow-xs"
-                : "text-muted-foreground hover:bg-secondary hover:text-foreground"
-            }`}
+            className={`rounded-xl px-3 py-1.5 font-semibold transition ${activeView === "section"
+              ? "bg-foreground text-background shadow-xs"
+              : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+              }`}
           >
             Cross-Section
           </button>
           <button
             type="button"
+            onClick={() => { setActiveView("consolidated"); onSelectView?.("consolidated"); }}
+            className={`rounded-xl px-3 py-1.5 font-semibold transition ${activeView === "consolidated"
+              ? "bg-foreground text-background shadow-xs"
+              : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+              }`}
+          >
+            Consolidated (1:100)
+          </button>
+          <button
+            type="button"
             onClick={() => { setActiveView("schedule"); onSelectView?.("schedule"); }}
-            className={`rounded-xl px-3 py-1.5 font-semibold transition ${
-              activeView === "schedule"
-                ? "bg-foreground text-background shadow-xs"
-                : "text-muted-foreground hover:bg-secondary hover:text-foreground"
-            }`}
+            className={`rounded-xl px-3 py-1.5 font-semibold transition ${activeView === "schedule"
+              ? "bg-foreground text-background shadow-xs"
+              : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+              }`}
           >
             Materials & U-Values
           </button>
@@ -206,20 +198,6 @@ export function ArchitecturalPlanSheet({
 
         {/* Live Telemetry Chips & Action Buttons */}
         <div className="flex flex-wrap items-center gap-2">
-          <span className="hidden sm:inline-flex items-center gap-1.5 rounded-full border border-border bg-secondary/50 px-2.5 py-1 text-[11px] font-semibold text-foreground">
-            <Compass className="size-3 text-sky-500" />
-            <span>{orientation}° Azimuth</span>
-          </span>
-
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
-            <ShieldCheck className="size-3" />
-            <span>U-Wall: {southWallRes.uValue} W/m²K</span>
-          </span>
-
-          <span className="hidden md:inline-flex items-center gap-1.5 rounded-full border border-amber-500/30 bg-amber-500/10 px-2.5 py-1 text-[11px] font-semibold text-amber-600 dark:text-amber-400">
-            <Sun className="size-3" />
-            <span>WWR {wwr}%</span>
-          </span>
 
           {/* Print All Views Action Button */}
           <button
@@ -229,7 +207,6 @@ export function ArchitecturalPlanSheet({
             title="Print complete multi-view architectural drawing set"
           >
             <Printer className="size-3.5" />
-            <span>Print Sheet (All Views)</span>
           </button>
 
           {/* Fullscreen Expand/Collapse */}
@@ -251,99 +228,6 @@ export function ArchitecturalPlanSheet({
         <div className="min-w-[760px] max-w-[1240px] mx-auto bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl p-4 sm:p-6 shadow-sm text-slate-800 dark:text-slate-100">
           {/* Inner Engineering Drafting Border */}
           <div className="border border-slate-400 dark:border-slate-600 p-4 sm:p-6 rounded-lg space-y-6">
-            {/* View 1: Consolidated Master Sheet */}
-            {activeView === "consolidated" && (
-              <div className="space-y-6">
-                {/* Upper Grid: Front Elevation (North) & Material Specifications */}
-                <div className="grid grid-cols-12 gap-6 items-start">
-                  <div className="col-span-8 space-y-2">
-                    <SheetSubHeader
-                      title="FRONT ELEVATION — NORTH WINDWARD FACADE"
-                      sheet="CIV-EL-001"
-                      scale="1:100"
-                    />
-                    <NorthElevationSvg
-                      length={L}
-                      height={H}
-                      roofType={roofType}
-                      roofAngle={roofAngle}
-                      overhang={overhang}
-                      windows={northWindows}
-                      doors={northDoors}
-                    />
-                  </div>
-
-                  <div className="col-span-4 rounded-xl border border-slate-200 bg-slate-50/80 p-3 text-[10px] dark:border-slate-800 dark:bg-slate-950/60">
-                    <MaterialReferenceSchedule
-                      southWallU={southWallRes.uValue}
-                      northWallU={northWallRes.uValue}
-                      roofU={roofRes.uValue}
-                      floorU={floorRes.uValue}
-                      windows={windows}
-                    />
-                  </div>
-                </div>
-
-                {/* Middle Grid: Rear Elevation (South Passive Solar Facade) */}
-                <div className="space-y-2 border-t border-slate-200 dark:border-slate-800 pt-4">
-                  <SheetSubHeader
-                    title="REAR ELEVATION — SOUTH FACING (PASSIVE SOLAR GAIN APERTURE)"
-                    sheet="CIV-EL-002"
-                    scale="1:100"
-                  />
-                  <SouthElevationSvg
-                    length={L}
-                    height={H}
-                    roofType={roofType}
-                    roofAngle={roofAngle}
-                    overhang={overhang}
-                    solarAngle={winterSolsticeSunAngle}
-                    windows={southWindows}
-                    doors={southDoors}
-                    roofSolarPanels={model.envelope?.roof?.solarPanels}
-                  />
-                </div>
-
-                {/* Lower Grid: Side Elevations (East & West) */}
-                <div className="grid grid-cols-2 gap-6 border-t border-slate-200 dark:border-slate-800 pt-4">
-                  <div className="space-y-2">
-                    <SheetSubHeader
-                      title="SIDE ELEVATION — EAST ORIENTATION"
-                      sheet="CIV-EL-003"
-                      scale="1:100"
-                    />
-                    <SideElevationSvg
-                      width={W}
-                      height={H}
-                      roofType={roofType}
-                      roofAngle={roofAngle}
-                      overhang={overhang}
-                      orientation="East"
-                      windows={eastWindows}
-                      doors={eastDoors}
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <SheetSubHeader
-                      title="SIDE ELEVATION — WEST ORIENTATION"
-                      sheet="CIV-EL-004"
-                      scale="1:100"
-                    />
-                    <SideElevationSvg
-                      width={W}
-                      height={H}
-                      roofType={roofType}
-                      roofAngle={roofAngle}
-                      overhang={overhang}
-                      orientation="West"
-                      windows={westWindows}
-                      doors={westDoors}
-                    />
-                  </div>
-                </div>
-              </div>
-            )}
 
             {/* View 2: Floor Plan */}
             {activeView === "plan" && (
@@ -469,6 +353,100 @@ export function ArchitecturalPlanSheet({
                   uFloor={floorRes.uValue}
                   roofSolarPanels={model.envelope?.roof?.solarPanels}
                 />
+              </div>
+            )}
+
+            {/* View 1: Consolidated Master Sheet */}
+            {activeView === "consolidated" && (
+              <div className="space-y-6">
+                {/* Upper Grid: Front Elevation (North) & Material Specifications */}
+                <div className="grid grid-cols-12 gap-6 items-start">
+                  <div className="col-span-8 space-y-2">
+                    <SheetSubHeader
+                      title="FRONT ELEVATION — NORTH WINDWARD FACADE"
+                      sheet="CIV-EL-001"
+                      scale="1:100"
+                    />
+                    <NorthElevationSvg
+                      length={L}
+                      height={H}
+                      roofType={roofType}
+                      roofAngle={roofAngle}
+                      overhang={overhang}
+                      windows={northWindows}
+                      doors={northDoors}
+                    />
+                  </div>
+
+                  <div className="col-span-4 rounded-xl border border-slate-200 bg-slate-50/80 p-3 text-[10px] dark:border-slate-800 dark:bg-slate-950/60">
+                    <MaterialReferenceSchedule
+                      southWallU={southWallRes.uValue}
+                      northWallU={northWallRes.uValue}
+                      roofU={roofRes.uValue}
+                      floorU={floorRes.uValue}
+                      windows={windows}
+                    />
+                  </div>
+                </div>
+
+                {/* Middle Grid: Rear Elevation (South Passive Solar Facade) */}
+                <div className="space-y-2 border-t border-slate-200 dark:border-slate-800 pt-4">
+                  <SheetSubHeader
+                    title="REAR ELEVATION — SOUTH FACING (PASSIVE SOLAR GAIN APERTURE)"
+                    sheet="CIV-EL-002"
+                    scale="1:100"
+                  />
+                  <SouthElevationSvg
+                    length={L}
+                    height={H}
+                    roofType={roofType}
+                    roofAngle={roofAngle}
+                    overhang={overhang}
+                    solarAngle={winterSolsticeSunAngle}
+                    windows={southWindows}
+                    doors={southDoors}
+                    roofSolarPanels={model.envelope?.roof?.solarPanels}
+                  />
+                </div>
+
+                {/* Lower Grid: Side Elevations (East & West) */}
+                <div className="grid grid-cols-2 gap-6 border-t border-slate-200 dark:border-slate-800 pt-4">
+                  <div className="space-y-2">
+                    <SheetSubHeader
+                      title="SIDE ELEVATION — EAST ORIENTATION"
+                      sheet="CIV-EL-003"
+                      scale="1:100"
+                    />
+                    <SideElevationSvg
+                      width={W}
+                      height={H}
+                      roofType={roofType}
+                      roofAngle={roofAngle}
+                      overhang={overhang}
+                      orientation="East"
+                      windows={eastWindows}
+                      doors={eastDoors}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <SheetSubHeader
+                      title="SIDE ELEVATION — WEST ORIENTATION"
+                      sheet="CIV-EL-004"
+                      scale="1:100"
+                    />
+                    <SideElevationSvg
+                      width={W}
+                      height={H}
+                      roofType={roofType}
+                      roofAngle={roofAngle}
+                      overhang={overhang}
+                      orientation="West"
+                      windows={westWindows}
+                      doors={westDoors}
+                    />
+                  </div>
+                </div>
               </div>
             )}
 
@@ -2201,16 +2179,14 @@ function MaterialReferenceSchedule({
         </div>
 
         {/* Ext-06: Active Solar Generation Assets */}
-        <div className={`flex items-start gap-2.5 p-1.5 rounded-lg border ${
-          isRoofSolar || bipvWindows.length > 0
-            ? "border-amber-300 dark:border-amber-900 bg-amber-50/60 dark:bg-amber-950/30"
-            : "border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/40"
-        }`}>
-          <div className={`size-4 shrink-0 rounded font-bold flex items-center justify-center text-[9px] mt-0.5 ${
-            isRoofSolar || bipvWindows.length > 0
-              ? "bg-amber-500 text-white"
-              : "bg-slate-300 dark:bg-slate-700 text-slate-600 dark:text-slate-400"
+        <div className={`flex items-start gap-2.5 p-1.5 rounded-lg border ${isRoofSolar || bipvWindows.length > 0
+          ? "border-amber-300 dark:border-amber-900 bg-amber-50/60 dark:bg-amber-950/30"
+          : "border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/40"
           }`}>
+          <div className={`size-4 shrink-0 rounded font-bold flex items-center justify-center text-[9px] mt-0.5 ${isRoofSolar || bipvWindows.length > 0
+            ? "bg-amber-500 text-white"
+            : "bg-slate-300 dark:bg-slate-700 text-slate-600 dark:text-slate-400"
+            }`}>
             ☀️
           </div>
           <div className="flex-1">

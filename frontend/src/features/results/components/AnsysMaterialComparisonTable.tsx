@@ -188,9 +188,7 @@ export function AnsysMaterialComparisonTable({ activeProject }: AnsysMaterialCom
             <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-500/10 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400 border border-blue-500/20">
               ANSYS Mechanical APDL FEA Model
             </span>
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-              DRDO PS 26051 Core Requirement
-            </span>
+
           </div>
           <h3 className="text-base font-bold text-foreground flex items-center gap-2 mt-1.5">
             <Layers className="h-4 w-4 text-blue-500" />
@@ -228,9 +226,8 @@ export function AnsysMaterialComparisonTable({ activeProject }: AnsysMaterialCom
             {materials.map((m) => (
               <tr
                 key={m.rank}
-                className={`hover:bg-muted/40 transition-colors ${
-                  m.rank === 1 ? "bg-emerald-500/5 font-semibold" : ""
-                }`}
+                className={`hover:bg-muted/40 transition-colors ${m.rank === 1 ? "bg-emerald-500/5 font-semibold" : ""
+                  }`}
               >
                 {/* Material Name & Badge */}
                 <td className="py-3.5 px-3">
@@ -259,9 +256,8 @@ export function AnsysMaterialComparisonTable({ activeProject }: AnsysMaterialCom
                 <td className="py-3.5 px-3">
                   <div className="flex items-center gap-1.5 font-mono font-bold">
                     <Thermometer
-                      className={`size-3.5 ${
-                        m.tMin.startsWith("+") ? "text-emerald-500" : "text-rose-500"
-                      }`}
+                      className={`size-3.5 ${m.tMin.startsWith("+") ? "text-emerald-500" : "text-rose-500"
+                        }`}
                     />
                     <span
                       className={
@@ -294,13 +290,12 @@ export function AnsysMaterialComparisonTable({ activeProject }: AnsysMaterialCom
                 {/* Status Badge */}
                 <td className="py-3.5 px-3 text-right">
                   <span
-                    className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-medium ${
-                      m.rank === 1
-                        ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30"
-                        : m.rank <= 3
+                    className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-medium ${m.rank === 1
+                      ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30"
+                      : m.rank <= 3
                         ? "bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20"
                         : "bg-muted text-muted-foreground border border-border"
-                    }`}
+                      }`}
                   >
                     <CheckCircle2 className="size-3" />
                     {m.status}

@@ -7,6 +7,7 @@ import {
   ArrowDown,
   ArrowRight,
   Box,
+  ChevronDown,
   Cpu,
   Database,
   FileCheck2,
@@ -37,11 +38,38 @@ interface LandingProps {
   summary?: NonNullable<SimulationJobItem["results"]>["summary"];
 }
 
-const method = ["Location", "Climate data", "Shelter parameters", "Area-specific design"];
+const methodSteps = [
+  {
+    title: "Location",
+    summary: "Ground the habitat in geographic altitude, terrain roughness, and micro-climate exposure.",
+    details: "Coordinates, elevation (3,500m–5,500m ASL in Leh, Dras, Siachen), barometric thinning (~65 kPa), and local wind fetch defining nocturnal infiltration and convective heat loss.",
+    tags: ["3,500m–5,500m ASL", "Atmospheric Thinning", "Terrain Roughness"],
+  },
+  {
+    title: "Climate data",
+    summary: "Hour-by-hour meteorological physics attached to every design cycle.",
+    details: "Sub-zero dry-bulb extremes down to −40°C, direct normal solar irradiance (DNI > 1,000 W/m²), Heating Degree Days (HDD18: 4,850+), and wind-driven snow boundary conditions.",
+    tags: ["EPW Multi-Year Data", "Solar Clearness Kt > 0.75", "Diurnal Swing > 25°C"],
+  },
+  {
+    title: "Shelter parameters",
+    summary: "Multi-layered envelope assemblies, structural airtightness, and thermal capacitance.",
+    details: "High-performance insulation composites (Aerogel, EPS, XPS, PUF), airtightness sealing targets (≤0.6 ACH@50Pa), triple Low-E argon glazing, and internal thermal mass sizing.",
+    tags: ["U-Value ≤ 0.20 W/m²·K", "Triple Glazing", "Airtightness Sealing"],
+  },
+  {
+    title: "Area-specific design",
+    summary: "Synthesizing extreme mountain forces into autonomous thermal resilience.",
+    details: "South-facing passive solar gain coupled with a 300mm rammed-earth Trombe wall for 9-hour nocturnal heat release, sub-grade permafrost isolation, and ≥80% DRDO comfort compliance.",
+    tags: ["Trombe Lag 9.2 hrs", "Bukhari Fuel Cut ≥75%", "DRDO PS 26051 Compliance"],
+  },
+];
+
 const decisions = ["Geometry", "Orientation", "Materials", "Openings", "Thermal mass"];
 
 export function PremiumLanding({ onOpen, onContinue, hasProject, summary }: LandingProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [openMethodIndex, setOpenMethodIndex] = useState<number | null>(0);
   const scroll = (id: string) => document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
 
   return (
@@ -417,8 +445,61 @@ export function PremiumLanding({ onOpen, onContinue, hasProject, summary }: Land
 
       <section id="platform" className="bg-foreground text-background">
         <div className="editorial-section grid gap-16 lg:grid-cols-[.7fr_1.3fr]">
-          <div><p className="micro-label text-white/45">02 · Area-specific design</p><h2 className="section-title mt-6">Place becomes a design input.</h2></div>
-          <ol className="border-t border-white/20">{method.map((step, index) => <li key={step} className="grid grid-cols-[48px_1fr_auto] items-center border-b border-white/20 py-7"><span className="text-[10px] text-white/40">0{index + 1}</span><span className="text-xl font-medium sm:text-2xl">{step}</span><ArrowDown className={index === method.length - 1 ? "rotate-[-90deg]" : ""} aria-hidden="true" /></li>)}</ol>
+          <div>
+            <p className="micro-label text-white/45">02 · Area-specific design</p>
+            <h2 className="section-title mt-6">Place becomes a design input.</h2>
+            <p className="mt-6 text-sm text-white/60 leading-relaxed max-w-sm">
+              Discover how geographic altitude, meteorological extremes, and passive building physics combine into autonomous defense habitats. Click any stage to inspect the sequence.
+            </p>
+          </div>
+
+          <div className="border-t border-white/20">
+            {methodSteps.map((step, index) => {
+              const isOpen = openMethodIndex === index;
+              return (
+                <div key={step.title} className="border-b border-white/20 transition-colors">
+                  <button
+                    type="button"
+                    onClick={() => setOpenMethodIndex(isOpen ? null : index)}
+                    aria-expanded={isOpen}
+                    className="w-full grid grid-cols-[48px_1fr_auto] items-center py-6 sm:py-7 text-left group cursor-pointer hover:opacity-95"
+                  >
+                    <span className="text-xs font-mono text-white/40">0{index + 1}</span>
+                    <span className="text-xl font-medium sm:text-2xl text-white group-hover:text-white/90">
+                      {step.title}
+                    </span>
+                    <div className="flex size-9 items-center justify-center rounded-full border border-white/20 bg-white/5 text-white/70 transition-all duration-300 group-hover:border-white/40 group-hover:bg-white/10 group-hover:text-white">
+                      <ChevronDown
+                        className={`size-4 transition-transform duration-300 ${isOpen ? "rotate-180 text-white" : ""}`}
+                        aria-hidden="true"
+                      />
+                    </div>
+                  </button>
+
+                  {isOpen && (
+                    <div className="pl-12 pb-7 pr-4 text-white/80 animate-in fade-in slide-in-from-top-2 duration-200">
+                      <p className="text-sm sm:text-base font-normal text-white/95 leading-relaxed max-w-2xl">
+                        {step.summary}
+                      </p>
+                      <p className="mt-2.5 text-xs sm:text-sm text-white/65 leading-relaxed max-w-2xl">
+                        {step.details}
+                      </p>
+                      <div className="mt-4 flex flex-wrap gap-2">
+                        {step.tags.map((tag) => (
+                          <span
+                            key={tag}
+                            className="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-mono font-medium bg-white/10 text-white/90 border border-white/15 shadow-xs"
+                          >
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
         </div>
       </section>
 
@@ -427,17 +508,11 @@ export function PremiumLanding({ onOpen, onContinue, hasProject, summary }: Land
         <div className="flex flex-col justify-center bg-background p-8 sm:p-14 lg:p-16"><p className="micro-label">03 · Shelter designer</p><h2 className="section-title mt-6">The model is the decision surface.</h2><p className="mt-7 max-w-lg leading-7 text-muted-foreground">Control geometry, orientation, envelope systems, openings and thermal mass through a focused 13-step engineering sequence.</p><div className="mt-10 flex flex-wrap gap-x-6 gap-y-3 border-t border-border pt-6">{decisions.map((decision) => <span key={decision} className="micro-label text-foreground">{decision}</span>)}</div><ActionButton onClick={onOpen} className="mt-10 self-start">Open designer <ArrowRight aria-hidden="true" /></ActionButton></div>
       </section>
 
-      <section className="border-y border-border bg-secondary"><div className="editorial-section grid gap-14 lg:grid-cols-[.72fr_1.28fr]"><div><p className="micro-label">04 · Weather intelligence</p><h2 className="section-title mt-6">Real weather. Attached to every run.</h2><p className="mt-7 max-w-md leading-7 text-muted-foreground">Location, coordinates, source and time period stay visible alongside temperature, solar radiation, wind and humidity.</p></div><ClimateProfile winter={-20.5} summer={28} hdd={4850} /></div></section>
+      <section className="bg-foreground text-background"><div className="editorial-section"><div className="grid gap-16 lg:grid-cols-[.78fr_1.22fr]"><div><p className="micro-label text-white/45">06–07 · Compare and optimize</p><h2 className="section-title mt-6">Find the optimized answer.</h2></div><div className="grid grid-cols-2 gap-px bg-white/20 sm:grid-cols-4">{[["Baseline", "71%"], ["Insulated", "84%"], ["Solar-led", "81%"], ["Optimized", "91%"]].map(([name, value], index) => <div key={name} className={`min-h-48 p-5 ${index === 3 ? "bg-secondary text-foreground" : "bg-foreground"}`}><p className="micro-label opacity-60">0{index + 1}</p><p className="mt-16 text-sm font-medium">{name}</p><p className="mt-2 text-4xl font-semibold tracking-[-0.06em]">{value}</p></div>)}</div></div><div className="mt-14 flex flex-wrap items-center justify-between gap-8 border-t border-white/20 pt-8"><p className="max-w-xl text-sm leading-6 text-white/55">Design space → simulate → rank → optimal configuration. Every candidate remains inspectable.</p><span className="micro-label text-white/70">Overall recommended · Variant 04</span></div></div></section>
 
-      <section className="editorial-section"><div className="grid gap-14 lg:grid-cols-2"><div><SolarDiagram /><p className="mt-5 text-xs leading-5 text-muted-foreground">Physics-based solar aperture study · south elevation · winter design day</p></div><div className="flex flex-col justify-center lg:pl-10"><p className="micro-label">05 · Thermal simulation</p><h2 className="section-title mt-6">See what the climate does inside.</h2><p className="mt-7 max-w-xl leading-7 text-muted-foreground">Follow indoor and outdoor temperature, solar gain, fabric losses, air exchange and comfort—then retain every assumption with the result.</p><div className="mt-10"><PerformanceBars demand={summary?.heatingDemandKwhM2 ?? 31} comfort={summary?.comfortHoursPct ?? 84} /></div></div></div></section>
 
-      <section className="bg-foreground text-background"><div className="editorial-section"><div className="grid gap-16 lg:grid-cols-[.78fr_1.22fr]"><div><p className="micro-label text-white/45">06–07 · Compare and optimize</p><h2 className="section-title mt-6">Find the best answer, not just an answer.</h2></div><div className="grid grid-cols-2 gap-px bg-white/20 sm:grid-cols-4">{[["Baseline", "71%"], ["Insulated", "84%"], ["Solar-led", "81%"], ["Optimized", "91%"]].map(([name, value], index) => <div key={name} className={`min-h-48 p-5 ${index === 3 ? "bg-secondary text-foreground" : "bg-foreground"}`}><p className="micro-label opacity-60">0{index + 1}</p><p className="mt-16 text-sm font-medium">{name}</p><p className="mt-2 text-4xl font-semibold tracking-[-0.06em]">{value}</p></div>)}</div></div><div className="mt-14 flex flex-wrap items-center justify-between gap-8 border-t border-white/20 pt-8"><p className="max-w-xl text-sm leading-6 text-white/55">Design space → simulate → rank → optimal configuration. Every candidate remains inspectable.</p><span className="micro-label text-white/70">Overall recommended · Variant 04</span></div></div></section>
-
-      <section className="bg-secondary"><div className="editorial-section grid gap-16 lg:grid-cols-[1.15fr_.85fr]"><div><p className="micro-label">08 · Engineering recommendation</p><h2 className="section-title mt-6 max-w-3xl">Reduce the air path before adding another layer.</h2></div><div className="flex flex-col justify-end"><p className="leading-8 text-muted-foreground">Evidence points to infiltration control first, followed by roof insulation and a controlled solar aperture. The recommendation becomes a validation sequence—not a chatbot answer.</p><dl className="mt-10 grid grid-cols-2 gap-8 border-t border-border pt-7"><DataPair label="First priority" value="Air sealing" /><DataPair label="Target" value="≤ 0.25 ACH" /><DataPair label="Next" value="Roof R-6.0" /><DataPair label="Validate" value="Controlled rerun" /></dl></div></div></section>
 
       <section id="proof" className="editorial-section"><div className="grid gap-14 lg:grid-cols-[.72fr_1.28fr]"><div><p className="micro-label">09 · Results</p><h2 className="section-title mt-6">Performance, immediately legible.</h2></div><div><div className="flex items-end justify-between border-b border-foreground pb-7"><span className="text-sm font-medium">Thermal performance</span><span className="text-7xl font-semibold tracking-[-0.08em] sm:text-9xl">84%</span></div><div className="grid grid-cols-3 gap-6 pt-7"><DataPair large label="Average indoor" value="18.6°C" /><DataPair large label="Heating" value="31 kWh" /><DataPair large label="Solar gain" value="142 kWh" /></div></div></div></section>
-
-      <section id="context" className="border-t border-border"><div className="editorial-section grid gap-12 py-20 lg:grid-cols-[.55fr_1.45fr] lg:py-28"><div><p className="micro-label">10 · National innovation context</p><p className="mt-5 text-sm leading-6 text-muted-foreground">Smart India Hackathon 2026<br />DRDO · Problem Statement 26051</p></div><h2 className="section-title max-w-5xl">Engineering credibility comes from what the record can prove.</h2></div></section>
 
       <section className="bg-foreground text-background"><div className="editorial-section flex flex-col gap-12 py-20 lg:flex-row lg:items-end lg:justify-between lg:py-28"><div><p className="micro-label text-white/45">11 · Begin</p><h2 className="section-title mt-6 max-w-4xl">Design the right shelter for the right climate.</h2></div><ActionButton onClick={onOpen} tone="signal" className="shrink-0 rounded-full px-8">Start designing <ArrowRight aria-hidden="true" /></ActionButton></div><footer className="mx-auto flex max-w-[1500px] flex-col gap-4 border-t border-white/20 px-5 py-8 text-[9px] font-semibold uppercase tracking-[0.14em] text-white/50 sm:px-10 md:flex-row md:items-center md:justify-between lg:px-14"><span className="text-sm normal-case tracking-[-0.02em] text-white">ThermoShelter</span><span>SIH 2026 · DRDO PS 26051 · Built for severe climates</span></footer></section>
     </div>

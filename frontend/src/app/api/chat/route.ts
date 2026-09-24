@@ -76,11 +76,50 @@ CURRENT ACTIVE SHELTER TELEMETRY:
 `
       : "";
 
-    // Execution Priority 1: Groq API (Ultra-fast LPU inference: llama-3.3-70b-versatile)
+    // Execution Priority 1: Groq API (Ultra-fast LPU inference with dynamic model discovery)
     if (activeGroqKey) {
       try {
         const groqEndpoint = "https://api.groq.com/openai/v1/chat/completions";
-        const groqModel = model && model.includes("llama") ? model : "llama-3.3-70b-versatile";
+
+        // Dynamically discover models supported by this specific Groq key
+        let targetModel = "llama-3.3-70b-versatile";
+        try {
+          const modelsRes = await fetch("https://api.groq.com/openai/v1/models", {
+            headers: {
+              Authorization: `Bearer ${activeGroqKey}`,
+            },
+          });
+
+          if (modelsRes.ok) {
+            const modelsData = await modelsRes.json();
+            const availableIds: string[] = (modelsData.data || []).map((m: any) => m.id);
+            console.log("Groq available models for this key:", availableIds);
+
+            // Preferred models in priority order
+            const preferenceOrder = [
+              "llama-3.3-70b-versatile",
+              "llama-3.3-70b-specdec",
+              "llama-3.1-8b-instant",
+              "deepseek-r1-distill-llama-70b",
+              "qwen-2.5-32b",
+              "gemma2-9b-it",
+              "llama-3.2-11b-vision-preview",
+              "llama-3.2-3b-preview",
+              "llama-3.2-1b-preview",
+            ];
+
+            const matched = preferenceOrder.find((pref) => availableIds.includes(pref));
+            if (matched) {
+              targetModel = matched;
+            } else if (availableIds.length > 0) {
+              targetModel = availableIds[0];
+            }
+          }
+        } catch (modelQueryErr: any) {
+          console.warn("Could not query Groq /models, defaulting:", modelQueryErr?.message);
+        }
+
+        console.log(`Using Groq model: ${targetModel}`);
 
         const groqMessages = [
           {
@@ -102,7 +141,7 @@ CURRENT ACTIVE SHELTER TELEMETRY:
             Authorization: `Bearer ${activeGroqKey}`,
           },
           body: JSON.stringify({
-            model: groqModel,
+            model: targetModel,
             messages: groqMessages,
             temperature: 0.35,
             max_tokens: 1500,
@@ -116,13 +155,13 @@ CURRENT ACTIVE SHELTER TELEMETRY:
           if (candidateText && candidateText.trim().length > 0) {
             return NextResponse.json({
               reply: candidateText.trim(),
-              engine: `groq (${groqModel})`,
+              engine: `groq (${targetModel})`,
               isLiveLLM: true,
             });
           }
         } else {
           const errData = await groqRes.json().catch(() => null);
-          console.warn("Groq API returned non-OK response:", groqRes.status, errData);
+          console.warn(`Groq (${targetModel}) returned ${groqRes.status}:`, errData?.error?.message || errData);
         }
       } catch (err: any) {
         console.warn("Groq fetch exception:", err?.message);

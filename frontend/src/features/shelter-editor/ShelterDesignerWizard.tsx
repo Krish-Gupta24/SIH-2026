@@ -54,6 +54,7 @@ import {
   Play,
   Maximize2,
   ChevronDown,
+  Lightbulb,
 } from "lucide-react";
 import { ArchitecturalPlanSheet } from "./components/ArchitecturalPlanSheet";
 
@@ -92,9 +93,9 @@ export function ShelterDesignerWizard() {
   const [currentStep, setCurrentStep] = useState<number>(() => {
     if (stepParam !== null) {
       const parsed = parseInt(stepParam, 10);
-      if (!isNaN(parsed) && parsed >= 1 && parsed <= 10) return parsed;
+      if (!isNaN(parsed) && parsed >= 1 && parsed <= WIZARD_STEPS.length) return parsed;
     }
-    return activeWizardStep && activeWizardStep <= 10 ? activeWizardStep : 1;
+    return activeWizardStep && activeWizardStep <= WIZARD_STEPS.length ? activeWizardStep : 1;
   });
 
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
@@ -287,6 +288,7 @@ export function ShelterDesignerWizard() {
 
   const [studioMode, setStudioMode] = useState<"split" | "blueprint" | "parameters">("split");
   const [isStepDropdownOpen, setIsStepDropdownOpen] = useState(false);
+  const [showAlpineTips, setShowAlpineTips] = useState(false);
 
   const [projectSavedToast, setProjectSavedToast] = useState(false);
 
@@ -446,11 +448,12 @@ export function ShelterDesignerWizard() {
       <div className="flex flex-col justify-between gap-4 border-b border-border pb-6 sm:flex-row sm:items-center">
         <div>
           <div className="flex items-center gap-2">
-            <span className="micro-label">Canonical Model · 10-Step Engineering Sequence</span>
-            <span className="rounded-full bg-secondary/80 px-2.5 py-0.5 text-xs font-semibold text-foreground border border-border">
-              {activeModel?.project?.name || activeModel?.name || "Untitled Shelter"}
+            <span className="micro-label">9-Step Sequence</span>
+            <span className="text-xs font-semibold text-muted-foreground">Step {currentStep} of {WIZARD_STEPS.length}</span>
+            <span className="text-xs text-muted-foreground/60">•</span>
+            <span className="text-xs font-mono font-bold text-emerald-600 dark:text-emerald-400">
+              {Math.round((currentStep / WIZARD_STEPS.length) * 100)}% Complete
             </span>
-            <span className="text-xs text-muted-foreground">Stage {currentStep} of 10</span>
           </div>
           <h1 className="font-editorial mt-2 text-3xl sm:text-4xl font-medium tracking-tight text-foreground">
             {WIZARD_STEPS[currentStep - 1].name}
@@ -487,31 +490,29 @@ export function ShelterDesignerWizard() {
             title="Continuous autosave active: all edits are immediately saved to storage and project library"
           >
             <span
-              className={`h-2 w-2 rounded-full ${
-                saveStatus === "saving"
-                  ? "bg-amber-500 animate-ping"
-                  : saveStatus === "error"
+              className={`h-2 w-2 rounded-full ${saveStatus === "saving"
+                ? "bg-amber-500 animate-ping"
+                : saveStatus === "error"
                   ? "bg-rose-500"
                   : "bg-emerald-500 animate-pulse"
-              }`}
+                }`}
             />
             <span className="text-[11px] font-medium">
               {saveStatus === "saving"
                 ? "Autosaving..."
                 : lastSaved
-                ? `Autosaved ${lastSaved}`
-                : "Autosave active"}
+                  ? `Autosaved ${lastSaved}`
+                  : "Autosave active"}
             </span>
           </div>
 
           <button
             type="button"
             onClick={toggleAdvancedMode}
-            className={`inline-flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-xs font-semibold transition ${
-              advancedMode
-                ? "border-foreground bg-foreground text-background"
-                : "border-border bg-card text-foreground hover:bg-secondary"
-            }`}
+            className={`inline-flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-xs font-semibold transition ${advancedMode
+              ? "border-foreground bg-foreground text-background"
+              : "border-border bg-card text-foreground hover:bg-secondary"
+              }`}
           >
             <Sliders className="size-3.5" />
             {advancedMode ? "Advanced Mode" : "Standard"}
@@ -556,7 +557,7 @@ export function ShelterDesignerWizard() {
               type="button"
               onClick={exportJson}
               className="inline-flex items-center gap-1.5 rounded-full border border-blue-500/40 bg-blue-500/10 px-3.5 py-1.5 text-xs font-semibold text-blue-600 dark:text-blue-400 shadow-sm hover:bg-blue-500/20 transition"
-              title="Export complete 10-stage shelter definition JSON"
+              title="Export complete 9-step shelter definition JSON"
             >
               <Download className="size-3.5" />
               Export Model JSON
@@ -583,11 +584,10 @@ export function ShelterDesignerWizard() {
           <button
             type="button"
             onClick={() => setStudioMode("split")}
-            className={`inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-semibold transition ${
-              studioMode === "split"
-                ? "bg-foreground text-background shadow-xs"
-                : "text-muted-foreground hover:text-foreground"
-            }`}
+            className={`inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-semibold transition ${studioMode === "split"
+              ? "bg-foreground text-background shadow-xs"
+              : "text-muted-foreground hover:text-foreground"
+              }`}
           >
             <Layers className="size-3.5" />
             <span>Split Studio (2D CAD + Form)</span>
@@ -595,11 +595,10 @@ export function ShelterDesignerWizard() {
           <button
             type="button"
             onClick={() => setStudioMode("blueprint")}
-            className={`inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-semibold transition ${
-              studioMode === "blueprint"
-                ? "bg-foreground text-background shadow-xs"
-                : "text-muted-foreground hover:text-foreground"
-            }`}
+            className={`inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-semibold transition ${studioMode === "blueprint"
+              ? "bg-foreground text-background shadow-xs"
+              : "text-muted-foreground hover:text-foreground"
+              }`}
           >
             <Maximize2 className="size-3.5" />
             <span>Full Blueprint Sheet</span>
@@ -607,11 +606,10 @@ export function ShelterDesignerWizard() {
           <button
             type="button"
             onClick={() => setStudioMode("parameters")}
-            className={`inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-semibold transition ${
-              studioMode === "parameters"
-                ? "bg-foreground text-background shadow-xs"
-                : "text-muted-foreground hover:text-foreground"
-            }`}
+            className={`inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-semibold transition ${studioMode === "parameters"
+              ? "bg-foreground text-background shadow-xs"
+              : "text-muted-foreground hover:text-foreground"
+              }`}
           >
             <Sliders className="size-3.5" />
             <span>Parameters Only</span>
@@ -620,7 +618,45 @@ export function ShelterDesignerWizard() {
 
         <div className="flex items-center gap-2 text-[11px] font-mono text-muted-foreground">
           <span className="flex size-2 rounded-full bg-emerald-500 animate-pulse" />
-          <span>Real-Time 2D Vector Engine Active</span>
+          <span>Real-Time Architectural Plan</span>
+        </div>
+      </div>
+
+      {/* 9-Step Architectural Sequence Navigation Ribbon */}
+      <div className="rounded-2xl border border-border bg-card p-2 sm:p-2.5 shadow-xs">
+        <div className="grid grid-cols-9 gap-1 sm:gap-1.5" role="tablist" aria-label="9-Step Architectural Sequence">
+          {WIZARD_STEPS.map((s) => {
+            const isCurrent = currentStep === s.id;
+            const isDone = currentStep > s.id;
+            const Icon = s.icon;
+            return (
+              <button
+                key={s.id}
+                type="button"
+                onClick={() => handleStepSelect(s.id)}
+                className={`group flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-1.5 rounded-xl py-2 px-1 text-center transition ${
+                  isCurrent
+                    ? "bg-foreground text-background shadow-xs ring-2 ring-foreground/20 font-bold"
+                    : isDone
+                    ? "border border-border/80 bg-card text-foreground hover:bg-secondary font-medium"
+                    : "border border-border/40 bg-secondary/30 text-muted-foreground hover:bg-secondary hover:text-foreground"
+                }`}
+                title={`Step ${s.id}: ${s.name} — ${s.description} (${isDone ? "Completed" : isCurrent ? "Active" : "Upcoming"})`}
+              >
+                <span className={`text-[10px] font-mono font-bold ${
+                  isCurrent
+                    ? "text-background"
+                    : isDone
+                    ? "text-emerald-600 dark:text-emerald-400"
+                    : "text-muted-foreground"
+                }`}>
+                  {isDone ? "✓" : `0${s.id}`}
+                </span>
+                <Icon className="size-3.5 hidden md:inline shrink-0" />
+                <span className="text-[11px] truncate hidden sm:inline">{s.name}</span>
+              </button>
+            );
+          })}
         </div>
       </div>
 
@@ -652,109 +688,146 @@ export function ShelterDesignerWizard() {
             </section>
           </div>
 
-          {/* Right Column: Parameter Editor (flows long vertically with dropdown step navigator) */}
-          <div className="xl:col-span-5 2xl:col-span-4 space-y-5">
-            {/* Vertical Step Dropdown Selector + Pills */}
-            <div id="wizard-step-container" className="space-y-2.5 rounded-2xl border border-border bg-card p-3.5 shadow-xs">
-              <div className="relative">
-                <button
-                  type="button"
-                  onClick={() => setIsStepDropdownOpen(!isStepDropdownOpen)}
-                  className="w-full flex items-center justify-between rounded-xl border border-border bg-secondary/50 px-3.5 py-2.5 shadow-xs hover:border-foreground/30 hover:bg-secondary transition"
-                  aria-expanded={isStepDropdownOpen}
-                >
-                  <div className="flex items-center gap-2.5 min-w-0">
-                    <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-foreground text-background text-[11px] font-bold">
-                      {currentStep}
-                    </span>
-                    <div className="text-left min-w-0">
-                      <div className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground truncate">
-                        Phase {activePhase.id}: {activePhase.name}
-                      </div>
-                      <div className="text-xs sm:text-sm font-bold text-foreground truncate">
-                        {WIZARD_STEPS[currentStep - 1]?.name}
-                      </div>
+          {/* Right Column: Parameter Editor (clean, well-aligned, and simple) */}
+          <div className="xl:col-span-5 2xl:col-span-4 space-y-4">
+            {/* Integrated Parameter Studio Header & Step Tracker */}
+            <div id="wizard-step-container" className="rounded-2xl border border-border bg-card p-4 shadow-xs">
+              <div className="flex items-center justify-between gap-3">
+                {/* Step & Phase Identity */}
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <span className="flex size-7 shrink-0 items-center justify-center rounded-xl bg-foreground text-background font-mono text-xs font-bold shadow-xs">
+                    {currentStep}
+                  </span>
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground truncate">
+                      <span>Phase {activePhase.id}</span>
+                      <span>·</span>
+                      <span className="truncate">{activePhase.name}</span>
                     </div>
+                    <h3 className="text-sm font-bold text-foreground truncate">
+                      {WIZARD_STEPS[currentStep - 1]?.name}
+                    </h3>
                   </div>
-                  <div className="flex items-center gap-2 text-muted-foreground shrink-0">
-                    <span className="text-[11px] font-mono font-bold">
-                      {currentStep} of {WIZARD_STEPS.length}
-                    </span>
-                    <ChevronDown className={`size-4 transition-transform duration-200 ${isStepDropdownOpen ? "rotate-180" : ""}`} />
-                  </div>
-                </button>
+                </div>
 
-                {/* Dropdown Menu */}
-                {isStepDropdownOpen && (
-                  <div className="absolute left-0 right-0 top-full mt-2 z-30 rounded-2xl border border-border bg-card/95 backdrop-blur-md p-2 shadow-2xl animate-in fade-in zoom-in-95 duration-150">
-                    <div className="max-h-80 overflow-y-auto space-y-2 pr-1">
-                      {WIZARD_PHASES.map((phase) => (
-                        <div key={phase.id} className="space-y-1">
-                          <div className="px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-b border-border/40">
-                            Phase {phase.id}: {phase.name}
-                          </div>
-                          {phase.steps.map((sId) => {
-                            const s = WIZARD_STEPS[sId - 1];
-                            const Icon = s.icon;
-                            const isCurrent = currentStep === sId;
-                            const isDone = currentStep > sId;
-                            return (
-                              <button
-                                key={sId}
-                                type="button"
-                                onClick={() => {
-                                  handleStepSelect(sId);
-                                  setIsStepDropdownOpen(false);
-                                }}
-                                className={`w-full flex items-center justify-between rounded-lg px-2.5 py-2 text-xs font-medium transition ${
-                                  isCurrent
-                                    ? "bg-foreground text-background font-bold shadow-xs"
-                                    : "text-foreground hover:bg-secondary"
-                                }`}
-                              >
-                                <div className="flex items-center gap-2 truncate">
-                                  <Icon className="size-3.5 shrink-0" />
-                                  <span className="truncate">{s.id}. {s.name}</span>
-                                </div>
-                                {isDone && <CheckCircle2 className="size-3.5 text-emerald-500 shrink-0" />}
-                              </button>
-                            );
-                          })}
+                {/* Step Controls: Prev/Next Quick Chevrons + Dropdown Trigger */}
+                <div className="flex items-center gap-1 shrink-0">
+                  <button
+                    type="button"
+                    onClick={handlePrevious}
+                    disabled={currentStep === 1}
+                    className="flex size-7 items-center justify-center rounded-lg border border-border bg-secondary/50 text-foreground transition hover:bg-secondary disabled:opacity-30 disabled:pointer-events-none"
+                    title="Previous Step"
+                  >
+                    <ChevronLeft className="size-3.5" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleNext}
+                    disabled={currentStep === WIZARD_STEPS.length}
+                    className="flex size-7 items-center justify-center rounded-lg border border-border bg-secondary/50 text-foreground transition hover:bg-secondary disabled:opacity-30 disabled:pointer-events-none"
+                    title="Next Step"
+                  >
+                    <ChevronRight className="size-3.5" />
+                  </button>
+
+                  <div className="relative ml-1">
+                    <button
+                      type="button"
+                      onClick={() => setIsStepDropdownOpen(!isStepDropdownOpen)}
+                      className={`flex items-center gap-1.5 rounded-lg border border-border px-2.5 py-1 text-xs font-semibold transition ${
+                        isStepDropdownOpen ? "bg-foreground text-background" : "bg-secondary/50 text-foreground hover:bg-secondary"
+                      }`}
+                      aria-expanded={isStepDropdownOpen}
+                      title="Jump to any step"
+                    >
+                      <span>Steps</span>
+                      <ChevronDown className={`size-3 transition-transform duration-200 ${isStepDropdownOpen ? "rotate-180" : ""}`} />
+                    </button>
+
+                    {/* Dropdown Menu */}
+                    {isStepDropdownOpen && (
+                      <div className="absolute right-0 top-full mt-2 z-40 w-72 rounded-2xl border border-border bg-card/95 backdrop-blur-md p-2 shadow-2xl animate-in fade-in zoom-in-95 duration-150">
+                        <div className="max-h-80 overflow-y-auto space-y-2 pr-1">
+                          {WIZARD_PHASES.map((phase) => (
+                            <div key={phase.id} className="space-y-1">
+                              <div className="px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-b border-border/40">
+                                Phase {phase.id}: {phase.name}
+                              </div>
+                              {phase.steps.map((sId) => {
+                                const s = WIZARD_STEPS[sId - 1];
+                                const Icon = s.icon;
+                                const isCurrent = currentStep === sId;
+                                const isDone = currentStep > sId;
+                                return (
+                                  <button
+                                    key={sId}
+                                    type="button"
+                                    onClick={() => {
+                                      handleStepSelect(sId);
+                                      setIsStepDropdownOpen(false);
+                                    }}
+                                    className={`w-full flex items-center justify-between rounded-lg px-2.5 py-2 text-xs font-medium transition ${isCurrent
+                                      ? "bg-foreground text-background font-bold shadow-xs"
+                                      : "text-foreground hover:bg-secondary"
+                                      }`}
+                                  >
+                                    <div className="flex items-center gap-2 truncate">
+                                      <Icon className="size-3.5 shrink-0" />
+                                      <span className="truncate">{s.id}. {s.name}</span>
+                                    </div>
+                                    {isDone && <CheckCircle2 className="size-3.5 text-emerald-500 shrink-0" />}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          ))}
                         </div>
-                      ))}
-                    </div>
+                      </div>
+                    )}
                   </div>
-                )}
+                </div>
               </div>
 
-              {/* Quick Step Pills (1 through 9) */}
-              <div className="flex items-center justify-between gap-1 pt-1 overflow-x-auto">
-                {WIZARD_STEPS.map((s) => {
-                  const isCurrent = currentStep === s.id;
-                  const isDone = currentStep > s.id;
-                  return (
-                    <button
-                      key={s.id}
-                      type="button"
-                      onClick={() => handleStepSelect(s.id)}
-                      className={`flex size-7 shrink-0 items-center justify-center rounded-lg text-xs font-bold transition ${
-                        isCurrent
-                          ? "bg-foreground text-background shadow-xs ring-2 ring-foreground/20"
-                          : isDone
-                          ? "border border-border bg-card text-emerald-600 dark:text-emerald-400 hover:bg-secondary"
-                          : "border border-border/60 bg-secondary/40 text-muted-foreground hover:bg-secondary"
-                      }`}
-                      title={`${s.id}. ${s.name}`}
-                    >
-                      {isDone ? "✓" : s.id}
-                    </button>
-                  );
-                })}
+              {/* 9-Step Segmented Interactive Progress Track */}
+              <div className="mt-3 pt-2.5 border-t border-border/50">
+                <div className="flex items-center justify-between text-[10px] text-muted-foreground font-mono mb-1.5">
+                  <span>Step {currentStep} of {WIZARD_STEPS.length}</span>
+                  <span className="font-semibold text-emerald-600 dark:text-emerald-400">
+                    {Math.round((currentStep / WIZARD_STEPS.length) * 100)}% Complete
+                  </span>
+                </div>
+                <div className="grid grid-cols-9 gap-1" role="tablist" aria-label="Wizard Steps">
+                  {WIZARD_STEPS.map((s) => {
+                    const isCurrent = currentStep === s.id;
+                    const isDone = currentStep > s.id;
+                    return (
+                      <button
+                        key={s.id}
+                        type="button"
+                        onClick={() => handleStepSelect(s.id)}
+                        className={`flex h-7 items-center justify-center rounded-lg text-[11px] font-bold transition-all duration-150 ${
+                          isCurrent
+                            ? "bg-foreground text-background shadow-xs ring-2 ring-foreground/20 ring-offset-1 ring-offset-card"
+                            : isDone
+                            ? "border border-border bg-card text-emerald-600 dark:text-emerald-400 hover:bg-secondary"
+                            : "border border-border/50 bg-secondary/30 text-muted-foreground hover:bg-secondary hover:text-foreground"
+                        }`}
+                        title={`${s.id}. ${s.name} (${isDone ? "Completed" : isCurrent ? "Active" : "Upcoming"})`}
+                      >
+                        {isDone ? "✓" : s.id}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
             </div>
 
-            {/* Active Parameter Form */}
-            <form onSubmit={form.handleSubmit((vals) => handleFinalSubmit(vals, false))} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-950 space-y-4">
+            {/* Active Parameter Form Card */}
+            <form
+              onSubmit={form.handleSubmit((vals) => handleFinalSubmit(vals, false))}
+              className="rounded-2xl border border-border bg-card p-5 sm:p-6 shadow-xs space-y-4"
+            >
               {currentStep === 1 && <Step3Geometry form={form} advancedMode={advancedMode} />}
               {currentStep === 2 && <Step4Walls form={form} advancedMode={advancedMode} />}
               {currentStep === 3 && <Step5Roof form={form} advancedMode={advancedMode} />}
@@ -767,11 +840,11 @@ export function ShelterDesignerWizard() {
 
               {/* Submission Error Banner */}
               {submissionError && (
-                <div className="mt-4 flex items-start gap-3 rounded-xl border-2 border-rose-500/60 bg-rose-50 dark:bg-rose-950/40 p-3.5 text-xs text-rose-900 dark:text-rose-200 shadow-sm">
-                  <AlertCircle className="h-5 w-5 text-rose-600 dark:text-rose-400 flex-shrink-0 mt-0.5" />
+                <div className="mt-4 flex items-start gap-3 rounded-xl border border-rose-500/50 bg-rose-500/10 p-3.5 text-xs text-rose-900 dark:text-rose-200 shadow-xs">
+                  <AlertCircle className="size-4 text-rose-600 dark:text-rose-400 shrink-0 mt-0.5" />
                   <div className="space-y-1">
-                    <p className="font-bold text-sm text-rose-700 dark:text-rose-300">Simulation Launch Failed</p>
-                    <p className="leading-relaxed font-mono text-[11px] text-rose-800 dark:text-rose-300 bg-white/60 dark:bg-black/40 p-2 rounded-lg border border-rose-300 dark:border-rose-900">
+                    <p className="font-bold text-xs text-rose-700 dark:text-rose-300">Simulation Launch Failed</p>
+                    <p className="leading-relaxed font-mono text-[11px] text-rose-800 dark:text-rose-300 bg-background/60 p-2 rounded-lg border border-rose-500/20">
                       {submissionError}
                     </p>
                   </div>
@@ -780,24 +853,24 @@ export function ShelterDesignerWizard() {
 
               {/* Job Dispatched Confirmation Banner */}
               {submittedJobId && (
-                <div className="mt-4 rounded-xl border-2 border-emerald-500/60 bg-emerald-50 dark:bg-emerald-950/40 p-4 text-xs text-emerald-950 dark:text-emerald-100 shadow-sm">
-                  <div className="flex items-center gap-2 font-bold text-sm text-emerald-800 dark:text-emerald-300">
-                    <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                <div className="mt-4 rounded-xl border border-emerald-500/50 bg-emerald-500/10 p-4 text-xs text-emerald-950 dark:text-emerald-100 shadow-xs">
+                  <div className="flex items-center gap-2 font-bold text-xs text-emerald-800 dark:text-emerald-300">
+                    <CheckCircle2 className="size-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
                     <span>Dispatched to ThermoShelter Solver!</span>
                   </div>
-                  <p className="mt-1 text-slate-700 dark:text-slate-300 font-mono text-[11px]">
+                  <p className="mt-1 font-mono text-[11px] text-muted-foreground">
                     Job ID: {submittedJobId}
                   </p>
                   <div className="mt-3 flex flex-wrap items-center gap-2">
                     <Link
                       href="/simulations"
-                      className="inline-flex items-center gap-1.5 rounded-full bg-black px-3.5 py-1.5 text-xs font-bold text-white shadow-sm transition hover:bg-[#6E818F]"
+                      className="inline-flex items-center gap-1.5 rounded-full bg-foreground px-3.5 py-1.5 text-xs font-bold text-background shadow-xs transition hover:opacity-90"
                     >
                       Dashboard &rarr;
                     </Link>
                     <Link
                       href={`/results?jobId=${submittedJobId}`}
-                      className="inline-flex items-center gap-1.5 rounded-full border border-emerald-600/40 bg-white px-3.5 py-1.5 text-xs font-bold text-emerald-800 shadow-sm transition hover:bg-[#CBDCE6]"
+                      className="inline-flex items-center gap-1.5 rounded-full border border-emerald-600/40 bg-secondary/80 px-3.5 py-1.5 text-xs font-bold text-emerald-700 dark:text-emerald-300 shadow-xs transition hover:bg-secondary"
                     >
                       Results &rarr;
                     </Link>
@@ -806,14 +879,14 @@ export function ShelterDesignerWizard() {
               )}
 
               {/* Stepper Navigation Footer */}
-              <div className="mt-6 flex items-center justify-between border-t border-slate-200 pt-4 dark:border-slate-800">
+              <div className="mt-6 flex items-center justify-between border-t border-border/60 pt-4">
                 <button
                   type="button"
                   onClick={handlePrevious}
-                  className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"
+                  className="inline-flex items-center gap-1.5 rounded-full border border-border bg-secondary/60 px-4 py-2 text-xs font-semibold text-foreground shadow-xs transition hover:bg-secondary"
                 >
-                  <ChevronLeft className="h-4 w-4" />
-                  <span>{currentStep > 1 ? `Step ${currentStep - 1}` : "Prev"}</span>
+                  <ChevronLeft className="size-4" />
+                  <span>{currentStep > 1 ? `Step ${currentStep - 1}` : "Weather"}</span>
                 </button>
 
                 <div className="flex items-center gap-2">
@@ -821,64 +894,81 @@ export function ShelterDesignerWizard() {
                     <button
                       type="button"
                       onClick={handleNext}
-                      className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-blue-700"
+                      className="inline-flex items-center gap-1.5 rounded-full bg-foreground px-5 py-2 text-xs font-bold text-background shadow-xs transition hover:opacity-90"
                     >
-                      <span>Next: Step {currentStep + 1}</span>
-                      <ChevronRight className="h-4 w-4" />
+                      <span>Next: {WIZARD_STEPS[currentStep]?.name || `Step ${currentStep + 1}`}</span>
+                      <ChevronRight className="size-4" />
                     </button>
                   ) : (
                     <button
                       type="submit"
                       disabled={isSubmitting}
-                      className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-5 py-2 text-xs font-bold text-white shadow-md shadow-emerald-600/20 transition hover:bg-emerald-700 disabled:opacity-50"
+                      className="inline-flex items-center gap-2 rounded-full bg-emerald-600 px-6 py-2.5 text-xs font-bold text-white shadow-md shadow-emerald-600/20 transition hover:bg-emerald-700 disabled:opacity-50"
                     >
-                      <Play className="h-4 w-4" />
-                      {isSubmitting ? "Queueing..." : "Launch Simulation"}
+                      <Play className="size-4" />
+                      <span>{isSubmitting ? "Queueing..." : "Launch Simulation"}</span>
                     </button>
                   )}
                 </div>
               </div>
             </form>
 
-            {/* Live Geometry HUD */}
-            <div className="rounded-2xl border border-border bg-card p-4 shadow-xs">
-              <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-muted-foreground pb-2 border-b border-border/50">
-                <span>Live Geometry HUD</span>
-                <span className="font-mono text-[10px] text-emerald-600 dark:text-emerald-400 font-bold">1:50 Live Sync</span>
+            {/* Live CAD Metrics Strip */}
+            <div className="rounded-2xl border border-border bg-card p-3.5 shadow-xs">
+              <div className="flex items-center justify-between pb-2 border-b border-border/50">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                  Live CAD Model Telemetry
+                </span>
+                <span className="inline-flex items-center gap-1.5 font-mono text-[10px] font-bold text-emerald-600 dark:text-emerald-400">
+                  <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                  1:50 Live Sync
+                </span>
               </div>
-              <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
-                <div className="rounded-xl border border-border/50 bg-secondary/40 p-2.5">
+              <div className="mt-2.5 grid grid-cols-4 gap-2 text-center">
+                <div className="rounded-xl border border-border/50 bg-secondary/30 p-2">
                   <div className="text-[10px] text-muted-foreground">Floor Area</div>
-                  <div className="font-mono font-bold text-foreground text-sm">{floorArea} m²</div>
+                  <div className="font-mono text-xs sm:text-sm font-bold text-foreground">{floorArea} <span className="text-[10px] font-normal text-muted-foreground">m²</span></div>
                 </div>
-                <div className="rounded-xl border border-border/50 bg-secondary/40 p-2.5">
+                <div className="rounded-xl border border-border/50 bg-secondary/30 p-2">
                   <div className="text-[10px] text-muted-foreground">Gross Wall</div>
-                  <div className="font-mono font-bold text-foreground text-sm">{grossWallArea} m²</div>
+                  <div className="font-mono text-xs sm:text-sm font-bold text-foreground">{grossWallArea} <span className="text-[10px] font-normal text-muted-foreground">m²</span></div>
                 </div>
-                <div className="rounded-xl border border-border/50 bg-secondary/40 p-2.5">
-                  <div className="text-[10px] text-muted-foreground">Enclosed Volume</div>
-                  <div className="font-mono font-bold text-foreground text-sm">{volume} m³</div>
+                <div className="rounded-xl border border-border/50 bg-secondary/30 p-2">
+                  <div className="text-[10px] text-muted-foreground">Volume</div>
+                  <div className="font-mono text-xs sm:text-sm font-bold text-foreground">{volume} <span className="text-[10px] font-normal text-muted-foreground">m³</span></div>
                 </div>
-                <div className="rounded-xl border border-border/50 bg-secondary/40 p-2.5">
-                  <div className="text-[10px] text-muted-foreground">Glazing (WWR)</div>
-                  <div className="font-mono font-bold text-amber-600 dark:text-amber-400 text-sm">{wwr} %</div>
+                <div className="rounded-xl border border-border/50 bg-secondary/30 p-2">
+                  <div className="text-[10px] text-muted-foreground">Glazing WWR</div>
+                  <div className="font-mono text-xs sm:text-sm font-bold text-amber-600 dark:text-amber-400">{wwr}%</div>
                 </div>
               </div>
-              <div className="mt-2.5 flex items-center justify-between text-xs rounded-xl border border-border/50 bg-secondary/30 px-3 py-2">
-                <span className="text-muted-foreground">Azimuth Orientation</span>
-                <span className="font-mono font-bold text-foreground">{orientation}°</span>
+              <div className="mt-2 flex items-center justify-between text-[11px] text-muted-foreground px-1">
+                <span>Azimuth: <strong className="font-mono text-foreground">{orientation}°</strong></span>
+                <span>L/W Aspect: <strong className="font-mono text-foreground">{(length / (width || 1)).toFixed(2)}</strong></span>
               </div>
             </div>
 
-            {/* Alpine Design Principles */}
-            <div className="rounded-2xl border border-border/70 bg-secondary/30 p-3.5 text-xs text-muted-foreground">
-              <h5 className="font-bold text-foreground text-xs">Alpine Design Principles</h5>
-              <ul className="mt-1.5 list-disc space-y-1 pl-4 text-[11px]">
-                <li>Orient long axis E-W with primary glazing facing South.</li>
-                <li>Keep WWR between 10% and 20% for extreme alpine cold.</li>
-                <li>Continuous envelope insulation without thermal bridging.</li>
-                <li>Internal thermal flywheel mass for passive solar retention.</li>
-              </ul>
+            {/* Collapsible Alpine Design Principles */}
+            <div className="rounded-2xl border border-border/70 bg-card p-3 shadow-xs">
+              <button
+                type="button"
+                onClick={() => setShowAlpineTips(!showAlpineTips)}
+                className="w-full flex items-center justify-between text-xs font-semibold text-muted-foreground hover:text-foreground transition"
+              >
+                <div className="flex items-center gap-2">
+                  <Lightbulb className="size-3.5 text-amber-500" />
+                  <span>Alpine High-Altitude Design Principles</span>
+                </div>
+                <ChevronDown className={`size-3.5 transition-transform duration-200 ${showAlpineTips ? "rotate-180" : ""}`} />
+              </button>
+              {showAlpineTips && (
+                <ul className="mt-2.5 list-disc space-y-1 pl-5 text-[11px] text-muted-foreground border-t border-border/50 pt-2.5 animate-in fade-in duration-150">
+                  <li>Orient long axis E-W with primary solar glazing facing South.</li>
+                  <li>Keep WWR between 10% and 20% for extreme alpine cold retention.</li>
+                  <li>Continuous envelope insulation without thermal bridging.</li>
+                  <li>Internal thermal flywheel mass for passive solar heat retention.</li>
+                </ul>
+              )}
             </div>
           </div>
         </div>
@@ -887,21 +977,23 @@ export function ShelterDesignerWizard() {
       {studioMode === "parameters" && (
         <div className="max-w-4xl mx-auto space-y-6">
           {/* Consolidated 4-Phase Engineering Stepper (9 Engineering Steps) */}
-          <div id="wizard-step-container" className="space-y-3 rounded-2xl border border-border bg-secondary/30 p-3.5">
+          <div id="wizard-step-container" className="space-y-3.5 rounded-2xl border border-border bg-card p-4 sm:p-5 shadow-xs">
             {/* Phase Header with Live Completion Metric */}
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between text-xs">
-              <div className="flex items-center gap-2">
-                <span className="flex size-5 items-center justify-center rounded-full bg-foreground text-[10px] font-bold text-background">
-                  {activePhase.id}
+              <div className="flex items-center gap-2.5">
+                <span className="flex size-6 items-center justify-center rounded-xl bg-foreground text-xs font-bold text-background shadow-xs">
+                  {currentStep}
                 </span>
-                <span className="font-bold text-foreground">
-                  Phase {activePhase.id} of 4: {activePhase.name}
-                </span>
-                <span className="text-muted-foreground hidden sm:inline">
-                  — {activePhase.description}
-                </span>
+                <div>
+                  <div className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground">
+                    Phase {activePhase.id} of 4: {activePhase.name}
+                  </div>
+                  <div className="text-sm font-bold text-foreground">
+                    Step {currentStep} of {WIZARD_STEPS.length}: {WIZARD_STEPS[currentStep - 1]?.name}
+                  </div>
+                </div>
               </div>
-              <span className="font-mono text-[11px] font-bold text-emerald-600 dark:text-emerald-400">
+              <span className="font-mono text-xs font-bold text-emerald-600 dark:text-emerald-400">
                 {Math.round((currentStep / WIZARD_STEPS.length) * 100)}% Completed
               </span>
             </div>
@@ -922,7 +1014,7 @@ export function ShelterDesignerWizard() {
                       isPhaseActive
                         ? "bg-foreground text-background shadow-sm font-bold"
                         : isPhaseCompleted
-                        ? "bg-card border border-border text-foreground hover:bg-secondary font-medium"
+                        ? "bg-secondary/70 border border-border text-foreground hover:bg-secondary font-medium"
                         : "bg-secondary/40 text-muted-foreground hover:bg-secondary hover:text-foreground"
                     }`}
                   >
@@ -943,33 +1035,33 @@ export function ShelterDesignerWizard() {
               })}
             </nav>
 
-            {/* Sub-Assembly Tabs within the Active Phase */}
-            <div className="flex items-center gap-1.5 border-t border-border/60 pt-2 overflow-x-auto">
-              <span className="micro-label mr-1 text-[9px] shrink-0 text-muted-foreground">
-                Sub-Assemblies:
-              </span>
-              {activePhase.steps.map((stepId, idx) => {
-                const isSubCurrent = currentStep === stepId;
-                const isSubCompleted = currentStep > stepId;
-                const subName = activePhase.stepNames[idx] || WIZARD_STEPS[stepId - 1].name;
-                const StepIcon = WIZARD_STEPS[stepId - 1].icon;
-
+            {/* All 9 Steps Aligned in a 9-Column Grid */}
+            <div className="grid grid-cols-3 sm:grid-cols-9 gap-1.5 border-t border-border/50 pt-3">
+              {WIZARD_STEPS.map((s) => {
+                const isCurrent = currentStep === s.id;
+                const isDone = currentStep > s.id;
+                const Icon = s.icon;
                 return (
                   <button
-                    key={stepId}
+                    key={s.id}
                     type="button"
-                    onClick={() => handleStepSelect(stepId)}
-                    className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-semibold transition ${
-                      isSubCurrent
-                        ? "bg-blue-600 text-white shadow-xs"
-                        : isSubCompleted
-                        ? "bg-secondary text-foreground hover:bg-secondary/80 border border-border/60"
-                        : "text-muted-foreground hover:bg-secondary/50 hover:text-foreground"
+                    onClick={() => handleStepSelect(s.id)}
+                    className={`flex flex-col items-center justify-center gap-1 rounded-xl p-2 text-center transition ${
+                      isCurrent
+                        ? "bg-foreground text-background shadow-xs ring-2 ring-foreground/20 font-bold"
+                        : isDone
+                        ? "border border-border bg-card text-foreground hover:bg-secondary font-medium"
+                        : "border border-border/40 bg-secondary/30 text-muted-foreground hover:bg-secondary hover:text-foreground"
                     }`}
+                    title={`${s.id}. ${s.name}: ${s.description}`}
                   >
-                    <StepIcon className="size-3" />
-                    <span>{subName}</span>
-                    {isSubCompleted && <span className="text-[10px] text-emerald-500">✓</span>}
+                    <div className="flex items-center gap-1">
+                      <span className={`text-[10px] font-mono font-bold ${isCurrent ? "text-background" : isDone ? "text-emerald-600 dark:text-emerald-400" : "text-muted-foreground"}`}>
+                        {isDone ? "✓" : `0${s.id}`}
+                      </span>
+                      <Icon className="size-3" />
+                    </div>
+                    <span className="text-[10px] leading-tight truncate w-full">{s.name}</span>
                   </button>
                 );
               })}
@@ -979,7 +1071,7 @@ export function ShelterDesignerWizard() {
           {/* Form Content Area + Live HUD */}
           <div className="grid grid-cols-1 gap-8 lg:grid-cols-4">
             <div className="lg:col-span-3">
-              <form onSubmit={form.handleSubmit((vals) => handleFinalSubmit(vals, false))} className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-950">
+              <form onSubmit={form.handleSubmit((vals) => handleFinalSubmit(vals, false))} className="rounded-2xl border border-border bg-card p-6 shadow-xs text-card-foreground">
                 {currentStep === 1 && <Step3Geometry form={form} advancedMode={advancedMode} />}
                 {currentStep === 2 && <Step4Walls form={form} advancedMode={advancedMode} />}
                 {currentStep === 3 && <Step5Roof form={form} advancedMode={advancedMode} />}
@@ -992,11 +1084,11 @@ export function ShelterDesignerWizard() {
 
                 {/* Submission Error Banner */}
                 {submissionError && (
-                  <div className="mt-6 flex items-start gap-3 rounded-2xl border-2 border-rose-500/60 bg-rose-50 dark:bg-rose-950/40 p-4 text-xs text-rose-900 dark:text-rose-200 shadow-md">
-                    <AlertCircle className="h-5 w-5 text-rose-600 dark:text-rose-400 flex-shrink-0 mt-0.5" />
+                  <div className="mt-6 flex items-start gap-3 rounded-2xl border border-rose-500/50 bg-rose-500/10 p-4 text-xs text-rose-900 dark:text-rose-200 shadow-xs">
+                    <AlertCircle className="size-5 text-rose-600 dark:text-rose-400 shrink-0 mt-0.5" />
                     <div className="space-y-1">
                       <p className="font-bold text-sm text-rose-700 dark:text-rose-300">Simulation Launch Failed</p>
-                      <p className="leading-relaxed font-mono text-[11px] text-rose-800 dark:text-rose-300 bg-white/60 dark:bg-black/40 p-2 rounded-xl border border-rose-300 dark:border-rose-900">
+                      <p className="leading-relaxed font-mono text-[11px] text-rose-800 dark:text-rose-300 bg-background/60 p-2 rounded-xl border border-rose-500/20">
                         {submissionError}
                       </p>
                     </div>
@@ -1005,24 +1097,24 @@ export function ShelterDesignerWizard() {
 
                 {/* Job Dispatched Confirmation Banner */}
                 {submittedJobId && (
-                  <div className="mt-6 rounded-2xl border-2 border-emerald-500/60 bg-emerald-50 dark:bg-emerald-950/40 p-5 text-xs text-emerald-950 dark:text-emerald-100 shadow-md">
+                  <div className="mt-6 rounded-2xl border border-emerald-500/50 bg-emerald-500/10 p-5 text-xs text-emerald-950 dark:text-emerald-100 shadow-xs">
                     <div className="flex items-center gap-2.5 font-bold text-sm text-emerald-800 dark:text-emerald-300">
-                      <CheckCircle2 className="h-5 w-5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                      <CheckCircle2 className="size-5 text-emerald-600 dark:text-emerald-400 shrink-0" />
                       <span>Simulation Successfully Dispatched to ThermoShelter Solver!</span>
                     </div>
-                    <p className="mt-2 text-slate-700 dark:text-slate-300">
-                      Job ID: <code className="rounded-lg bg-white/90 dark:bg-black/50 px-2 py-0.5 font-mono text-xs font-bold text-foreground border border-emerald-500/30">{submittedJobId}</code>
+                    <p className="mt-2 text-muted-foreground">
+                      Job ID: <code className="rounded-lg bg-card px-2 py-0.5 font-mono text-xs font-bold text-foreground border border-border">{submittedJobId}</code>
                     </p>
                     <div className="mt-4 flex flex-wrap items-center gap-2.5">
                       <Link
                         href="/simulations"
-                        className="inline-flex items-center gap-1.5 rounded-full bg-black px-4 py-2 text-xs font-bold text-white shadow-sm transition hover:bg-[#6E818F]"
+                        className="inline-flex items-center gap-1.5 rounded-full bg-foreground px-4 py-2 text-xs font-bold text-background shadow-xs transition hover:opacity-90"
                       >
                         View in Simulations Dashboard &rarr;
                       </Link>
                       <Link
                         href={`/results?jobId=${submittedJobId}`}
-                        className="inline-flex items-center gap-1.5 rounded-full border border-emerald-600/40 bg-white px-4 py-2 text-xs font-bold text-emerald-800 shadow-sm transition hover:bg-[#CBDCE6]"
+                        className="inline-flex items-center gap-1.5 rounded-full border border-emerald-600/40 bg-secondary/80 px-4 py-2 text-xs font-bold text-emerald-700 dark:text-emerald-300 shadow-xs transition hover:bg-secondary"
                       >
                         Analyze Thermal Results &rarr;
                       </Link>
@@ -1031,14 +1123,14 @@ export function ShelterDesignerWizard() {
                 )}
 
                 {/* Stepper Navigation Footer */}
-                <div className="mt-8 flex items-center justify-between border-t border-slate-200 pt-5 dark:border-slate-800">
+                <div className="mt-8 flex items-center justify-between border-t border-border/60 pt-5">
                   <button
                     type="button"
                     onClick={handlePrevious}
-                    className="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2 text-xs font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"
+                    className="inline-flex items-center gap-2 rounded-full border border-border bg-secondary/60 px-5 py-2.5 text-xs font-semibold text-foreground shadow-xs transition hover:bg-secondary"
                   >
-                    <ChevronLeft className="h-4 w-4" />
-                    {currentStep > 1 ? `Previous: ${WIZARD_STEPS[currentStep - 2].name}` : "Previous: Climate & Site"}
+                    <ChevronLeft className="size-4" />
+                    <span>{currentStep > 1 ? `Previous: ${WIZARD_STEPS[currentStep - 2].name}` : "Previous: Climate & Site"}</span>
                   </button>
 
                   <div className="flex items-center gap-3">
@@ -1046,19 +1138,19 @@ export function ShelterDesignerWizard() {
                       <button
                         type="button"
                         onClick={handleNext}
-                        className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-5 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-blue-700"
+                        className="inline-flex items-center gap-2 rounded-full bg-foreground px-6 py-2.5 text-xs font-bold text-background shadow-xs transition hover:opacity-90"
                       >
-                        Next: {WIZARD_STEPS[currentStep].name}
-                        <ChevronRight className="h-4 w-4" />
+                        <span>Next: {WIZARD_STEPS[currentStep].name}</span>
+                        <ChevronRight className="size-4" />
                       </button>
                     ) : (
                       <button
                         type="submit"
                         disabled={isSubmitting}
-                        className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-6 py-2.5 text-xs font-bold text-white shadow-md shadow-emerald-600/20 transition hover:bg-emerald-700 disabled:opacity-50"
+                        className="inline-flex items-center gap-2 rounded-full bg-emerald-600 px-6 py-2.5 text-xs font-bold text-white shadow-md shadow-emerald-600/20 transition hover:bg-emerald-700 disabled:opacity-50"
                       >
-                        <Play className="h-4 w-4" />
-                        {isSubmitting ? "Queueing Simulation..." : "Confirm & Launch Simulation"}
+                        <Play className="size-4" />
+                        <span>{isSubmitting ? "Queueing Simulation..." : "Confirm & Launch Simulation"}</span>
                       </button>
                     )}
                   </div>
@@ -1068,48 +1160,48 @@ export function ShelterDesignerWizard() {
 
             {/* Live Engineering HUD Sidebar */}
             <div className="space-y-4">
-              <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-950">
-                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+              <div className="rounded-2xl border border-border bg-card p-5 shadow-xs">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
                   Live Geometry HUD
                 </h4>
 
                 <div className="mt-4 space-y-3.5 text-xs">
-                  <div className="flex items-center justify-between border-b border-slate-100 pb-2 dark:border-slate-800">
-                    <span className="text-slate-500 dark:text-slate-400">Floor Area</span>
-                    <span className="font-bold text-slate-900 dark:text-white">{floorArea} m²</span>
+                  <div className="flex items-center justify-between border-b border-border/50 pb-2">
+                    <span className="text-muted-foreground">Floor Area</span>
+                    <span className="font-bold text-foreground font-mono">{floorArea} m²</span>
                   </div>
 
-                  <div className="flex items-center justify-between border-b border-slate-100 pb-2 dark:border-slate-800">
-                    <span className="text-slate-500 dark:text-slate-400">Gross Wall Area</span>
-                    <span className="font-bold text-slate-900 dark:text-white">{grossWallArea} m²</span>
+                  <div className="flex items-center justify-between border-b border-border/50 pb-2">
+                    <span className="text-muted-foreground">Gross Wall Area</span>
+                    <span className="font-bold text-foreground font-mono">{grossWallArea} m²</span>
                   </div>
 
-                  <div className="flex items-center justify-between border-b border-slate-100 pb-2 dark:border-slate-800">
-                    <span className="text-slate-500 dark:text-slate-400">Enclosed Air Volume</span>
-                    <span className="font-bold text-slate-900 dark:text-white">{volume} m³</span>
+                  <div className="flex items-center justify-between border-b border-border/50 pb-2">
+                    <span className="text-muted-foreground">Enclosed Air Volume</span>
+                    <span className="font-bold text-foreground font-mono">{volume} m³</span>
                   </div>
 
-                  <div className="flex items-center justify-between border-b border-slate-100 pb-2 dark:border-slate-800">
-                    <span className="text-slate-500 dark:text-slate-400">Glazing Area</span>
-                    <span className="font-bold text-slate-900 dark:text-white">{windowArea} m²</span>
+                  <div className="flex items-center justify-between border-b border-border/50 pb-2">
+                    <span className="text-muted-foreground">Glazing Area</span>
+                    <span className="font-bold text-foreground font-mono">{windowArea} m²</span>
                   </div>
 
-                  <div className="flex items-center justify-between border-b border-slate-100 pb-2 dark:border-slate-800">
-                    <span className="text-slate-500 dark:text-slate-400">Window-to-Wall Ratio</span>
-                    <span className="font-bold text-amber-600 dark:text-amber-400">{wwr} %</span>
+                  <div className="flex items-center justify-between border-b border-border/50 pb-2">
+                    <span className="text-muted-foreground">Window-to-Wall Ratio</span>
+                    <span className="font-bold text-amber-600 dark:text-amber-400 font-mono">{wwr} %</span>
                   </div>
 
                   <div className="flex items-center justify-between pt-1">
-                    <span className="text-slate-500 dark:text-slate-400">Orientation Azimuth</span>
-                    <span className="font-bold text-slate-900 dark:text-white">{orientation}°</span>
+                    <span className="text-muted-foreground">Orientation Azimuth</span>
+                    <span className="font-bold text-foreground font-mono">{orientation}°</span>
                   </div>
                 </div>
               </div>
 
               {/* Quick Design Rules Card */}
-              <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4 text-xs text-slate-600 dark:border-slate-800 dark:bg-slate-900/50 dark:text-slate-300">
-                <h5 className="font-bold text-slate-900 dark:text-white">Alpine Design Principles</h5>
-                <ul className="mt-2 list-disc space-y-1 pl-4 text-[11px] text-slate-500 dark:text-slate-400">
+              <div className="rounded-2xl border border-border bg-card p-4 text-xs text-muted-foreground shadow-xs">
+                <h5 className="font-bold text-foreground">Alpine Design Principles</h5>
+                <ul className="mt-2 list-disc space-y-1 pl-4 text-[11px] text-muted-foreground">
                   <li>Orient long axis East-West with primary glazing facing South.</li>
                   <li>Keep WWR between 10% and 20% to avoid nocturnal radiation loss.</li>
                   <li>Continuous envelope insulation without thermal breaks.</li>

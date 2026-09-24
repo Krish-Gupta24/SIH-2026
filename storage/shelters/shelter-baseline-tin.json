@@ -12,39 +12,46 @@
   "project": {
     "id": "shelter-baseline-tin",
     "name": "CGI Tin Barrack (Baseline Uninsulated - 15% Comfort)",
+    "version": "1.0.0",
     "description": "Standard uninsulated corrugated steel with drafty single glazing. Freezes at -15\u00b0C at night demanding continuous Bukhari fuel burning.",
+    "createdAt": "2026-09-13T17:54:22.836Z",
     "tags": [
       "Baseline",
       "Uninsulated",
       "CGI-Sheet",
       "Drafty"
     ],
-    "version": "1.0.0"
+    "updatedAt": "2026-09-24T11:52:02.611Z"
   },
   "location": {
-    "latitude": 34.1526,
-    "longitude": 77.5771,
-    "elevation": 3500.0,
-    "region": "Leh Ladakh, India",
-    "climateZone": "Cold / Extreme Alpine",
-    "weatherSource": "IND_JK_Leh.427053_TMYx.epw"
+    "region": "MICROCLIMATE-PI-ML, IND",
+    "latitude": 35.42,
+    "longitude": 77.11,
+    "elevation": 5400,
+    "climateZone": "Alpine Cold (ASHRAE 8)",
+    "weatherSource": "MICROCLIMATE_Siachen_Glacier_Forward_Base_5400m_8760h.epw",
+    "designTempWinter": -25,
+    "designTempSummer": 22
   },
   "geometry": {
     "shape": "Rectangle",
-    "length": 6.0,
-    "width": 4.0,
-    "height": 2.6,
-    "orientation": 0.0,
-    "roofType": "Gable",
-    "roofAngle": 15.0,
-    "floorElevation": 0.1
+    "orientation": 0,
+    "roofAngle": 22,
+    "floorElevation": 0.2,
+    "length": 6.5,
+    "width": 4,
+    "height": 3.2,
+    "roofType": "Shed"
   },
   "designTargets": {
-    "comfortTempMinC": 18.0,
-    "comfortTempMaxC": 24.0,
-    "targetIndoorTempC": 21.0,
-    "targetComfortPercent": 15.0,
-    "maxAnnualHeatingDemandKwhM2": 215.0
+    "comfortTempMinC": 18,
+    "comfortTempMaxC": 25,
+    "targetIndoorTempC": 21,
+    "targetComfortPercent": 91,
+    "maxAnnualHeatingDemandKwhM2": 29,
+    "comfortModel": "ASHRAE 55 Adaptive Alpine Cold",
+    "assumptions": "Clo: 1.5 (heavy arctic fleece/wool), Met: 1.2, Air: 0.1 m/s",
+    "applicableConditions": "Unconditioned passive high-altitude shelter"
   },
   "simulationSettings": {
     "engine": "ThermoShelter Core",
@@ -53,5 +60,182 @@
     "startMonth": 1,
     "startDay": 15,
     "detailedComponentOutputs": true
+  },
+  "envelope": {
+    "walls": {
+      "north": {
+        "constructionId": "const-spiti-north",
+        "name": "North Insulated Granite Wall",
+        "layers": [
+          {
+            "materialId": "mat-polyurethane-foam",
+            "thickness": 0.15
+          },
+          {
+            "materialId": "mat-granite-stone",
+            "thickness": 0.2
+          }
+        ]
+      },
+      "south": {
+        "constructionId": "const-spiti-south",
+        "name": "South PCM Passive Storage Wall",
+        "layers": [
+          {
+            "materialId": "mat-polyurethane-foam",
+            "thickness": 0.1
+          },
+          {
+            "materialId": "mat-pcm-salt-hydrate",
+            "thickness": 0.02
+          },
+          {
+            "materialId": "mat-granite-stone",
+            "thickness": 0.15
+          }
+        ]
+      },
+      "east": {
+        "constructionId": "const-spiti-east",
+        "name": "East Insulated Stone Wall",
+        "layers": [
+          {
+            "materialId": "mat-polyurethane-foam",
+            "thickness": 0.15
+          },
+          {
+            "materialId": "mat-granite-stone",
+            "thickness": 0.2
+          }
+        ]
+      },
+      "west": {
+        "constructionId": "const-spiti-west",
+        "name": "West Insulated Stone Wall",
+        "layers": [
+          {
+            "materialId": "mat-polyurethane-foam",
+            "thickness": 0.15
+          },
+          {
+            "materialId": "mat-granite-stone",
+            "thickness": 0.2
+          }
+        ]
+      }
+    },
+    "roof": {
+      "constructionId": "const-spiti-roof",
+      "name": "High-Gain Clerestory Shed Roof with PCM Lining",
+      "slope": 22,
+      "overhang": 0.5,
+      "solarAbsorptance": 0.75,
+      "layers": [
+        {
+          "materialId": "mat-polyurethane-foam",
+          "thickness": 0.18
+        },
+        {
+          "materialId": "mat-pcm-salt-hydrate",
+          "thickness": 0.02
+        }
+      ],
+      "solarPanels": {
+        "enabled": true,
+        "panelCount": 1,
+        "panelWattageW": 400,
+        "panelEfficiencyPct": 21.5,
+        "tiltAngleDeg": 0,
+        "mountingType": "UnistrutElevated"
+      }
+    },
+    "floor": {
+      "constructionId": "const-spiti-floor",
+      "name": "Insulated Solar-Absorbing Granite Floor",
+      "groundContact": true,
+      "perimeterInsulation": true,
+      "layers": [
+        {
+          "materialId": "mat-concrete-slab",
+          "thickness": 0.15
+        },
+        {
+          "materialId": "mat-xps-insulation",
+          "thickness": 0.12
+        }
+      ]
+    }
+  },
+  "windows": [
+    {
+      "id": "win-spiti-s1",
+      "wall": "south",
+      "positionX": 1,
+      "width": 1.8,
+      "height": 1.4,
+      "sillHeight": 1,
+      "glazingType": "Double_LowE_Argon",
+      "frameType": "UPVC_Insulated",
+      "shadingOverhang": 0.45
+    },
+    {
+      "id": "win-spiti-s2",
+      "wall": "south",
+      "positionX": 3.8,
+      "width": 1.8,
+      "height": 1.4,
+      "sillHeight": 1,
+      "glazingType": "Double_LowE_Argon",
+      "frameType": "UPVC_Insulated",
+      "shadingOverhang": 0.45
+    }
+  ],
+  "doors": [
+    {
+      "id": "door-spiti-n1",
+      "wall": "north",
+      "positionX": 1.5,
+      "width": 0.9,
+      "height": 2.1,
+      "construction": "Airtight Thermal Break Timber Door",
+      "airTightness": "HighPerformance_Airtight"
+    }
+  ],
+  "thermalMass": [
+    {
+      "id": "tm-spiti-pcm",
+      "name": "PCM Salt Hydrate Latent Heat Partition",
+      "type": "InternalPartition",
+      "materialId": "mat-pcm-salt-hydrate",
+      "thickness": 0.02,
+      "surfaceArea": 18
+    },
+    {
+      "id": "tm-spiti-floor",
+      "name": "Exposed Heavy Concrete Slab",
+      "type": "FloorSlab",
+      "materialId": "mat-concrete-slab",
+      "thickness": 0.15,
+      "surfaceArea": 26
+    }
+  ],
+  "ventilation": {
+    "infiltrationACH": 0.22,
+    "mechanicalVentilationACH": 0.5,
+    "heatRecoveryEfficiency": 0.85,
+    "naturalVentilationEnabled": true,
+    "naturalSchedule": "TemperatureControlled",
+    "mechanicalVentilationEnabled": true,
+    "mechanicalFlowRateLps": 18
+  },
+  "internalLoads": {
+    "occupantsCount": 3,
+    "activityLevelW": 120,
+    "lightingPowerDensityWPerM2": 5,
+    "equipmentPowerDensityWPerM2": 3,
+    "activityLevelWatts": 115,
+    "lightingPowerDensityWpm2": 3.5,
+    "equipmentPowerWatts": 120,
+    "scheduleProfile": "DiurnalOccupied"
   }
 }

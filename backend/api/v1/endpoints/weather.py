@@ -14,7 +14,7 @@ from backend.weather.validator import (
 )
 from backend.weather.nasa_power import NASAPowerClient
 from backend.weather.open_meteo import OpenMeteoClient
-from backend.weather.converter import CSVWeatherConverter, ManualWeatherGenerator
+from backend.weather.converter import CSVWeatherConverter
 from backend.weather.microclimate_synthesizer import PhysicsInformedMicroclimateSynthesizer
 from backend.core.path_security import sanitize_filename
 
@@ -34,20 +34,6 @@ class NASAPowerRequest(BaseModel):
     elevation_m: float = Field(default=3500.0, ge=0.0, le=8848.0, description="Elevation in meters")
     start_date: str = Field(default="20230101", pattern=r"^\d{8}$", description="Start date (YYYYMMDD)")
     end_date: str = Field(default="20230103", pattern=r"^\d{8}$", description="End date (YYYYMMDD)")
-
-
-class ManualWeatherRequest(BaseModel):
-    """Payload for synthesizing user-defined engineering weather."""
-    location_name: str = Field(default="Extreme Cold Wave Design Day")
-    latitude: float = Field(default=34.1526, ge=-90.0, le=90.0)
-    longitude: float = Field(default=77.5771, ge=-180.0, le=180.0)
-    elevation_m: float = Field(default=3500.0, ge=0.0, le=8848.0)
-    design_winter_min_c: float = Field(default=-25.0, ge=-70.0, le=20.0)
-    design_summer_max_c: float = Field(default=22.0, ge=-10.0, le=50.0)
-    diurnal_range_c: float = Field(default=14.0, ge=2.0, le=35.0)
-    peak_solar_dni_wm2: float = Field(default=850.0, ge=0.0, le=1400.0)
-    wind_speed_ms: float = Field(default=3.5, ge=0.0, le=50.0)
-    num_days: int = Field(default=3, ge=1, le=365)
 
 
 class WeatherValidationRequest(BaseModel):
@@ -208,42 +194,6 @@ async def validate_weather(req: WeatherValidationRequest) -> Dict[str, Any]:
     return res.to_dict()
 
 
-@router.post("/upload/epw", summary="Upload and validate a new EPW weather dataset")
-async def upload_epw_file(file: UploadFile = File(...)) -> Dict[str, Any]:
-    """Accept user EPW upload, validate headers and physics, and store in storage/weather."""
-    if not file.filename or not file.filename.lower().endswith(".epw"):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Uploaded file must have an .epw extension.",
-        )
-
-    clean_name = sanitize_filename(file.filename)
-    target_dir = Path("storage/weather").resolve()
-    target_dir.mkdir(parents=True, exist_ok=True)
-    target_path = target_dir / clean_name
-
-    with open(target_path, "wb") as f:
-        shutil.copyfileobj(file.file, f)
-
-    res = WeatherValidator.validate_epw_file(target_path)
-    if not res.is_valid:
-        # Remove corrupted upload
-        try:
-            target_path.unlink(missing_ok=True)
-        except Exception:
-            pass
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail={"message": "Uploaded EPW file failed validation checks.", "errors": res.errors},
-        )
-
-    return {
-        "success": True,
-        "message": f"Successfully validated and registered EPW weather file: {clean_name}",
-        "dataset": res.to_dict(),
-    }
-
-
 @router.post("/upload/csv", summary="Upload CSV station data and convert to EPW")
 async def upload_csv_file(
     file: UploadFile = File(...),
@@ -313,36 +263,6 @@ async def fetch_nasa_power_weather(req: NASAPowerRequest) -> Dict[str, Any]:
     return {
         "success": True,
         "message": f"Retrieved {res.records_count} hourly records from NASA POWER.",
-        "dataset": res.to_dict(),
-    }
-
-
-@router.post("/manual", summary="Generate user-defined engineering design weather")
-async def generate_manual_weather(req: ManualWeatherRequest) -> Dict[str, Any]:
-    """Synthesize physics-consistent multi-day EPW file tagged explicitly as USER_DEFINED."""
-    try:
-        epw_path = ManualWeatherGenerator.generate_custom_weather(
-            location_name=req.location_name,
-            latitude=req.latitude,
-            longitude=req.longitude,
-            elevation_m=req.elevation_m,
-            design_winter_min_c=req.design_winter_min_c,
-            design_summer_max_c=req.design_summer_max_c,
-            diurnal_range_c=req.diurnal_range_c,
-            peak_solar_dni_wm2=req.peak_solar_dni_wm2,
-            wind_speed_ms=req.wind_speed_ms,
-            num_days=req.num_days,
-        )
-    except Exception as exc:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail=f"Manual weather generation failed: {str(exc)}",
-        )
-
-    res = WeatherValidator.validate_epw_file(epw_path, expected_latitude=req.latitude, expected_longitude=req.longitude)
-    return {
-        "success": True,
-        "message": f"Generated user-defined weather dataset {epw_path.name}",
         "dataset": res.to_dict(),
     }
 

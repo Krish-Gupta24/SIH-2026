@@ -1,0 +1,134 @@
+{
+  "id": "test-proj-1",
+  "schemaVersion": "1.0.0",
+  "project": {
+    "id": "test-proj-1",
+    "name": "Alpine Test",
+    "version": "1.0.0",
+    "description": "High-altitude engineering model.",
+    "createdAt": "2026-09-23T15:29:58.680Z",
+    "tags": []
+  },
+  "location": {
+    "region": "Leh",
+    "latitude": 34.15,
+    "longitude": 77.57,
+    "elevation": 3500,
+    "climateZone": "Alpine",
+    "weatherSource": "test.epw",
+    "designTempWinter": -20,
+    "designTempSummer": 28
+  },
+  "geometry": {
+    "shape": "Rectangle",
+    "orientation": 0,
+    "roofAngle": 0,
+    "floorElevation": 0,
+    "length": 6,
+    "width": 4,
+    "height": 3,
+    "roofType": "Flat"
+  },
+  "envelope": {
+    "walls": {
+      "north": {
+        "constructionId": "c1",
+        "name": "Wall North",
+        "layers": [
+          {
+            "materialId": "mat-rammed-earth",
+            "thickness": 0.3
+          }
+        ]
+      },
+      "south": {
+        "constructionId": "c1",
+        "name": "Wall South",
+        "layers": [
+          {
+            "materialId": "mat-rammed-earth",
+            "thickness": 0.3
+          }
+        ]
+      },
+      "east": {
+        "constructionId": "c1",
+        "name": "Wall East",
+        "layers": [
+          {
+            "materialId": "mat-rammed-earth",
+            "thickness": 0.3
+          }
+        ]
+      },
+      "west": {
+        "constructionId": "c1",
+        "name": "Wall West",
+        "layers": [
+          {
+            "materialId": "mat-rammed-earth",
+            "thickness": 0.3
+          }
+        ]
+      }
+    },
+    "roof": {
+      "constructionId": "r1",
+      "slope": 0,
+      "overhang": 0.2,
+      "solarAbsorptance": 0.7,
+      "layers": [
+        {
+          "materialId": "mat-eps-insulation",
+          "thickness": 0.1
+        }
+      ],
+      "name": "Insulated Standing Seam Roof"
+    },
+    "floor": {
+      "constructionId": "f1",
+      "groundContact": true,
+      "perimeterInsulation": true,
+      "layers": [
+        {
+          "materialId": "mat-concrete-slab",
+          "thickness": 0.15
+        }
+      ],
+      "name": "Insulated Slab on Grade"
+    }
+  },
+  "windows": [],
+  "doors": [],
+  "thermalMass": [],
+  "ventilation": {
+    "infiltrationACH": 0.3,
+    "mechanicalVentilationACH": 0.5,
+    "heatRecoveryEfficiency": 0.75,
+    "naturalVentilationEnabled": false,
+    "naturalSchedule": "DayOnly",
+    "mechanicalVentilationEnabled": false,
+    "mechanicalFlowRateLps": 0
+  },
+  "internalLoads": {
+    "occupantsCount": 2,
+    "activityLevelWatts": 120,
+    "lightingPowerDensityWpm2": 3,
+    "equipmentPowerWatts": 150,
+    "scheduleProfile": "Continuous"
+  },
+  "designTargets": {
+    "comfortTempMinC": 18,
+    "comfortTempMaxC": 24,
+    "maxAnnualHeatingDemandKwhM2": 80,
+    "targetComfortPercent": 85
+  },
+  "simulationSettings": {
+    "engine": "EnergyPlus",
+    "timestepsPerHour": 4,
+    "runPeriodDays": 3,
+    "startMonth": 1,
+    "startDay": 1,
+    "detailedComponentOutputs": true
+  }
+}

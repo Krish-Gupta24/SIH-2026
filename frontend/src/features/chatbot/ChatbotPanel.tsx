@@ -235,29 +235,30 @@ export function ChatbotPanel() {
     const volume = floorArea * height;
     const summary = latestSim?.results?.summary;
 
-    const getMaterialName = (matId: string) => {
+    const getMaterialName = (matId?: string) => {
+      if (!matId || typeof matId !== "string") return "Insulation Layer";
       const found = materials.find((m) => m.id === matId);
       return found ? found.name : matId.replace(/^mat-/, "").replace(/-/g, " ");
     };
 
     const wallLayers = (activeProject?.envelope?.walls?.south?.layers || []).map(
-      (l) => `${Math.round(l.thickness * 1000)}mm ${l.name || getMaterialName(l.materialId)}`
+      (l) => `${Math.round((l?.thickness ?? 0.1) * 1000)}mm ${l?.name || getMaterialName(l?.materialId)}`
     );
     const roofLayers = (activeProject?.envelope?.roof?.layers || []).map(
-      (l) => `${Math.round(l.thickness * 1000)}mm ${l.name || getMaterialName(l.materialId)}`
+      (l) => `${Math.round((l?.thickness ?? 0.15) * 1000)}mm ${l?.name || getMaterialName(l?.materialId)}`
     );
     const windows = activeProject?.windows || activeProject?.openings?.windows || [];
-    const totalWindowArea = windows.reduce((sum, w) => sum + (w.width * w.height), 0);
+    const totalWindowArea = windows.reduce((sum, w) => sum + ((w?.width ?? 0) * (w?.height ?? 0)), 0);
     const hasTrombe =
       Boolean((activeProject as any)?.passiveSystems?.trombeWall?.enabled) ||
       (activeProject?.thermalMass || []).some(
-        (tm) => tm.id.toLowerCase().includes("trombe") || tm.name.toLowerCase().includes("trombe")
+        (tm) => tm?.id?.toLowerCase().includes("trombe") || tm?.name?.toLowerCase().includes("trombe")
       ) ||
-      (activeProject?.project?.tags || []).some((t) => t.toLowerCase().includes("trombe"));
+      (activeProject?.project?.tags || []).some((t) => typeof t === "string" && t.toLowerCase().includes("trombe"));
 
     const firstWindow = windows[0];
     const glazingType = firstWindow?.glazingType
-      ? firstWindow.glazingType.replace(/_/g, " ")
+      ? String(firstWindow.glazingType).replace(/_/g, " ")
       : "Triple Low-E Argon";
 
     return {

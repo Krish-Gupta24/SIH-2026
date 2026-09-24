@@ -1,0 +1,169 @@
+{
+  "id": "shelter-94725715",
+  "schemaVersion": "1.0.0",
+  "project": {
+    "id": "shelter-94725715",
+    "name": "dummy-1",
+    "version": "1.0.0",
+    "description": "High-altitude engineering model.",
+    "createdAt": "2026-09-23T15:29:58.680Z",
+    "tags": [
+      "high-altitude"
+    ]
+  },
+  "location": {
+    "region": "Spiti Valley",
+    "latitude": 32.246,
+    "longitude": 78.034,
+    "elevation": 3800,
+    "climateZone": "Cold / Extreme Alpine",
+    "weatherSource": "spiti_valley.epw",
+    "designTempWinter": -20,
+    "designTempSummer": 28
+  },
+  "geometry": {
+    "shape": "Rectangle",
+    "orientation": 0,
+    "roofAngle": 15,
+    "floorElevation": 0.1,
+    "length": 6,
+    "width": 4,
+    "height": 2.8,
+    "wall_thickness": 0.2,
+    "roofType": "Gable"
+  },
+  "envelope": {
+    "walls": {
+      "north": {
+        "constructionId": "const-north-insulated-rammed-earth",
+        "name": "Wall North",
+        "layers": [
+          {
+            "materialId": "mat-eps-insulation",
+            "name": "Expanded Polystyrene (EPS)",
+            "thickness": 0.15
+          },
+          {
+            "materialId": "mat-rammed-earth",
+            "name": "Stabilized Rammed Earth",
+            "thickness": 0.25
+          }
+        ]
+      },
+      "south": {
+        "constructionId": "const-south-passive-solar-trombe",
+        "name": "Wall South",
+        "layers": [
+          {
+            "materialId": "mat-eps-insulation",
+            "name": "Expanded Polystyrene (EPS)",
+            "thickness": 0.15
+          },
+          {
+            "materialId": "mat-rammed-earth",
+            "name": "Stabilized Rammed Earth",
+            "thickness": 0.25
+          }
+        ]
+      },
+      "east": {
+        "constructionId": "const-east-insulated-wall",
+        "name": "Wall East",
+        "layers": [
+          {
+            "materialId": "mat-eps-insulation",
+            "name": "Expanded Polystyrene (EPS)",
+            "thickness": 0.15
+          },
+          {
+            "materialId": "mat-rammed-earth",
+            "name": "Stabilized Rammed Earth",
+            "thickness": 0.25
+          }
+        ]
+      },
+      "west": {
+        "constructionId": "const-west-insulated-wall",
+        "name": "Wall West",
+        "layers": [
+          {
+            "materialId": "mat-eps-insulation",
+            "name": "Expanded Polystyrene (EPS)",
+            "thickness": 0.15
+          },
+          {
+            "materialId": "mat-rammed-earth",
+            "name": "Stabilized Rammed Earth",
+            "thickness": 0.25
+          }
+        ]
+      }
+    },
+    "roof": {
+      "id": "r-1",
+      "name": "Roof Assembly",
+      "layers": [
+        {
+          "materialId": "mat-galvanized-steel",
+          "name": "Galvanized Corrugated Steel",
+          "thickness": 0.005
+        },
+        {
+          "materialId": "mat-eps-insulation",
+          "name": "Expanded Polystyrene (EPS)",
+          "thickness": 0.15
+        }
+      ],
+      "constructionId": "const-insulated-metal-roof",
+      "slope": 15,
+      "overhang": 0.5,
+      "solarAbsorptance": 0.3
+    },
+    "floor": {
+      "id": "f-1",
+      "name": "Floor Assembly",
+      "layers": [
+        {
+          "materialId": "mat-concrete-slab",
+          "name": "Heavy Concrete Floor Slab",
+          "thickness": 0.15
+        },
+        {
+          "materialId": "mat-xps-insulation",
+          "name": "Extruded Polystyrene Sub-Slab",
+          "thickness": 0.05
+        }
+      ],
+      "constructionId": "const-insulated-concrete-floor",
+      "groundContact": true,
+      "perimeterInsulation": true
+    }
+  },
+  "windows": [],
+  "doors": [],
+  "thermalMass": [],
+  "ventilation": {
+    "infiltrationACH": 0.25,
+    "mechanicalVentilationACH": 0.5,
+    "heatRecoveryEfficiency": 0.85
+  },
+  "internalLoads": {
+    "occupantsCount": 4
+  },
+  "designTargets": {
+    "comfortTempMinC": 18,
+    "comfortTempMaxC": 24,
+    "targetComfortPercent": 85
+  },
+  "simulationSettings": {
+    "engine": "EnergyPlus",
+    "timestepsPerHour": 4,
+    "runPeriodDays": 1
+  },
+  "name": "dummy-1",
+  "construction": {
+    "wall_type": "PUF_SANDWICH_100MM",
+    "roof_type": "PUF_SANDWICH_100MM",
+    "floor_type": "INSULATED_CONCRETE"
+  }
+}

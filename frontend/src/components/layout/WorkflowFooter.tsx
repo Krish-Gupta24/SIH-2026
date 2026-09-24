@@ -96,7 +96,7 @@ export function WorkflowFooter({
         {/* Center: Progress & Current Stage Identity */}
         <div className="flex flex-col items-center justify-center text-center gap-1">
           <p className="micro-label">
-            Pipeline Stage 0{currentStep.stepNumber} of 0{WORKFLOW_PIPELINE.length}
+            Stage 0{currentStep.stepNumber} of 0{WORKFLOW_PIPELINE.length}
           </p>
           <h3 className="font-editorial text-xl font-medium tracking-tight text-foreground sm:text-2xl">
             {currentStep.label}

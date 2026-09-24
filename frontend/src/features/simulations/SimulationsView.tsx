@@ -182,67 +182,30 @@ export function SimulationsView() {
     ? projects.find((p) => p.id === newWithId || p.project?.id === newWithId)
     : projects.find((p) => p.id === activeProjectId) || projects[0] || null;
 
-  // Build unified station catalog including any synthesized microclimate EPW associated with current project
-  const availableStations = React.useMemo(() => {
-    const list = [...weatherDatasets];
+  // Resolve the active project's bound meteorological weather station
+  const boundStation = React.useMemo(() => {
     const projEpw = targetProject?.location?.weatherSource;
-    if (projEpw && !list.some((w) => w.epwFileName === projEpw) && projEpw.startsWith("MICROCLIMATE_")) {
-      const elev = targetProject?.location?.elevation || 3500;
-      const reg = targetProject?.location?.region || targetProject?.project?.name || "Custom Himalayan Outpost";
-      list.unshift({
-        id: `wx-proj-custom-${targetProject.id}`,
-        name: `${reg.split(",")[0]} (${Math.round(elev)}m · Synthesized ML Dataset)`,
-        region: `${reg} (Project Weather Source)`,
-        latitude: targetProject?.location?.latitude || 34.15,
-        longitude: targetProject?.location?.longitude || 77.58,
-        elevationM: elev,
-        climateZone: elev > 4500 ? "Extreme Cold Alpine (ASHRAE 8)" : "Cold / Sub-Arctic",
-        sourceType: "EPW",
-        provenanceStatus: "REAL_DATA",
-        isTestData: false,
-        designWinterMinC: targetProject?.location?.designTempWinter || -25.0,
-        designSummerMaxC: targetProject?.location?.designTempSummer || 22.0,
-        annualHDD18: 5500,
-        epwFileName: projEpw,
-      });
+    if (projEpw) {
+      const match = weatherDatasets.find((w) => w.epwFileName === projEpw);
+      if (match) return match;
     }
-    return list;
-  }, [weatherDatasets, targetProject]);
-
-  const [selectedStationId, setSelectedStationId] = useState<string>(activeWeatherId || "wx-leh-427053");
-
-  // Keep selected station in sync when target project changes or specifies a custom weather source
-  React.useEffect(() => {
-    if (targetProject?.location?.weatherSource) {
-      const match = availableStations.find((w) => w.epwFileName === targetProject.location?.weatherSource);
-      if (match) {
-        setSelectedStationId(match.id);
-        return;
-      }
-    }
-    if (activeWeatherId && availableStations.some((w) => w.id === activeWeatherId)) {
-      setSelectedStationId(activeWeatherId);
-    } else if (availableStations[0]) {
-      setSelectedStationId(availableStations[0].id);
-    }
-  }, [targetProject, activeWeatherId, availableStations]);
+    return weatherDatasets.find((w) => w.id === activeWeatherId) || weatherDatasets[0];
+  }, [targetProject, weatherDatasets, activeWeatherId]);
 
   const handleQueueSimulation = async (
     projToSim = targetProject || projects[0],
-    allowTestData = false,
-    overrideStationId?: string
+    allowTestData = false
   ) => {
     if (!projToSim) return;
 
-    const stationIdToUse = overrideStationId || selectedStationId || activeWeatherId;
     const matchedStation =
-      availableStations.find((w) => w.id === stationIdToUse) ||
-      availableStations.find((w) => w.epwFileName === projToSim.location?.weatherSource) ||
-      availableStations[0];
+      weatherDatasets.find((w) => w.epwFileName === projToSim.location?.weatherSource) ||
+      weatherDatasets.find((w) => w.id === activeWeatherId) ||
+      weatherDatasets[0];
 
     const weatherFileName =
-      matchedStation?.epwFileName ||
       projToSim.location?.weatherSource ||
+      matchedStation?.epwFileName ||
       "IND_JK_Leh.427053_TMYx.epw";
 
     const isTestData =
@@ -551,9 +514,8 @@ export function SimulationsView() {
     <div className="space-y-10 max-w-7xl mx-auto">
       {/* V0 Page Intro */}
       <PageIntro
-        eyebrow="Validated ThermoShelter Core Dispatch"
         title="Run thermal simulation"
-        description="Send the canonical model to the physics simulation engine with explicit period, timestep resolution, and authentic weather provenance."
+        description="Send the model to the physics simulation engine with explicit period, timestep resolution, and authentic weather provenance."
         action={
           <div className="flex flex-wrap items-center gap-2.5">
             <ActionButton
@@ -572,71 +534,9 @@ export function SimulationsView() {
               <Cpu className="size-3.5" />
               Export ANSYS Deck (.jou / .mac)
             </ActionButton>
-            <Link href="/designer">
-              <ActionButton tone="primary" className="rounded-full text-xs font-semibold">
-                <Play className="size-3.5" />
-                Designer Wizard
-              </ActionButton>
-            </Link>
           </div>
         }
       />
-
-      {/* 4-Stage Progress Banner */}
-      <div className="grid grid-cols-4 gap-3">
-        {["Validate Model", "Prepare IDF", "Dispatch Engine", "Process Outputs"].map(
-          (stage, index) => (
-            <div key={stage} className="rounded-xl border border-border bg-card p-3">
-              <div
-                className={`h-1 rounded-full ${
-                  isQueueing && index < 3
-                    ? "bg-[#6E818F] animate-pulse"
-                    : index === 0
-                    ? "bg-foreground"
-                    : "bg-border"
-                }`}
-              />
-              <p className="mt-2 text-[9px] font-bold uppercase tracking-[0.08em] text-muted-foreground">
-                0{index + 1} · {stage}
-              </p>
-            </div>
-          )
-        )}
-      </div>
-
-      {/* Latest Completed Run Milestone Banner */}
-      {(() => {
-        const latestRun = simulations.find(
-          (s) => s.projectId === targetProject?.id && s.status === "completed" && s.results
-        ) || simulations.find((s) => s.status === "completed" && s.results);
-
-        if (!latestRun) return null;
-
-        return (
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6 rounded-[2rem] border border-border bg-card p-6 sm:p-8 shadow-[0_20px_55px_rgba(0,0,0,.04)]">
-            <div className="space-y-1.5">
-              <div className="flex items-center gap-2">
-                <Status strong>Simulation Validated · Run {latestRun.id}</Status>
-                <span className="text-[10px] text-[#6E818F]">ThermoShelter Core Solver</span>
-              </div>
-              <h3 className="font-editorial text-2xl font-medium tracking-tight text-foreground">
-                Thermal Performance Ready for Analysis
-              </h3>
-              <p className="text-xs text-[#536772]">
-                Achieves <strong className="text-foreground">{latestRun.results?.summary.comfortHoursPct}%</strong> comfort hours with <strong className="text-foreground">{latestRun.results?.summary.heatingDemandKwhM2} kWh/m²</strong> heating demand under Leh Ladakh winter conditions.
-              </p>
-            </div>
-            <Link
-              href={`/results?jobId=${latestRun.id}`}
-              className="group inline-flex items-center gap-2.5 rounded-full bg-black px-6 py-2.5 text-xs font-semibold text-white shadow-sm transition-colors hover:bg-[#6E818F] shrink-0"
-            >
-              <Sparkles className="size-3.5 text-[#CBDCE6]" />
-              <span>View Results Analytics</span>
-              <ArrowRight className="size-3.5 transition-transform group-hover:translate-x-0.5" />
-            </Link>
-          </div>
-        );
-      })()}
 
       {/* Quick Simulation Dispatch Card for Targeted Project */}
       {targetProject && (
@@ -652,7 +552,7 @@ export function SimulationsView() {
                   {targetProject.project?.name || targetProject.id}
                 </h2>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  Geometry: {targetProject.geometry?.length}m × {targetProject.geometry?.width}m × {targetProject.geometry?.height}m · Weather: {availableStations.find((w) => w.id === selectedStationId)?.name || targetProject.location?.weatherSource || "Leh WMO Station 427053 (TMYx)"}
+                  Geometry: {targetProject.geometry?.length}m × {targetProject.geometry?.width}m × {targetProject.geometry?.height}m · Bound Weather: {boundStation?.name || targetProject.location?.weatherSource || "Leh WMO Station 427053 (TMYx)"}
                 </p>
               </div>
 
@@ -693,11 +593,10 @@ export function SimulationsView() {
                       key={p.id}
                       type="button"
                       onClick={() => setPeriodPreset(p.id as any)}
-                      className={`rounded-full px-4 py-2 text-xs font-semibold transition-all ${
-                        periodPreset === p.id
-                          ? "bg-foreground text-background"
-                          : "border border-border bg-card text-muted-foreground hover:bg-secondary hover:text-foreground"
-                      }`}
+                      className={`rounded-full px-4 py-2 text-xs font-semibold transition-all ${periodPreset === p.id
+                        ? "bg-foreground text-background"
+                        : "border border-border bg-card text-muted-foreground hover:bg-secondary hover:text-foreground"
+                        }`}
                     >
                       {p.label}
                     </button>
@@ -715,293 +614,274 @@ export function SimulationsView() {
                 </div>
               )}
 
-                {/* Sub-inputs for 24h Quick Run */}
-                {periodPreset === "quick" && (
-                  <div className="space-y-2 bg-secondary/50 p-3.5 rounded-2xl border border-border text-xs">
-                    <div className="flex flex-wrap items-center gap-3">
-                      <span className="text-muted-foreground font-medium">24h Simulation Date:</span>
-                      <div className="flex items-center gap-2">
-                        <span className="text-muted-foreground text-[11px]">Month:</span>
-                        <select
-                          value={selectedMonth}
-                          onChange={(e) => setSelectedMonth(Number(e.target.value))}
-                          className="bg-card border border-border text-foreground rounded-xl px-3 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-[#6E818F]"
-                        >
-                          {[
-                            "January (Peak Winter Heating)", "February (Late Winter)", "March (Spring Thaw)", "April (Early Spring)",
-                            "May (Spring Transition)", "June (Early Summer)", "July (Peak Summer Solar)", "August (Late Summer)",
-                            "September (Autumn Transition)", "October (Early Cold)", "November (Pre-Winter Freeze)", "December (Deep Winter)"
-                          ].map((mName, idx) => (
-                            <option key={idx + 1} value={idx + 1}>{mName}</option>
-                          ))}
-                        </select>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-muted-foreground text-[11px]">Day:</span>
-                        <input
-                          type="number"
-                          min={1}
-                          max={[31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][selectedMonth - 1] || 31}
-                          value={selectedDay}
-                          onChange={(e) => setSelectedDay(Math.max(1, Math.min([31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][selectedMonth - 1] || 31, Number(e.target.value))))}
-                          className="w-14 bg-card border border-border rounded-xl px-2.5 py-1 text-center text-foreground text-xs"
-                        />
-                      </div>
-                      <span className="inline-flex items-center gap-1 rounded-full bg-sky-500/10 px-2.5 py-1 font-mono text-[10px] font-semibold text-sky-600 dark:text-sky-400 border border-sky-500/20">
-                        {selectedMonth === 1 ? "❄️ ASHRAE 99.6% Winter Sizing Datum" : selectedMonth === 7 ? "☀️ Peak Summer Solar Check" : "🍃 Shoulder Season"}
-                      </span>
+              {/* Sub-inputs for 24h Quick Run */}
+              {periodPreset === "quick" && (
+                <div className="space-y-2 bg-secondary/50 p-3.5 rounded-2xl border border-border text-xs">
+                  <div className="flex flex-wrap items-center gap-3">
+                    <span className="text-muted-foreground font-medium">24h Simulation Date:</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-muted-foreground text-[11px]">Month:</span>
+                      <select
+                        value={selectedMonth}
+                        onChange={(e) => setSelectedMonth(Number(e.target.value))}
+                        className="bg-card border border-border text-foreground rounded-xl px-3 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-[#6E818F]"
+                      >
+                        {[
+                          "January (Peak Winter Heating)", "February (Late Winter)", "March (Spring Thaw)", "April (Early Spring)",
+                          "May (Spring Transition)", "June (Early Summer)", "July (Peak Summer Solar)", "August (Late Summer)",
+                          "September (Autumn Transition)", "October (Early Cold)", "November (Pre-Winter Freeze)", "December (Deep Winter)"
+                        ].map((mName, idx) => (
+                          <option key={idx + 1} value={idx + 1}>{mName}</option>
+                        ))}
+                      </select>
                     </div>
-                    <p className="text-[11px] text-muted-foreground leading-relaxed">
-                      {selectedMonth === 1 && selectedDay === 15
-                        ? "Default is Jan 15 (standard ASHRAE 99.6% / ISHRAE peak winter heating design day benchmark for Leh/Ladakh). You can switch to July for summer overheating or any other month."
-                        : `Simulating a 24-hour diurnal cycle for Month ${selectedMonth}, Day ${selectedDay}.`}
+                    <div className="flex items-center gap-2">
+                      <span className="text-muted-foreground text-[11px]">Day:</span>
+                      <input
+                        type="number"
+                        min={1}
+                        max={[31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][selectedMonth - 1] || 31}
+                        value={selectedDay}
+                        onChange={(e) => setSelectedDay(Math.max(1, Math.min([31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][selectedMonth - 1] || 31, Number(e.target.value))))}
+                        className="w-14 bg-card border border-border rounded-xl px-2.5 py-1 text-center text-foreground text-xs"
+                      />
+                    </div>
+                    <span className="inline-flex items-center gap-1 rounded-full bg-sky-500/10 px-2.5 py-1 font-mono text-[10px] font-semibold text-sky-600 dark:text-sky-400 border border-sky-500/20">
+                      {selectedMonth === 1 ? "❄️ ASHRAE 99.6% Winter Sizing Datum" : selectedMonth === 7 ? "☀️ Peak Summer Solar Check" : "🍃 Shoulder Season"}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-muted-foreground leading-relaxed">
+                    {selectedMonth === 1 && selectedDay === 15
+                      ? "Default is Jan 15 (standard ASHRAE 99.6% / ISHRAE peak winter heating design day benchmark for Leh/Ladakh). You can switch to July for summer overheating or any other month."
+                      : `Simulating a 24-hour diurnal cycle for Month ${selectedMonth}, Day ${selectedDay}.`}
+                  </p>
+                </div>
+              )}
+
+              {/* Sub-inputs for Multi-Day (3 or 7 Days) */}
+              {(periodPreset === "multi_3" || periodPreset === "multi_7") && (
+                <div className="space-y-2 bg-secondary/50 p-3.5 rounded-2xl border border-border text-xs">
+                  <div className="flex flex-wrap items-center gap-3">
+                    <span className="text-muted-foreground font-medium">Start Date:</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-muted-foreground text-[11px]">Month:</span>
+                      <select
+                        value={selectedMonth}
+                        onChange={(e) => setSelectedMonth(Number(e.target.value))}
+                        className="bg-card border border-border text-foreground rounded-xl px-3 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-[#6E818F]"
+                      >
+                        {[
+                          "January", "February", "March", "April",
+                          "May", "June", "July", "August",
+                          "September", "October", "November", "December"
+                        ].map((mName, idx) => (
+                          <option key={idx + 1} value={idx + 1}>{mName}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-muted-foreground text-[11px]">Start Day:</span>
+                      <input
+                        type="number"
+                        min={1}
+                        max={([31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][selectedMonth - 1] || 31) - (periodPreset === "multi_3" ? 2 : 6)}
+                        value={selectedDay}
+                        onChange={(e) => setSelectedDay(Math.max(1, Math.min(28, Number(e.target.value))))}
+                        className="w-14 bg-card border border-border rounded-xl px-2.5 py-1 text-center text-foreground text-xs"
+                      />
+                    </div>
+                    <span className="text-muted-foreground text-[11px]">
+                      ({periodPreset === "multi_3" ? "3 consecutive days" : "7 consecutive days"} starting {["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][selectedMonth - 1]} {selectedDay})
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {/* Sub-inputs for Monthly */}
+              {periodPreset === "monthly" && (
+                <div className="flex items-center gap-3 bg-secondary/50 p-3 rounded-2xl border border-border text-xs">
+                  <span className="text-muted-foreground font-medium">Select Month:</span>
+                  <select
+                    value={selectedMonth}
+                    onChange={(e) => setSelectedMonth(Number(e.target.value))}
+                    className="bg-card border border-border text-foreground rounded-xl px-3 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-[#6E818F]"
+                  >
+                    {[
+                      "January (31d)", "February (28d)", "March (31d)", "April (30d)",
+                      "May (31d)", "June (30d)", "July (31d)", "August (31d)",
+                      "September (30d)", "October (31d)", "November (30d)", "December (31d)"
+                    ].map((mName, idx) => (
+                      <option key={idx + 1} value={idx + 1}>{mName}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {/* Sub-inputs for Custom */}
+              {periodPreset === "custom" && (
+                <div className="flex flex-wrap items-center gap-4 bg-secondary/50 p-3 rounded-2xl border border-border text-xs">
+                  <div className="flex items-center gap-2">
+                    <span className="text-muted-foreground">Start (Month / Day):</span>
+                    <input
+                      type="number"
+                      min={1}
+                      max={12}
+                      value={startMonth}
+                      onChange={(e) => setStartMonth(Number(e.target.value))}
+                      className="w-12 bg-card border border-border rounded-lg px-2 py-1 text-center text-foreground text-xs"
+                    />
+                    <span>/</span>
+                    <input
+                      type="number"
+                      min={1}
+                      max={31}
+                      value={startDay}
+                      onChange={(e) => setStartDay(Number(e.target.value))}
+                      className="w-12 bg-card border border-border rounded-lg px-2 py-1 text-center text-foreground text-xs"
+                    />
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-muted-foreground">End (Month / Day):</span>
+                    <input
+                      type="number"
+                      min={1}
+                      max={12}
+                      value={endMonth}
+                      onChange={(e) => setEndMonth(Number(e.target.value))}
+                      className="w-12 bg-card border border-border rounded-lg px-2 py-1 text-center text-foreground text-xs"
+                    />
+                    <span>/</span>
+                    <input
+                      type="number"
+                      min={1}
+                      max={31}
+                      value={endDay}
+                      onChange={(e) => setEndDay(Number(e.target.value))}
+                      className="w-12 bg-card border border-border rounded-lg px-2 py-1 text-center text-foreground text-xs"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Timestep selection */}
+              <div className="flex flex-wrap items-center gap-2 pt-1">
+                <span className="text-xs font-semibold text-foreground flex items-center gap-1.5 mr-1">
+                  <Clock className="h-3.5 w-3.5 text-[#6E818F]" />
+                  Timestep:
+                </span>
+                {[
+                  { steps: 4, label: "15 min (4 / hr)" },
+                  { steps: 1, label: "60 min (1 / hr)" },
+                  { steps: 2, label: "30 min (2 / hr)" },
+                  { steps: 6, label: "10 min (6 / hr)" },
+                ].map((ts) => (
+                  <button
+                    key={ts.steps}
+                    type="button"
+                    onClick={() => setTimestep(ts.steps)}
+                    className={`px-3 py-1 rounded-full text-xs font-semibold transition-all ${timestep === ts.steps
+                      ? "bg-foreground text-background shadow-sm"
+                      : "border border-border bg-card text-muted-foreground hover:bg-secondary hover:text-foreground"
+                      }`}
+                  >
+                    {ts.label}
+                  </button>
+                ))}
+              </div>
+
+              {/* Project Bound Climate & Weather Provenance (Read-only, managed in /weather) */}
+              <div className="pt-3 border-t border-border/60">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-4 rounded-2xl border border-border bg-secondary/30">
+                  <div className="space-y-1 min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                        Bound Weather Dataset
+                      </span>
+                      <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 px-2 py-0.5 text-[10px] font-bold">
+                        <CheckCircle2 className="size-3 text-emerald-600" />
+                        {boundStation?.provenanceStatus || "REAL_DATA"}
+                      </span>
+                      {targetProject?.location?.weatherSource?.startsWith("MICROCLIMATE_") && (
+                        <span className="text-[10px] font-semibold text-sky-600 dark:text-sky-400 bg-sky-500/10 border border-sky-500/25 px-2 py-0.5 rounded-full flex items-center gap-1">
+                          <Sparkles className="size-3 text-sky-500" />
+                          Synthesized ML Microclimate
+                        </span>
+                      )}
+                    </div>
+                    <h3 className="text-sm font-bold text-foreground truncate">
+                      {boundStation?.name || targetProject?.location?.weatherSource || "Leh WMO Station 427053 (TMYx)"}
+                    </h3>
+                    <p className="text-xs text-muted-foreground">
+                      {targetProject?.location?.region || boundStation?.region || "Leh Ladakh"} · {targetProject?.location?.elevation ? `${Math.round(targetProject.location.elevation)}m MSL` : `${boundStation?.elevationM || 3500}m MSL`} · Winter Min: {targetProject?.location?.designTempWinter ?? boundStation?.designWinterMinC ?? -20}°C · Summer Max: {targetProject?.location?.designTempSummer ?? boundStation?.designSummerMaxC ?? 28}°C
                     </p>
                   </div>
-                )}
 
-                {/* Sub-inputs for Multi-Day (3 or 7 Days) */}
-                {(periodPreset === "multi_3" || periodPreset === "multi_7") && (
-                  <div className="space-y-2 bg-secondary/50 p-3.5 rounded-2xl border border-border text-xs">
-                    <div className="flex flex-wrap items-center gap-3">
-                      <span className="text-muted-foreground font-medium">Start Date:</span>
-                      <div className="flex items-center gap-2">
-                        <span className="text-muted-foreground text-[11px]">Month:</span>
-                        <select
-                          value={selectedMonth}
-                          onChange={(e) => setSelectedMonth(Number(e.target.value))}
-                          className="bg-card border border-border text-foreground rounded-xl px-3 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-[#6E818F]"
-                        >
-                          {[
-                            "January", "February", "March", "April",
-                            "May", "June", "July", "August",
-                            "September", "October", "November", "December"
-                          ].map((mName, idx) => (
-                            <option key={idx + 1} value={idx + 1}>{mName}</option>
-                          ))}
-                        </select>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-muted-foreground text-[11px]">Start Day:</span>
-                        <input
-                          type="number"
-                          min={1}
-                          max={([31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][selectedMonth - 1] || 31) - (periodPreset === "multi_3" ? 2 : 6)}
-                          value={selectedDay}
-                          onChange={(e) => setSelectedDay(Math.max(1, Math.min(28, Number(e.target.value))))}
-                          className="w-14 bg-card border border-border rounded-xl px-2.5 py-1 text-center text-foreground text-xs"
-                        />
-                      </div>
-                      <span className="text-muted-foreground text-[11px]">
-                        ({periodPreset === "multi_3" ? "3 consecutive days" : "7 consecutive days"} starting {["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][selectedMonth - 1]} {selectedDay})
-                      </span>
-                    </div>
-                  </div>
-                )}
-
-                {/* Sub-inputs for Monthly */}
-                {periodPreset === "monthly" && (
-                  <div className="flex items-center gap-3 bg-secondary/50 p-3 rounded-2xl border border-border text-xs">
-                    <span className="text-muted-foreground font-medium">Select Month:</span>
-                    <select
-                      value={selectedMonth}
-                      onChange={(e) => setSelectedMonth(Number(e.target.value))}
-                      className="bg-card border border-border text-foreground rounded-xl px-3 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-[#6E818F]"
+                  <div className="flex items-center gap-2 shrink-0 self-start sm:self-center">
+                    <Link
+                      href="/weather"
+                      className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3.5 py-1.5 text-xs font-semibold text-foreground shadow-xs hover:bg-secondary transition shrink-0"
+                      title="Climate & weather dataset can only be changed in Climate & Site (/weather)"
                     >
-                      {[
-                        "January (31d)", "February (28d)", "March (31d)", "April (30d)",
-                        "May (31d)", "June (30d)", "July (31d)", "August (31d)",
-                        "September (30d)", "October (31d)", "November (30d)", "December (31d)"
-                      ].map((mName, idx) => (
-                        <option key={idx + 1} value={idx + 1}>{mName}</option>
-                      ))}
-                    </select>
-                  </div>
-                )}
-
-                {/* Sub-inputs for Custom */}
-                {periodPreset === "custom" && (
-                  <div className="flex flex-wrap items-center gap-4 bg-secondary/50 p-3 rounded-2xl border border-border text-xs">
-                    <div className="flex items-center gap-2">
-                      <span className="text-muted-foreground">Start (Month / Day):</span>
-                      <input
-                        type="number"
-                        min={1}
-                        max={12}
-                        value={startMonth}
-                        onChange={(e) => setStartMonth(Number(e.target.value))}
-                        className="w-12 bg-card border border-border rounded-lg px-2 py-1 text-center text-foreground text-xs"
-                      />
-                      <span>/</span>
-                      <input
-                        type="number"
-                        min={1}
-                        max={31}
-                        value={startDay}
-                        onChange={(e) => setStartDay(Number(e.target.value))}
-                        className="w-12 bg-card border border-border rounded-lg px-2 py-1 text-center text-foreground text-xs"
-                      />
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-muted-foreground">End (Month / Day):</span>
-                      <input
-                        type="number"
-                        min={1}
-                        max={12}
-                        value={endMonth}
-                        onChange={(e) => setEndMonth(Number(e.target.value))}
-                        className="w-12 bg-card border border-border rounded-lg px-2 py-1 text-center text-foreground text-xs"
-                      />
-                      <span>/</span>
-                      <input
-                        type="number"
-                        min={1}
-                        max={31}
-                        value={endDay}
-                        onChange={(e) => setEndDay(Number(e.target.value))}
-                        className="w-12 bg-card border border-border rounded-lg px-2 py-1 text-center text-foreground text-xs"
-                      />
-                    </div>
-                  </div>
-                )}
-
-                {/* Timestep selection */}
-                <div className="flex flex-wrap items-center gap-2 pt-1">
-                  <span className="text-xs font-semibold text-foreground flex items-center gap-1.5 mr-1">
-                    <Clock className="h-3.5 w-3.5 text-[#6E818F]" />
-                    Timestep:
-                  </span>
-                  {[
-                    { steps: 4, label: "15 min (4 / hr)" },
-                    { steps: 1, label: "60 min (1 / hr)" },
-                    { steps: 2, label: "30 min (2 / hr)" },
-                    { steps: 6, label: "10 min (6 / hr)" },
-                  ].map((ts) => (
-                    <button
-                      key={ts.steps}
-                      type="button"
-                      onClick={() => setTimestep(ts.steps)}
-                      className={`px-3 py-1 rounded-full text-xs font-semibold transition-all ${
-                        timestep === ts.steps
-                          ? "bg-foreground text-background shadow-sm"
-                          : "border border-border bg-card text-muted-foreground hover:bg-secondary hover:text-foreground"
-                      }`}
-                    >
-                      {ts.label}
-                    </button>
-                  ))}
-                </div>
-
-                {/* Weather Station selection */}
-                <div className="pt-2 border-t border-border/50">
-                  <div className="flex flex-wrap items-center justify-between gap-1.5 mb-2">
-                    <span className="micro-label block">Target Climate & Weather Station</span>
-                    {targetProject?.location?.weatherSource?.startsWith("MICROCLIMATE_") && (
-                      <span className="text-[11px] font-semibold text-sky-600 dark:text-sky-400 bg-sky-500/10 border border-sky-500/25 px-2.5 py-0.5 rounded-full flex items-center gap-1.5">
-                        <Sparkles className="size-3 text-sky-500 animate-pulse" />
-                        Custom Physics-Informed Microclimate Dataset Active
-                      </span>
-                    )}
-                  </div>
-                  <div className="flex flex-wrap items-center gap-2">
-                    {availableStations.map((ws) => {
-                      const isCustomEpw =
-                        ws.epwFileName?.startsWith("MICROCLIMATE_") ||
-                        ws.id.startsWith("wx-proj-custom-") ||
-                        ws.id.startsWith("wx-micro-") ||
-                        ws.sourceType === "MICROCLIMATE_PIML";
-                      const isSelected = selectedStationId === ws.id;
-                      return (
-                        <button
-                          key={ws.id}
-                          type="button"
-                          onClick={() => setSelectedStationId(ws.id)}
-                          className={`rounded-full px-3.5 py-1.5 text-xs font-semibold transition-all flex items-center gap-2 ${
-                            isSelected
-                              ? isCustomEpw
-                                ? "bg-sky-600 text-white shadow-md ring-2 ring-sky-400/40 font-bold"
-                                : "bg-foreground text-background shadow-sm"
-                              : isCustomEpw
-                              ? "border border-sky-400/50 bg-sky-500/10 text-sky-700 dark:text-sky-300 hover:bg-sky-500/20"
-                              : "border border-border bg-card text-muted-foreground hover:bg-secondary hover:text-foreground"
-                          }`}
-                        >
-                          <span
-                            className={`inline-block size-2 rounded-full ${
-                              ws.isTestData ? "bg-amber-400" : isCustomEpw ? "bg-cyan-400 animate-pulse" : "bg-emerald-400"
-                            }`}
-                          />
-                          {isCustomEpw && <Sparkles className="size-3 text-cyan-300 shrink-0" />}
-                          <span>{ws.name}</span>
-                          {isCustomEpw && (
-                            <span
-                              className={`text-[9px] px-1.5 py-0.5 rounded-full font-mono uppercase tracking-wider font-bold ${
-                                isSelected
-                                  ? "bg-white/25 text-white"
-                                  : "bg-sky-200 dark:bg-sky-900 text-sky-800 dark:text-sky-200"
-                              }`}
-                            >
-                              Synthesized
-                            </span>
-                          )}
-                        </button>
-                      );
-                    })}
+                      <span>Configure in Climate & Site</span>
+                      <ArrowRight className="size-3 text-muted-foreground" />
+                    </Link>
                   </div>
                 </div>
               </div>
-
-              {queueError && (
-                <div className="mt-3 rounded-2xl border-2 border-rose-500/60 bg-rose-50 dark:bg-rose-950/40 p-4 text-xs text-rose-900 dark:text-rose-100 shadow-md">
-                  <div className="flex items-start gap-3">
-                    <AlertCircle className="h-5 w-5 text-rose-600 dark:text-rose-400 shrink-0 mt-0.5" />
-                    <div className="flex-1 space-y-1">
-                      <p className="font-bold text-sm text-rose-700 dark:text-rose-300">Simulation Queue Error</p>
-                      <p className="leading-relaxed font-mono text-[11px] text-rose-800 dark:text-rose-300 bg-white/70 dark:bg-black/40 p-2.5 rounded-xl border border-rose-300 dark:border-rose-900">
-                        {queueError}
-                      </p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => setQueueError(null)}
-                      className="text-rose-400 hover:text-rose-600 transition shrink-0 mt-0.5"
-                      title="Dismiss"
-                    >
-                      <X className="h-4 w-4" />
-                    </button>
-                  </div>
-                  <div className="mt-3 flex items-center gap-2 pl-8">
-                    <button
-                      type="button"
-                      onClick={() => { setQueueError(null); handleQueueSimulation(targetProject || projects[0]); }}
-                      className="inline-flex items-center gap-1.5 rounded-full bg-rose-600 px-3 py-1 text-[11px] font-bold text-white hover:bg-rose-700"
-                    >
-                      <RotateCw className="size-3" /> Retry
-                    </button>
-                    <span className="text-[10px] text-rose-600 dark:text-rose-400">
-                      Backend offline? The system will auto-fallback to the local RC physics model.
-                    </span>
-                  </div>
-                </div>
-              )}
-
-              {lastQueuedJobId && (
-                <div className="mt-3 rounded-2xl border-2 border-emerald-500/60 bg-emerald-50 dark:bg-emerald-950/40 p-4 text-xs text-emerald-950 dark:text-emerald-100 flex items-center justify-between shadow-md">
-                  <div className="flex items-center gap-2.5">
-                    <CheckCircle2 className="h-5 w-5 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                    <span>
-                      Simulation job <strong className="font-mono text-foreground font-bold px-2 py-0.5 rounded-lg bg-white dark:bg-black/50 border border-emerald-500/30">{lastQueuedJobId}</strong> dispatched successfully!
-                    </span>
-                  </div>
-                  <Link href={`/results?jobId=${lastQueuedJobId}`}>
-                    <ActionButton tone="primary" className="rounded-full px-4 py-1.5 text-xs font-bold shadow-sm">
-                      <Eye className="size-3.5" />
-                      View Results
-                    </ActionButton>
-                  </Link>
-                </div>
-              )}
             </div>
+
+            {queueError && (
+              <div className="mt-3 rounded-2xl border-2 border-rose-500/60 bg-rose-50 dark:bg-rose-950/40 p-4 text-xs text-rose-900 dark:text-rose-100 shadow-md">
+                <div className="flex items-start gap-3">
+                  <AlertCircle className="h-5 w-5 text-rose-600 dark:text-rose-400 shrink-0 mt-0.5" />
+                  <div className="flex-1 space-y-1">
+                    <p className="font-bold text-sm text-rose-700 dark:text-rose-300">Simulation Queue Error</p>
+                    <p className="leading-relaxed font-mono text-[11px] text-rose-800 dark:text-rose-300 bg-white/70 dark:bg-black/40 p-2.5 rounded-xl border border-rose-300 dark:border-rose-900">
+                      {queueError}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setQueueError(null)}
+                    className="text-rose-400 hover:text-rose-600 transition shrink-0 mt-0.5"
+                    title="Dismiss"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+                <div className="mt-3 flex items-center gap-2 pl-8">
+                  <button
+                    type="button"
+                    onClick={() => { setQueueError(null); handleQueueSimulation(targetProject || projects[0]); }}
+                    className="inline-flex items-center gap-1.5 rounded-full bg-rose-600 px-3 py-1 text-[11px] font-bold text-white hover:bg-rose-700"
+                  >
+                    <RotateCw className="size-3" /> Retry
+                  </button>
+                  <span className="text-[10px] text-rose-600 dark:text-rose-400">
+                    Backend offline? The system will auto-fallback to the local RC physics model.
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {lastQueuedJobId && (
+              <div className="mt-3 rounded-2xl border-2 border-emerald-500/60 bg-emerald-50 dark:bg-emerald-950/40 p-4 text-xs text-emerald-950 dark:text-emerald-100 flex items-center justify-between shadow-md">
+                <div className="flex items-center gap-2.5">
+                  <CheckCircle2 className="h-5 w-5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                  <span>
+                    Simulation job <strong className="font-mono text-foreground font-bold px-2 py-0.5 rounded-lg bg-white dark:bg-black/50 border border-emerald-500/30">{lastQueuedJobId}</strong> dispatched successfully!
+                  </span>
+                </div>
+                <Link href={`/results?jobId=${lastQueuedJobId}`}>
+                  <ActionButton tone="primary" className="rounded-full px-4 py-1.5 text-xs font-bold shadow-sm">
+                    <Eye className="size-3.5" />
+                    View Results
+                  </ActionButton>
+                </Link>
+              </div>
+            )}
           </div>
+        </div>
       )}
 
       {/* Queue Stat Cards */}
@@ -1009,11 +889,10 @@ export function SimulationsView() {
         <button
           type="button"
           onClick={() => setFilterTab("active")}
-          className={`rounded-[2rem] border text-left p-6 shadow-[0_20px_55px_rgba(0,0,0,.04)] transition-all cursor-pointer ${
-            filterTab === "active"
-              ? "border-sky-500 bg-sky-500/10 ring-2 ring-sky-500/20"
-              : "border-border bg-card hover:border-sky-500/50"
-          }`}
+          className={`rounded-[2rem] border text-left p-6 shadow-[0_20px_55px_rgba(0,0,0,.04)] transition-all cursor-pointer ${filterTab === "active"
+            ? "border-sky-500 bg-sky-500/10 ring-2 ring-sky-500/20"
+            : "border-border bg-card hover:border-sky-500/50"
+            }`}
         >
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Active Queue</span>
@@ -1026,11 +905,10 @@ export function SimulationsView() {
         <button
           type="button"
           onClick={() => setFilterTab("completed")}
-          className={`rounded-[2rem] border text-left p-6 shadow-[0_20px_55px_rgba(0,0,0,.04)] transition-all cursor-pointer ${
-            filterTab === "completed"
-              ? "border-emerald-500 bg-emerald-500/10 ring-2 ring-emerald-500/20"
-              : "border-border bg-card hover:border-emerald-500/50"
-          }`}
+          className={`rounded-[2rem] border text-left p-6 shadow-[0_20px_55px_rgba(0,0,0,.04)] transition-all cursor-pointer ${filterTab === "completed"
+            ? "border-emerald-500 bg-emerald-500/10 ring-2 ring-emerald-500/20"
+            : "border-border bg-card hover:border-emerald-500/50"
+            }`}
         >
           <div className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Completed Runs</div>
           <div className="text-3xl font-bold tracking-tight text-emerald-600 dark:text-emerald-400 mt-2">{completedRuns}</div>
@@ -1090,11 +968,10 @@ export function SimulationsView() {
               key={tab.id}
               type="button"
               onClick={() => setFilterTab(tab.id as any)}
-              className={`rounded-full px-3.5 py-1 text-xs font-semibold transition-all cursor-pointer ${
-                filterTab === tab.id
-                  ? "bg-foreground text-background shadow-xs"
-                  : "text-muted-foreground hover:text-foreground hover:bg-secondary"
-              }`}
+              className={`rounded-full px-3.5 py-1 text-xs font-semibold transition-all cursor-pointer ${filterTab === tab.id
+                ? "bg-foreground text-background shadow-xs"
+                : "text-muted-foreground hover:text-foreground hover:bg-secondary"
+                }`}
             >
               {tab.label}
             </button>
@@ -1128,10 +1005,10 @@ export function SimulationsView() {
                     {filterTab === "active"
                       ? "No active simulations in queue. Dispatch one above or from the 3D Designer."
                       : filterTab === "completed"
-                      ? "No completed simulation runs found."
-                      : filterTab === "failed"
-                      ? "No failed simulation runs."
-                      : "No simulation jobs found. Launch one from the Designer or Project Details."}
+                        ? "No completed simulation runs found."
+                        : filterTab === "failed"
+                          ? "No failed simulation runs."
+                          : "No simulation jobs found. Launch one from the Designer or Project Details."}
                   </TableCell>
                 </TableRow>
               ) : (
@@ -1170,10 +1047,10 @@ export function SimulationsView() {
                             {sim.simulationPeriod?.is_annual
                               ? "Full Year (8,760h)"
                               : sim.simulationPeriod?.period_type === "quick"
-                              ? `24 Hours (${["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][(sim.simulationPeriod.start_month || 1) - 1]} ${sim.simulationPeriod.start_day || 15})`
-                              : sim.simulationPeriod?.period_type === "monthly"
-                              ? `1 Month (${["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][(sim.simulationPeriod.start_month || 1) - 1]})`
-                              : `${sim.simulationPeriod?.run_period_days || 3} Days (${["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][(sim.simulationPeriod?.start_month || 1) - 1]} ${sim.simulationPeriod?.start_day || 1})`}
+                                ? `24 Hours (${["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][(sim.simulationPeriod.start_month || 1) - 1]} ${sim.simulationPeriod.start_day || 15})`
+                                : sim.simulationPeriod?.period_type === "monthly"
+                                  ? `1 Month (${["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][(sim.simulationPeriod.start_month || 1) - 1]})`
+                                  : `${sim.simulationPeriod?.run_period_days || 3} Days (${["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][(sim.simulationPeriod?.start_month || 1) - 1]} ${sim.simulationPeriod?.start_day || 1})`}
                           </span>
                           <span className="text-[10px] text-slate-400 font-mono">
                             {sim.simulationPeriod?.timestep_minutes
@@ -1248,7 +1125,7 @@ export function SimulationsView() {
                               onClick={() => {
                                 const proj = sim.shelterModel || targetProject;
                                 if (proj) {
-                                  handleQueueSimulation(proj, sim.allowTestData, sim.weatherDatasetId);
+                                  handleQueueSimulation(proj, sim.allowTestData);
                                 }
                               }}
                               className="h-7 text-xs gap-1 border-rose-500/40 text-rose-300 hover:bg-rose-950/40"

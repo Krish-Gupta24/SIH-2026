@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState, useMemo } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -10,6 +10,9 @@ import {
   Cpu,
   Layers,
   Wand2,
+  ChevronDown,
+  FolderKanban,
+  Check,
 } from "lucide-react";
 import { useShelterStore } from "@/lib/store/use-shelter-store";
 import {
@@ -24,18 +27,63 @@ import { WorkflowFooter } from "@/components/layout/WorkflowFooter";
 
 export function DashboardView() {
   const router = useRouter();
+  const [projectPickerOpen, setProjectPickerOpen] = useState(false);
+
   const {
     projects,
     activeProjectId,
+    setActiveProject,
     weatherDatasets,
     activeWeatherId,
+    setActiveWeather,
     simulations,
   } = useShelterStore();
 
   const activeProject =
     projects.find((p) => p.id === activeProjectId) || projects[0];
-  const activeWeather =
-    weatherDatasets.find((w) => w.id === activeWeatherId) || weatherDatasets[0];
+
+  // Dynamically resolve the weather station corresponding to the active project
+  const projectWeather = useMemo(() => {
+    if (!activeProject) return weatherDatasets[0];
+    const src = activeProject.location?.weatherSource?.toLowerCase() || "";
+    const reg = activeProject.location?.region?.toLowerCase() || "";
+
+    const byEpw = weatherDatasets.find(
+      (w) => w.epwFileName && src.includes(w.epwFileName.toLowerCase())
+    );
+    if (byEpw) return byEpw;
+
+    const byId = weatherDatasets.find(
+      (w) => w.id && (src === w.id.toLowerCase() || w.id.toLowerCase().includes(src))
+    );
+    if (byId) return byId;
+
+    const byRegion = weatherDatasets.find(
+      (w) =>
+        (w.region && reg && (reg.includes(w.region.toLowerCase()) || w.region.toLowerCase().includes(reg))) ||
+        (w.name && reg && (reg.includes(w.name.toLowerCase()) || w.name.toLowerCase().includes(reg)))
+    );
+    if (byRegion) return byRegion;
+
+    return weatherDatasets.find((w) => w.id === activeWeatherId) || weatherDatasets[0];
+  }, [activeProject, weatherDatasets, activeWeatherId]);
+
+  const handleSelectProject = (projectId: string) => {
+    setActiveProject(projectId);
+    setProjectPickerOpen(false);
+
+    const target = projects.find((p) => p.id === projectId);
+    if (target?.location?.weatherSource) {
+      const matchWx = weatherDatasets.find(
+        (w) =>
+          (w.epwFileName && target.location.weatherSource.toLowerCase().includes(w.epwFileName.toLowerCase())) ||
+          w.id === target.location.weatherSource
+      );
+      if (matchWx) {
+        setActiveWeather(matchWx.id);
+      }
+    }
+  };
 
   const projectRuns = simulations.filter(
     (s) => s.projectId === activeProject?.id
@@ -59,13 +107,33 @@ export function DashboardView() {
   const geomWidth = Number(activeProject.geometry?.width ?? (activeProject.geometry as any)?.widthM ?? 4);
   const geomHeight = Number(activeProject.geometry?.height ?? (activeProject.geometry as any)?.wallHeightM ?? 2.8);
   const roofType = activeProject.geometry?.roofType || "Gable";
+  const floorArea = (geomLength * geomWidth).toFixed(1);
+
+  const windows = activeProject.windows || activeProject.openings?.windows || [];
+  const doors = activeProject.doors || activeProject.openings?.doors || [];
+  const infiltrationVal =
+    activeProject.ventilation?.infiltrationACH ??
+    (activeProject.ventilation as any)?.infiltrationRateAch ??
+    0.25;
 
   return (
     <div className="space-y-10">
       <PageIntro
-        eyebrow={`Project ${activeProject.project?.version || "1.0.0"} · DRDO PS 26051`}
-        title="Engineering overview"
+        title="Overview"
         description="Canonical model readiness, climate context, latest thermal performance, and traceable validation sequence."
+        action={
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setProjectPickerOpen(!projectPickerOpen)}
+              className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-4 py-2 text-xs font-semibold text-foreground shadow-sm transition-all hover:bg-secondary cursor-pointer"
+            >
+              <FolderKanban className="size-3.5 text-foreground" />
+              <span className="font-semibold max-w-[200px] truncate">{activeProject.project?.name || activeProject.name}</span>
+              <ChevronDown className={`size-3 transition-transform ${projectPickerOpen ? "rotate-180" : ""}`} />
+            </button>
+          </div>
+        }
       />
 
       {/* Main Feature Grid: 3D Scene + Immediate Judgment */}
@@ -112,11 +180,11 @@ export function DashboardView() {
             <dl className="mt-8 grid grid-cols-2 gap-6 border-t border-border pt-6">
               <DataPair
                 label="Winter design"
-                value={`${activeProject.location?.designTempWinter ?? -20.5} °C`}
+                value={`${activeProject.location?.designTempWinter ?? projectWeather?.designWinterMinC ?? -20.5} °C`}
               />
               <DataPair
                 label="Floor area"
-                value={`${(geomLength * geomWidth).toFixed(1)} m²`}
+                value={`${floorArea} m²`}
               />
               <DataPair
                 label="Geometry"
@@ -124,22 +192,23 @@ export function DashboardView() {
               />
               <DataPair
                 label="Weather"
-                value={activeWeather?.name || "Leh, Ladakh (WMO 427053)"}
+                value={projectWeather?.name || activeProject.location?.region || "Leh, Ladakh (WMO 427053)"}
               />
               <DataPair
                 label="Openings"
-                value={`${(activeProject.windows || []).length} windows · ${(activeProject.doors || []).length} doors`}
+                value={`${windows.length} windows · ${doors.length} doors`}
               />
               <DataPair
                 label="Infiltration"
-                value={`${activeProject.ventilation?.infiltrationACH ?? (activeProject.ventilation as any)?.infiltrationRateAch ?? 0.25} ACH`}
+                value={`${infiltrationVal} ACH`}
               />
             </dl>
           </div>
 
           <div className="mt-8">
             <NextStep
-              label={latestRun ? "Refine canonical model" : "Prepare first run"}
+              bold
+              label={latestRun ? "Refine model" : "Prepare first run"}
               detail={
                 latestRun
                   ? "Adjust envelope insulation and solar aperture in Designer"
@@ -164,82 +233,6 @@ export function DashboardView() {
           <IndoorTemperatureChart run={latestRun} compact />
         </div>
       )}
-
-      {/* Quick Launch Cards */}
-      <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-        <Link
-          href="/designer"
-          className="group flex flex-col justify-between rounded-2xl border border-border bg-card p-6 shadow-[0_10px_30px_rgba(0,0,0,.03)] transition-all hover:-translate-y-1 hover:border-[#6E818F]"
-        >
-          <div>
-            <span className="flex size-10 items-center justify-center rounded-xl bg-secondary">
-              <Wand2 className="size-5 text-foreground" />
-            </span>
-            <h3 className="mt-4 text-base font-semibold">13-Step Designer</h3>
-            <p className="mt-1 text-xs leading-5 text-muted-foreground">
-              Guided sequence for geometry, walls, roof, mass, and targets.
-            </p>
-          </div>
-          <span className="mt-5 inline-flex items-center gap-1.5 text-xs font-semibold text-foreground">
-            Launch wizard <ArrowRight className="size-3.5 transition-transform group-hover:translate-x-1" />
-          </span>
-        </Link>
-
-        <Link
-          href="/weather"
-          className="group flex flex-col justify-between rounded-2xl border border-border bg-card p-6 shadow-[0_10px_30px_rgba(0,0,0,.03)] transition-all hover:-translate-y-1 hover:border-[#6E818F]"
-        >
-          <div>
-            <span className="flex size-10 items-center justify-center rounded-xl bg-secondary">
-              <CloudSun className="size-5 text-foreground" />
-            </span>
-            <h3 className="mt-4 text-base font-semibold">Weather Intelligence</h3>
-            <p className="mt-1 text-xs leading-5 text-muted-foreground">
-              NASA POWER and authentic Leh meteorological climate files with full provenance.
-            </p>
-          </div>
-          <span className="mt-5 inline-flex items-center gap-1.5 text-xs font-semibold text-foreground">
-            View climate <ArrowRight className="size-3.5 transition-transform group-hover:translate-x-1" />
-          </span>
-        </Link>
-
-        <Link
-          href="/simulations"
-          className="group flex flex-col justify-between rounded-2xl border border-border bg-card p-6 shadow-[0_10px_30px_rgba(0,0,0,.03)] transition-all hover:-translate-y-1 hover:border-[#6E818F]"
-        >
-          <div>
-            <span className="flex size-10 items-center justify-center rounded-xl bg-secondary">
-              <Cpu className="size-5 text-foreground" />
-            </span>
-            <h3 className="mt-4 text-base font-semibold">ThermoShelter Simulation</h3>
-            <p className="mt-1 text-xs leading-5 text-muted-foreground">
-              Sub-hourly physics-based heat balance and comfort calculations.
-            </p>
-          </div>
-          <span className="mt-5 inline-flex items-center gap-1.5 text-xs font-semibold text-foreground">
-            Dispatch run <ArrowRight className="size-3.5 transition-transform group-hover:translate-x-1" />
-          </span>
-        </Link>
-
-        <Link
-          href="/materials"
-          className="group flex flex-col justify-between rounded-2xl border border-border bg-card p-6 shadow-[0_10px_30px_rgba(0,0,0,.03)] transition-all hover:-translate-y-1 hover:border-[#6E818F]"
-        >
-          <div>
-            <span className="flex size-10 items-center justify-center rounded-xl bg-secondary">
-              <Layers className="size-5 text-foreground" />
-            </span>
-            <h3 className="mt-4 text-base font-semibold">Material Library</h3>
-            <p className="mt-1 text-xs leading-5 text-muted-foreground">
-              Aerogel, rammed earth, and mass materials with verified properties.
-            </p>
-          </div>
-          <span className="mt-5 inline-flex items-center gap-1.5 text-xs font-semibold text-foreground">
-            Explore library <ArrowRight className="size-3.5 transition-transform group-hover:translate-x-1" />
-          </span>
-        </Link>
-      </div>
-
       {/* Connected Pipeline Footer */}
       <WorkflowFooter customNextLabel="Review Climate & Site" customNextHref="/weather" />
     </div>

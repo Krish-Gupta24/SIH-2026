@@ -151,11 +151,6 @@ export const api = {
         method: "POST",
         body: JSON.stringify({ weather_file: weatherFile }),
       }),
-    generateManual: (params: any) =>
-      fetchApi<any>("/weather/manual", {
-        method: "POST",
-        body: JSON.stringify(params),
-      }),
     microclimateSynthesize: (params: {
       target_latitude: number;
       target_longitude: number;
@@ -211,7 +206,7 @@ export const api = {
       for (const url of urlsToTry) {
         try {
           const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), 6000);
+          const timeoutId = setTimeout(() => controller.abort(), 25000);
           const res = await fetch(url, {
             method: "POST",
             headers: { "Content-Type": "application/json" },

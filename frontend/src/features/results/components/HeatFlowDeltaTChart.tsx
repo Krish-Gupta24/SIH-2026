@@ -99,9 +99,6 @@ export function HeatFlowDeltaTChart({
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
           <div className="flex items-center gap-2">
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-500/10 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400 border border-amber-500/20">
-              DRDO Mandatory Output #3
-            </span>
             <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground font-mono">
               Q = U·A·ΔT
             </span>

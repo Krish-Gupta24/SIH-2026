@@ -3,7 +3,6 @@
 import React, { useState } from "react";
 import {
   CloudSun,
-  Upload,
   Compass,
   ThermometerSnowflake,
   Sun,
@@ -11,7 +10,6 @@ import {
   CheckCircle2,
   FileSpreadsheet,
   AlertCircle,
-  Sliders,
   X,
   Loader2,
   ShieldCheck,
@@ -97,19 +95,31 @@ export function WeatherView() {
     addWeatherDataset,
     deleteWeatherDataset,
     resetWeatherDatasetsToDefault,
+    projects,
+    activeProjectId,
   } = useShelterStore();
+  const activeProject = projects.find((p) => p.id === activeProjectId) || projects[0];
   const [selectedStationId, setSelectedStationId] = useState(activeWeatherId);
+
+  React.useEffect(() => {
+    if (activeWeatherId) {
+      setSelectedStationId(activeWeatherId);
+    }
+  }, [activeWeatherId]);
+
   const [selectedMonth, setSelectedMonth] = useState<number>(1);
   const [stationToDelete, setStationToDelete] = useState<WeatherStation | null>(null);
+  const [activeStudioTab, setActiveStudioTab] = useState<"diurnal" | "annual" | "specs">("diurnal");
+  const [chartMetric, setChartMetric] = useState<"temperature" | "solar" | "combined">("temperature");
+  const [showAshraeAdvisory, setShowAshraeAdvisory] = useState<boolean>(false);
 
   // Modal States
-  const [activeModal, setActiveModal] = useState<"epw" | "csv" | "nasa" | "manual" | "microclimate" | null>(null);
+  const [activeModal, setActiveModal] = useState<"csv" | "nasa" | "microclimate" | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [modalError, setModalError] = useState<string | null>(null);
   const [modalSuccess, setModalSuccess] = useState<string | null>(null);
 
   // Modal Form Inputs
-  const [epwFile, setEpwFile] = useState<File | null>(null);
   const [csvFile, setCsvFile] = useState<File | null>(null);
   const [nasaForm, setNasaForm] = useState({
     location_name: "Pangong Tso Military Post",
@@ -125,18 +135,6 @@ export function WeatherView() {
     latitude: 34.2,
     longitude: 77.6,
     elevation_m: 3500,
-  });
-  const [manualForm, setManualForm] = useState({
-    location_name: "Extreme Siachen Glacial Baseline",
-    latitude: 35.42,
-    longitude: 77.11,
-    elevation_m: 5400,
-    design_winter_min_c: -40.0,
-    design_summer_max_c: 15.0,
-    diurnal_range_c: 16.0,
-    peak_solar_dni_wm2: 950.0,
-    wind_speed_ms: 6.5,
-    num_days: 3,
   });
 
   const activeStation =
@@ -228,58 +226,6 @@ export function WeatherView() {
     return data;
   }, [activeMonthData]);
 
-  const handleUploadEpw = async () => {
-    if (!epwFile) return;
-    setIsLoading(true);
-    setModalError(null);
-    try {
-      const formData = new FormData();
-      formData.append("file", epwFile);
-
-      const res = await fetch("/api/weather/upload/epw", {
-        method: "POST",
-        body: formData,
-      });
-
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({ detail: "Upload failed" }));
-        throw new Error(err.detail?.message || err.detail || "Dataset validation failed.");
-      }
-
-      const data = await res.json();
-      const ds = data.dataset;
-      const header = ds.header || {};
-
-      const newStation: WeatherStation = {
-        id: `wx-${ds.file_hash_sha256.slice(0, 8)}`,
-        name: header.city || epwFile.name.replace(".epw", ""),
-        region: `${header.state_province || ""}, ${header.country || ""}`.trim() || "Uploaded Weather Dataset",
-        latitude: header.latitude || 34.0,
-        longitude: header.longitude || 77.0,
-        elevationM: header.elevation_m || 3000,
-        climateZone: "Alpine Cold",
-        sourceType: "EPW",
-        provenanceStatus: ds.classification || "REAL_DATA",
-        isTestData: ds.is_test_data || false,
-        designWinterMinC: -22.0,
-        designSummerMaxC: 26.0,
-        annualHDD18: 4900,
-        epwFileName: ds.file_name,
-        sha256: ds.file_hash_sha256,
-      };
-
-      addWeatherDataset(newStation);
-      setSelectedStationId(newStation.id);
-      setActiveWeather(newStation.id);
-      setModalSuccess(`Successfully uploaded and validated ${ds.file_name?.replace(/\.epw$/i, "")}!`);
-      setTimeout(() => setActiveModal(null), 1500);
-    } catch (err: any) {
-      setModalError(err.message || "Failed to upload weather dataset.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   const handleUploadCsv = async () => {
     if (!csvFile) return;
     setIsLoading(true);
@@ -343,12 +289,12 @@ export function WeatherView() {
       const endpoint = isMeteo ? "/api/weather/live-fetch" : "/api/weather/nasa-power";
       const payload = isMeteo
         ? {
-            latitude: nasaForm.latitude,
-            longitude: nasaForm.longitude,
-            location_name: nasaForm.location_name,
-            elevation_m: nasaForm.elevation_m,
-            provider: "open-meteo",
-          }
+          latitude: nasaForm.latitude,
+          longitude: nasaForm.longitude,
+          location_name: nasaForm.location_name,
+          elevation_m: nasaForm.elevation_m,
+          provider: "open-meteo",
+        }
         : nasaForm;
 
       const res = await fetch(endpoint, {
@@ -395,116 +341,52 @@ export function WeatherView() {
     }
   };
 
-  const handleGenerateManual = async () => {
-    setIsLoading(true);
-    setModalError(null);
-    try {
-      const res = await fetch("/api/weather/manual", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(manualForm),
-      });
-
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({ detail: "Generation failed" }));
-        throw new Error(err.detail || "Manual weather generation failed.");
-      }
-
-      const data = await res.json();
-      const ds = data.dataset;
-
-      const newStation: WeatherStation = {
-        id: `wx-${ds.file_hash_sha256.slice(0, 8)}`,
-        name: manualForm.location_name,
-        region: "Custom Engineering Parametric Study",
-        latitude: manualForm.latitude,
-        longitude: manualForm.longitude,
-        elevationM: manualForm.elevation_m,
-        climateZone: "User-Defined Design Day",
-        sourceType: "USER_DEFINED",
-        provenanceStatus: "USER_DEFINED",
-        isTestData: false,
-        designWinterMinC: manualForm.design_winter_min_c,
-        designSummerMaxC: manualForm.design_summer_max_c,
-        annualHDD18: 5800,
-        epwFileName: ds.file_name,
-        sha256: ds.file_hash_sha256,
-      };
-
-      addWeatherDataset(newStation);
-      setSelectedStationId(newStation.id);
-      setActiveWeather(newStation.id);
-      setModalSuccess(`Generated physics-consistent dataset: ${ds.file_name?.replace(/\.epw$/i, "")}!`);
-      setTimeout(() => setActiveModal(null), 1500);
-    } catch (err: any) {
-      setModalError(err.message || "Failed to generate custom weather dataset.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   return (
     <div className="space-y-10 max-w-7xl mx-auto">
       {/* V0 Page Intro */}
       <PageIntro
-        eyebrow="Climate provenance · Weather intelligence"
         title={activeStation.name}
         description={`${activeStation.region} · ${activeStation.climateZone} · ${activeStation.elevationM.toLocaleString()} m MSL`}
         action={
-          <div className="flex flex-wrap items-center gap-2">
-            <ActionButton
-              tone="secondary"
-              onClick={() => { setActiveModal("epw"); setModalError(null); setModalSuccess(null); }}
-              className="rounded-full text-xs font-semibold"
-            >
-              <Upload className="size-3.5" />
-              Upload Dataset
-            </ActionButton>
-            <ActionButton
-              tone="secondary"
+          <div className="rounded-2xl sm:rounded-full border border-border bg-card/90 p-1.5 shadow-xs backdrop-blur-xs grid grid-cols-2 sm:flex sm:items-center gap-1.5 shrink-0">
+            <button
+              type="button"
               onClick={() => { setActiveModal("csv"); setModalError(null); setModalSuccess(null); }}
-              className="rounded-full text-xs font-semibold"
+              className="inline-flex h-9 items-center justify-center gap-2 rounded-full border border-border bg-secondary/50 px-3.5 text-xs font-semibold text-foreground transition-all hover:bg-secondary hover:border-foreground/20 shadow-2xs whitespace-nowrap"
             >
-              <FileSpreadsheet className="size-3.5" />
-              Upload CSV
-            </ActionButton>
-            <ActionButton
-              tone="primary"
+              <FileSpreadsheet className="size-3.5 text-muted-foreground" />
+              <span>Upload CSV</span>
+            </button>
+            <button
+              type="button"
               onClick={() => { setActiveModal("nasa"); setModalError(null); setModalSuccess(null); }}
-              className="rounded-full text-xs font-bold"
+              className="inline-flex h-9 items-center justify-center gap-2 rounded-full bg-foreground px-4 text-xs font-bold text-background transition-all hover:opacity-90 shadow-xs whitespace-nowrap"
             >
               <Compass className="size-3.5" />
-              Query NASA POWER
-            </ActionButton>
-            <ActionButton
-              tone="signal"
-              onClick={() => { setActiveModal("manual"); setModalError(null); setModalSuccess(null); }}
-              className="rounded-full text-xs font-semibold"
-            >
-              <Sliders className="size-3.5" />
-              Design Day
-            </ActionButton>
-            <ActionButton
-              tone="signal"
+              <span>Query NASA POWER</span>
+            </button>
+            <button
+              type="button"
               onClick={() => { setActiveModal("microclimate"); setModalError(null); setModalSuccess(null); }}
-              className="rounded-full text-xs font-semibold"
+              className="inline-flex h-9 items-center justify-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3.5 text-xs font-semibold text-emerald-800 dark:text-emerald-300 transition-all hover:bg-emerald-500/20 shadow-2xs whitespace-nowrap"
             >
-              <Sparkles className="size-3.5 text-black" />
-              Microclimate (PI-ML)
-            </ActionButton>
-            <ActionButton
-              tone="secondary"
+              <Sparkles className="size-3.5 text-emerald-600 dark:text-emerald-400" />
+              <span>Microclimate (PI-ML)</span>
+            </button>
+            <button
+              type="button"
               onClick={() => {
                 if (window.confirm("Reset weather catalog to certified Himalayan benchmarks? This will remove custom uploaded datasets.")) {
                   resetWeatherDatasetsToDefault();
                   setSelectedStationId("wx-leh-427053");
                 }
               }}
-              className="rounded-full text-xs font-semibold text-muted-foreground hover:text-foreground"
+              className="group inline-flex h-9 items-center justify-center gap-2 rounded-full border border-transparent px-3 text-xs font-semibold text-muted-foreground transition-all hover:border-border hover:bg-secondary hover:text-foreground whitespace-nowrap"
+              title="Reset weather catalog to certified Himalayan benchmarks"
             >
-              <RotateCcw className="size-3.5" />
-              Reset Benchmarks
-            </ActionButton>
+              <RotateCcw className="size-3.5 transition-transform group-hover:-rotate-45" />
+              <span>Reset Benchmarks</span>
+            </button>
           </div>
         }
       />
@@ -546,10 +428,15 @@ export function WeatherView() {
 
       {/* Station Selector Cards */}
       <div>
-        <div className="mb-4 flex items-end justify-between">
+        <div className="mb-4 flex flex-col sm:flex-row sm:items-end justify-between gap-2">
           <div>
-            <p className="micro-label">Available sources</p>
+            <p className="micro-label">Active Project Meteorological Binding</p>
             <h2 className="text-xl font-medium">Dataset selection</h2>
+            {activeProject && (
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Selecting a climate station binds it directly to project: <strong className="text-foreground">{activeProject.project?.name || activeProject.name}</strong>
+              </p>
+            )}
           </div>
           <span className="text-xs text-muted-foreground">{weatherDatasets.length} datasets loaded</span>
         </div>
@@ -572,11 +459,10 @@ export function WeatherView() {
                     setActiveWeather(stn.id);
                   }
                 }}
-                className={`group relative flex flex-col justify-between rounded-2xl border p-4 text-left transition-all cursor-pointer ${
-                  isSelected
-                    ? "border-foreground bg-secondary/80 shadow-sm"
-                    : "border-border bg-card hover:border-[#6E818F]"
-                }`}
+                className={`group relative flex flex-col justify-between rounded-2xl border p-4 text-left transition-all cursor-pointer ${isSelected
+                  ? "border-foreground bg-secondary/80 shadow-sm"
+                  : "border-border bg-card hover:border-[#6E818F]"
+                  }`}
               >
                 <div>
                   <div className="flex items-center justify-between">
@@ -611,370 +497,416 @@ export function WeatherView() {
         </div>
       </div>
 
-      {/* Selected Station Meteorological Details */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left Column: Metadata */}
-        <div className="rounded-[2rem] border border-border bg-card p-7 shadow-[0_20px_55px_rgba(0,0,0,.04)] space-y-6">
-          <div className="flex items-center justify-between">
+      {/* Interactive Climatology & Diurnal Studio */}
+      <div className="rounded-[2rem] border border-border bg-card shadow-[0_20px_55px_rgba(0,0,0,.04)] overflow-hidden">
+        {/* Studio Navigation Bar */}
+        <div className="border-b border-border p-5 sm:p-7 flex flex-col md:flex-row md:items-center justify-between gap-4 bg-secondary/15">
+          <div>
             <div className="flex items-center gap-2">
-              <Compass className="h-4 w-4 text-foreground" />
-              <h3 className="text-sm font-semibold tracking-tight">Station Specifications</h3>
+              <span className="micro-label">Meteorological Studio</span>
+              <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              <span className="text-[10px] font-mono text-muted-foreground">{activeStation.name}</span>
             </div>
-            {activeStation.isTestData ? (
-              <Badge variant="outline" className="text-[10px] text-amber-500 border-amber-500/30">
-                Test Fixture
-              </Badge>
-            ) : (
-              <Badge variant="outline" className="text-[10px] text-emerald-500 border-emerald-500/30">
-                Validated Record
-              </Badge>
-            )}
+            <h3 className="font-editorial text-2xl font-medium tracking-tight text-foreground mt-1">
+              Station Climatology & Diurnal Response
+            </h3>
           </div>
 
-          <div className="space-y-3 text-xs">
-            <div className="flex justify-between py-2 border-b border-border/50">
-              <span className="text-muted-foreground">Coordinates:</span>
-              <span className="font-mono font-medium text-foreground">
-                {activeStation.latitude.toFixed(4)}°N, {activeStation.longitude.toFixed(4)}°E
-              </span>
-            </div>
-            <div className="flex justify-between py-2 border-b border-border/50">
-              <span className="text-muted-foreground">Station Elevation:</span>
-              <span className="font-mono font-medium text-foreground">
-                {activeStation.elevationM.toLocaleString()} meters MSL
-              </span>
-            </div>
-            <div className="flex justify-between py-2 border-b border-border/50">
-              <span className="text-muted-foreground">Provenance Status:</span>
-              <span className="font-semibold text-foreground">
-                {activeStation.provenanceStatus || (activeStation.isTestData ? "TEST_DATA" : "REAL_DATA")}
-              </span>
-            </div>
-            <div className="flex justify-between py-2 border-b border-border/50">
-              <span className="text-muted-foreground">Dataset File:</span>
-              <span className="font-mono text-muted-foreground line-clamp-1 max-w-[180px]">
-                {activeStation.epwFileName?.replace(/\.epw$/i, "") || "Internal Dataset"}
-              </span>
-            </div>
-            <div className="flex justify-between py-2 border-b border-border/50">
-              <span className="text-muted-foreground">Extreme Winter Min:</span>
-              <span className="font-mono font-bold text-sky-500">
-                {activeStation.designWinterMinC} °C
-              </span>
-            </div>
-            <div className="flex justify-between py-2 border-b border-border/50">
-              <span className="text-muted-foreground">Design Summer Max:</span>
-              <span className="font-mono font-bold text-amber-500">
-                {activeStation.designSummerMaxC} °C
-              </span>
-            </div>
-            <div className="flex justify-between py-2">
-              <span className="text-muted-foreground">Annual Heating Degree Days:</span>
-              <span className="font-mono font-bold text-foreground">{activeStation.annualHDD18} HDD18</span>
-            </div>
-          </div>
-
-          <div className="rounded-2xl border border-[#CBDCE6] bg-[#CBDCE6]/15 dark:border-border dark:bg-secondary/40 p-4 text-xs">
-            <span className="font-semibold text-foreground flex items-center gap-1.5">
-              <ShieldCheck className="size-4 text-sky-600 dark:text-sky-400" />
-              Weather Provenance Policy
-            </span>
-            <p className="mt-1.5 text-[11px] text-muted-foreground leading-relaxed">
-              All physical building simulations execute strictly against validated meteorological datasets. Silent substitution of synthetic test weather is blocked by platform policy.
-            </p>
-          </div>
-
-          {!BUILTIN_STATION_IDS.has(activeStation.id) && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setStationToDelete(activeStation)}
-              className="w-full text-xs font-semibold text-rose-600 border-rose-500/30 hover:bg-rose-500/10 hover:text-rose-700 dark:text-rose-400 dark:hover:text-rose-300"
+          {/* 3 Main Studio Tabs */}
+          <div className="flex items-center gap-1.5 bg-secondary/80 p-1.5 rounded-full border border-border self-start md:self-auto shadow-sm">
+            <button
+              type="button"
+              onClick={() => setActiveStudioTab("diurnal")}
+              className={`flex items-center gap-2 px-4 py-2 rounded-full text-xs font-semibold transition-all cursor-pointer ${
+                activeStudioTab === "diurnal"
+                  ? "bg-foreground text-background shadow-sm"
+                  : "text-muted-foreground hover:text-foreground hover:bg-secondary"
+              }`}
             >
-              <Trash2 className="size-3.5 mr-1.5" />
-              Delete Custom Dataset
-            </Button>
-          )}
+              <Activity className="size-3.5" />
+              <span>Diurnal Hourly</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveStudioTab("annual")}
+              className={`flex items-center gap-2 px-4 py-2 rounded-full text-xs font-semibold transition-all cursor-pointer ${
+                activeStudioTab === "annual"
+                  ? "bg-foreground text-background shadow-sm"
+                  : "text-muted-foreground hover:text-foreground hover:bg-secondary"
+              }`}
+            >
+              <Calendar className="size-3.5" />
+              <span>12-Month Table</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveStudioTab("specs")}
+              className={`flex items-center gap-2 px-4 py-2 rounded-full text-xs font-semibold transition-all cursor-pointer ${
+                activeStudioTab === "specs"
+                  ? "bg-foreground text-background shadow-sm"
+                  : "text-muted-foreground hover:text-foreground hover:bg-secondary"
+              }`}
+            >
+              <Compass className="size-3.5" />
+              <span>Station Specs</span>
+            </button>
+          </div>
         </div>
 
-        {/* Right Column: Dynamic 12-Month Weather Profiles & Charts */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* 1. Interactive 12-Month Selector Strip */}
-          <div className="rounded-[2rem] border border-border bg-card p-6 shadow-[0_20px_55px_rgba(0,0,0,.04)] space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-              <div>
-                <span className="text-xs font-semibold text-foreground flex items-center gap-1.5">
-                  <Calendar className="h-4 w-4 text-[#6E818F]" />
-                  Select Meteorological Month (Diurnal & Solar Cycle)
-                </span>
-                <p className="text-[11px] text-muted-foreground mt-0.5">
-                  Click any month to recalculate diurnal ambient dry-bulb temperatures, daylight hours, and solar irradiance.
-                </p>
+        {/* TAB 1: DIURNAL HOURLY CYCLE */}
+        {activeStudioTab === "diurnal" && (
+          <div className="p-6 sm:p-8 space-y-6">
+            {/* Top Month Selector Bar */}
+            <div className="space-y-3">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <Calendar className="size-3.5 text-[#6E818F]" />
+                  <span className="text-xs font-semibold text-foreground">Select Month Cycle</span>
+                  <span className="hidden sm:inline text-[11px] text-muted-foreground">· Click any month to recalculate diurnal ambient curve & solar flux</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="inline-flex items-center gap-1 rounded-full bg-sky-500/10 px-2.5 py-0.5 font-mono text-[10px] font-semibold text-sky-600 dark:text-sky-400 border border-sky-500/20">
+                    {selectedMonth === 1 ? "❄️ Peak Winter Baseline" : selectedMonth === 7 ? "☀️ Peak Summer Solar" : `${activeMonthData.season} Season`}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setShowAshraeAdvisory(!showAshraeAdvisory)}
+                    className="inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground font-medium underline underline-offset-2 transition-colors cursor-pointer"
+                  >
+                    <Info className="size-3 text-sky-500" />
+                    {showAshraeAdvisory ? "Hide note" : "ASHRAE standard rationale"}
+                  </button>
+                </div>
               </div>
-              <div className="flex items-center gap-2">
-                <span className="inline-flex items-center gap-1 rounded-full bg-sky-500/10 px-2.5 py-1 font-mono text-[10px] font-semibold text-sky-600 dark:text-sky-400 border border-sky-500/20">
-                  {selectedMonth === 1 ? "❄️ Peak Winter Baseline" : selectedMonth === 7 ? "☀️ Peak Summer Solar" : `${activeMonthData.season} Season`}
+
+              {/* 12 Month Grid */}
+              <div className="grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-12 gap-1.5">
+                {monthlyClimatology.map((m) => {
+                  const isSelected = selectedMonth === m.index;
+                  return (
+                    <button
+                      key={m.index}
+                      type="button"
+                      onClick={() => setSelectedMonth(m.index)}
+                      className={`flex flex-col items-center justify-center py-2 px-1 rounded-xl text-xs transition-all border cursor-pointer ${
+                        isSelected
+                          ? "bg-foreground text-background font-bold border-foreground shadow-sm scale-105"
+                          : "bg-secondary/40 border-border text-foreground hover:bg-secondary hover:border-[#6E818F]"
+                      }`}
+                    >
+                      <span className="text-[11px] font-semibold">{m.short}</span>
+                      <span className={`text-[10px] font-mono mt-0.5 ${isSelected ? "text-background/80 font-bold" : "text-muted-foreground"}`}>
+                        {m.avgTemp > 0 ? `+${m.avgTemp}` : m.avgTemp}°
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {showAshraeAdvisory && (
+                <div className="rounded-xl border border-sky-500/20 bg-sky-500/5 p-3 text-[11px] text-muted-foreground leading-relaxed flex items-start gap-2 animate-in fade-in-50 duration-200">
+                  <Info className="size-4 text-sky-500 shrink-0 mt-0.5" />
+                  <div>
+                    <strong className="text-foreground">Why January is initial default:</strong> Under ASHRAE 99.6% / ISHRAE building design standards for high-altitude cold climates (Ladakh, Siachen, Spiti), outpost shelters are benchmarked against <strong>January</strong> (the extreme cold month) to size life-critical freeze protection and thermal storage. You can select any month above to analyze summer passive overheating (e.g. July) or shoulder-season heating transitions.
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Quick KPI Strip for Active Month */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+              <div className="rounded-2xl border border-border bg-secondary/30 p-3.5">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">Month & Season</span>
+                <span className="text-sm font-bold text-foreground mt-1 block truncate">{activeMonthData.full} · {activeMonthData.season}</span>
+              </div>
+              <div className="rounded-2xl border border-border bg-secondary/30 p-3.5">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">Min Dry-Bulb</span>
+                <span className="text-sm font-mono font-bold text-sky-500 mt-1 block">{activeMonthData.minTemp} °C</span>
+              </div>
+              <div className="rounded-2xl border border-border bg-secondary/30 p-3.5">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">Mean Temp</span>
+                <span className="text-sm font-mono font-bold text-foreground mt-1 block">{activeMonthData.avgTemp} °C</span>
+              </div>
+              <div className="rounded-2xl border border-border bg-secondary/30 p-3.5">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">Peak Dry-Bulb</span>
+                <span className="text-sm font-mono font-bold text-amber-500 mt-1 block">{activeMonthData.maxTemp} °C</span>
+              </div>
+              <div className="rounded-2xl border border-border bg-secondary/30 p-3.5">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">Daylight Window</span>
+                <span className="text-sm font-mono font-bold text-foreground mt-1 block">
+                  {activeMonthData.daylightHours}h <span className="text-[10px] text-muted-foreground font-normal">({formatHourMin(activeMonthData.sunriseHour)}–{formatHourMin(activeMonthData.sunsetHour)})</span>
                 </span>
+              </div>
+              <div className="rounded-2xl border border-border bg-secondary/30 p-3.5">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">Peak Direct DNI</span>
+                <span className="text-sm font-mono font-bold text-amber-600 dark:text-amber-400 mt-1 block">{activeMonthData.peakSolar} W/m²</span>
               </div>
             </div>
 
-            {/* 12-Month Grid Buttons */}
-            <div className="grid grid-cols-3 sm:grid-cols-6 lg:grid-cols-12 gap-1.5 pt-1">
-              {monthlyClimatology.map((m) => {
-                const isSelected = selectedMonth === m.index;
-                return (
+            {/* Interactive Chart Container with Metric Toggle */}
+            <div className="rounded-2xl border border-border bg-card p-5 sm:p-7 space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border/60 pb-4">
+                <div>
+                  <h4 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                    {chartMetric === "temperature" && <ThermometerSnowflake className="size-4 text-sky-500" />}
+                    {chartMetric === "solar" && <Sun className="size-4 text-amber-500" />}
+                    {chartMetric === "combined" && <Activity className="size-4 text-emerald-500" />}
+                    {activeMonthData.full} 24-Hour Diurnal {chartMetric === "temperature" ? "Dry-Bulb Temperature Curve" : chartMetric === "solar" ? "Direct Solar Irradiance" : "Dual Response Overlay"}
+                  </h4>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">
+                    Sub-hourly profile simulated against {activeStation.name} boundary conditions
+                  </p>
+                </div>
+
+                {/* Metric Selector Pills */}
+                <div className="flex items-center gap-1 bg-secondary/50 p-1 rounded-full border border-border self-start sm:self-auto">
                   <button
-                    key={m.index}
                     type="button"
-                    onClick={() => setSelectedMonth(m.index)}
-                    className={`flex flex-col items-center justify-center p-2 rounded-xl text-xs transition-all border ${
-                      isSelected
-                        ? "bg-foreground text-background font-bold border-foreground shadow-md scale-105"
-                        : "bg-secondary/40 border-border text-foreground hover:bg-secondary hover:border-[#6E818F]"
+                    onClick={() => setChartMetric("temperature")}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer ${
+                      chartMetric === "temperature"
+                        ? "bg-sky-500 text-white shadow-sm"
+                        : "text-muted-foreground hover:text-foreground"
                     }`}
                   >
-                    <span className="text-xs">{m.short}</span>
-                    <span className={`text-[10px] font-mono mt-0.5 ${isSelected ? "text-background/80 font-bold" : "text-muted-foreground"}`}>
-                      {m.avgTemp > 0 ? `+${m.avgTemp}` : m.avgTemp}°
-                    </span>
+                    <ThermometerSnowflake className="size-3" />
+                    <span>Temperature</span>
                   </button>
-                );
-              })}
-            </div>
+                  <button
+                    type="button"
+                    onClick={() => setChartMetric("solar")}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer ${
+                      chartMetric === "solar"
+                        ? "bg-amber-500 text-white shadow-sm"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    <Sun className="size-3" />
+                    <span>Solar Flux</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setChartMetric("combined")}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer ${
+                      chartMetric === "combined"
+                        ? "bg-foreground text-background shadow-sm"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    <Activity className="size-3" />
+                    <span>Combined</span>
+                  </button>
+                </div>
+              </div>
 
-            {/* Engineering Standard Advisory Callout */}
-            <div className="flex items-start gap-2.5 bg-secondary/30 rounded-xl p-3 border border-border text-[11px] text-muted-foreground">
-              <Info className="h-4 w-4 text-sky-500 shrink-0 mt-0.5" />
-              <div className="leading-relaxed">
-                <strong className="text-foreground">Why January was the initial default:</strong> Under ASHRAE 99.6% / ISHRAE building design standards for high-altitude cold climates (Ladakh, Siachen, Spiti), outpost shelters are benchmarked against <strong>January</strong> (the extreme cold month) to size life-critical freeze protection and thermal storage. You can select any month above or in simulations to analyze summer passive overheating (e.g. July) or shoulder-season heating transitions.
+              {/* Chart Rendering */}
+              <div className="h-72 w-full pt-2">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={hourlyData} margin={{ top: 10, right: chartMetric === "combined" ? 25 : 15, left: -15, bottom: 0 }}>
+                    <defs>
+                      <linearGradient id="weatherTempGradient" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#0284c7" stopOpacity={0.35} />
+                        <stop offset="95%" stopColor="#0284c7" stopOpacity={0.02} />
+                      </linearGradient>
+                      <linearGradient id="weatherSolarGradient" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.35} />
+                        <stop offset="95%" stopColor="#f59e0b" stopOpacity={0.02} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="currentColor" strokeOpacity={0.06} />
+                    <XAxis dataKey="hour" stroke="currentColor" strokeOpacity={0.4} fontSize={11} tickLine={false} />
+                    
+                    {(chartMetric === "temperature" || chartMetric === "combined") && (
+                      <YAxis
+                        yAxisId="temp"
+                        stroke="currentColor"
+                        strokeOpacity={0.4}
+                        fontSize={11}
+                        domain={["auto", "auto"]}
+                        unit="°C"
+                        tickLine={false}
+                        orientation="left"
+                      />
+                    )}
+
+                    {chartMetric === "solar" && (
+                      <YAxis
+                        yAxisId="solar"
+                        stroke="currentColor"
+                        strokeOpacity={0.4}
+                        fontSize={11}
+                        unit=" W/m²"
+                        tickLine={false}
+                        orientation="left"
+                      />
+                    )}
+
+                    {chartMetric === "combined" && (
+                      <YAxis
+                        yAxisId="solar"
+                        stroke="currentColor"
+                        strokeOpacity={0.4}
+                        fontSize={11}
+                        unit=" W/m²"
+                        tickLine={false}
+                        orientation="right"
+                      />
+                    )}
+
+                    <Tooltip
+                      content={({ active, payload, label }) => {
+                        if (!active || !payload || !payload.length) return null;
+                        const d = payload[0]?.payload;
+                        return (
+                          <div className="rounded-2xl border border-border bg-card/95 p-3.5 shadow-2xl backdrop-blur-md text-xs space-y-1.5 min-w-[200px]">
+                            <div className="flex items-center justify-between border-b border-border/60 pb-1 font-semibold">
+                              <span>{label} ({activeMonthData.short})</span>
+                              <span className="text-[10px] uppercase tracking-wider text-muted-foreground">{activeMonthData.season}</span>
+                            </div>
+                            {(chartMetric === "temperature" || chartMetric === "combined") && (
+                              <div className="flex items-center justify-between">
+                                <span className="flex items-center gap-1.5 text-sky-500 font-medium">
+                                  <span className="size-2 rounded-full bg-sky-500" />
+                                  Dry-Bulb Temp:
+                                </span>
+                                <span className="font-mono font-bold text-sky-600 dark:text-sky-400">{d.temperatureC} °C</span>
+                              </div>
+                            )}
+                            {(chartMetric === "solar" || chartMetric === "combined") && (
+                              <div className="flex items-center justify-between">
+                                <span className="flex items-center gap-1.5 text-amber-500 font-medium">
+                                  <span className="size-2 rounded-full bg-amber-500" />
+                                  Solar Flux:
+                                </span>
+                                <span className="font-mono font-bold text-amber-600 dark:text-amber-400">{d.solarRadiationWm2} W/m²</span>
+                              </div>
+                            )}
+                            <div className="flex items-center justify-between text-[11px] text-muted-foreground pt-0.5 border-t border-border/40">
+                              <span>Diurnal Range:</span>
+                              <span className="font-mono">Δ{activeMonthData.diurnalSwing}°C</span>
+                            </div>
+                          </div>
+                        );
+                      }}
+                    />
+
+                    {(chartMetric === "temperature" || chartMetric === "combined") && (
+                      <Area
+                        yAxisId="temp"
+                        type="monotone"
+                        dataKey="temperatureC"
+                        name="Dry-Bulb Temp (°C)"
+                        stroke="#0284c7"
+                        strokeWidth={2.5}
+                        fill="url(#weatherTempGradient)"
+                        activeDot={{ r: 5, fill: "#0284c7", stroke: "#fff", strokeWidth: 2 }}
+                      />
+                    )}
+
+                    {(chartMetric === "solar" || chartMetric === "combined") && (
+                      <Area
+                        yAxisId="solar"
+                        type="monotone"
+                        dataKey="solarRadiationWm2"
+                        name="Direct Solar (W/m²)"
+                        stroke="#f59e0b"
+                        strokeWidth={2.5}
+                        fill="url(#weatherSolarGradient)"
+                        activeDot={{ r: 5, fill: "#f59e0b", stroke: "#fff", strokeWidth: 2 }}
+                      />
+                    )}
+                  </AreaChart>
+                </ResponsiveContainer>
               </div>
             </div>
           </div>
+        )}
 
-          {/* 2. Diurnal Temperature Curve for Selected Month */}
-          <div className="rounded-[2rem] border border-border bg-card p-7 shadow-[0_20px_55px_rgba(0,0,0,.04)]">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
+        {/* TAB 2: ANNUAL 12-MONTH TABLE */}
+        {activeStudioTab === "annual" && (
+          <div className="p-6 sm:p-8 space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-border/60 pb-3">
               <div>
-                <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-                  <ThermometerSnowflake className="h-4 w-4 text-sky-500" />
-                  {activeMonthData.full} Diurnal Dry-Bulb Profile (°C) — {activeMonthData.season}
-                </h3>
-                <p className="text-[11px] text-muted-foreground mt-0.5">
-                  24-hour diurnal ambient temperature variation for {activeStation.name} (Month {activeMonthData.index} of 12)
-                </p>
-              </div>
-              <div className="flex flex-wrap items-center gap-1.5">
-                <span className="inline-flex items-center gap-1 rounded-full bg-sky-500/10 px-2.5 py-0.5 font-mono text-xs font-semibold text-sky-600 dark:text-sky-400 border border-sky-500/20">
-                  Min {activeMonthData.minTemp}°C
-                </span>
-                <span className="inline-flex items-center gap-1 rounded-full bg-secondary px-2.5 py-0.5 font-mono text-xs font-medium text-foreground border border-border">
-                  Mean {activeMonthData.avgTemp}°C
-                </span>
-                <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-2.5 py-0.5 font-mono text-xs font-semibold text-amber-600 dark:text-amber-400 border border-amber-500/20">
-                  Max {activeMonthData.maxTemp}°C
-                </span>
-              </div>
-            </div>
-
-            <div className="h-64 w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={hourlyData} margin={{ top: 10, right: 15, left: -15, bottom: 0 }}>
-                  <defs>
-                    <linearGradient id="weatherTempGradient" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#0284c7" stopOpacity={0.28} />
-                      <stop offset="95%" stopColor="#0284c7" stopOpacity={0.01} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="currentColor" strokeOpacity={0.06} />
-                  <XAxis dataKey="hour" stroke="currentColor" strokeOpacity={0.4} fontSize={11} tickLine={false} />
-                  <YAxis stroke="currentColor" strokeOpacity={0.4} fontSize={11} domain={["auto", "auto"]} unit="°C" tickLine={false} />
-                  <Tooltip
-                    content={({ active, payload, label }) => {
-                      if (!active || !payload || !payload.length) return null;
-                      const d = payload[0]?.payload;
-                      return (
-                        <div className="rounded-2xl border border-border bg-card/95 p-3.5 shadow-2xl backdrop-blur-md text-xs space-y-1.5 min-w-[180px]">
-                          <div className="flex items-center justify-between border-b border-border/60 pb-1 font-semibold">
-                            <span>{label} ({activeMonthData.short})</span>
-                            <span className="text-[10px] uppercase tracking-wider text-muted-foreground">{activeMonthData.season}</span>
-                          </div>
-                          <div className="flex items-center justify-between">
-                            <span className="flex items-center gap-1.5 text-sky-500 font-medium">
-                              <span className="size-2 rounded-full bg-sky-500 animate-pulse" />
-                              Dry-Bulb Temp:
-                            </span>
-                            <span className="font-mono font-bold text-sky-600 dark:text-sky-400">{d.temperatureC} °C</span>
-                          </div>
-                          <div className="flex items-center justify-between text-[11px] text-muted-foreground pt-0.5">
-                            <span>Diurnal Range:</span>
-                            <span className="font-mono">Δ{activeMonthData.diurnalSwing}°C</span>
-                          </div>
-                        </div>
-                      );
-                    }}
-                  />
-                  <Area
-                    type="monotone"
-                    dataKey="temperatureC"
-                    name="Dry-Bulb Temp (°C)"
-                    stroke="#0284c7"
-                    strokeWidth={2.5}
-                    fill="url(#weatherTempGradient)"
-                    activeDot={{ r: 5, fill: "#0284c7", stroke: "#fff", strokeWidth: 2 }}
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-
-          {/* 3. Direct Solar Radiation Curve for Selected Month */}
-          <div className="rounded-[2rem] border border-border bg-card p-7 shadow-[0_20px_55px_rgba(0,0,0,.04)]">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
-              <div>
-                <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-                  <Sun className="h-4 w-4 text-amber-500" />
-                  {activeMonthData.full} Direct Normal Solar Radiation (W/m²)
-                </h3>
-                <p className="text-[11px] text-muted-foreground mt-0.5">
-                  Daylight {activeMonthData.daylightHours}h ({formatHourMin(activeMonthData.sunriseHour)} sunrise - {formatHourMin(activeMonthData.sunsetHour)} sunset) · Noon Solar Altitude {activeMonthData.noonAltDeg}°
-                </p>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-3 py-1 font-mono text-xs font-semibold text-amber-600 dark:text-amber-400 border border-amber-500/20">
-                  Peak {activeMonthData.peakSolar} W/m²
-                </span>
-              </div>
-            </div>
-
-            <div className="h-48 w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={hourlyData} margin={{ top: 10, right: 15, left: -15, bottom: 0 }}>
-                  <defs>
-                    <linearGradient id="weatherSolarGradient" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.35} />
-                      <stop offset="95%" stopColor="#f59e0b" stopOpacity={0.02} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="currentColor" strokeOpacity={0.06} />
-                  <XAxis dataKey="hour" stroke="currentColor" strokeOpacity={0.4} fontSize={11} tickLine={false} />
-                  <YAxis stroke="currentColor" strokeOpacity={0.4} fontSize={11} unit=" W/m²" tickLine={false} />
-                  <Tooltip
-                    content={({ active, payload, label }) => {
-                      if (!active || !payload || !payload.length) return null;
-                      const d = payload[0]?.payload;
-                      return (
-                        <div className="rounded-2xl border border-border bg-card/95 p-3.5 shadow-2xl backdrop-blur-md text-xs space-y-1.5 min-w-[180px]">
-                          <div className="flex items-center justify-between border-b border-border/60 pb-1 font-semibold">
-                            <span>{label} ({activeMonthData.short})</span>
-                            <span className="text-[10px] uppercase tracking-wider text-muted-foreground">Clear-Sky Solar</span>
-                          </div>
-                          <div className="flex items-center justify-between">
-                            <span className="flex items-center gap-1.5 text-amber-500 font-medium">
-                              <span className="size-2 rounded-full bg-amber-500" />
-                              Solar Flux:
-                            </span>
-                            <span className="font-mono font-bold text-amber-600 dark:text-amber-400">{d.solarRadiationWm2} W/m²</span>
-                          </div>
-                          <div className="flex items-center justify-between text-[11px] text-muted-foreground pt-0.5">
-                            <span>Daylight Window:</span>
-                            <span className="font-mono">{activeMonthData.daylightHours}h total</span>
-                          </div>
-                        </div>
-                      );
-                    }}
-                  />
-                  <Area
-                    type="monotone"
-                    dataKey="solarRadiationWm2"
-                    name="Direct Solar (W/m²)"
-                    stroke="#f59e0b"
-                    fill="url(#weatherSolarGradient)"
-                    strokeWidth={2.5}
-                    activeDot={{ r: 5, fill: "#f59e0b", stroke: "#fff", strokeWidth: 2 }}
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-
-          {/* 4. Comprehensive Annual 12-Month Climatology Benchmark Table */}
-          <div className="rounded-[2rem] border border-border bg-card p-7 shadow-[0_20px_55px_rgba(0,0,0,.04)] space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-              <div>
-                <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-                  <Activity className="h-4 w-4 text-emerald-500" />
+                <h4 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                  <Activity className="size-4 text-emerald-500" />
                   Annual 12-Month Climate Benchmark ({activeStation.name})
-                </h3>
+                </h4>
                 <p className="text-[11px] text-muted-foreground mt-0.5">
                   Seasonal temperature progression, diurnal swings, daylight duration, and solar potential across the entire year
                 </p>
               </div>
-              <span className="text-[10px] text-muted-foreground font-mono">
+              <span className="text-[11px] text-muted-foreground font-mono bg-secondary/50 px-2.5 py-1 rounded-full border border-border">
                 Elev: {activeStation.elevationM}m MSL · Lat: {activeStation.latitude.toFixed(2)}°N
               </span>
             </div>
 
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs border-collapse">
-                <thead>
-                  <tr className="border-b border-border/60 text-[11px] text-muted-foreground">
-                    <th className="py-2.5 px-3 font-medium">Month</th>
-                    <th className="py-2.5 px-3 font-medium">Season</th>
-                    <th className="py-2.5 px-3 font-medium">Min Temp</th>
-                    <th className="py-2.5 px-3 font-medium">Mean Temp</th>
-                    <th className="py-2.5 px-3 font-medium">Max Temp</th>
-                    <th className="py-2.5 px-3 font-medium">Diurnal Δ</th>
-                    <th className="py-2.5 px-3 font-medium">Daylight</th>
-                    <th className="py-2.5 px-3 font-medium">Peak Solar</th>
-                    <th className="py-2.5 px-3 font-medium text-right">Action</th>
+            <div className="overflow-x-auto rounded-xl border border-border/80">
+              <table className="w-full text-xs text-left">
+                <thead className="bg-secondary/60 text-muted-foreground uppercase text-[10px] tracking-wider border-b border-border">
+                  <tr>
+                    <th className="py-3 px-3.5">Month</th>
+                    <th className="py-3 px-3.5">Season</th>
+                    <th className="py-3 px-3.5">Min Temp</th>
+                    <th className="py-3 px-3.5">Mean Temp</th>
+                    <th className="py-3 px-3.5">Max Temp</th>
+                    <th className="py-3 px-3.5">Diurnal Δ</th>
+                    <th className="py-3 px-3.5">Daylight</th>
+                    <th className="py-3 px-3.5">Peak Solar</th>
+                    <th className="py-3 px-3.5 text-right">Action</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-border/40">
+                <tbody className="divide-y divide-border/50">
                   {monthlyClimatology.map((m) => {
                     const isSel = selectedMonth === m.index;
                     return (
                       <tr
                         key={m.index}
-                        onClick={() => setSelectedMonth(m.index)}
+                        onClick={() => {
+                          setSelectedMonth(m.index);
+                          setActiveStudioTab("diurnal");
+                        }}
                         className={`cursor-pointer transition-colors ${
-                          isSel ? "bg-secondary/70 font-semibold" : "hover:bg-secondary/30"
+                          isSel ? "bg-secondary/80 font-semibold" : "hover:bg-secondary/40"
                         }`}
                       >
-                        <td className="py-2.5 px-3 flex items-center gap-2">
+                        <td className="py-2.5 px-3.5 flex items-center gap-2">
                           <span className={`size-2 rounded-full ${isSel ? "bg-sky-500" : "bg-muted-foreground/30"}`} />
                           <span className="text-foreground">{m.full}</span>
                         </td>
-                        <td className="py-2.5 px-3">
+                        <td className="py-2.5 px-3.5">
                           <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${
                             m.season === "Winter"
                               ? "bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-500/20"
                               : m.season === "Summer"
-                              ? "bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20"
-                              : "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20"
+                                ? "bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20"
+                                : "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20"
                           }`}>
                             {m.season}
                           </span>
                         </td>
-                        <td className="py-2.5 px-3 font-mono text-sky-500">{m.minTemp}°C</td>
-                        <td className="py-2.5 px-3 font-mono">{m.avgTemp}°C</td>
-                        <td className="py-2.5 px-3 font-mono text-amber-500">{m.maxTemp}°C</td>
-                        <td className="py-2.5 px-3 font-mono text-muted-foreground">Δ{m.diurnalSwing}°C</td>
-                        <td className="py-2.5 px-3 font-mono">{m.daylightHours}h</td>
-                        <td className="py-2.5 px-3 font-mono text-amber-600 dark:text-amber-400">{m.peakSolar} W/m²</td>
-                        <td className="py-2.5 px-3 text-right">
+                        <td className="py-2.5 px-3.5 font-mono text-sky-500">{m.minTemp}°C</td>
+                        <td className="py-2.5 px-3.5 font-mono">{m.avgTemp}°C</td>
+                        <td className="py-2.5 px-3.5 font-mono text-amber-500">{m.maxTemp}°C</td>
+                        <td className="py-2.5 px-3.5 font-mono text-muted-foreground">Δ{m.diurnalSwing}°C</td>
+                        <td className="py-2.5 px-3.5 font-mono">{m.daylightHours}h</td>
+                        <td className="py-2.5 px-3.5 font-mono text-amber-600 dark:text-amber-400">{m.peakSolar} W/m²</td>
+                        <td className="py-2.5 px-3.5 text-right">
                           <button
                             type="button"
                             onClick={(e) => {
                               e.stopPropagation();
                               setSelectedMonth(m.index);
+                              setActiveStudioTab("diurnal");
                             }}
-                            className={`text-[10px] px-2.5 py-1 rounded-lg border transition ${
+                            className={`text-[10px] px-2.5 py-1 rounded-lg border transition cursor-pointer ${
                               isSel
                                 ? "bg-foreground text-background border-foreground font-bold shadow-sm"
                                 : "bg-card border-border hover:bg-secondary text-muted-foreground hover:text-foreground"
                             }`}
                           >
-                            {isSel ? "Active" : "Inspect"}
+                            {isSel ? "Active" : "Inspect Diurnal"}
                           </button>
                         </td>
                       </tr>
@@ -984,76 +916,127 @@ export function WeatherView() {
               </table>
             </div>
           </div>
-        </div>
-      </div>
+        )}
 
-      {/* MODAL 1: Upload Weather Dataset */}
-      {activeModal === "epw" && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-md rounded-[2rem] border border-border bg-card p-7 shadow-2xl space-y-5 text-foreground">
-            <div className="flex items-center justify-between">
-              <h3 className="text-base font-semibold flex items-center gap-2">
-                <Upload className="h-4 w-4 text-[#6E818F]" />
-                Upload Climate Weather Dataset
-              </h3>
-              <button onClick={() => setActiveModal(null)} className="text-muted-foreground hover:text-foreground">
-                <X className="h-5 w-5" />
-              </button>
-            </div>
+        {/* TAB 3: STATION SPECS & PROVENANCE AUDIT */}
+        {activeStudioTab === "specs" && (
+          <div className="p-6 sm:p-8 space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Telemetry card */}
+              <div className="rounded-2xl border border-border bg-secondary/20 p-6 space-y-4">
+                <div className="flex items-center justify-between border-b border-border/60 pb-3">
+                  <div className="flex items-center gap-2">
+                    <Compass className="size-4 text-foreground" />
+                    <h4 className="text-sm font-semibold tracking-tight">Station Telemetry & Boundary Coordinates</h4>
+                  </div>
+                  {activeStation.isTestData ? (
+                    <Badge variant="outline" className="text-[10px] text-amber-500 border-amber-500/30">
+                      Test Fixture
+                    </Badge>
+                  ) : (
+                    <Badge variant="outline" className="text-[10px] text-emerald-500 border-emerald-500/30">
+                      Validated Record
+                    </Badge>
+                  )}
+                </div>
 
-            <p className="text-xs text-muted-foreground">
-              Select an authentic meteorological weather dataset file. The platform will validate header integrity, geographic coordinates, and physical variable bounds.
-            </p>
+                <div className="space-y-3 text-xs">
+                  <div className="flex justify-between py-2 border-b border-border/40">
+                    <span className="text-muted-foreground">Coordinates:</span>
+                    <span className="font-mono font-medium text-foreground">
+                      {activeStation.latitude.toFixed(4)}°N, {activeStation.longitude.toFixed(4)}°E
+                    </span>
+                  </div>
+                  <div className="flex justify-between py-2 border-b border-border/40">
+                    <span className="text-muted-foreground">Station Elevation:</span>
+                    <span className="font-mono font-medium text-foreground">
+                      {activeStation.elevationM.toLocaleString()} meters MSL
+                    </span>
+                  </div>
+                  <div className="flex justify-between py-2 border-b border-border/40">
+                    <span className="text-muted-foreground">Provenance Status:</span>
+                    <span className="font-semibold text-foreground">
+                      {activeStation.provenanceStatus || (activeStation.isTestData ? "TEST_DATA" : "REAL_DATA")}
+                    </span>
+                  </div>
+                  <div className="flex justify-between py-2 border-b border-border/40">
+                    <span className="text-muted-foreground">Dataset File:</span>
+                    <span className="font-mono text-muted-foreground line-clamp-1 max-w-[200px]">
+                      {activeStation.epwFileName?.replace(/\.epw$/i, "") || "Internal Dataset"}
+                    </span>
+                  </div>
+                  <div className="flex justify-between py-2 border-b border-border/40">
+                    <span className="text-muted-foreground">Extreme Winter Min:</span>
+                    <span className="font-mono font-bold text-sky-500">
+                      {activeStation.designWinterMinC} °C
+                    </span>
+                  </div>
+                  <div className="flex justify-between py-2 border-b border-border/40">
+                    <span className="text-muted-foreground">Design Summer Max:</span>
+                    <span className="font-mono font-bold text-amber-500">
+                      {activeStation.designSummerMaxC} °C
+                    </span>
+                  </div>
+                  <div className="flex justify-between py-2">
+                    <span className="text-muted-foreground">Annual Heating Degree Days:</span>
+                    <span className="font-mono font-bold text-foreground">{activeStation.annualHDD18} HDD18</span>
+                  </div>
+                </div>
 
-            <div className="border-2 border-dashed border-border rounded-2xl p-6 text-center hover:border-[#6E818F] transition bg-secondary/30">
-              <input
-                type="file"
-                accept=".epw,.csv"
-                onChange={(e) => setEpwFile(e.target.files?.[0] || null)}
-                className="hidden"
-                id="epw-file-input"
-              />
-              <label htmlFor="epw-file-input" className="cursor-pointer space-y-2 block">
-                <Upload className="h-8 w-8 text-muted-foreground mx-auto" />
-                <span className="text-xs font-semibold text-foreground block">
-                  {epwFile ? epwFile.name.replace(/\.epw$/i, "") : "Click to browse or drop weather data file"}
-                </span>
-                <span className="text-[10px] text-muted-foreground block">Standard hourly meteorological format (35 columns)</span>
-              </label>
-            </div>
-
-            {modalError && (
-              <div className="rounded-2xl border-2 border-rose-500/60 bg-rose-50 dark:bg-rose-950/40 p-3.5 text-xs text-rose-900 dark:text-rose-100 flex items-start gap-2.5 shadow-sm">
-                <AlertCircle className="h-4 w-4 text-rose-600 dark:text-rose-400 shrink-0 mt-0.5" />
-                <span className="leading-relaxed font-medium">{modalError}</span>
+                {!BUILTIN_STATION_IDS.has(activeStation.id) && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setStationToDelete(activeStation)}
+                    className="w-full mt-2 text-xs font-semibold text-rose-600 border-rose-500/30 hover:bg-rose-500/10 hover:text-rose-700 dark:text-rose-400 dark:hover:text-rose-300"
+                  >
+                    <Trash2 className="size-3.5 mr-1.5" />
+                    Delete Custom Dataset
+                  </Button>
+                )}
               </div>
-            )}
 
-            {modalSuccess && (
-              <div className="rounded-2xl border-2 border-emerald-500/60 bg-emerald-50 dark:bg-emerald-950/40 p-3.5 text-xs text-emerald-950 dark:text-emerald-100 flex items-start gap-2.5 shadow-sm">
-                <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
-                <span className="leading-relaxed font-medium">{modalSuccess}</span>
+              {/* Policy & Validation Audit */}
+              <div className="rounded-2xl border border-border bg-secondary/20 p-6 space-y-4 flex flex-col justify-between">
+                <div>
+                  <div className="flex items-center gap-2 border-b border-border/60 pb-3">
+                    <ShieldCheck className="size-4 text-sky-600 dark:text-sky-400" />
+                    <h4 className="text-sm font-semibold tracking-tight">Weather Provenance & Physical Audit</h4>
+                  </div>
+
+                  <p className="mt-4 text-xs text-muted-foreground leading-relaxed">
+                    All physical building simulations in ThermoShelter execute strictly against validated meteorological datasets. Silent substitution of synthetic or unverified test weather is blocked by platform integrity policy.
+                  </p>
+
+                  <div className="mt-4 rounded-xl border border-border bg-card p-4 space-y-2 text-xs">
+                    <div className="flex justify-between text-[11px]">
+                      <span className="text-muted-foreground">Source Classification:</span>
+                      <span className="font-semibold text-foreground">{activeStation.sourceType === "EPW" ? "Certified Meteorological (TMYx)" : activeStation.sourceType}</span>
+                    </div>
+                    <div className="flex justify-between text-[11px]">
+                      <span className="text-muted-foreground">Cryptographic Hash:</span>
+                      <span className="font-mono text-[10px] text-muted-foreground truncate max-w-[170px]">{activeStation.sha256 || "Validated Builtin"}</span>
+                    </div>
+                    <div className="flex justify-between text-[11px]">
+                      <span className="text-muted-foreground">Design Standards:</span>
+                      <span className="font-semibold text-foreground">ASHRAE 99.6% / ISHRAE High-Altitude</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/10 p-3.5 text-xs text-emerald-950 dark:text-emerald-100 flex items-center gap-2.5">
+                  <CheckCircle2 className="size-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                  <span className="text-[11px] font-medium leading-tight">
+                    Dataset fully verified for sub-hourly thermal heat balance and inverse envelope optimization.
+                  </span>
+                </div>
               </div>
-            )}
-
-            <div className="flex justify-end gap-2 pt-2 border-t border-border">
-              <ActionButton tone="quiet" onClick={() => setActiveModal(null)} disabled={isLoading}>
-                Cancel
-              </ActionButton>
-              <ActionButton
-                tone="primary"
-                onClick={handleUploadEpw}
-                disabled={!epwFile || isLoading}
-              >
-                {isLoading && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
-                Validate & Register
-              </ActionButton>
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
 
-      {/* MODAL 2: Upload CSV File */}
+      {/* MODAL 1: Upload CSV File */}
       {activeModal === "csv" && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
           <div className="w-full max-w-md rounded-[2rem] border border-border bg-card p-7 shadow-2xl space-y-5 text-foreground">
@@ -1187,11 +1170,10 @@ export function WeatherView() {
                   <button
                     type="button"
                     onClick={() => setNasaForm({ ...nasaForm, provider: "open-meteo" })}
-                    className={`rounded-xl p-2.5 text-left border transition-all ${
-                      nasaForm.provider === "open-meteo"
-                        ? "border-emerald-500 bg-emerald-500/10 text-emerald-400 font-bold"
-                        : "border-border bg-secondary/30 text-muted-foreground hover:bg-secondary/60"
-                    }`}
+                    className={`rounded-xl p-2.5 text-left border transition-all ${nasaForm.provider === "open-meteo"
+                      ? "border-emerald-500 bg-emerald-500/10 text-emerald-400 font-bold"
+                      : "border-border bg-secondary/30 text-muted-foreground hover:bg-secondary/60"
+                      }`}
                   >
                     <div className="text-xs font-semibold">Open-Meteo Alpine</div>
                     <div className="text-[10px] opacity-75 font-normal">Instant DEM elevation & lapse-rate</div>
@@ -1199,11 +1181,10 @@ export function WeatherView() {
                   <button
                     type="button"
                     onClick={() => setNasaForm({ ...nasaForm, provider: "nasa-power" })}
-                    className={`rounded-xl p-2.5 text-left border transition-all ${
-                      nasaForm.provider === "nasa-power"
-                        ? "border-emerald-500 bg-emerald-500/10 text-emerald-400 font-bold"
-                        : "border-border bg-secondary/30 text-muted-foreground hover:bg-secondary/60"
-                    }`}
+                    className={`rounded-xl p-2.5 text-left border transition-all ${nasaForm.provider === "nasa-power"
+                      ? "border-emerald-500 bg-emerald-500/10 text-emerald-400 font-bold"
+                      : "border-border bg-secondary/30 text-muted-foreground hover:bg-secondary/60"
+                      }`}
                   >
                     <div className="text-xs font-semibold">NASA POWER</div>
                     <div className="text-[10px] opacity-75 font-normal">Satellite radiation & multi-day</div>
@@ -1306,155 +1287,7 @@ export function WeatherView() {
         </div>
       )}
 
-      {/* MODAL 4: User-Defined Parametric Design Weather */}
-      {activeModal === "manual" && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-lg rounded-[2rem] border border-border bg-card p-7 shadow-2xl space-y-5 text-foreground max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between">
-              <h3 className="text-base font-semibold flex items-center gap-2">
-                <Sliders className="h-4 w-4 text-[#6E818F]" />
-                Physics-Consistent Design Day Generator
-              </h3>
-              <button onClick={() => setActiveModal(null)} className="text-muted-foreground hover:text-foreground">
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-
-            <p className="text-xs text-muted-foreground">
-              Create a physics-consistent parametric stress test weather dataset tagged as <span className="font-semibold text-foreground">USER_DEFINED</span> based on ASHRAE diurnal equations.
-            </p>
-
-            <div className="space-y-3 text-xs">
-              <div>
-                <label className="block text-foreground font-semibold mb-1">Outpost Scenario Name</label>
-                <input
-                  type="text"
-                  value={manualForm.location_name}
-                  onChange={(e) => setManualForm({ ...manualForm, location_name: e.target.value })}
-                  className="w-full rounded-xl border border-border bg-secondary/50 px-3 py-2 text-foreground text-xs"
-                />
-              </div>
-
-              <div className="grid grid-cols-3 gap-2">
-                <div>
-                  <label className="block text-muted-foreground mb-1">Latitude (°N)</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={manualForm.latitude}
-                    onChange={(e) => setManualForm({ ...manualForm, latitude: parseFloat(e.target.value) || 0 })}
-                    className="w-full rounded-xl border border-border bg-secondary/50 px-2 py-2 text-foreground text-xs"
-                  />
-                </div>
-                <div>
-                  <label className="block text-muted-foreground mb-1">Longitude (°E)</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={manualForm.longitude}
-                    onChange={(e) => setManualForm({ ...manualForm, longitude: parseFloat(e.target.value) || 0 })}
-                    className="w-full rounded-xl border border-border bg-secondary/50 px-2 py-2 text-foreground text-xs"
-                  />
-                </div>
-                <div>
-                  <label className="block text-muted-foreground mb-1">Altitude (m)</label>
-                  <input
-                    type="number"
-                    value={manualForm.elevation_m}
-                    onChange={(e) => setManualForm({ ...manualForm, elevation_m: parseFloat(e.target.value) || 0 })}
-                    className="w-full rounded-xl border border-border bg-secondary/50 px-2 py-2 text-foreground text-xs"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-3 gap-2">
-                <div>
-                  <label className="block text-muted-foreground mb-1">Winter Min (°C)</label>
-                  <input
-                    type="number"
-                    step="0.5"
-                    value={manualForm.design_winter_min_c}
-                    onChange={(e) => setManualForm({ ...manualForm, design_winter_min_c: parseFloat(e.target.value) || 0 })}
-                    className="w-full rounded-xl border border-border bg-secondary/50 px-2 py-2 text-foreground text-xs font-mono"
-                  />
-                </div>
-                <div>
-                  <label className="block text-muted-foreground mb-1">Summer Max (°C)</label>
-                  <input
-                    type="number"
-                    step="0.5"
-                    value={manualForm.design_summer_max_c}
-                    onChange={(e) => setManualForm({ ...manualForm, design_summer_max_c: parseFloat(e.target.value) || 0 })}
-                    className="w-full rounded-xl border border-border bg-secondary/50 px-2 py-2 text-foreground text-xs font-mono"
-                  />
-                </div>
-                <div>
-                  <label className="block text-muted-foreground mb-1">Diurnal Swing (°C)</label>
-                  <input
-                    type="number"
-                    step="0.5"
-                    value={manualForm.diurnal_range_c}
-                    onChange={(e) => setManualForm({ ...manualForm, diurnal_range_c: parseFloat(e.target.value) || 0 })}
-                    className="w-full rounded-xl border border-border bg-secondary/50 px-2 py-2 text-foreground text-xs font-mono"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="block text-muted-foreground mb-1">Peak DNI (W/m²)</label>
-                  <input
-                    type="number"
-                    value={manualForm.peak_solar_dni_wm2}
-                    onChange={(e) => setManualForm({ ...manualForm, peak_solar_dni_wm2: parseFloat(e.target.value) || 0 })}
-                    className="w-full rounded-xl border border-border bg-secondary/50 px-2 py-2 text-foreground text-xs font-mono"
-                  />
-                </div>
-                <div>
-                  <label className="block text-muted-foreground mb-1">Wind Speed (m/s)</label>
-                  <input
-                    type="number"
-                    step="0.5"
-                    value={manualForm.wind_speed_ms}
-                    onChange={(e) => setManualForm({ ...manualForm, wind_speed_ms: parseFloat(e.target.value) || 0 })}
-                    className="w-full rounded-xl border border-border bg-secondary/50 px-2 py-2 text-foreground text-xs font-mono"
-                  />
-                </div>
-              </div>
-            </div>
-
-            {modalError && (
-              <div className="rounded-2xl border-2 border-rose-500/60 bg-rose-50 dark:bg-rose-950/40 p-3.5 text-xs text-rose-900 dark:text-rose-100 flex items-start gap-2.5 shadow-sm">
-                <AlertCircle className="h-4 w-4 text-rose-600 dark:text-rose-400 shrink-0 mt-0.5" />
-                <span className="leading-relaxed font-medium">{modalError}</span>
-              </div>
-            )}
-
-            {modalSuccess && (
-              <div className="rounded-2xl border-2 border-emerald-500/60 bg-emerald-50 dark:bg-emerald-950/40 p-3.5 text-xs text-emerald-950 dark:text-emerald-100 flex items-start gap-2.5 shadow-sm">
-                <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
-                <span className="leading-relaxed font-medium">{modalSuccess}</span>
-              </div>
-            )}
-
-            <div className="flex justify-end gap-2 pt-2 border-t border-border">
-              <ActionButton tone="quiet" onClick={() => setActiveModal(null)} disabled={isLoading}>
-                Cancel
-              </ActionButton>
-              <ActionButton
-                tone="primary"
-                onClick={handleGenerateManual}
-                disabled={isLoading}
-              >
-                {isLoading && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
-                Generate & Select
-              </ActionButton>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* MODAL 5: High-Altitude Microclimate Weather Synthesizer (PI-ML) */}
+      {/* MODAL 4: High-Altitude Microclimate Weather Synthesizer (PI-ML) */}
       {activeModal === "microclimate" && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm overflow-y-auto">
           <div className="w-full max-w-3xl rounded-[2rem] border border-border bg-card p-7 shadow-2xl space-y-5 text-foreground max-h-[92vh] overflow-y-auto">

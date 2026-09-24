@@ -1,0 +1,186 @@
+{
+  "id": "shelter-siachen-03",
+  "schemaVersion": "1.0.0",
+  "project": {
+    "id": "shelter-siachen-03",
+    "name": "Siachen High-Altitude Super-Insulated Aerogel Variant",
+    "version": "2.0.0",
+    "description": "Ultra-low-energy alpine shelter incorporating vacuum aerogel blanket insulation, triple-pane Low-E krypton glazing, and airtight envelope with HRV.",
+    "createdAt": "2026-09-23T15:29:58.680Z",
+    "tags": [
+      "High-Performance",
+      "Aerogel",
+      "Super-Insulated",
+      "Passive-Optimum"
+    ]
+  },
+  "location": {
+    "region": "Siachen Glacier Base, Ladakh",
+    "latitude": 35.4211,
+    "longitude": 77.1095,
+    "elevation": 5400,
+    "climateZone": "Extreme Cold High Altitude",
+    "weatherSource": "IND_JK_Leh.epw",
+    "designTempWinter": -35,
+    "designTempSummer": 12
+  },
+  "geometry": {
+    "shape": "Rectangle",
+    "orientation": 0,
+    "roofAngle": 15,
+    "floorElevation": 0.3,
+    "length": 6,
+    "width": 4,
+    "height": 2.8,
+    "roofType": "Shed"
+  },
+  "envelope": {
+    "walls": {
+      "north": {
+        "constructionId": "c-aerogel-wall",
+        "name": "Aerogel Super Wall",
+        "layers": [
+          {
+            "materialId": "mat-aerogel-blanket",
+            "thickness": 0.06
+          },
+          {
+            "materialId": "mat-rammed-earth",
+            "thickness": 0.2
+          }
+        ]
+      },
+      "south": {
+        "constructionId": "c-aerogel-wall",
+        "name": "Aerogel Super Wall",
+        "layers": [
+          {
+            "materialId": "mat-aerogel-blanket",
+            "thickness": 0.06
+          },
+          {
+            "materialId": "mat-rammed-earth",
+            "thickness": 0.2
+          }
+        ]
+      },
+      "east": {
+        "constructionId": "c-aerogel-wall",
+        "name": "Aerogel Super Wall",
+        "layers": [
+          {
+            "materialId": "mat-aerogel-blanket",
+            "thickness": 0.06
+          },
+          {
+            "materialId": "mat-rammed-earth",
+            "thickness": 0.2
+          }
+        ]
+      },
+      "west": {
+        "constructionId": "c-aerogel-wall",
+        "name": "Aerogel Super Wall",
+        "layers": [
+          {
+            "materialId": "mat-aerogel-blanket",
+            "thickness": 0.06
+          },
+          {
+            "materialId": "mat-rammed-earth",
+            "thickness": 0.2
+          }
+        ]
+      }
+    },
+    "roof": {
+      "constructionId": "c-aerogel-roof",
+      "name": "Aerogel Insulated Pitched Roof",
+      "slope": 15,
+      "overhang": 0.8,
+      "solarAbsorptance": 0.3,
+      "layers": [
+        {
+          "materialId": "mat-aerogel-blanket",
+          "thickness": 0.08
+        }
+      ]
+    },
+    "floor": {
+      "constructionId": "c-aerogel-floor",
+      "name": "Isolated Heavy Floor Slab",
+      "groundContact": false,
+      "perimeterInsulation": true,
+      "layers": [
+        {
+          "materialId": "mat-concrete-slab",
+          "thickness": 0.15
+        }
+      ]
+    }
+  },
+  "windows": [
+    {
+      "id": "win-aerogel-south",
+      "wall": "south",
+      "positionX": 1,
+      "width": 2.4,
+      "height": 1.5,
+      "sillHeight": 0.8,
+      "glazingType": "Triple_LowE_Krypton",
+      "frameType": "Wood_HighPerformance",
+      "shadingOverhang": 0.6
+    }
+  ],
+  "doors": [
+    {
+      "id": "door-aerogel-east",
+      "wall": "east",
+      "positionX": 1,
+      "width": 0.95,
+      "height": 2.1,
+      "construction": "Vacuum Insulated High Airtight Door",
+      "airTightness": "HighPerformance_Airtight"
+    }
+  ],
+  "thermalMass": [
+    {
+      "id": "tmass-internal-slab",
+      "name": "Phase Change Integrated Floor Slab",
+      "type": "FloorSlab",
+      "materialId": "mat-concrete-slab",
+      "thickness": 0.15,
+      "surfaceArea": 24
+    }
+  ],
+  "ventilation": {
+    "infiltrationACH": 0.18,
+    "mechanicalVentilationACH": 0.5,
+    "heatRecoveryEfficiency": 0.85,
+    "naturalVentilationEnabled": false,
+    "naturalSchedule": "DayOnly",
+    "mechanicalVentilationEnabled": true,
+    "mechanicalFlowRateLps": 18
+  },
+  "internalLoads": {
+    "occupantsCount": 4,
+    "activityLevelWatts": 115,
+    "lightingPowerDensityWpm2": 2.5,
+    "equipmentPowerWatts": 150,
+    "scheduleProfile": "Continuous"
+  },
+  "designTargets": {
+    "comfortTempMinC": 19,
+    "comfortTempMaxC": 25,
+    "maxAnnualHeatingDemandKwhM2": 25,
+    "targetComfortPercent": 95
+  },
+  "simulationSettings": {
+    "engine": "EnergyPlus",
+    "timestepsPerHour": 4,
+    "runPeriodDays": 3,
+    "startMonth": 1,
+    "startDay": 1,
+    "detailedComponentOutputs": true
+  }
+}

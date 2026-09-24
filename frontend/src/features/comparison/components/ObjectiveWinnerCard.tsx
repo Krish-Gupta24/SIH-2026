@@ -33,12 +33,8 @@ export function ObjectiveWinnerCard({
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <span className="micro-label">Engineering Synthesis</span>
               <Status strong>Decision Engine</Status>
             </div>
-            <p className="text-xs text-[#536772] mt-0.5">
-              Definitive ranking derived from physical thermodynamic performance criteria.
-            </p>
           </div>
         </div>
 
@@ -66,7 +62,7 @@ export function ObjectiveWinnerCard({
         <div className="rounded-[2rem] bg-black text-white p-7 sm:p-9 shadow-xl">
           <div className="flex items-center gap-2 text-xs font-mono text-white/50 uppercase tracking-wider mb-3">
             <Target className="size-4 text-[#CBDCE6]" />
-            <span>Design Evaluation Determination</span>
+            <span>Design Evaluation</span>
           </div>
 
           <h2 className="font-editorial text-2xl sm:text-3xl font-medium tracking-tight text-white leading-tight">
@@ -94,7 +90,7 @@ export function ObjectiveWinnerCard({
         <div className="rounded-2xl border border-border bg-secondary/25 p-5 space-y-3">
           <div className="flex items-center gap-2 text-xs font-bold text-foreground uppercase tracking-wider">
             <Info className="size-3.5 text-foreground" />
-            <span className="micro-label text-foreground">Mathematical & Engineering Rationale</span>
+            <span className="micro-label text-foreground">Mathematical & Engineering Reasons</span>
           </div>
 
           <ul className="space-y-2.5 text-xs text-[#536772]">

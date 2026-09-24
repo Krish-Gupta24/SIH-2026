@@ -186,11 +186,8 @@ export function SideBySideTable({ jobs }: SideBySideTableProps) {
     <div className="rounded-[2rem] border border-border bg-card p-7 shadow-[0_20px_55px_rgba(0,0,0,.04)] space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-3 border-b border-border">
         <div>
-          <div className="flex items-center gap-2">
-            <span className="micro-label text-muted-foreground">Parametric Synthesis</span>
-          </div>
           <h3 className="font-medium tracking-tight text-xl mt-1 text-foreground">
-            Side-by-Side Parametric Metric Comparison & Delta Percentages
+            Side-by-Side Parametric Metric Comparison
           </h3>
           <p className="text-xs text-muted-foreground mt-0.5">
             Comparing candidate designs against the active baseline with explicit difference percentages.
@@ -340,13 +337,12 @@ export function SideBySideTable({ jobs }: SideBySideTableProps) {
 
                               {/* Difference Badge */}
                               <div
-                                className={`flex items-center gap-0.5 text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                                  diff.deltaPercentage === 0
-                                    ? "bg-secondary text-muted-foreground border border-border"
-                                    : diff.isImprovement
+                                className={`flex items-center gap-0.5 text-[10px] font-bold px-2 py-0.5 rounded-full ${diff.deltaPercentage === 0
+                                  ? "bg-secondary text-muted-foreground border border-border"
+                                  : diff.isImprovement
                                     ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30"
                                     : "bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30"
-                                }`}
+                                  }`}
                                 title={`${diff.deltaAbsolute > 0 ? "+" : ""}${diff.deltaAbsolute} ${metric.unit}`}
                               >
                                 {diff.deltaPercentage > 0 ? (
