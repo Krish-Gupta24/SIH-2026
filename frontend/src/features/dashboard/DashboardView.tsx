@@ -9,6 +9,7 @@ import {
   CloudSun,
   Cpu,
   Layers,
+  Mountain,
   Wand2,
   ChevronDown,
   FolderKanban,
@@ -24,10 +25,13 @@ import {
   Status,
 } from "@/components/v0/platform-components";
 import { WorkflowFooter } from "@/components/layout/WorkflowFooter";
+import { motion } from "framer-motion";
+import { PulseBeacon } from "@/components/motion/MotionWrappers";
 
 export function DashboardView() {
   const router = useRouter();
   const [projectPickerOpen, setProjectPickerOpen] = useState(false);
+  const [showEnvironment, setShowEnvironment] = useState(true);
 
   const {
     projects,
@@ -138,10 +142,16 @@ export function DashboardView() {
 
       {/* Main Feature Grid: 3D Scene + Immediate Judgment */}
       <div className="workspace-feature-grid grid gap-6 lg:grid-cols-[1.15fr_.85fr]">
-        <div className="relative min-h-[480px] overflow-hidden rounded-[2rem] border border-border bg-[#f0f4f8] shadow-[0_24px_70px_rgba(0,0,0,.08)]">
-          <ShelterScene project={activeProject} wireframe={false} />
+        <motion.div
+          initial={{ opacity: 0, scale: 0.98 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+          className="relative min-h-[480px] overflow-hidden rounded-[2rem] border border-border bg-[#c9d8e4] shadow-[0_24px_70px_rgba(0,0,0,.08)] hover:shadow-[0_28px_80px_rgba(0,0,0,.12)] transition-shadow"
+        >
+          <ShelterScene project={activeProject} wireframe={false} showEnvironment={showEnvironment} />
           <div className="absolute left-5 top-5 flex items-center gap-2">
-            <div className="rounded-full bg-white/90 px-4 py-2 backdrop-blur shadow-sm border border-black/5">
+            <div className="flex items-center gap-2 rounded-full bg-white/90 px-4 py-2 backdrop-blur shadow-sm border border-black/5">
+              <PulseBeacon color="emerald" size="sm" />
               <Status strong>Model ready</Status>
             </div>
             <div className="hidden sm:flex items-center gap-1.5 rounded-full bg-white/90 px-3.5 py-2 text-[11px] font-mono font-bold text-[#101820] backdrop-blur shadow-sm border border-black/5">
@@ -150,18 +160,38 @@ export function DashboardView() {
               </span>
             </div>
           </div>
-          <div className="absolute bottom-5 right-5">
+          <div className="absolute bottom-5 right-5 flex items-center gap-2">
+            <motion.button
+              whileHover={{ scale: 1.03 }}
+              whileTap={{ scale: 0.97 }}
+              type="button"
+              onClick={() => setShowEnvironment((prev) => !prev)}
+              className={`inline-flex items-center gap-1.5 rounded-full px-3.5 py-2 text-xs font-semibold backdrop-blur shadow-sm border transition-all cursor-pointer ${
+                showEnvironment
+                  ? "border-sky-500/30 bg-slate-900/90 text-white hover:bg-black"
+                  : "border-black/10 bg-white/90 text-[#101820] hover:bg-white"
+              }`}
+              title="Toggle Himalayan site terrain and mountain environment"
+            >
+              <Mountain className={`size-3.5 ${showEnvironment ? "text-sky-400" : "text-muted-foreground"}`} />
+              <span>{showEnvironment ? "Himalayan Site ON" : "Site: Off"}</span>
+            </motion.button>
             <Link
               href="/designer/3d"
-              className="inline-flex items-center gap-2 rounded-full border border-black/20 bg-white/90 px-4 py-2 text-xs font-semibold text-black backdrop-blur hover:bg-white transition-all shadow-sm"
+              className="inline-flex items-center gap-2 rounded-full border border-black/20 bg-white/90 px-4 py-2 text-xs font-semibold text-black backdrop-blur hover:bg-white hover:scale-[1.03] active:scale-[0.97] transition-all shadow-sm"
             >
               <Box className="size-3.5" />
               Open 3D CAD
             </Link>
           </div>
-        </div>
+        </motion.div>
 
-        <div className="workspace-panel flex flex-col justify-between rounded-[2rem] border border-border bg-card p-7 sm:p-9 shadow-[0_20px_55px_rgba(0,0,0,.04)]">
+        <motion.div
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.55, delay: 0.15, ease: [0.16, 1, 0.3, 1] }}
+          className="workspace-panel flex flex-col justify-between rounded-[2rem] border border-border bg-card p-7 sm:p-9 shadow-[0_20px_55px_rgba(0,0,0,.04)] hover:shadow-md transition-shadow"
+        >
           <div>
             <p className="micro-label">Immediate judgment</p>
             <h2 className="mt-4 font-editorial text-3xl font-medium tracking-[-0.04em] sm:text-4xl">
@@ -217,7 +247,7 @@ export function DashboardView() {
               onClick={() => router.push(latestRun ? "/designer" : "/simulations")}
             />
           </div>
-        </div>
+        </motion.div>
       </div>
 
       {/* Latest Time-series response */}

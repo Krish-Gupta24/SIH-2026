@@ -2,7 +2,7 @@ import { AppShell } from "@/components/layout/AppShell";
 import { WeatherView } from "@/features/weather/WeatherView";
 
 export const metadata = {
-  title: "Weather & Climate | ShelterThermal",
+  title: "Weather & Climate | ThemoShelter",
   description: "High-altitude meteorological datasets and design-day diurnal temperature profiles.",
 };
 

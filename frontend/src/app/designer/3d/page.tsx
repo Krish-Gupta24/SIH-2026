@@ -186,28 +186,26 @@ function Shelter3DPageContent() {
     <AppShell>
       <div className="designer-3d-studio-page">
         {/* Studio Topbar: Project Identity & Actions */}
-        <header className="flex flex-col md:flex-row md:items-center justify-between gap-3 rounded-2xl border border-border bg-card p-3 sm:px-4 sm:py-2.5 shadow-xs mb-2">
-          <div className="min-w-0">
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-sky-500/30 bg-sky-500/10 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-sky-700 dark:text-sky-300">
-                <Box className="size-3 text-sky-500" />
-                3D CAD Studio
-              </span>
-              <span className="text-[11px] font-medium text-muted-foreground">
-                {activeModel.location.region || "Leh Ladakh, India"} · {activeModel.location.elevation ? `${activeModel.location.elevation.toLocaleString()}m MSL` : "3,256m MSL"}
-              </span>
-            </div>
-            <h1 className="text-base sm:text-lg font-bold tracking-tight text-foreground truncate mt-0.5">
+        <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 rounded-xl border border-border bg-card px-3 py-1.5 sm:px-4 sm:py-2 shadow-xs mb-1">
+          <div className="min-w-0 flex items-center gap-2.5">
+            <span className="inline-flex items-center gap-1 rounded-full border border-sky-500/30 bg-sky-500/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-sky-700 dark:text-sky-300 shrink-0">
+              <Box className="size-3 text-sky-500" />
+              3D CAD
+            </span>
+            <h1 className="text-sm sm:text-base font-bold tracking-tight text-foreground truncate">
               {activeModel.project.name}
             </h1>
+            <span className="text-[11px] font-medium text-muted-foreground hidden lg:inline truncate">
+              · {activeModel.location.region || "Leh Ladakh"} ({activeModel.location.elevation ? `${activeModel.location.elevation.toLocaleString()}m MSL` : "3,256m MSL"})
+            </span>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2 shrink-0">
+          <div className="flex items-center gap-1.5 shrink-0 flex-wrap">
             <DesignPresetsDropdown compact />
             <Link
               href={`/designer?step=${step3dTo2d(step)}`}
               onClick={() => setActiveWizardStep(step3dTo2d(step))}
-              className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3.5 py-1.5 text-xs font-semibold text-foreground shadow-xs hover:bg-secondary transition shrink-0"
+              className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1 text-xs font-semibold text-foreground shadow-xs hover:bg-secondary transition shrink-0"
               title="Switch to 2D Blueprint & Parameters Studio"
             >
               <Sliders className="size-3.5 text-muted-foreground" />
@@ -216,7 +214,7 @@ function Shelter3DPageContent() {
             <button
               type="button"
               onClick={() => setAnsysModalOpen(true)}
-              className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3.5 py-1.5 text-xs font-semibold text-foreground shadow-xs hover:bg-secondary transition shrink-0"
+              className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1 text-xs font-semibold text-foreground shadow-xs hover:bg-secondary transition shrink-0"
               title="Export ANSYS Mechanical / CFD validation deck"
             >
               <Cpu className="size-3.5 text-muted-foreground" />

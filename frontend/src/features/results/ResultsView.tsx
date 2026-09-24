@@ -27,6 +27,8 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { UnitSystem, DataTraceVisibility } from "@/types/simulation";
+import { motion, AnimatePresence } from "framer-motion";
+import { triggerMilestoneCelebration } from "@/components/motion/MotionWrappers";
 import {
   ActionButton,
   DataPair,
@@ -111,6 +113,16 @@ export function ResultsView() {
     completedJobs[0] ||
     null;
 
+  // Trigger celebratory confetti if the simulated envelope achieves the comfort target
+  useEffect(() => {
+    if (activeJob?.results?.summary?.comfortHoursPct && activeJob.results.summary.comfortHoursPct >= 80) {
+      const timer = setTimeout(() => {
+        triggerMilestoneCelebration();
+      }, 700);
+      return () => clearTimeout(timer);
+    }
+  }, [activeJob?.id]);
+
   // Keep selectedJobId synchronized with the active job across cross-device updates
   useEffect(() => {
     if (activeJob && selectedJobId !== activeJob.id) {
@@ -165,6 +177,13 @@ export function ResultsView() {
     projects.find((p) => p.id === activeJob?.projectId) ||
     projects.find((p) => p.id === activeProjectId) ||
     projects[0];
+
+  // Derive authentic uninsulated CGI tin barrack baseline benchmark from simulation runs
+  const tinBenchmark =
+    completedJobs.find((s) => s.projectId === "shelter-baseline-tin" || s.shelterModel?.id === "shelter-baseline-tin") ||
+    simulations.find((s) => s.projectId === "shelter-baseline-tin" || s.shelterModel?.id === "shelter-baseline-tin");
+  const baselineTinHeatingDemand = tinBenchmark?.results?.summary?.heatingDemandKwhM2 ?? 215.0;
+  const isBaselineTin = activeJob.projectId === "shelter-baseline-tin" || activeJob.shelterModel?.id === "shelter-baseline-tin";
 
   // Derive model-accurate window aperture UA
   const modelWindows = activeProject?.windows || [];
@@ -403,34 +422,46 @@ export function ResultsView() {
         </div>
 
         <dl className="grid grid-cols-2 gap-3">
-          <div className="flex min-h-36 flex-col justify-between rounded-2xl border border-border bg-card p-6 shadow-sm">
+          <motion.div
+            whileHover={{ y: -3, transition: { type: "spring", stiffness: 400, damping: 25 } }}
+            className="flex min-h-36 flex-col justify-between rounded-2xl border border-border bg-card p-6 shadow-sm hover:border-[#6E818F]/40 transition-colors"
+          >
             <span className="micro-label">Heating demand</span>
             <p>
               <span className="text-3xl sm:text-4xl font-medium">{summary.heatingDemandKwhM2}</span>
               <span className="ml-2 text-xs text-muted-foreground">kWh/m²</span>
             </p>
-          </div>
-          <div className="flex min-h-36 flex-col justify-between rounded-2xl border border-border bg-card p-6 shadow-sm">
+          </motion.div>
+          <motion.div
+            whileHover={{ y: -3, transition: { type: "spring", stiffness: 400, damping: 25 } }}
+            className="flex min-h-36 flex-col justify-between rounded-2xl border border-border bg-card p-6 shadow-sm hover:border-[#6E818F]/40 transition-colors"
+          >
             <span className="micro-label">Comfort hours</span>
             <p>
               <span className="text-3xl sm:text-4xl font-medium">{summary.comfortHoursPct}</span>
               <span className="ml-2 text-xs text-muted-foreground">%</span>
             </p>
-          </div>
-          <div className="flex min-h-36 flex-col justify-between rounded-2xl border border-border bg-card p-6 shadow-sm">
+          </motion.div>
+          <motion.div
+            whileHover={{ y: -3, transition: { type: "spring", stiffness: 400, damping: 25 } }}
+            className="flex min-h-36 flex-col justify-between rounded-2xl border border-border bg-card p-6 shadow-sm hover:border-[#6E818F]/40 transition-colors"
+          >
             <span className="micro-label">Indoor minimum</span>
             <p>
               <span className="text-3xl sm:text-4xl font-medium">{summary.indoorMinC}</span>
               <span className="ml-2 text-xs text-muted-foreground">°C</span>
             </p>
-          </div>
-          <div className="flex min-h-36 flex-col justify-between rounded-2xl border border-border bg-card p-6 shadow-sm">
+          </motion.div>
+          <motion.div
+            whileHover={{ y: -3, transition: { type: "spring", stiffness: 400, damping: 25 } }}
+            className="flex min-h-36 flex-col justify-between rounded-2xl border border-border bg-card p-6 shadow-sm hover:border-[#6E818F]/40 transition-colors"
+          >
             <span className="micro-label">Swing damping</span>
             <p>
               <span className="text-3xl sm:text-4xl font-medium">{summary.diurnalSwingDampingPct}</span>
               <span className="ml-2 text-xs text-muted-foreground">%</span>
             </p>
-          </div>
+          </motion.div>
         </dl>
       </div>
 
@@ -489,9 +520,20 @@ export function ResultsView() {
       {/* 4.5. Fossil Fuel & Bukhari Defense Mitigation Card (PS 26051 Core Deliverable) */}
       <FossilFuelDisplacementCard
         heatingDemandKwhM2={summary.heatingDemandKwhM2}
-        floorAreaM2={(activeJob.shelterModel?.geometry?.length || 6) * (activeJob.shelterModel?.geometry?.width || 4)}
+        floorAreaM2={computedFloorAreaM2}
         comfortHoursPct={summary.comfortHoursPct}
         projectName={activeJob.projectName}
+        baselineDemandKwhM2Default={baselineTinHeatingDemand}
+        totalSolarGainKwh={totalSolarGainsKwh}
+        outdoorMinC={summary.outdoorMinC}
+        indoorMinC={summary.indoorMinC}
+        indoorMaxC={summary.indoorMaxC}
+        locationName={activeJob.shelterModel?.location?.region || activeJob.shelterModel?.location?.name || activeProject?.location?.region || "Leh Ladakh, India"}
+        elevationM={activeJob.shelterModel?.location?.elevation ?? activeProject?.location?.elevation ?? 3500}
+        climateZone={activeJob.shelterModel?.location?.climateZone || activeProject?.location?.climateZone || "Alpine Cold (ASHRAE 8)"}
+        engineName={activeJob.engine || "ThermoShelter Core"}
+        activeJobId={activeJob.id}
+        isBaselineTin={isBaselineTin}
       />
 
       <OpeningSensitivityPanel
@@ -503,7 +545,10 @@ export function ResultsView() {
 
 
       {/* 4.7. After Results Workflow Transition Card */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-6 rounded-[2rem] bg-secondary/30 border border-border shadow-sm">
+      <motion.div
+        whileHover={{ y: -2, transition: { type: "spring", stiffness: 400, damping: 25 } }}
+        className="flex flex-col sm:flex-row items-center justify-between gap-4 p-6 rounded-[2rem] bg-secondary/30 border border-border shadow-sm hover:border-[#6E818F]/40 transition-colors"
+      >
         <div className="flex items-center gap-3.5">
           <div className="p-2.5 rounded-2xl bg-secondary text-foreground border border-border">
             <Zap className="w-5 h-5 text-emerald-600" />
@@ -525,21 +570,21 @@ export function ResultsView() {
           <button
             type="button"
             onClick={() => setActiveTab("optimization")}
-            className="px-4 py-2 rounded-full text-xs font-semibold bg-white hover:bg-secondary text-foreground border border-border shadow-xs transition cursor-pointer"
+            className="px-4 py-2 rounded-full text-xs font-semibold bg-white hover:bg-secondary text-foreground border border-border shadow-xs transition cursor-pointer active:scale-95"
           >
             Explore in Tab
           </button>
           <Link href="/optimization">
             <button
               type="button"
-              className="flex items-center gap-1.5 px-5 py-2 rounded-full text-xs font-semibold bg-black hover:bg-[#6E818F] text-white shadow-sm transition cursor-pointer"
+              className="flex items-center gap-1.5 px-5 py-2 rounded-full text-xs font-semibold bg-black hover:bg-[#6E818F] text-white shadow-sm transition cursor-pointer active:scale-95"
             >
               <span>Dedicated Optimization Page</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </button>
           </Link>
         </div>
-      </div>
+      </motion.div>
 
       {/* 5. Tabbed Analytics Experience */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
@@ -695,7 +740,16 @@ export function ResultsView() {
 
         {/* Tab 8: Integrated Thermal, Energy, Fuel & Cost Optimization */}
         <TabsContent value="optimization" className="space-y-6">
-          <EnergyOptimizationView />
+          <EnergyOptimizationView
+            activeJob={activeJob}
+            activeProject={activeProject}
+            computedFloorAreaM2={computedFloorAreaM2}
+            computedEnvelopeAreaM2={computedEnvelopeAreaM2}
+            computedSouthWallAreaM2={computedSouthWallAreaM2}
+            computedAverageUFactor={computedAverageUFactor}
+            totalSolarGainsKwh={totalSolarGainsKwh}
+            summary={summary}
+          />
         </TabsContent>
       </Tabs>
 

@@ -1158,18 +1158,31 @@
   box-shadow: 0 28px 90px rgba(16, 24, 32, .2);
 }
 
+.no-scrollbar::-webkit-scrollbar,
+.scrollbar-none::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+.no-scrollbar,
+.scrollbar-none {
+  -ms-overflow-style: none !important;
+  scrollbar-width: none !important;
+}
+
 .designer-3d-workspace-content {
   width: 100%;
   max-width: 100%;
   min-width: 0;
-  padding: .35rem clamp(.5rem, 1.2vw, 1.2rem) .5rem;
+  padding: .25rem clamp(.35rem, 1vw, .75rem) .35rem;
 }
 
 .designer-3d-studio-page {
   display: flex;
   min-width: 0;
   flex-direction: column;
-  gap: .45rem;
+  gap: .25rem;
 }
 
 .designer-pagebar {
@@ -1690,18 +1703,19 @@
   align-items: center;
   position: absolute;
   top: .75rem;
-  left: .75rem;
+  left: 50%;
+  transform: translateX(-50%);
   z-index: 30;
-  gap: .2rem;
-  padding: .28rem;
+  gap: .25rem;
+  padding: .3rem .55rem;
   /* Premium frosted glass effect */
   border: 1px solid rgba(255, 255, 255, 0.22);
-  border-radius: .72rem;
-  background: rgba(12, 18, 28, 0.78);
-  box-shadow: 0 12px 34px rgba(0, 0, 0, .28), inset 0 1px 0 rgba(255, 255, 255, 0.08);
-  backdrop-filter: blur(14px) saturate(1.4);
+  border-radius: .85rem;
+  background: rgba(12, 18, 28, 0.88);
+  box-shadow: 0 14px 40px rgba(0, 0, 0, .35), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(18px) saturate(1.4);
   flex-wrap: nowrap;
-  max-width: calc(100% - 3.8rem);
+  max-width: calc(100% - 2.5rem);
   overflow: visible;
 }
 
@@ -1804,17 +1818,18 @@
   display: flex;
   align-items: center;
   position: absolute;
-  right: .8rem;
-  bottom: .8rem;
-  left: .8rem;
-  z-index: 2;
+  bottom: 1.25rem;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(640px, calc(100% - 2rem));
+  z-index: 10;
   gap: .15rem;
-  padding: .3rem;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: .8rem;
-  background: rgba(10, 15, 22, 0.78);
-  box-shadow: 0 14px 38px rgba(0, 0, 0, .25);
-  backdrop-filter: blur(14px) saturate(1.3);
+  padding: .3rem .45rem;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: .85rem;
+  background: rgba(10, 15, 22, 0.85);
+  box-shadow: 0 14px 38px rgba(0, 0, 0, .3);
+  backdrop-filter: blur(16px) saturate(1.3);
 }
 
 .cad-metrics span {
@@ -2439,7 +2454,7 @@
 /* Fixed Clean Screen HUD Pill for Exploded View */
 .cad-exploded-hud {
   position: absolute;
-  top: 1.1rem;
+  top: 4.15rem;
   left: 50%;
   transform: translateX(-50%);
   z-index: 15;
@@ -3060,30 +3075,35 @@ body:has([aria-modal="true"]) {
   }
 
   .designer-3d-studio-page .cad-floating-tools {
-    right: .55rem;
-    left: .55rem;
+    right: auto;
+    left: 50%;
+    transform: translateX(-50%);
     max-width: calc(100% - 1.1rem);
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
+    overflow-x: auto;
   }
 
   .designer-3d-studio-page .cad-floating-tools button {
-    min-height: 28px;
-    padding-inline: .42rem;
+    min-height: 30px;
+    padding-inline: .55rem;
+    font-size: .68rem;
   }
 
   .designer-3d-studio-page .cad-timeline-scrubber {
-    bottom: 4.8rem;
+    bottom: 3.75rem;
+    left: 50%;
+    transform: translateX(-50%);
     width: calc(100% - 1.1rem);
-    padding: .45rem .55rem;
+    padding: .55rem .75rem;
+    z-index: 25;
   }
 
   .designer-3d-studio-page .cad-timeline-row-top {
     gap: .35rem;
   }
 
-  .designer-3d-studio-page .cad-timeline-quick-hours,
-  .designer-3d-studio-page .cad-timeline-row-top > .flex.items-center.gap-1\.5 {
-    display: none;
+  .designer-3d-studio-page .cad-timeline-quick-hours {
+    display: flex;
   }
 
   .designer-3d-studio-page .cad-solar-context {
@@ -3095,9 +3115,11 @@ body:has([aria-modal="true"]) {
   }
 
   .designer-3d-studio-page .cad-metrics {
-    right: .55rem;
-    bottom: .55rem;
-    left: .55rem;
+    right: auto;
+    bottom: 3.75rem;
+    left: 50%;
+    transform: translateX(-50%);
+    width: calc(100% - 1.1rem);
   }
 
   .designer-3d-studio-page .cad-metrics span:nth-child(n+4) {
@@ -3297,12 +3319,15 @@ body:has([aria-modal="true"]) {
 /* Clean Website-Matching Thermal & Solar HUD */
 .cad-thermal-legend-panel {
   position: absolute;
-  top: 4.5rem;
-  left: .75rem;
-  z-index: 5;
+  top: 0.75rem;
+  left: 0.75rem;
+  right: auto;
+  z-index: 20;
   pointer-events: auto;
-  width: 310px;
+  width: 275px;
   max-width: calc(100% - 1.5rem);
+  max-height: calc(100% - 8rem);
+  overflow-y: auto;
   animation: hud-slide-in .3s cubic-bezier(.2, .7, .2, 1) both;
 }
 
@@ -3401,26 +3426,52 @@ body:has([aria-modal="true"]) {
   color: #94a3b8;
 }
 
-/* Dynamic 24-Hour Thermal Timeline Scrubber */
 /* Dynamic 24-Hour Diurnal CAD Scrubber — Ultra-sleek single-row floating pill */
 .cad-timeline-scrubber {
   position: absolute;
-  bottom: 1.25rem;
+  bottom: 4.25rem;
   left: 50%;
   transform: translateX(-50%);
-  z-index: 12;
-  width: min(680px, calc(100% - 2rem));
+  z-index: 30;
+  width: min(680px, calc(100% - 2.5rem));
   display: flex;
-  flex-direction: row;
-  align-items: center;
+  flex-direction: column;
   gap: 0.5rem;
-  padding: 0.32rem 0.65rem;
-  border-radius: 9999px;
-  background: rgba(10, 16, 26, 0.88);
-  backdrop-filter: blur(20px) saturate(1.4);
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  padding: 0.75rem 1.15rem;
+  border-radius: 1.25rem;
+  background: rgba(10, 16, 28, 0.94);
+  backdrop-filter: blur(24px) saturate(1.4);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.65), 0 0 35px rgba(245, 158, 11, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.15);
   animation: hud-slide-in 0.22s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  pointer-events: auto;
+}
+
+.cad-timeline-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  flex-wrap: nowrap;
+}
+
+.cad-timeline-slider-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  width: 100%;
+}
+
+.cad-timeline-ticks {
+  display: flex;
+  justify-content: space-between;
+  padding-inline: 2px;
+  font-size: 0.6rem;
+  font-family: var(--font-geist-mono), monospace;
+  color: rgba(255, 255, 255, 0.6);
+  font-weight: 600;
+  user-select: none;
+  margin-top: 1px;
 }
 
 .cad-timeline-btn {
@@ -3489,32 +3540,85 @@ body:has([aria-modal="true"]) {
 }
 
 .cad-timeline-slider-wrap {
-  flex: 1;
+  width: 100%;
   display: flex;
   align-items: center;
-  min-width: 80px;
+  position: relative;
 }
 
 .cad-timeline-slider {
+  -webkit-appearance: none;
+  appearance: none;
   width: 100%;
-  height: 5px;
+  height: 8px;
   border-radius: 9999px;
   background: linear-gradient(
     to right,
     #1e1b4b 0%,
     #312e81 12%,
-    #b45309 25%,
-    #f59e0b 32%,
+    #d97706 24%,
+    #f59e0b 35%,
     #fbbf24 50%,
-    #f59e0b 68%,
-    #b45309 75%,
+    #f59e0b 65%,
+    #ea580c 76%,
     #312e81 88%,
     #1e1b4b 100%
   );
-  accent-color: #fbbf24;
-  cursor: pointer;
   outline: none;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.5);
+  cursor: pointer;
+  margin: 4px 0;
+}
+
+.cad-timeline-slider::-webkit-slider-runnable-track {
+  height: 8px;
+  border-radius: 9999px;
+}
+
+.cad-timeline-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #fbbf24;
+  border: 2px solid #ffffff;
+  box-shadow: 0 0 10px rgba(251, 191, 36, 0.85), 0 2px 5px rgba(0, 0, 0, 0.5);
+  cursor: grab;
+  margin-top: -5px;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.cad-timeline-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.15);
+  box-shadow: 0 0 14px rgba(251, 191, 36, 1), 0 2px 7px rgba(0, 0, 0, 0.6);
+}
+
+.cad-timeline-slider::-webkit-slider-thumb:active {
+  cursor: grabbing;
+  transform: scale(1.08);
+}
+
+.cad-timeline-slider::-moz-range-track {
+  height: 8px;
+  border-radius: 9999px;
+  background: transparent;
   border: none;
+}
+
+.cad-timeline-slider::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #fbbf24;
+  border: 2px solid #ffffff;
+  box-shadow: 0 0 10px rgba(251, 191, 36, 0.85), 0 2px 5px rgba(0, 0, 0, 0.5);
+  cursor: grab;
+}
+
+.cad-timeline-slider::-moz-range-thumb:hover {
+  transform: scale(1.15);
 }
 
 .cad-timeline-quick-hours {
@@ -3697,21 +3801,47 @@ body:has([aria-modal="true"]) {
 @media (min-width:1024px) {
   .designer-3d-studio-page .cad-shell {
     display: grid;
-    height: max(860px, calc(100dvh - 145px));
+    height: max(860px, calc(100dvh - 110px));
     min-height: 860px;
     grid-template-columns: minmax(0, 1fr) 310px;
-    grid-template-rows: minmax(0, 1fr) 42px;
+    grid-template-rows: auto minmax(0, 1fr) 42px;
     border-radius: 1.25rem;
     background: var(--cad-paper);
+    overflow: hidden;
+  }
+
+  .designer-3d-studio-page .cad-shell[data-right-open="false"] {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .designer-3d-studio-page .cad-toolbar {
+    grid-column: 1 / -1;
+    grid-row: 1;
+    z-index: 10;
+    min-height: 46px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.4rem 1rem;
+    border-bottom: 1px solid rgba(110, 129, 143, 0.22);
+    background: rgba(250, 252, 252, 0.96);
+    box-shadow: 0 4px 16px rgba(16, 24, 32, 0.06);
+    backdrop-filter: blur(12px);
+  }
+
+  .designer-3d-studio-page .cad-toolbar-actions button {
+    min-height: 28px;
   }
 
   .designer-3d-studio-page .cad-workspace {
     position: relative;
     display: grid;
     min-height: 0;
+    height: 100%;
     grid-column: 1 / -1;
-    grid-row: 1;
+    grid-row: 2;
     grid-template-columns: minmax(0, 1fr) 310px !important;
+    overflow: hidden;
   }
 
   .designer-3d-studio-page .cad-workspace[data-right-open="false"] {
@@ -3719,18 +3849,23 @@ body:has([aria-modal="true"]) {
   }
 
   .designer-3d-studio-page .cad-canvas-region {
-    min-height: 800px;
+    min-height: 0;
+    height: 100%;
     grid-column: 1;
     grid-row: 1;
+    position: relative;
+    overflow: hidden;
   }
 
   .designer-3d-studio-page .cad-property-panel {
     display: block;
     min-height: 0;
+    height: 100%;
     grid-column: 2;
     grid-row: 1;
-    border-left: 1px solid rgba(110, 129, 143, .24);
+    border-left: 1px solid rgba(110, 129, 143, 0.24);
     background: #fbfcfc;
+    overflow-y: auto;
   }
 
   .designer-3d-studio-page .cad-workspace[data-right-open="false"] .cad-property-panel {
@@ -3739,17 +3874,17 @@ body:has([aria-modal="true"]) {
 
   .designer-3d-studio-page .cad-stage-panel {
     position: absolute;
-    top: 4.55rem;
+    top: 1rem;
     bottom: 1rem;
-    left: 3.8rem;
-    z-index: 25;
+    left: 1rem;
+    z-index: 28;
     width: 260px;
     max-width: calc(100vw - 5rem);
     overflow-y: auto;
     border: 1px solid rgba(255, 255, 255, 0.12);
-    border-radius: .85rem;
+    border-radius: 0.85rem;
     background: rgba(13, 20, 30, 0.96) !important;
-    box-shadow: 0 16px 40px rgba(0, 0, 0, .35);
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.35);
     backdrop-filter: blur(16px);
   }
 
@@ -3757,111 +3892,118 @@ body:has([aria-modal="true"]) {
     display: none;
   }
 
-  .designer-3d-studio-page .cad-toolbar {
-    z-index: 10;
-    min-height: 44px;
-    grid-column: 1;
-    grid-row: 1;
-    align-self: start;
-    justify-self: stretch;
-    margin: .75rem;
-    padding: .32rem .4rem;
-    border: 1px solid rgba(110, 129, 143, .22);
-    border-radius: .7rem;
-    background: rgba(250, 252, 252, .92);
-    box-shadow: 0 10px 28px rgba(16, 24, 32, .12);
-    backdrop-filter: blur(12px);
-  }
-
-  .designer-3d-studio-page .cad-toolbar-actions button {
-    min-height: 28px;
-  }
-
   .designer-3d-studio-page .cad-floating-tools {
-    top: 4.55rem;
-    left: .75rem;
-    width: 38px;
-    max-width: none;
-    flex-direction: column;
-    padding: .22rem;
+    position: absolute;
+    top: 1rem;
+    left: 50%;
+    transform: translateX(-50%);
+    width: auto;
+    max-width: calc(100% - 2.5rem);
+    flex-direction: row;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding: 0.3rem 0.6rem;
+    gap: 0.35rem;
+    border-radius: 9999px;
+    background: rgba(12, 18, 28, 0.9);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+    backdrop-filter: blur(20px) saturate(1.4);
+    z-index: 25;
   }
 
   .designer-3d-studio-page .cad-floating-tools button {
-    width: 32px;
-    min-height: 32px;
+    width: auto;
+    min-height: 30px;
     justify-content: center;
-    padding: 0;
-    font-size: 0;
+    padding: 0 0.6rem;
+    font-size: 0.72rem;
+    font-weight: 650;
+    gap: 0.35rem;
+    white-space: nowrap;
   }
 
   .designer-3d-studio-page .cad-floating-tools button svg {
-    width: .9rem;
-    height: .9rem;
+    width: 0.85rem;
+    height: 0.85rem;
+    flex-shrink: 0;
   }
 
   .designer-3d-studio-page .cad-view-options {
-    top: 0;
-    left: calc(100% + .45rem);
-    right: auto;
+    top: calc(100% + 0.45rem);
+    left: auto;
+    right: 0;
   }
 
   .designer-3d-studio-page .cad-view-options button {
     width: auto;
     min-width: 138px;
     justify-content: flex-start;
-    font-size: .58rem;
+    font-size: 0.68rem;
+  }
+
+  .designer-3d-studio-page .cad-thermal-legend-panel {
+    position: absolute;
+    top: 1rem;
+    left: 1rem;
+    right: auto;
+    z-index: 20;
+    width: 255px;
+    max-width: calc(50vw - 2rem);
+    max-height: calc(100% - 8rem);
+    overflow-y: auto;
   }
 
   .designer-3d-studio-page .cad-mode-label {
-    top: auto;
-    bottom: 1.25rem;
-    right: 1.25rem;
-    max-width: 260px;
-    z-index: 10;
-    pointer-events: none;
+    display: none;
   }
 
   .designer-3d-studio-page .cad-metrics {
-    right: auto;
-    bottom: .75rem;
-    left: .75rem;
-    width: min(520px, calc(100% - 2rem));
+    position: absolute;
+    bottom: 4.25rem;
+    left: 50%;
+    transform: translateX(-50%);
+    width: min(640px, calc(100% - 2rem));
+    z-index: 20;
   }
 
   .designer-3d-studio-page .cad-timeline-scrubber {
-    bottom: 4.8rem;
+    position: absolute;
+    bottom: 4.25rem;
     left: 50%;
     transform: translateX(-50%);
-    width: min(760px, calc(100% - 4rem));
-    z-index: 10;
+    width: min(700px, calc(100% - 3rem));
+    z-index: 30;
+    pointer-events: auto;
   }
 
   .cad-timeline-minimized-pill {
     position: absolute;
-    bottom: 4.8rem;
-    right: 0.85rem;
-    z-index: 10;
+    bottom: 4.25rem;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 30;
     display: inline-flex;
     align-items: center;
     gap: 0.45rem;
     padding: 0.35rem 0.8rem;
     border-radius: 9999px;
-    background: rgba(15, 23, 42, 0.88);
-    border: 1px solid rgba(255, 255, 255, 0.16);
+    background: rgba(15, 23, 42, 0.92);
+    border: 1px solid rgba(255, 255, 255, 0.2);
     color: #f8fafc;
     font-size: 0.72rem;
     font-weight: 650;
     font-family: var(--font-geist-mono), monospace;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
-    backdrop-filter: blur(12px);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(14px);
     cursor: pointer;
     transition: all 0.2s ease;
   }
 
   .cad-timeline-minimized-pill:hover {
-    background: rgba(30, 41, 59, 0.95);
-    border-color: rgba(255, 255, 255, 0.28);
-    transform: translateY(-1px);
+    background: rgba(30, 41, 59, 0.98);
+    border-color: rgba(255, 255, 255, 0.35);
+    transform: translate(-50%, -2px);
   }
 
   .designer-3d-studio-page .cad-inspector-toggle {
@@ -3869,31 +4011,32 @@ body:has([aria-modal="true"]) {
     align-items: center;
     justify-content: center;
     position: absolute;
-    top: 4.55rem;
-    right: 0.85rem;
-    z-index: 15;
-    width: 34px;
-    height: 34px;
+    top: 1rem;
+    right: 1rem;
+    z-index: 25;
+    width: 36px;
+    height: 36px;
     border-radius: 0.65rem;
-    background: rgba(250, 252, 252, 0.94);
-    border: 1px solid rgba(110, 129, 143, 0.28);
-    box-shadow: 0 8px 24px rgba(16, 24, 32, 0.12);
-    color: var(--cad-ink);
+    background: rgba(12, 18, 28, 0.85);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+    color: #ffffff;
     cursor: pointer;
-    backdrop-filter: blur(12px);
+    backdrop-filter: blur(14px);
     transition: all 0.2s ease;
   }
 
   .designer-3d-studio-page .cad-inspector-toggle:hover {
-    background: #ffffff;
+    background: rgba(255, 255, 255, 0.18);
     transform: translateY(-1px);
-    box-shadow: 0 10px 28px rgba(16, 24, 32, 0.18);
+    box-shadow: 0 12px 34px rgba(0, 0, 0, 0.45);
   }
 
   .designer-3d-studio-page .cad-statusbar {
     grid-column: 1 / -1;
-    grid-row: 2;
-    background: rgba(247, 249, 250, .98);
+    grid-row: 3;
+    background: rgba(247, 249, 250, 0.98);
+    border-top: 1px solid rgba(110, 129, 143, 0.2);
   }
 }
 
@@ -3975,4 +4118,117 @@ body:has([aria-modal="true"]) {
 .cad-step-name {
   font-weight: 750;
 }
+
+/* ==========================================================================
+   ThermoShelter Motion System & Dynamic Micro-Interactions
+   ========================================================================== */
+
+/* Shimmer Light Reflection */
+@keyframes shimmer-sweep {
+  0% {
+    transform: translateX(-100%) rotate(25deg);
+  }
+  100% {
+    transform: translateX(250%) rotate(25deg);
+  }
+}
+
+.shimmer-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.shimmer-card::after {
+  content: "";
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.08) 50%,
+    transparent 100%
+  );
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.shimmer-card:hover::after {
+  opacity: 1;
+  animation: shimmer-sweep 1.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Breathing Ambient Aurora Gradient */
+@keyframes aurora-pulse {
+  0%, 100% {
+    background-position: 0% 50%;
+    opacity: 0.85;
+  }
+  50% {
+    background-position: 100% 50%;
+    opacity: 1;
+  }
+}
+
+.aurora-gradient-bg {
+  background: linear-gradient(-45deg, #090d16, #0e1e38, #0b1a2e, #131b2e);
+  background-size: 300% 300%;
+  animation: aurora-pulse 14s ease infinite;
+}
+
+/* Gentle Floating Animation */
+@keyframes float-gentle {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+
+.float-animation {
+  animation: float-gentle 4s ease-in-out infinite;
+}
+
+/* Radar Beacon Ping */
+@keyframes beacon-ping {
+  0% {
+    transform: scale(0.95);
+    opacity: 0.8;
+  }
+  70% {
+    transform: scale(2.2);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(2.2);
+    opacity: 0;
+  }
+}
+
+.beacon-pulse {
+  animation: beacon-ping 2s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+/* Tactile Click Physics */
+.interactive-hover-lift {
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s ease, border-color 0.25s ease;
+}
+
+.interactive-hover-lift:hover {
+  transform: translateY(-3px);
+}
+
+.interactive-hover-lift:active {
+  transform: scale(0.985);
+}
+
+/* Smooth Tab Transition */
+.tab-slide-indicator {
+  transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1), width 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
 

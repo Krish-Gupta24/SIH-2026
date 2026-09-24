@@ -335,6 +335,15 @@ export function AnnualComfortCalendar({
     };
   }, [diurnalMatrix, comfortMinC, comfortMaxC]);
 
+  const dynamicBukhariAvoidanceLiters = useMemo(() => {
+    const demand = simulationSummary?.heatingDemandKwhM2 ?? 24.5;
+    const area = computedFloorAreaM2 ?? 24;
+    const baselineDemand = 215.0; // Uninsulated CGI tin sheet baseline
+    const savedKwh = Math.max(0, (baselineDemand - demand) * area);
+    const deliveredKwhPerLiter = 9.6 * 0.65; // SKO at 65% stove efficiency
+    return Math.round(savedKwh / deliveredKwhPerLiter);
+  }, [simulationSummary?.heatingDemandKwhM2, computedFloorAreaM2]);
+
   // Colors exactly matching user's bioclimatic reference image on a clean light canvas
   const getCellClasses = (cell: DiurnalCellData) => {
     switch (cell.category) {
@@ -436,7 +445,7 @@ export function AnnualComfortCalendar({
           <div className="flex min-h-32 flex-col justify-between rounded-2xl border border-border bg-card p-5 shadow-sm hover:border-[#6E818F] transition-colors">
             <span className="micro-label">Bukhari Avoidance</span>
             <p>
-              <span className="text-3xl sm:text-4xl font-medium font-mono text-amber-700">~1,680</span>
+              <span className="text-3xl sm:text-4xl font-medium font-mono text-amber-700">~{dynamicBukhariAvoidanceLiters.toLocaleString("en-IN")}</span>
               <span className="ml-2 text-xs text-muted-foreground">L/yr</span>
             </p>
             <span className="text-[11px] font-semibold text-emerald-700">Zero Overnight CO Risk</span>

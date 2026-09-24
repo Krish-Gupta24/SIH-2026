@@ -140,8 +140,11 @@ export function ShelterCanvas({
           <CompassRose orientation={model.geometry.orientation} radius={compassRadius} />
         ) : null}
 
-        {/* Interactive Dimension Lines & Callouts — hidden during exploded view to avoid label clutter */}
-        {settings.showDimensions && !settings.explodedView && !suppressHtmlLabels ? (
+        {/* Interactive Dimension Lines & Callouts — shown in CAD Model mode, suppressed in analysis views to prevent label collision */}
+        {settings.showDimensions &&
+        !settings.explodedView &&
+        settings.visualization === "model" &&
+        !suppressHtmlLabels ? (
           <DimensionLines model={model} selected={selected} />
         ) : null}
 

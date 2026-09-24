@@ -12,38 +12,42 @@
   "project": {
     "id": "shelter-kargil-02",
     "name": "Dras-Kargil Extreme Cold Bunkhouse (88% Comfort)",
+    "version": "1.0.0",
     "description": "Multi-occupant military shelter in Dras-Kargil utilizing local granite thermal mass, triple glazing, and 200mm EPS insulation for sustained sub-zero resilience.",
+    "createdAt": "2026-09-24T12:09:14.416Z",
     "tags": [
       "Dras-Kargil",
       "Extreme-Cold",
       "Granite-Mass",
       "Annual-Comfort-88%"
     ],
-    "version": "1.0.0"
+    "updatedAt": "2026-09-24T13:10:13.080Z"
   },
   "location": {
+    "region": "Dras-Kargil, UT Ladakh, India",
     "latitude": 34.428,
     "longitude": 75.761,
-    "elevation": 3230.0,
-    "region": "Dras-Kargil, UT Ladakh, India",
+    "elevation": 3230,
     "climateZone": "Sub-Arctic / Severe Alpine",
-    "weatherSource": "dras_kargil.epw"
+    "weatherSource": "dras_kargil.epw",
+    "designTempWinter": -20,
+    "designTempSummer": 28
   },
   "geometry": {
     "shape": "Rectangle",
-    "length": 6.0,
-    "width": 4.0,
+    "orientation": 0,
+    "roofAngle": 10,
+    "floorElevation": 0.4,
+    "length": 6,
+    "width": 4,
     "height": 2.8,
-    "orientation": 0.0,
-    "roofType": "Flat",
-    "roofAngle": 10.0,
-    "floorElevation": 0.4
+    "roofType": "Flat"
   },
   "designTargets": {
-    "comfortTempMinC": 18.0,
-    "comfortTempMaxC": 24.0,
-    "targetIndoorTempC": 21.0,
-    "targetComfortPercent": 88.0,
+    "comfortTempMinC": 18,
+    "comfortTempMaxC": 24,
+    "targetIndoorTempC": 21,
+    "targetComfortPercent": 88,
     "maxAnnualHeatingDemandKwhM2": 28.2
   },
   "simulationSettings": {
@@ -53,5 +57,124 @@
     "startMonth": 1,
     "startDay": 15,
     "detailedComponentOutputs": true
+  },
+  "envelope": {
+    "walls": {
+      "north": {
+        "constructionId": "const-north-insulated-rammed-earth",
+        "name": "Wall North",
+        "layers": [
+          {
+            "materialId": "mat-eps-insulation",
+            "name": "Expanded Polystyrene (EPS)",
+            "thickness": 0.15
+          },
+          {
+            "materialId": "mat-rammed-earth",
+            "name": "Stabilized Rammed Earth",
+            "thickness": 0.25
+          }
+        ]
+      },
+      "south": {
+        "constructionId": "const-south-passive-solar-trombe",
+        "name": "Wall South",
+        "layers": [
+          {
+            "materialId": "mat-eps-insulation",
+            "name": "Expanded Polystyrene (EPS)",
+            "thickness": 0.15
+          },
+          {
+            "materialId": "mat-rammed-earth",
+            "name": "Stabilized Rammed Earth",
+            "thickness": 0.25
+          }
+        ]
+      },
+      "east": {
+        "constructionId": "const-east-insulated-wall",
+        "name": "Wall East",
+        "layers": [
+          {
+            "materialId": "mat-eps-insulation",
+            "name": "Expanded Polystyrene (EPS)",
+            "thickness": 0.15
+          },
+          {
+            "materialId": "mat-rammed-earth",
+            "name": "Stabilized Rammed Earth",
+            "thickness": 0.25
+          }
+        ]
+      },
+      "west": {
+        "constructionId": "const-west-insulated-wall",
+        "name": "Wall West",
+        "layers": [
+          {
+            "materialId": "mat-eps-insulation",
+            "name": "Expanded Polystyrene (EPS)",
+            "thickness": 0.15
+          },
+          {
+            "materialId": "mat-rammed-earth",
+            "name": "Stabilized Rammed Earth",
+            "thickness": 0.25
+          }
+        ]
+      }
+    },
+    "roof": {
+      "constructionId": "const-insulated-metal-roof",
+      "name": "Insulated Standing Seam Roof",
+      "slope": 10,
+      "overhang": 0.5,
+      "solarAbsorptance": 0.3,
+      "layers": [
+        {
+          "materialId": "mat-galvanized-steel",
+          "name": "Galvanized Corrugated Steel",
+          "thickness": 0.005
+        },
+        {
+          "materialId": "mat-eps-insulation",
+          "name": "Expanded Polystyrene (EPS)",
+          "thickness": 0.15
+        }
+      ]
+    },
+    "floor": {
+      "constructionId": "const-insulated-concrete-floor",
+      "name": "Insulated Slab on Grade",
+      "groundContact": true,
+      "perimeterInsulation": true,
+      "layers": [
+        {
+          "materialId": "mat-concrete-slab",
+          "name": "Heavy Concrete Floor Slab",
+          "thickness": 0.15
+        },
+        {
+          "materialId": "mat-xps-insulation",
+          "name": "Extruded Polystyrene Sub-Slab",
+          "thickness": 0.05
+        }
+      ]
+    }
+  },
+  "windows": [],
+  "doors": [],
+  "thermalMass": [],
+  "ventilation": {
+    "infiltrationACH": 0.25,
+    "mechanicalVentilationACH": 0.5,
+    "heatRecoveryEfficiency": 0.85
+  },
+  "internalLoads": {
+    "occupantsCount": 4,
+    "activityLevelW": 120,
+    "lightingPowerDensityWPerM2": 5,
+    "equipmentPowerDensityWPerM2": 3
   }
 }

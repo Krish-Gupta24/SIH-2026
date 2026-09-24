@@ -38,6 +38,8 @@ import {
 } from "@/components/v0/platform-components";
 import { WorkflowFooter } from "@/components/layout/WorkflowFooter";
 import { AnsysDeckExportModal } from "@/components/modals/AnsysDeckExportModal";
+import { motion, AnimatePresence } from "framer-motion";
+import { springs, triggerMilestoneCelebration, PulseBeacon } from "@/components/motion/MotionWrappers";
 
 export function SimulationsView() {
   const searchParams = useSearchParams();
@@ -122,6 +124,9 @@ export function SimulationsView() {
                 engineVersion: statusData.engine_version,
               });
             }
+
+            // Trigger milestone celebration confetti
+            triggerMilestoneCelebration();
 
             // Trigger closeable modal popup to invite user to inspect live 3D thermal field
             setCompletedSimModal({
@@ -545,7 +550,10 @@ export function SimulationsView() {
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <div>
                 <div className="flex items-center gap-2">
-                  <Status strong>Model ready</Status>
+                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 text-xs font-semibold border border-emerald-500/25">
+                    <PulseBeacon color="emerald" size="sm" />
+                    Model ready
+                  </div>
                   <span className="font-mono text-xs text-muted-foreground">{targetProject.id}</span>
                 </div>
                 <h2 className="mt-3 text-2xl font-medium tracking-tight">
@@ -556,24 +564,31 @@ export function SimulationsView() {
                 </p>
               </div>
 
-              <ActionButton
-                onClick={() => handleQueueSimulation(targetProject)}
-                disabled={isQueueing}
-                tone="primary"
-                className="rounded-full px-6 text-xs font-bold shrink-0"
+              <motion.div
+                whileHover={{ scale: 1.03 }}
+                whileTap={{ scale: 0.97 }}
+                transition={{ type: "spring", stiffness: 450, damping: 25 }}
+                className="shrink-0"
               >
-                {isQueueing ? (
-                  <>
-                    <RotateCw className="size-4 animate-spin" />
-                    Dispatching ThermoShelter Core…
-                  </>
-                ) : (
-                  <>
-                    <Play className="size-4" />
-                    Queue Simulation
-                  </>
-                )}
-              </ActionButton>
+                <ActionButton
+                  onClick={() => handleQueueSimulation(targetProject)}
+                  disabled={isQueueing}
+                  tone="primary"
+                  className="rounded-full px-6 text-xs font-bold"
+                >
+                  {isQueueing ? (
+                    <>
+                      <RotateCw className="size-4 animate-spin" />
+                      Dispatching ThermoShelter Core…
+                    </>
+                  ) : (
+                    <>
+                      <Play className="size-4" />
+                      Queue Simulation
+                    </>
+                  )}
+                </ActionButton>
+              </motion.div>
             </div>
 
             {/* Period & Timestep Configuration Controls */}
@@ -886,9 +901,10 @@ export function SimulationsView() {
 
       {/* Queue Stat Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <button
+        <motion.button
           type="button"
           onClick={() => setFilterTab("active")}
+          whileHover={{ y: -3, transition: { type: "spring", stiffness: 400, damping: 25 } }}
           className={`rounded-[2rem] border text-left p-6 shadow-[0_20px_55px_rgba(0,0,0,.04)] transition-all cursor-pointer ${filterTab === "active"
             ? "border-sky-500 bg-sky-500/10 ring-2 ring-sky-500/20"
             : "border-border bg-card hover:border-sky-500/50"
@@ -900,11 +916,12 @@ export function SimulationsView() {
           </div>
           <div className="text-3xl font-bold tracking-tight text-sky-600 dark:text-sky-400 mt-2">{activeRuns}</div>
           <p className="text-[10px] text-muted-foreground mt-1">Executing in background</p>
-        </button>
+        </motion.button>
 
-        <button
+        <motion.button
           type="button"
           onClick={() => setFilterTab("completed")}
+          whileHover={{ y: -3, transition: { type: "spring", stiffness: 400, damping: 25 } }}
           className={`rounded-[2rem] border text-left p-6 shadow-[0_20px_55px_rgba(0,0,0,.04)] transition-all cursor-pointer ${filterTab === "completed"
             ? "border-emerald-500 bg-emerald-500/10 ring-2 ring-emerald-500/20"
             : "border-border bg-card hover:border-emerald-500/50"
@@ -913,21 +930,27 @@ export function SimulationsView() {
           <div className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Completed Runs</div>
           <div className="text-3xl font-bold tracking-tight text-emerald-600 dark:text-emerald-400 mt-2">{completedRuns}</div>
           <p className="text-[10px] text-muted-foreground mt-1">Validated thermal records</p>
-        </button>
+        </motion.button>
 
-        <div className="rounded-[2rem] border border-border bg-card p-6 shadow-[0_20px_55px_rgba(0,0,0,.04)]">
+        <motion.div
+          whileHover={{ y: -3, transition: { type: "spring", stiffness: 400, damping: 25 } }}
+          className="rounded-[2rem] border border-border bg-card p-6 shadow-[0_20px_55px_rgba(0,0,0,.04)] transition-all"
+        >
           <div className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Engine In Use</div>
           <div className="text-base font-bold text-foreground mt-2">ThermoShelter Core</div>
           <p className="text-[10px] text-muted-foreground mt-1">High-altitude solver & heat balance</p>
-        </div>
+        </motion.div>
 
-        <div className="rounded-[2rem] border border-border bg-card p-6 shadow-[0_20px_55px_rgba(0,0,0,.04)]">
+        <motion.div
+          whileHover={{ y: -3, transition: { type: "spring", stiffness: 400, damping: 25 } }}
+          className="rounded-[2rem] border border-border bg-card p-6 shadow-[0_20px_55px_rgba(0,0,0,.04)] transition-all"
+        >
           <div className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Selected for Compare</div>
           <div className="text-3xl font-bold tracking-tight text-sky-600 dark:text-sky-400 mt-2">{comparisonJobIds.length}</div>
           <Link href="/comparison" className="text-[10px] text-sky-600 dark:text-sky-400 hover:underline mt-1 inline-block font-semibold">
             Open Comparison &rarr;
           </Link>
-        </div>
+        </motion.div>
       </div>
 
       {/* Active Queue Live Progress Banner */}
@@ -1203,100 +1226,110 @@ export function SimulationsView() {
       <AnsysDeckExportModal open={ansysModalOpen} onOpenChange={setAnsysModalOpen} />
 
       {/* Simulation Completed: Go to 3D Thermal Designer Popup Modal */}
-      {completedSimModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4 backdrop-blur-md animate-in fade-in zoom-in-95 duration-200">
-          <div className="relative w-full max-w-lg rounded-[2.5rem] border border-amber-500/40 bg-card p-8 shadow-[0_25px_70px_rgba(0,0,0,0.5)] space-y-6 text-foreground">
-            {/* Close Button 'X' */}
-            <button
-              type="button"
-              onClick={() => setCompletedSimModal(null)}
-              className="absolute top-6 right-6 h-8 w-8 rounded-full border border-border bg-secondary/80 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary transition-all"
-              aria-label="Close modal"
+      <AnimatePresence>
+        {completedSimModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4 backdrop-blur-md">
+            <motion.div
+              initial={{ scale: 0.90, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.90, opacity: 0, y: 20 }}
+              transition={springs.snappy}
+              className="relative w-full max-w-lg rounded-[2.5rem] border border-amber-500/40 bg-card p-8 shadow-[0_25px_70px_rgba(0,0,0,0.5)] space-y-6 text-foreground"
             >
-              <X className="h-4 w-4" />
-            </button>
-
-            {/* Header Badge & Icon */}
-            <div className="flex items-start gap-4 pr-8">
-              <div className="size-14 rounded-2xl bg-gradient-to-tr from-amber-500/20 via-orange-500/25 to-red-500/20 border border-amber-500/40 flex items-center justify-center text-amber-500 shadow-inner shrink-0">
-                <Flame className="size-7 text-amber-500 animate-pulse" />
-              </div>
-              <div className="space-y-1">
-                <div className="flex items-center gap-2">
-                  <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 px-2.5 py-0.5 text-[10px] font-bold text-emerald-600 dark:text-emerald-400">
-                    <CheckCircle2 className="size-3" />
-                    SIMULATION COMPLETED
-                  </span>
-                  {completedSimModal.durationSeconds && (
-                    <span className="text-[10px] text-muted-foreground font-mono">
-                      {completedSimModal.durationSeconds.toFixed(1)}s
-                    </span>
-                  )}
-                </div>
-                <h3 className="text-xl font-bold text-foreground tracking-tight">
-                  3D Live Thermal Field Ready
-                </h3>
-                <p className="text-xs text-muted-foreground">
-                  Job <span className="font-mono font-bold text-foreground">{completedSimModal.simId}</span> · {completedSimModal.projectName}
-                </p>
-              </div>
-            </div>
-
-            {/* Explanation & Features Card */}
-            <div className="rounded-2xl border border-border bg-secondary/40 p-4 space-y-2.5">
-              <p className="text-xs text-foreground leading-relaxed font-medium">
-                ThermoShelter Core has finished computing all envelope heat fluxes, solar aperture harvests, and surface temperatures.
-              </p>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1 text-[11px] text-muted-foreground">
-                <div className="flex items-center gap-2 p-2 rounded-xl bg-background/60 border border-border">
-                  <Eye className="size-3.5 text-orange-500 shrink-0" />
-                  <span>FLIR thermal contour map</span>
-                </div>
-                <div className="flex items-center gap-2 p-2 rounded-xl bg-background/60 border border-border">
-                  <Clock className="size-3.5 text-sky-500 shrink-0" />
-                  <span>24-Hour hourly scrubber</span>
-                </div>
-                <div className="flex items-center gap-2 p-2 rounded-xl bg-background/60 border border-border">
-                  <Box className="size-3.5 text-purple-500 shrink-0" />
-                  <span>ISO 10211 thermal bridge vectors</span>
-                </div>
-                <div className="flex items-center gap-2 p-2 rounded-xl bg-background/60 border border-border">
-                  <Flame className="size-3.5 text-amber-500 shrink-0" />
-                  <span>Real surface temperatures</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Action Buttons */}
-            <div className="flex flex-col sm:flex-row items-center justify-end gap-3 pt-2">
-              <Button
-                variant="outline"
+              {/* Close Button 'X' */}
+              <button
+                type="button"
                 onClick={() => setCompletedSimModal(null)}
-                className="w-full sm:w-auto rounded-full text-xs font-semibold px-5 h-10 border-border hover:bg-secondary"
+                className="absolute top-6 right-6 h-8 w-8 rounded-full border border-border bg-secondary/80 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary transition-all active:scale-95"
+                aria-label="Close modal"
               >
-                Close & Stay Here
-              </Button>
-              <Link
-                href={`/designer/3d?mode=thermal${completedSimModal.projectId ? `&projectId=${completedSimModal.projectId}` : ""}`}
-                onClick={() => {
-                  if (completedSimModal.projectId) {
-                    setActiveProject(completedSimModal.projectId);
-                  }
-                  setCompletedSimModal(null);
-                }}
-                className="w-full sm:w-auto"
-              >
+                <X className="h-4 w-4" />
+              </button>
+
+              {/* Header Badge & Icon */}
+              <div className="flex items-start gap-4 pr-8">
+                <div className="size-14 rounded-2xl bg-gradient-to-tr from-amber-500/20 via-orange-500/25 to-red-500/20 border border-amber-500/40 flex items-center justify-center text-amber-500 shadow-inner shrink-0">
+                  <Flame className="size-7 text-amber-500 animate-pulse" />
+                </div>
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 px-2.5 py-0.5 text-[10px] font-bold text-emerald-600 dark:text-emerald-400">
+                      <CheckCircle2 className="size-3" />
+                      SIMULATION COMPLETED
+                    </span>
+                    {completedSimModal.durationSeconds && (
+                      <span className="text-[10px] text-muted-foreground font-mono">
+                        {completedSimModal.durationSeconds.toFixed(1)}s
+                      </span>
+                    )}
+                  </div>
+                  <h3 className="text-xl font-bold text-foreground tracking-tight">
+                    3D Live Thermal Field Ready
+                  </h3>
+                  <p className="text-xs text-muted-foreground">
+                    Job <span className="font-mono font-bold text-foreground">{completedSimModal.simId}</span> · {completedSimModal.projectName}
+                  </p>
+                </div>
+              </div>
+
+              {/* Explanation & Features Card */}
+              <div className="rounded-2xl border border-border bg-secondary/40 p-4 space-y-2.5">
+                <p className="text-xs text-foreground leading-relaxed font-medium">
+                  ThermoShelter Core has finished computing all envelope heat fluxes, solar aperture harvests, and surface temperatures.
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1 text-[11px] text-muted-foreground">
+                  <div className="flex items-center gap-2 p-2 rounded-xl bg-background/60 border border-border">
+                    <Eye className="size-3.5 text-orange-500 shrink-0" />
+                    <span>FLIR thermal contour map</span>
+                  </div>
+                  <div className="flex items-center gap-2 p-2 rounded-xl bg-background/60 border border-border">
+                    <Clock className="size-3.5 text-sky-500 shrink-0" />
+                    <span>24-Hour hourly scrubber</span>
+                  </div>
+                  <div className="flex items-center gap-2 p-2 rounded-xl bg-background/60 border border-border">
+                    <Box className="size-3.5 text-purple-500 shrink-0" />
+                    <span>ISO 10211 thermal bridge vectors</span>
+                  </div>
+                  <div className="flex items-center gap-2 p-2 rounded-xl bg-background/60 border border-border">
+                    <Flame className="size-3.5 text-amber-500 shrink-0" />
+                    <span>Real surface temperatures</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex flex-col sm:flex-row items-center justify-end gap-3 pt-2">
                 <Button
-                  className="w-full rounded-full bg-gradient-to-r from-amber-500 via-orange-500 to-rose-600 text-white font-bold text-xs px-6 h-10 shadow-lg shadow-orange-500/25 hover:from-amber-600 hover:via-orange-600 hover:to-rose-700 gap-2"
+                  variant="outline"
+                  onClick={() => setCompletedSimModal(null)}
+                  className="w-full sm:w-auto rounded-full text-xs font-semibold px-5 h-10 border-border hover:bg-secondary active:scale-95"
                 >
-                  <Box className="size-4" />
-                  Open 3D Thermal Designer &rarr;
+                  Close & Stay Here
                 </Button>
-              </Link>
-            </div>
+                <Link
+                  href={`/designer/3d?mode=thermal${completedSimModal.projectId ? `&projectId=${completedSimModal.projectId}` : ""}`}
+                  onClick={() => {
+                    if (completedSimModal.projectId) {
+                      setActiveProject(completedSimModal.projectId);
+                    }
+                    setCompletedSimModal(null);
+                  }}
+                  className="w-full sm:w-auto"
+                >
+                  <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                    <Button
+                      className="w-full rounded-full bg-gradient-to-r from-amber-500 via-orange-500 to-rose-600 text-white font-bold text-xs px-6 h-10 shadow-lg shadow-orange-500/25 hover:from-amber-600 hover:via-orange-600 hover:to-rose-700 gap-2"
+                    >
+                      <Box className="size-4" />
+                      Open 3D Thermal Designer &rarr;
+                    </Button>
+                  </motion.div>
+                </Link>
+              </div>
+            </motion.div>
           </div>
-        </div>
-      )}
+        )}
+      </AnimatePresence>
 
       {/* Connected Linear Workflow Footer */}
       <WorkflowFooter customNextLabel="Analyze Thermal Results" customNextHref="/results" />

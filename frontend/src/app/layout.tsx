@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Cormorant_Garamond, Inter } from "next/font/google";
 import "./globals.css";
 import "maplibre-gl/dist/maplibre-gl.css";
+import { ChatbotPanel } from "@/features/chatbot/ChatbotPanel";
 
 // Configured fonts: Inter (sans) & Cormorant Garamond (editorial serif)
 const geist = Inter({
@@ -50,6 +51,8 @@ export default function RootLayout({
     <html lang="en" className="bg-background">
       <body className={`${geist.variable} ${editorial.variable}`}>
         {children}
+        {/* ThermoShelter Engineering AI Chatbot (Global Site-Wide Assistant) */}
+        <ChatbotPanel />
       </body>
     </html>
   );

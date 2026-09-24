@@ -3,7 +3,7 @@ import { AppShell } from "@/components/layout/AppShell";
 import { SimulationsView } from "@/features/simulations/SimulationsView";
 
 export const metadata = {
-  title: "Simulations Queue | ShelterThermal",
+  title: "Simulations Queue | ThemoShelter",
   description: "Monitor and execute asynchronous ThermoShelter simulation runs.",
 };
 

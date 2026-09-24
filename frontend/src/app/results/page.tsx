@@ -3,7 +3,7 @@ import { AppShell } from "@/components/layout/AppShell";
 import { ResultsView } from "@/features/results/ResultsView";
 
 export const metadata = {
-  title: "Thermal Results & Analytics | ShelterThermal",
+  title: "Thermal Results & Analytics | ThemoShelter",
   description: "Interactive thermal comfort, hourly temperature series, and heat transfer breakdowns.",
 };
 

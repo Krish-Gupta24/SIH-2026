@@ -134,7 +134,7 @@ async def download_ansys_zip(req: AnsysExportRequest):
             # Add README.txt for HPC and workstation engineers
             readme_text = (
                 f"=================================================================\n"
-                f"ANSYS High-Fidelity Validation Deck - ShelterThermal Platform\n"
+                f"ANSYS High-Fidelity Validation Deck - ThemoShelter Platform\n"
                 f"Project: {proj_name}\n"
                 f"=================================================================\n\n"
                 f"Contents:\n"

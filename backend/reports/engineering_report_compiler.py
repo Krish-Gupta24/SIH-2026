@@ -69,7 +69,7 @@ class NumberedCanvas(canvas.Canvas):
         self.line(54, 38, 558, 38)
 
         # Footer Left: Platform & Project metadata
-        self.drawString(54, 26, "ShelterThermal Engineering Assessment • SIH 2026 Problem 26051")
+        self.drawString(54, 26, "ThemoShelter Engineering Assessment • SIH 2026 Problem 26051")
         # Footer Right: Page numbering
         page_str = f"Page {self._pageNumber} of {page_count}"
         self.drawRightString(558, 26, page_str)

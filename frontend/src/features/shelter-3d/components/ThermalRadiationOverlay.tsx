@@ -170,8 +170,8 @@ function ThermalAnnotations({
   // Locate primary window on south wall
   const southWindow = geom.windows.find((w) => w.wall === "south") || geom.windows[0];
 
-  // Separate South Wall Opaque callout safely to the LEFT side
-  const southWallX = -halfL * 0.52;
+  // Separate South Wall Opaque callout safely to the FAR LEFT side of the facade
+  const southWallX = -halfL * 0.65;
   const southWallY = H * 0.65;
   const southWallZ = halfW + 0.05;
 
@@ -209,12 +209,12 @@ function ThermalAnnotations({
         />
       ))}
 
-      {/* 1. South Facade Callout — positioned safely on LEFT half of facade */}
+      {/* 1. South Facade Callout — positioned safely on FAR LEFT half of facade */}
       <group position={[southWallX, southWallY, southWallZ]}>
         <Line
           points={[
             [0, 0, 0],
-            [-0.3, 0.45, 0.4],
+            [-0.4, 0.45, 0.35],
           ]}
           color="#ef4444"
           lineWidth={1.2}
@@ -222,7 +222,7 @@ function ThermalAnnotations({
           opacity={0.7}
         />
         <Html
-          position={[-0.35, 0.52, 0.45]}
+          position={[-0.45, 0.52, 0.4]}
           center
           distanceFactor={18}
           occlude
@@ -238,7 +238,7 @@ function ThermalAnnotations({
         </Html>
       </group>
 
-      {/* 2. Peak Window Glazing Callout — angled to the RIGHT, cleanly away from south wall callout */}
+      {/* 2. Peak Window Glazing Callout — angled to the FAR RIGHT, completely clear of south wall callout */}
       {southWindow && (
         <group
           position={[
@@ -250,7 +250,7 @@ function ThermalAnnotations({
           <Line
             points={[
               [0, 0, 0],
-              [0.3, 0.45, 0.4],
+              [0.45, 0.45, 0.35],
             ]}
             color="#ef4444"
             lineWidth={1.2}
@@ -258,7 +258,7 @@ function ThermalAnnotations({
             opacity={0.7}
           />
           <Html
-            position={[0.35, 0.52, 0.45]}
+            position={[0.5, 0.52, 0.4]}
             center
             distanceFactor={18}
             occlude
@@ -275,12 +275,12 @@ function ThermalAnnotations({
         </group>
       )}
 
-      {/* 3. Roof Deck Callout — elevated high above ridge, offset horizontally to avoid overlap */}
-      <group position={[halfL * 0.25, H + 0.35, 0]}>
+      {/* 3. Roof Deck Callout — elevated high above ridge apex */}
+      <group position={[0, H + 0.55, 0]}>
         <Line
           points={[
             [0, 0, 0],
-            [0, 0.7, 0],
+            [0, 0.65, 0],
           ]}
           color="#f97316"
           lineWidth={1.2}
@@ -288,7 +288,7 @@ function ThermalAnnotations({
           opacity={0.7}
         />
         <Html
-          position={[0, 0.78, 0]}
+          position={[0, 0.72, 0]}
           center
           distanceFactor={18}
           occlude
@@ -305,7 +305,7 @@ function ThermalAnnotations({
       </group>
 
       {/* 4. North Facade Callout — positioned on north side, occluded from south view */}
-      <group position={[0, H * 0.55, -halfW - 0.05]}>
+      <group position={[0, H * 0.55, -halfW - 0.15]}>
         <Line
           points={[
             [0, 0, 0],
@@ -486,9 +486,9 @@ function HeatFlowAnnotations({
         );
       })}
 
-      {/* South Wall Heat Flux Callout */}
+      {/* South Wall Heat Flux Callout — positioned safely on left half of south facade */}
       <Html
-        position={[0, H * 0.85, halfW + 0.42]}
+        position={[-halfL * 0.48, H * 0.78, halfW + 0.38]}
         center
         distanceFactor={15}
         occlude
@@ -718,7 +718,7 @@ function HeatFlowAnnotations({
         />
       </Html>
 
-      {geom.windows.map((win) => {
+      {geom.windows.map((win, winIdx) => {
         const winModel = model.windows?.find((w) => w.id === win.id) || model.windows?.[0];
         const gProps =
           GLAZING_PROPERTIES[winModel?.glazingType || "double_low_e_argon"] ||
@@ -776,22 +776,24 @@ function HeatFlowAnnotations({
               <meshBasicMaterial color="#38bdf8" />
             </mesh>
 
-            {/* Window Net Energy Balance Callout */}
-            <Html
-              position={[wX + normX * 0.45, wY + 0.35, wZ + normZ * 0.45]}
-              center
-              distanceFactor={14}
-              occlude
-              zIndexRange={[15, 0]}
-              style={{ pointerEvents: "none" }}
-            >
-              <PillCallout
-                value={`Net ${qWinNet >= 0 ? "+" : ""}${qWinNet} W/m²`}
-                label={qWinNet >= 0 ? "Aperture Net Solar Gain" : "Aperture Net Heat Loss"}
-                sub={`+${qWinSolar} solar · ${qWinCond} cond`}
-                status={qWinNet >= 0 ? "solar" : "cold"}
-              />
-            </Html>
+            {/* Window Net Energy Balance Callout — primary window only to prevent multi-callout collision */}
+            {winIdx === 0 && (
+              <Html
+                position={[wX + normX * 0.45 + 0.35, wY + 0.35, wZ + normZ * 0.45]}
+                center
+                distanceFactor={14}
+                occlude
+                zIndexRange={[15, 0]}
+                style={{ pointerEvents: "none" }}
+              >
+                <PillCallout
+                  value={`Net ${qWinNet >= 0 ? "+" : ""}${qWinNet} W/m²`}
+                  label={qWinNet >= 0 ? "Aperture Net Solar Gain" : "Aperture Net Heat Loss"}
+                  sub={`+${qWinSolar} solar · ${qWinCond} cond`}
+                  status={qWinNet >= 0 ? "solar" : "cold"}
+                />
+              </Html>
+            )}
           </group>
         );
       })}
@@ -822,7 +824,7 @@ function HeatFlowAnnotations({
       </group>
 
       {/* ── 10. Cold Air Infiltration at Entry Doors ── */}
-      {geom.doors.map((door) => (
+      {geom.doors.map((door, doorIdx) => (
         <group key={`draft-${door.id}`}>
           <Line
             points={[
@@ -834,21 +836,23 @@ function HeatFlowAnnotations({
             transparent
             opacity={0.85}
           />
-          <Html
-            position={[door.worldPosition[0] + 0.35, 0.32, door.worldPosition[2]]}
-            center
-            distanceFactor={15}
-            occlude
-            zIndexRange={[15, 0]}
-            style={{ pointerEvents: "none" }}
-          >
-            <PillCallout
-              value={`${metrics.infiltrationACH.toFixed(2)} ACH`}
-              label="Door Infiltration Draft"
-              sub={`-${metrics.qInfiltrationLossW} W sensible`}
-              status="cold"
-            />
-          </Html>
+          {doorIdx === 0 && (
+            <Html
+              position={[door.worldPosition[0] + 0.35, 0.32, door.worldPosition[2] + 0.25]}
+              center
+              distanceFactor={15}
+              occlude
+              zIndexRange={[15, 0]}
+              style={{ pointerEvents: "none" }}
+            >
+              <PillCallout
+                value={`${metrics.infiltrationACH.toFixed(2)} ACH`}
+                label="Door Infiltration Draft"
+                sub={`-${metrics.qInfiltrationLossW} W sensible`}
+                status="cold"
+              />
+            </Html>
+          )}
         </group>
       ))}
     </group>

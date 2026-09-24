@@ -87,7 +87,43 @@ const workflowPhases = [
   },
 ];
 const views: { id: CameraPreset; label: string }[] = [{ id: "iso", label: "3D" }, { id: "top", label: "Plan" }, { id: "south", label: "South" }, { id: "north", label: "North" }, { id: "east", label: "East" }, { id: "west", label: "West" }];
-const modes: { id: VisualizationMode; label: string; icon: typeof Box }[] = [{ id: "model", label: "Model", icon: Box }, { id: "thermal", label: "Thermal", icon: Eye }, { id: "solar", label: "Solar", icon: Sun }, { id: "heat-flow", label: "Heat flow", icon: Wind }];
+
+const modes: {
+  id: VisualizationMode;
+  label: string;
+  icon: typeof Box;
+  description: string;
+  activeClass: string;
+}[] = [
+  {
+    id: "model",
+    label: "3D Model",
+    icon: Box,
+    description: "Parametric CAD geometry & materials",
+    activeClass: "bg-slate-800 text-white dark:bg-slate-100 dark:text-slate-900 border-slate-600 shadow-xs",
+  },
+  {
+    id: "thermal",
+    label: "Thermal IR",
+    icon: Eye,
+    description: "24-Hour FLIR surface thermography",
+    activeClass: "bg-amber-600 text-white border-amber-400 shadow-amber-500/30 shadow-md",
+  },
+  {
+    id: "solar",
+    label: "Solar Sun",
+    icon: Sun,
+    description: "Solstice solar arc & daylight shadows",
+    activeClass: "bg-amber-500 text-slate-950 border-amber-300 font-bold shadow-amber-500/30 shadow-md",
+  },
+  {
+    id: "heat-flow",
+    label: "Heat Flow",
+    icon: Wind,
+    description: "Envelope conduction flux & heat loss",
+    activeClass: "bg-teal-600 text-white border-teal-400 shadow-teal-500/30 shadow-md",
+  },
+];
 
 interface Props { model: ShelterModel; step: number; onStepChange: (step: number) => void; onUpdate: (updates: Partial<ShelterModel>) => void; onSimulate: () => void; }
 
@@ -124,6 +160,7 @@ export function Shelter3DDesigner({ model, step, onStepChange, onUpdate, onSimul
   const [sunTime, setSunTime] = useState(12);
   const [solarDate, setSolarDate] = useState("2026-12-21");
   const [isPlaying, setIsPlaying] = useState(false);
+  const [playbackSpeed, setPlaybackSpeed] = useState<1 | 2 | 4>(1);
   const [timelineMinimized, setTimelineMinimized] = useState(false);
 
   const simulations = useShelterStore((state) => state.simulations);
@@ -142,7 +179,7 @@ export function Shelter3DDesigner({ model, step, onStepChange, onUpdate, onSimul
   }, [simulations, model.project.id, model.id]);
 
   const hourlyStep = useMemo(() => {
-    if (settings.visualization === "model" || !activeSim) return null;
+    if (settings.visualization === "model") return null;
     return calculateHourlyThermalStep(
       model,
       selectedHour,
@@ -154,14 +191,14 @@ export function Shelter3DDesigner({ model, step, onStepChange, onUpdate, onSimul
     if (!isPlaying) return;
     const timer = setInterval(() => {
       setSunTime((previous) => {
-        const next = (previous + 0.05) % 24;
+        const next = (previous + 0.05 * playbackSpeed) % 24;
         const simulationHour = Math.round(next) % 24;
         setSelectedHour((current) => current === simulationHour ? current : simulationHour);
         return next;
       });
     }, 50);
     return () => clearInterval(timer);
-  }, [isPlaying]);
+  }, [isPlaying, playbackSpeed]);
 
   // Sync URL query parameter ?mode=thermal to auto-activate 3D thermal live inspection
   useEffect(() => {
@@ -251,39 +288,6 @@ export function Shelter3DDesigner({ model, step, onStepChange, onUpdate, onSimul
   return <div className="cad-shell">
     <header className="cad-toolbar">
       <div className="cad-view-switcher" aria-label="Camera views">{views.map((view) => <button key={view.id} data-active={preset === view.id} onClick={() => setPreset(view.id)}>{view.label}</button>)}</div>
-      
-      <div className="cad-toolbar-step-nav" aria-label="Workflow stage selector">
-        <button
-          type="button"
-          disabled={step === 0}
-          onClick={() => handleStageSelect(step - 1)}
-          className="cad-step-nav-btn"
-          title="Previous stage"
-          aria-label="Previous stage"
-        >
-          <ChevronLeft className="size-3.5" />
-        </button>
-        <button
-          type="button"
-          onClick={() => setLeftOpen(!leftOpen)}
-          className={`cad-step-nav-badge ${leftOpen ? "active" : ""}`}
-          title={`Toggle ${stages.length}-stage workflow panel`}
-        >
-          <Layers3 className="size-3.5 text-sky-400" />
-          <span className="cad-step-num font-mono">Stage {step + 1}/{stages.length}</span>
-          <span className="cad-step-name">{stages[step] || stages[0]}</span>
-        </button>
-        <button
-          type="button"
-          disabled={step === stages.length - 1}
-          onClick={() => handleStageSelect(step + 1)}
-          className="cad-step-nav-btn"
-          title="Next stage"
-          aria-label="Next stage"
-        >
-          <ChevronRight className="size-3.5" />
-        </button>
-      </div>
 
       <div className="cad-toolbar-actions">
         {activeSim ? (
@@ -383,52 +387,80 @@ export function Shelter3DDesigner({ model, step, onStepChange, onUpdate, onSimul
       </aside>
 
       <main className="cad-canvas-region relative">
-        <div className="cad-floating-tools">
+        <div className="cad-floating-tools" role="toolbar" aria-label="CAD Modes and Tools">
+          {/* 1. Workflow Drawer Toggle */}
           <button
             type="button"
             aria-label="Toggle workflow panel"
             onClick={() => setLeftOpen(!leftOpen)}
             data-active={leftOpen}
-            className="relative"
-            title="Toggle 13-stage workflow drawer"
+            className="flex items-center gap-1.5"
+            title="Toggle 9-stage engineering workflow drawer"
           >
-            <Layers3 className="size-4" />
-            Workflow
+            <Layers3 className="size-3.5 text-sky-400" />
+            <span>Workflow</span>
           </button>
-          {modes.map(({ id, label, icon: Icon }) => (
-            <button
-              key={id}
-              data-active={settings.visualization === id}
-              onClick={() => setSetting("visualization", id)}
-              className="relative"
-            >
-              <Icon />
-              {label}
-              {id === "thermal" && activeSim ? (
-                <span
-                  className="size-1.5 rounded-full bg-emerald-500 animate-pulse ml-0.5"
-                  title="24h physics simulation data loaded"
-                />
-              ) : null}
-            </button>
-          ))}
+
+          <div className="h-4 w-px bg-white/20 mx-0.5 shrink-0 hidden sm:block" />
+
+          {/* 2. 4 Dedicated Visualization Modes with Visible Tags & High Contrast */}
+          <div className="flex items-center gap-1 bg-black/40 p-0.5 rounded-lg border border-white/10">
+            {modes.map(({ id, label, icon: Icon, description, activeClass }) => {
+              const isActive = settings.visualization === id;
+              return (
+                <button
+                  key={id}
+                  type="button"
+                  data-active={isActive}
+                  onClick={() => setSetting("visualization", id)}
+                  className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold transition-all ${
+                    isActive
+                      ? `${activeClass} ring-1 ring-white/30 font-bold scale-[1.02]`
+                      : "text-slate-300 hover:text-white hover:bg-white/10"
+                  }`}
+                  title={`${label}: ${description}`}
+                >
+                  <Icon className="size-3.5 shrink-0" />
+                  <span>{label}</span>
+                  {id === "thermal" && activeSim ? (
+                    <span
+                      className="size-1.5 rounded-full bg-emerald-400 animate-pulse ml-0.5 shrink-0"
+                      title="24h physics simulation data loaded & active"
+                    />
+                  ) : null}
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="h-4 w-px bg-white/20 mx-0.5 shrink-0 hidden sm:block" />
+
+          {/* 3. Materials Assembly Studio */}
           <button
+            type="button"
             aria-haspopup="dialog"
             data-active={materialsOpen}
             onClick={() => setMaterialsOpen(true)}
+            className="flex items-center gap-1.5"
             title="Open Material Assembly Workbench"
           >
-            <Layers3 />
-            Materials
+            <Layers3 className="size-3.5 text-amber-400" />
+            <span>Materials</span>
           </button>
+
+          {/* 4. Exploded Assembly View */}
           <button
+            type="button"
             data-active={settings.explodedView}
-            title="Exploded assembly view"
+            title="Exploded assembly view (reveals internal envelope layers)"
             onClick={toggleExplodedView}
+            className="flex items-center gap-1.5"
           >
-            <UnfoldVertical />
-            Exploded
+            <UnfoldVertical className="size-3.5" />
+            <span>Exploded</span>
           </button>
+
+          {/* 5. View Display Options Dropdown */}
           <div className="cad-view-options-wrap">
             <button
               type="button"
@@ -436,18 +468,19 @@ export function Shelter3DDesigner({ model, step, onStepChange, onUpdate, onSimul
               aria-expanded={viewOptionsOpen}
               aria-controls="designer-view-options"
               onClick={() => setViewOptionsOpen((open) => !open)}
+              className="flex items-center gap-1.5"
             >
-              <SlidersHorizontal />
-              View
+              <SlidersHorizontal className="size-3.5" />
+              <span>View</span>
             </button>
             {viewOptionsOpen ? (
               <div id="designer-view-options" className="cad-view-options" role="group" aria-label="View options">
-                <button data-active={settings.showEnvironment} onClick={() => setSetting("showEnvironment", !settings.showEnvironment)}><Mountain /> Site context</button>
-                <button data-active={settings.showGrid} onClick={() => setSetting("showGrid", !settings.showGrid)}><Grid3X3 /> Grid</button>
-                <button data-active={settings.showDimensions} onClick={() => setSetting("showDimensions", !settings.showDimensions)}><Ruler /> Dimensions</button>
-                <button data-active={settings.showCompass} onClick={() => setSetting("showCompass", !settings.showCompass)}><Compass /> Compass</button>
-                <button data-active={settings.transparentWalls} onClick={() => setSetting("transparentWalls", !settings.transparentWalls)}><Eye /> X-ray</button>
-                <button data-active={settings.wireframe} onClick={() => setSetting("wireframe", !settings.wireframe)}><Boxes /> Wireframe</button>
+                <button data-active={settings.showEnvironment} onClick={() => setSetting("showEnvironment", !settings.showEnvironment)}><Mountain className="size-3.5" /> Site context</button>
+                <button data-active={settings.showGrid} onClick={() => setSetting("showGrid", !settings.showGrid)}><Grid3X3 className="size-3.5" /> Grid</button>
+                <button data-active={settings.showDimensions} onClick={() => setSetting("showDimensions", !settings.showDimensions)}><Ruler className="size-3.5" /> Dimensions</button>
+                <button data-active={settings.showCompass} onClick={() => setSetting("showCompass", !settings.showCompass)}><Compass className="size-3.5" /> Compass</button>
+                <button data-active={settings.transparentWalls} onClick={() => setSetting("transparentWalls", !settings.transparentWalls)}><Eye className="size-3.5" /> X-ray</button>
+                <button data-active={settings.wireframe} onClick={() => setSetting("wireframe", !settings.wireframe)}><Boxes className="size-3.5" /> Wireframe</button>
               </div>
             ) : null}
           </div>
@@ -468,34 +501,18 @@ export function Shelter3DDesigner({ model, step, onStepChange, onUpdate, onSimul
 
         {!activeSim &&
           (settings.visualization === "thermal" || settings.visualization === "heat-flow") && (
-            <div className="absolute inset-0 z-20 flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-xs">
-              <div className="w-full max-w-md rounded-3xl border border-border bg-card p-6 shadow-2xl text-center space-y-4">
-                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-500/15 text-amber-600 dark:text-amber-400">
-                  <Clock className="h-6 w-6" />
-                </div>
-                <div className="space-y-1.5">
-                  <h3 className="text-base font-bold text-foreground">Simulation Required for 24h Thermal View</h3>
-                  <p className="text-xs text-muted-foreground leading-relaxed">
-                    The 24-hour diurnal thermal heat map, surface thermography, and flux vectors require at least one completed physical simulation run for <strong>{model.project.name}</strong>.
-                  </p>
-                </div>
-                <div className="flex items-center justify-center gap-3 pt-2">
-                  <button
-                    type="button"
-                    onClick={() => setSetting("visualization", "model")}
-                    className="px-4 py-1.5 rounded-full border border-border bg-secondary hover:bg-secondary/80 text-xs font-semibold text-foreground transition-all cursor-pointer"
-                  >
-                    Return to 3D Model
-                  </button>
-                  <button
-                    type="button"
-                    onClick={onSimulate}
-                    className="px-4 py-1.5 rounded-full bg-amber-500 hover:bg-amber-600 text-black font-bold text-xs flex items-center gap-1.5 shadow-md transition-all cursor-pointer"
-                  >
-                    <Play className="size-3.5 fill-black" /> Run Simulation Now
-                  </button>
-                </div>
-              </div>
+            <div className="absolute top-[4.25rem] left-1/2 -translate-x-1/2 z-20 flex items-center gap-2 px-3 py-1 rounded-full bg-slate-950/90 backdrop-blur-md border border-amber-500/35 text-amber-200 text-xs shadow-xl pointer-events-auto whitespace-nowrap">
+              <Clock className="size-3.5 text-amber-400 shrink-0" />
+              <span className="text-[11px] font-medium">
+                Sol-Air Physics Preview · Run simulation for measured CFD dataset
+              </span>
+              <button
+                type="button"
+                onClick={onSimulate}
+                className="px-2.5 py-0.5 rounded-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-[10.5px] transition cursor-pointer shrink-0"
+              >
+                Simulate
+              </button>
             </div>
           )}
 
@@ -521,126 +538,155 @@ export function Shelter3DDesigner({ model, step, onStepChange, onUpdate, onSimul
               role="region"
               aria-label="24-Hour Diurnal Timeline"
             >
-              {/* 1. Play / Pause Control */}
-              <button
-                type="button"
-                className={`cad-timeline-btn ${isPlaying ? "cad-timeline-btn-play" : ""}`}
-                aria-label={isPlaying ? "Pause timeline playback" : "Play 24h diurnal cycle"}
-                title={isPlaying ? "Pause daylight playback" : "Play smooth 24-hour cycle"}
-                onClick={() => setIsPlaying((p) => !p)}
-              >
-                {isPlaying ? <Pause className="size-3" /> : <Play className="size-3 ml-0.5" />}
-              </button>
-
-              {/* 2. Compact Time & Phase Pill */}
-              <div className="cad-timeline-time-display">
-                {sunTime < 5.5 || sunTime > 20.5 ? (
-                  <Moon className="size-3 text-indigo-400" />
-                ) : (
-                  <Sun className="size-3 text-amber-400" />
-                )}
-                <span className="cad-timeline-time-val">
-                  {hourlyStep?.timeLabel ?? formattedSolarTime}
-                </span>
-                <span className="cad-timeline-phase-tag">
-                  {sunTime < 5.5 || sunTime > 21
-                    ? "Night"
-                    : sunTime <= siteDaylight.sunrise + 1
-                    ? "Dawn"
-                    : sunTime >= siteDaylight.sunset - 1
-                    ? "Dusk"
-                    : sunTime < 12
-                    ? "Morning"
-                    : sunTime < 14
-                    ? "Noon"
-                    : "Afternoon"}
-                </span>
-              </div>
-
-              {/* 3. Slender Scrubber Track */}
-              <div className="cad-timeline-slider-wrap">
-                <input
-                  type="range"
-                  min="0"
-                  max="24"
-                  step="0.1"
-                  value={sunTime}
-                  onChange={(e) => setSolarTime(Number(e.target.value))}
-                  className="cad-timeline-slider"
-                  aria-label="Hour of day slider"
-                />
-              </div>
-
-              {/* 4. Quick Hour Jump Micro-Pills */}
-              <div className="cad-timeline-quick-hours">
-                {[
-                  { h: 0, label: "00h", title: "Midnight" },
-                  { h: 6, label: "06h", title: "Dawn" },
-                  { h: 12, label: "12h", title: "Noon" },
-                  { h: 18, label: "18h", title: "Dusk" },
-                ].map((item) => (
+              {/* Row 1: Controls, Current Time & Telemetry Metrics */}
+              <div className="cad-timeline-header-row">
+                {/* Left: Play/Pause, Speed & Time Clock */}
+                <div className="flex items-center gap-2 shrink-0">
                   <button
-                    key={item.h}
                     type="button"
-                    className="cad-timeline-quick-btn"
-                    data-active={Math.abs(sunTime - item.h) < 0.3}
-                    title={`Jump to ${item.title}`}
-                    onClick={() => setSolarTime(item.h)}
+                    className={`cad-timeline-btn ${isPlaying ? "cad-timeline-btn-play" : ""}`}
+                    aria-label={isPlaying ? "Pause timeline playback" : "Play 24h diurnal cycle"}
+                    title={isPlaying ? "Pause daylight playback" : "Play smooth 24-hour diurnal cycle"}
+                    onClick={() => setIsPlaying((p) => !p)}
                   >
-                    {item.label}
+                    {isPlaying ? <Pause className="size-3.5" /> : <Play className="size-3.5 ml-0.5" />}
                   </button>
-                ))}
+
+                  <button
+                    type="button"
+                    className="cad-timeline-quick-btn font-mono"
+                    title={`Playback speed: ${playbackSpeed}x (Click to cycle)`}
+                    onClick={() => setPlaybackSpeed((s) => (s === 1 ? 2 : s === 2 ? 4 : 1))}
+                  >
+                    {playbackSpeed}x
+                  </button>
+
+                  <div className="cad-timeline-time-display">
+                    {sunTime < 5.5 || sunTime > 20.5 ? (
+                      <Moon className="size-3.5 text-indigo-400 shrink-0" />
+                    ) : (
+                      <Sun className="size-3.5 text-amber-400 shrink-0" />
+                    )}
+                    <span className="cad-timeline-time-val font-mono">
+                      {hourlyStep?.timeLabel ?? formattedSolarTime}
+                    </span>
+                    <span className="cad-timeline-phase-tag">
+                      {sunTime < 5.5 || sunTime > 21
+                        ? "Night Freeze"
+                        : sunTime <= siteDaylight.sunrise + 1
+                        ? "Dawn"
+                        : sunTime >= siteDaylight.sunset - 1
+                        ? "Dusk Cooling"
+                        : sunTime < 11.5
+                        ? "Morning Gain"
+                        : sunTime < 13.5
+                        ? "Solar Noon"
+                        : "Afternoon"}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Center: Live Zone Telemetry Badge */}
+                <div className="flex items-center justify-center flex-1 min-w-0 px-2">
+                  {hourlyStep ? (
+                    <div className="cad-timeline-metrics-chip truncate flex items-center gap-2" title="Outdoor ambient freeze / Indoor zone temperature">
+                      <span className="text-sky-300 font-mono">
+                        ❄ {hourlyStep.outdoorTemp > 0 ? `+${hourlyStep.outdoorTemp}` : hourlyStep.outdoorTemp}°C
+                      </span>
+                      <span className="opacity-30">|</span>
+                      <span className="text-emerald-400 font-semibold font-mono">
+                        🏠 +{hourlyStep.indoorTemp}°C
+                      </span>
+                      {activeSim ? (
+                        <span className="text-[9.5px] px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-300 font-mono hidden md:inline">
+                          Simulated
+                        </span>
+                      ) : (
+                        <span className="text-[9.5px] px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-300 font-mono hidden md:inline">
+                          Sol-Air
+                        </span>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="cad-timeline-metrics-chip truncate" title={`Daylight duration: ${siteDaylight.durationHours.toFixed(1)}h`}>
+                      <span>☀️ Daylight: {formatSolarHour(siteDaylight.sunrise)}–{formatSolarHour(siteDaylight.sunset)}</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Right: Quick Hour Jump Micro-Pills, Date Picker & Minimize */}
+                <div className="flex items-center gap-1.5 shrink-0 ml-auto">
+                  <div className="cad-timeline-quick-hours hidden sm:flex items-center gap-1">
+                    {[
+                      { h: 0, label: "00h", title: "Midnight Freeze" },
+                      { h: 6, label: "06h", title: "Sunrise Dawn" },
+                      { h: 12, label: "12h", title: "Peak Solar Noon" },
+                      { h: 18, label: "18h", title: "Sunset Dusk" },
+                    ].map((item) => (
+                      <button
+                        key={item.h}
+                        type="button"
+                        className="cad-timeline-quick-btn"
+                        data-active={Math.abs(sunTime - item.h) < 0.3}
+                        title={`Jump to ${item.title}`}
+                        onClick={() => setSolarTime(item.h)}
+                      >
+                        {item.label}
+                      </button>
+                    ))}
+                  </div>
+
+                  <label className="cad-timeline-date-btn" title={`Solar simulation date: ${solarDate}`}>
+                    <CalendarDays className="size-3 text-slate-300" />
+                    <input
+                      type="date"
+                      value={solarDate}
+                      onChange={(e) => setSolarDate(e.target.value)}
+                      aria-label="Solar simulation date"
+                    />
+                  </label>
+
+                  <button
+                    type="button"
+                    onClick={() => setTimelineMinimized(true)}
+                    className="cad-timeline-btn cad-timeline-min-btn"
+                    title="Minimize timeline"
+                    aria-label="Minimize timeline"
+                  >
+                    <Minimize2 className="size-3" />
+                  </button>
+                </div>
               </div>
 
-              {/* 5. Telemetry Mini-Chip */}
-              {hourlyStep ? (
-                <div className="cad-timeline-metrics-chip" title="Outdoor / Indoor zone temperature">
-                  <span>❄ {hourlyStep.outdoorTemp > 0 ? `+${hourlyStep.outdoorTemp}` : hourlyStep.outdoorTemp}°</span>
-                  <span className="opacity-30">|</span>
-                  <span>🏠 +{hourlyStep.indoorTemp}°C</span>
+              {/* Row 2: Slender Scrubber Track with 24h Hour Marker Ticks */}
+              <div className="cad-timeline-slider-row">
+                <div className="cad-timeline-slider-wrap">
+                  <input
+                    type="range"
+                    min="0"
+                    max="24"
+                    step="0.1"
+                    value={sunTime}
+                    onChange={(e) => setSolarTime(Number(e.target.value))}
+                    className="cad-timeline-slider"
+                    aria-label="Hour of day slider"
+                  />
                 </div>
-              ) : (
-                <div className="cad-timeline-metrics-chip" title={`Daylight duration: ${siteDaylight.durationHours.toFixed(1)}h`}>
-                  <span>☀️ {formatSolarHour(siteDaylight.sunrise)}–{formatSolarHour(siteDaylight.sunset)}</span>
+                <div className="cad-timeline-ticks">
+                  <span>00:00</span>
+                  <span>03:00</span>
+                  <span>06:00</span>
+                  <span>09:00</span>
+                  <span>12:00</span>
+                  <span>15:00</span>
+                  <span>18:00</span>
+                  <span>21:00</span>
+                  <span>24:00</span>
                 </div>
-              )}
-
-              {/* 6. Calendar Date Picker Icon Button */}
-              <label className="cad-timeline-date-btn" title={`Solar simulation date: ${solarDate}`}>
-                <CalendarDays className="size-3 text-slate-400" />
-                <input
-                  type="date"
-                  value={solarDate}
-                  onChange={(e) => setSolarDate(e.target.value)}
-                  aria-label="Solar simulation date"
-                />
-              </label>
-
-              {/* 7. Minimize Button */}
-              <button
-                type="button"
-                onClick={() => setTimelineMinimized(true)}
-                className="cad-timeline-btn cad-timeline-min-btn"
-                title="Minimize timeline"
-                aria-label="Minimize timeline"
-              >
-                <Minimize2 className="size-3" />
-              </button>
+              </div>
             </div>
           )
         ) : null}
-        {!materialsOpen && settings.visualization !== "model" && (
-          <div className="cad-mode-label" style={{ pointerEvents: "none" }}>
-            <span>{settings.visualization.toUpperCase()} preview</span>
-            <strong>
-              {settings.visualization === "thermal"
-                ? "FLIR false-color IR thermography · Stefan-Boltzmann radiation emission"
-                : settings.visualization === "solar"
-                ? `Site sun · ${model.location.region} · ${solarDate}`
-                : "Envelope thermal bridges & convective currents"}
-            </strong>
-          </div>
-        )}
         {!materialsOpen && settings.visualization === "model" && (
           <div className="cad-metrics">
             <span><small>Floor area</small><strong>{area.toFixed(1)} m²</strong></span>
@@ -661,7 +707,17 @@ export function Shelter3DDesigner({ model, step, onStepChange, onUpdate, onSimul
         </button>
       </main>
 
-      <aside className="cad-property-panel" data-open={rightOpen}><PropertyInspector model={model} selected={selected} currentStep={step} onSelect={setSelected} onUpdate={update} onSimulate={onSimulate} /></aside>
+      <aside className="cad-property-panel" data-open={rightOpen}>
+        <PropertyInspector
+          model={model}
+          selected={selected}
+          currentStep={step}
+          onSelect={setSelected}
+          onUpdate={update}
+          onSimulate={onSimulate}
+          onOpenMaterials={() => setMaterialsOpen(true)}
+        />
+      </aside>
     </div>
 
     <footer className="cad-statusbar">

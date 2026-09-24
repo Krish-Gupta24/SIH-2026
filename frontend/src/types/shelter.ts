@@ -11,6 +11,8 @@ export interface ProjectMeta {
   version: string;
   createdAt?: string;
   updatedAt?: string;
+  userId?: string;          // Owner/Author user ID for shelter access control & isolation
+  isSystemPreset?: boolean; // True for standard reference baseline shelters visible across all accounts
 }
 
 export interface LocationModel {
@@ -178,6 +180,8 @@ export interface SimulationSettingsModel {
 export interface ShelterModel {
   id: string;
   name?: string;
+  userId?: string;
+  isSystemPreset?: boolean;
   schemaVersion: string;
   project: ProjectMeta;
   location: LocationModel;

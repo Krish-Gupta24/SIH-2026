@@ -23,11 +23,19 @@ import {
   CheckCircle2,
   Sun,
   Zap,
+  Check,
+  ChevronDown,
+  ChevronUp,
+  Sparkles,
+  Layers3,
+  ShieldCheck,
 } from "lucide-react";
 import type {
   ShelterModel,
   WindowModel,
   DoorModel,
+  LayerModel,
+  AssemblyModel,
   RoofSolarPanelsConfig,
   WindowSolarPaneConfig,
 } from "@/types/shelter";
@@ -46,6 +54,7 @@ interface Props {
   onSelect: (value: SelectedElement) => void;
   onUpdate: (updates: Partial<ShelterModel>) => void;
   onSimulate?: () => void;
+  onOpenMaterials?: () => void;
 }
 
 function NumberField({
@@ -410,6 +419,575 @@ function WindowSolarPaneEditor({
   );
 }
 
+const AVAILABLE_MATERIALS = [
+  { id: "mat-aerogel-blanket", name: "Aerogel Blanket", category: "Super-Insulation", conductivity: 0.015, tag: "Ultra-High R" },
+  { id: "mat-eps-insulation", name: "Rigid EPS Insulation", category: "Continuous Insulation", conductivity: 0.036, tag: "Standard High-R" },
+  { id: "mat-xps-insulation", name: "Extruded XPS Insulation", category: "Sub-Slab & Moisture", conductivity: 0.029, tag: "Permafrost Rated" },
+  { id: "mat-rammed-earth", name: "Stabilized Rammed Earth", category: "Heavy Thermal Mass", conductivity: 1.25, tag: "High Thermal Inertia" },
+  { id: "mat-stone-masonry", name: "Local Granite Stone", category: "Structural Mass", conductivity: 2.20, tag: "Native Mass" },
+  { id: "mat-timber-deck", name: "Pine Timber Decking", category: "Bio-Based Finish", conductivity: 0.13, tag: "Warm Wood" },
+  { id: "mat-concrete-slab", name: "Heavy Reinforced Concrete", category: "Foundation Core", conductivity: 1.70, tag: "Structural Mass" },
+  { id: "mat-galvanized-steel", name: "Galvanized Steel Cladding", category: "Exterior Weather Layer", conductivity: 50.0, tag: "Weather Shield" },
+  { id: "mat-weather-barrier", name: "Breathable Weather Barrier", category: "Air / Weather Control", conductivity: 0.19, tag: "Airtight" },
+  { id: "mat-vapor-control", name: "Vapor Control Membrane", category: "Moisture Protection", conductivity: 0.22, tag: "Vapor Seal" },
+  { id: "mat-timber-frame", name: "Structural Timber Studs", category: "Structural Framing", conductivity: 0.13, tag: "Bio Frame" },
+];
+
+function getMat(id: string) {
+  return AVAILABLE_MATERIALS.find((m) => m.id === id) || AVAILABLE_MATERIALS[1];
+}
+
+function calcAssemblyStats(layers: LayerModel[]) {
+  const thickM = layers.reduce((sum, l) => sum + (l.thickness || 0), 0);
+  const rVal = layers.reduce((sum, l) => sum + (l.thickness || 0) / getMat(l.materialId).conductivity, 0) + 0.17;
+  const uVal = rVal > 0 ? 1 / rVal : 0;
+  return {
+    thickMm: Math.round(thickM * 1000),
+    rValue: Number(rVal.toFixed(2)),
+    uValue: Number(uVal.toFixed(2)),
+  };
+}
+
+const ASSEMBLY_PRESETS = {
+  walls: [
+    {
+      id: "preset-wall-alpine-mass",
+      name: "Alpine Heavy Mass Wall",
+      badge: "Recommended for Leh",
+      desc: "300mm Rammed Earth + 150mm EPS + Timber Finish. Maximum diurnal thermal inertia.",
+      icon: "🏔️",
+      layers: [
+        { materialId: "mat-galvanized-steel", name: "Exterior Steel Cladding", thickness: 0.008 },
+        { materialId: "mat-weather-barrier", name: "Weather / Air Barrier", thickness: 0.006 },
+        { materialId: "mat-timber-frame", name: "Structural Frame", thickness: 0.09 },
+        { materialId: "mat-eps-insulation", name: "Continuous EPS Insulation", thickness: 0.15 },
+        { materialId: "mat-rammed-earth", name: "Stabilized Rammed Earth Core", thickness: 0.30 },
+        { materialId: "mat-vapor-control", name: "Vapor Control Membrane", thickness: 0.004 },
+        { materialId: "mat-timber-deck", name: "Pine Timber Interior Finish", thickness: 0.018 },
+      ],
+    },
+    {
+      id: "preset-wall-aerogel",
+      name: "High-Altitude Aerogel Wall",
+      badge: "Ultra-Light & Slim",
+      desc: "60mm Space-Grade Aerogel + Pine Deck. Ultra-slim profile with U=0.18 for constrained sites.",
+      icon: "🚀",
+      layers: [
+        { materialId: "mat-aerogel-blanket", name: "Aerogel Super-Insulation Blanket", thickness: 0.06 },
+        { materialId: "mat-timber-deck", name: "Pine Timber Interior Lining", thickness: 0.04 },
+      ],
+    },
+    {
+      id: "preset-wall-granite",
+      name: "Granite Stone + Cavity EPS",
+      badge: "Indigenous Stone",
+      desc: "200mm Local Granite Masonry + 120mm EPS Insulation + Timber Lining.",
+      icon: "🧱",
+      layers: [
+        { materialId: "mat-stone-masonry", name: "Local Granite Stone Cladding", thickness: 0.20 },
+        { materialId: "mat-eps-insulation", name: "Rigid EPS Insulation", thickness: 0.12 },
+        { materialId: "mat-timber-frame", name: "Structural Timber Studs", thickness: 0.08 },
+        { materialId: "mat-timber-deck", name: "Pine Timber Interior Finish", thickness: 0.018 },
+      ],
+    },
+    {
+      id: "preset-wall-timber",
+      name: "Bio-Timber Stud Wall",
+      badge: "Rapid Prefab",
+      desc: "Pine Siding + 140mm EPS Insulation + Timber Studs + Vapor Control.",
+      icon: "🪵",
+      layers: [
+        { materialId: "mat-timber-deck", name: "Pine Timber Exterior Siding", thickness: 0.02 },
+        { materialId: "mat-weather-barrier", name: "Breathable Weather Barrier", thickness: 0.006 },
+        { materialId: "mat-eps-insulation", name: "Rigid EPS Insulation", thickness: 0.14 },
+        { materialId: "mat-vapor-control", name: "Vapor Control Membrane", thickness: 0.004 },
+        { materialId: "mat-timber-deck", name: "Interior Pine Timber Lining", thickness: 0.03 },
+      ],
+    },
+  ],
+  roof: [
+    {
+      id: "preset-roof-alpine",
+      name: "Cold-Climate Standing Seam",
+      badge: "Snow-Shedding High-R",
+      desc: "Galvanized Standing-Seam Steel + 180mm EPS + Timber Rafters + Pine Ceiling.",
+      icon: "❄️",
+      layers: [
+        { materialId: "mat-galvanized-steel", name: "Exterior Steel Cladding", thickness: 0.005 },
+        { materialId: "mat-weather-barrier", name: "Weather / Air Barrier", thickness: 0.006 },
+        { materialId: "mat-timber-frame", name: "Roof Structural Frame", thickness: 0.12 },
+        { materialId: "mat-eps-insulation", name: "Continuous EPS Insulation", thickness: 0.18 },
+        { materialId: "mat-vapor-control", name: "Vapor Control Membrane", thickness: 0.004 },
+        { materialId: "mat-timber-deck", name: "Pine Ceiling Lining", thickness: 0.025 },
+      ],
+    },
+    {
+      id: "preset-roof-aerogel",
+      name: "Compact Aerogel Roof",
+      badge: "Maximum Headroom",
+      desc: "80mm Aerogel Blanket + Galvanized Steel + Pine Ceiling. Slim profile with U=0.17.",
+      icon: "🛸",
+      layers: [
+        { materialId: "mat-galvanized-steel", name: "Galvanized Steel Cladding", thickness: 0.005 },
+        { materialId: "mat-aerogel-blanket", name: "Aerogel Super-Insulation", thickness: 0.08 },
+        { materialId: "mat-timber-deck", name: "Pine Timber Ceiling", thickness: 0.025 },
+      ],
+    },
+    {
+      id: "preset-roof-timber",
+      name: "High-R Bio Timber Ceiling",
+      badge: "Low Embodied Carbon",
+      desc: "Timber Deck + 150mm EPS + Rafters + Interior Pine Finish.",
+      icon: "🌲",
+      layers: [
+        { materialId: "mat-timber-deck", name: "Pine Exterior Deck", thickness: 0.03 },
+        { materialId: "mat-weather-barrier", name: "Weather Barrier", thickness: 0.006 },
+        { materialId: "mat-eps-insulation", name: "Rigid EPS Insulation", thickness: 0.15 },
+        { materialId: "mat-timber-frame", name: "Timber Structural Rafters", thickness: 0.10 },
+        { materialId: "mat-timber-deck", name: "Pine Ceiling Finish", thickness: 0.024 },
+      ],
+    },
+  ],
+  floor: [
+    {
+      id: "preset-floor-ground-slab",
+      name: "Insulated Perimeter Ground Slab",
+      badge: "Permafrost Protection",
+      desc: "Heavy Concrete Core (150mm) + Sub-Slab XPS (100mm) + Timber Finish.",
+      icon: "🏗️",
+      layers: [
+        { materialId: "mat-timber-deck", name: "Interior Pine Floor Finish", thickness: 0.025 },
+        { materialId: "mat-concrete-slab", name: "Heavy Concrete Thermal Mass Slab", thickness: 0.15 },
+        { materialId: "mat-vapor-control", name: "Ground Moisture Membrane", thickness: 0.006 },
+        { materialId: "mat-xps-insulation", name: "Sub-Slab XPS Insulation", thickness: 0.10 },
+      ],
+    },
+    {
+      id: "preset-floor-suspended",
+      name: "Low-Carbon Suspended Floor",
+      badge: "Elevated for Snow",
+      desc: "Pine Deck (50mm) + Aerogel Blanket (60mm) + Moisture Barrier.",
+      icon: "🪵",
+      layers: [
+        { materialId: "mat-timber-deck", name: "Pine Timber Decking", thickness: 0.05 },
+        { materialId: "mat-aerogel-blanket", name: "Aerogel Super-Insulation", thickness: 0.06 },
+        { materialId: "mat-weather-barrier", name: "Ground Moisture Barrier", thickness: 0.006 },
+      ],
+    },
+    {
+      id: "preset-floor-high-mass",
+      name: "High-Mass Baserock Slab",
+      badge: "Maximum Sensible Mass",
+      desc: "200mm Concrete Slab + Moisture Barrier + 80mm Sub-Slab XPS.",
+      icon: "🪨",
+      layers: [
+        { materialId: "mat-concrete-slab", name: "Heavy Concrete Foundation Slab", thickness: 0.20 },
+        { materialId: "mat-vapor-control", name: "Moisture Barrier Membrane", thickness: 0.006 },
+        { materialId: "mat-xps-insulation", name: "Extruded XPS Insulation", thickness: 0.08 },
+      ],
+    },
+  ],
+};
+
+interface AssemblyMaterialSelectorProps {
+  target: "walls" | "roof" | "floor";
+  activeWallOrientation?: WallOrientation;
+  model: ShelterModel;
+  onUpdate: (updates: Partial<ShelterModel>) => void;
+  onOpenMaterials?: () => void;
+}
+
+function AssemblyMaterialSelector({
+  target,
+  activeWallOrientation,
+  model,
+  onUpdate,
+  onOpenMaterials,
+}: AssemblyMaterialSelectorProps) {
+  const [layersExpanded, setLayersExpanded] = useState(false);
+
+  const currentLayers: LayerModel[] = React.useMemo(() => {
+    if (target === "walls") {
+      const wallKey = activeWallOrientation || "south";
+      return model.envelope?.walls?.[wallKey]?.layers || [];
+    }
+    if (target === "roof") {
+      return model.envelope?.roof?.layers || [];
+    }
+    return model.envelope?.floor?.layers || [];
+  }, [model.envelope, target, activeWallOrientation]);
+
+  const stats = React.useMemo(() => calcAssemblyStats(currentLayers), [currentLayers]);
+  const presets = ASSEMBLY_PRESETS[target];
+
+  const handleApplyPreset = (preset: (typeof presets)[number], applyToAll = false) => {
+    const newLayers = preset.layers.map((l) => ({ ...l }));
+    if (target === "walls") {
+      if (applyToAll) {
+        onUpdate({
+          envelope: {
+            ...model.envelope,
+            walls: {
+              north: { ...model.envelope.walls.north, name: preset.name, layers: structuredClone(newLayers) },
+              south: { ...model.envelope.walls.south, name: preset.name, layers: structuredClone(newLayers) },
+              east: { ...model.envelope.walls.east, name: preset.name, layers: structuredClone(newLayers) },
+              west: { ...model.envelope.walls.west, name: preset.name, layers: structuredClone(newLayers) },
+            },
+          },
+        });
+      } else {
+        const wallKey = activeWallOrientation || "south";
+        onUpdate({
+          envelope: {
+            ...model.envelope,
+            walls: {
+              ...model.envelope.walls,
+              [wallKey]: {
+                ...model.envelope.walls[wallKey],
+                name: preset.name,
+                layers: structuredClone(newLayers),
+              },
+            },
+          },
+        });
+      }
+    } else if (target === "roof") {
+      onUpdate({
+        envelope: {
+          ...model.envelope,
+          roof: {
+            ...model.envelope.roof,
+            name: preset.name,
+            layers: structuredClone(newLayers),
+          },
+        },
+      });
+    } else {
+      onUpdate({
+        envelope: {
+          ...model.envelope,
+          floor: {
+            ...model.envelope.floor,
+            name: preset.name,
+            layers: structuredClone(newLayers),
+          },
+        },
+      });
+    }
+  };
+
+  const handleUpdateLayer = (index: number, patch: Partial<LayerModel>) => {
+    const updated = currentLayers.map((l, i) => {
+      if (i === index) {
+        const newMatId = patch.materialId ?? l.materialId;
+        const mat = getMat(newMatId);
+        return {
+          ...l,
+          ...patch,
+          name: patch.name ?? (patch.materialId ? mat.name : l.name),
+        };
+      }
+      return l;
+    });
+
+    if (target === "walls") {
+      const wallKey = activeWallOrientation || "south";
+      onUpdate({
+        envelope: {
+          ...model.envelope,
+          walls: {
+            ...model.envelope.walls,
+            [wallKey]: {
+              ...model.envelope.walls[wallKey],
+              layers: updated,
+            },
+          },
+        },
+      });
+    } else if (target === "roof") {
+      onUpdate({
+        envelope: {
+          ...model.envelope,
+          roof: { ...model.envelope.roof, layers: updated },
+        },
+      });
+    } else {
+      onUpdate({
+        envelope: {
+          ...model.envelope,
+          floor: { ...model.envelope.floor, layers: updated },
+        },
+      });
+    }
+  };
+
+  const handleAddLayer = () => {
+    const newLayer: LayerModel = {
+      materialId: "mat-eps-insulation",
+      name: "Rigid EPS Insulation",
+      thickness: 0.10,
+    };
+    const updated = [...currentLayers, newLayer];
+    if (target === "walls") {
+      const wallKey = activeWallOrientation || "south";
+      onUpdate({
+        envelope: {
+          ...model.envelope,
+          walls: {
+            ...model.envelope.walls,
+            [wallKey]: { ...model.envelope.walls[wallKey], layers: updated },
+          },
+        },
+      });
+    } else if (target === "roof") {
+      onUpdate({
+        envelope: {
+          ...model.envelope,
+          roof: { ...model.envelope.roof, layers: updated },
+        },
+      });
+    } else {
+      onUpdate({
+        envelope: {
+          ...model.envelope,
+          floor: { ...model.envelope.floor, layers: updated },
+        },
+      });
+    }
+  };
+
+  const handleRemoveLayer = (index: number) => {
+    if (currentLayers.length <= 1) return;
+    const updated = currentLayers.filter((_, i) => i !== index);
+    if (target === "walls") {
+      const wallKey = activeWallOrientation || "south";
+      onUpdate({
+        envelope: {
+          ...model.envelope,
+          walls: {
+            ...model.envelope.walls,
+            [wallKey]: { ...model.envelope.walls[wallKey], layers: updated },
+          },
+        },
+      });
+    } else if (target === "roof") {
+      onUpdate({
+        envelope: {
+          ...model.envelope,
+          roof: { ...model.envelope.roof, layers: updated },
+        },
+      });
+    } else {
+      onUpdate({
+        envelope: {
+          ...model.envelope,
+          floor: { ...model.envelope.floor, layers: updated },
+        },
+      });
+    }
+  };
+
+  return (
+    <div className="mt-3 space-y-3">
+      {/* 1. Live Assembly Thermal Performance Card */}
+      <div className="rounded-xl border border-border/80 bg-secondary/30 p-2.5 shadow-xs">
+        <div className="flex items-center justify-between mb-1.5">
+          <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1">
+            <ShieldCheck className="size-3 text-emerald-500" />
+            Thermal Performance Rating
+          </span>
+          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+            stats.uValue <= 0.20
+              ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30"
+              : stats.uValue <= 0.35
+              ? "bg-sky-500/15 text-sky-700 dark:text-sky-300 border border-sky-500/30"
+              : "bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30"
+          }`}>
+            {stats.uValue <= 0.20 ? "Ultra-Low Heat Loss" : stats.uValue <= 0.35 ? "Cold-Climate Standard" : "Moderate Loss"}
+          </span>
+        </div>
+        <div className="grid grid-cols-3 gap-2 text-center">
+          <div className="rounded-lg bg-background/80 p-1.5 border border-border/50">
+            <div className="text-[9px] uppercase font-semibold text-muted-foreground">U-Value</div>
+            <div className="font-mono text-xs font-bold text-foreground">{stats.uValue} <small className="text-[9px] font-normal text-muted-foreground">W/m²K</small></div>
+          </div>
+          <div className="rounded-lg bg-background/80 p-1.5 border border-border/50">
+            <div className="text-[9px] uppercase font-semibold text-muted-foreground">R-Value</div>
+            <div className="font-mono text-xs font-bold text-foreground">{stats.rValue} <small className="text-[9px] font-normal text-muted-foreground">m²K/W</small></div>
+          </div>
+          <div className="rounded-lg bg-background/80 p-1.5 border border-border/50">
+            <div className="text-[9px] uppercase font-semibold text-muted-foreground">Thickness</div>
+            <div className="font-mono text-xs font-bold text-foreground">{stats.thickMm} <small className="text-[9px] font-normal text-muted-foreground">mm</small></div>
+          </div>
+        </div>
+      </div>
+
+      {/* 2. 1-Click Material Presets */}
+      <div className="space-y-1.5">
+        <div className="flex items-center justify-between">
+          <span className="text-xs font-bold text-foreground flex items-center gap-1.5">
+            <Sparkles className="size-3.5 text-amber-500" />
+            1-Click Material Presets
+          </span>
+          {target === "walls" && (
+            <button
+              type="button"
+              onClick={() => {
+                const wallKey = activeWallOrientation || "south";
+                const activeWallObj = model.envelope.walls[wallKey];
+                const matchingPreset = presets.find((p) => p.name === activeWallObj?.name) || presets[0];
+                handleApplyPreset(matchingPreset, true);
+              }}
+              className="text-[10px] font-semibold text-sky-600 dark:text-sky-400 hover:underline cursor-pointer"
+              title="Apply current assembly to North, South, East, and West facades"
+            >
+              Apply to All 4 Walls
+            </button>
+          )}
+        </div>
+
+        <div className="grid grid-cols-1 gap-1.5">
+          {presets.map((preset) => {
+            const isMatch = currentLayers.length === preset.layers.length &&
+              currentLayers.every((l, i) => l.materialId === preset.layers[i].materialId);
+            const pStats = calcAssemblyStats(preset.layers);
+
+            return (
+              <div
+                key={preset.id}
+                onClick={() => handleApplyPreset(preset, false)}
+                className={`cursor-pointer rounded-xl border p-2.5 transition text-left ${
+                  isMatch
+                    ? "border-sky-500 bg-sky-500/10 shadow-xs ring-1 ring-sky-500/30"
+                    : "border-border bg-card/60 hover:bg-secondary/40 hover:border-foreground/20"
+                }`}
+                title={`Click to apply ${preset.name}`}
+              >
+                <div className="flex items-start justify-between gap-1.5">
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-sm">{preset.icon}</span>
+                      <strong className="text-xs font-bold text-foreground truncate">{preset.name}</strong>
+                    </div>
+                    <p className="mt-0.5 text-[11px] text-muted-foreground line-clamp-1 leading-snug">{preset.desc}</p>
+                  </div>
+                  <div className="flex flex-col items-end shrink-0 gap-0.5">
+                    <span className="font-mono text-[10px] font-bold text-foreground">
+                      U={pStats.uValue}
+                    </span>
+                    {isMatch ? (
+                      <span className="flex items-center gap-0.5 text-[9px] font-bold text-sky-600 dark:text-sky-400">
+                        <Check className="size-3" /> Active
+                      </span>
+                    ) : (
+                      <span className="text-[9px] text-muted-foreground font-semibold">Select</span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* 3. Layer-by-Layer Customizer (Accordion) */}
+      <div className="rounded-xl border border-border/70 bg-card/40 p-2.5">
+        <button
+          type="button"
+          onClick={() => setLayersExpanded(!layersExpanded)}
+          className="flex w-full items-center justify-between text-xs font-bold text-foreground cursor-pointer"
+        >
+          <span className="flex items-center gap-1.5">
+            <Layers className="size-3.5 text-muted-foreground" />
+            Layer-by-Layer Composition ({currentLayers.length} Layers)
+          </span>
+          {layersExpanded ? <ChevronUp className="size-3.5" /> : <ChevronDown className="size-3.5" />}
+        </button>
+
+        {layersExpanded && (
+          <div className="mt-2.5 space-y-2 pt-2 border-t border-border/50 animate-in fade-in">
+            {currentLayers.map((layer, index) => {
+              const mat = getMat(layer.materialId);
+              const layerThickMm = Math.round((layer.thickness || 0) * 1000);
+              const layerR = ((layer.thickness || 0) / mat.conductivity).toFixed(2);
+
+              return (
+                <div key={`${layer.materialId}-${index}`} className="rounded-lg border border-border/60 bg-background/60 p-2 text-xs space-y-1.5">
+                  <div className="flex items-center justify-between gap-1">
+                    <span className="font-bold text-[11px] text-foreground truncate">
+                      {index + 1}. {layer.name || mat.name}
+                    </span>
+                    <span className="text-[10px] font-mono text-muted-foreground">
+                      R={layerR} m²K/W
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 items-center">
+                    <select
+                      value={layer.materialId}
+                      onChange={(e) => handleUpdateLayer(index, { materialId: e.target.value })}
+                      className="w-full rounded-md border border-border bg-background px-2 py-1 text-xs text-foreground font-medium"
+                    >
+                      {AVAILABLE_MATERIALS.map((m) => (
+                        <option key={m.id} value={m.id}>
+                          {m.name} ({m.category})
+                        </option>
+                      ))}
+                    </select>
+
+                    <div className="flex items-center gap-1 justify-end">
+                      <input
+                        type="number"
+                        min={1}
+                        max={800}
+                        step={5}
+                        value={layerThickMm}
+                        onChange={(e) => handleUpdateLayer(index, { thickness: Math.max(1, Number(e.target.value) || 1) / 1000 })}
+                        className="w-16 rounded-md border border-border bg-background px-1.5 py-1 text-xs font-mono text-right font-bold text-foreground"
+                      />
+                      <span className="text-[10px] text-muted-foreground">mm</span>
+                      {currentLayers.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveLayer(index)}
+                          className="ml-1 p-1 text-muted-foreground hover:text-red-500 rounded cursor-pointer"
+                          title="Remove layer"
+                        >
+                          <Trash2 className="size-3.5" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+
+            <button
+              type="button"
+              onClick={handleAddLayer}
+              className="flex w-full items-center justify-center gap-1 rounded-lg border border-dashed border-border py-1.5 text-xs font-semibold text-muted-foreground hover:text-foreground hover:bg-secondary/40 transition cursor-pointer"
+            >
+              <Plus className="size-3.5" /> Add Layer to Assembly
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* 4. Open Full Workbench Dialog Button */}
+      {onOpenMaterials && (
+        <button
+          type="button"
+          onClick={onOpenMaterials}
+          className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-border bg-secondary/50 px-3 py-2 text-xs font-semibold text-foreground hover:bg-secondary transition shadow-xs cursor-pointer"
+        >
+          <Layers3 className="size-3.5 text-amber-500" />
+          <span>Open Advanced Material Workbench</span>
+        </button>
+      )}
+    </div>
+  );
+}
+
 export function PropertyInspector({
   model,
   selected,
@@ -417,6 +995,7 @@ export function PropertyInspector({
   onSelect,
   onUpdate,
   onSimulate,
+  onOpenMaterials,
 }: Props) {
   const [activeWall, setActiveWall] = useState<WallOrientation>("south");
 
@@ -548,15 +1127,13 @@ export function PropertyInspector({
             <span>{Math.round(wall.layers.reduce((sum, l) => sum + l.thickness, 0) * 1000)} mm total</span>
           </div>
 
-          <p className="cad-subhead mt-2">Layer Stack (Exterior → Interior)</p>
-          <div className="cad-layer-stack">
-            {wall.layers.map((layer, index) => (
-              <div key={`${layer.materialId}-${index}`}>
-                <span>{layer.name || layer.materialId}</span>
-                <strong>{Math.round(layer.thickness * 1000)} mm</strong>
-              </div>
-            ))}
-          </div>
+          <AssemblyMaterialSelector
+            target="walls"
+            activeWallOrientation={selected.orientation}
+            model={model}
+            onUpdate={onUpdate}
+            onOpenMaterials={onOpenMaterials}
+          />
 
           <div className="cad-action-grid mt-4">
             <button type="button" onClick={() => addOpening("window")}>
@@ -591,15 +1168,12 @@ export function PropertyInspector({
               onUpdate({ envelope: { ...model.envelope, roof: { ...model.envelope.roof, overhang: v } } })
             }
           />
-          <p className="cad-subhead mt-2">Insulation & Sheathing Layers</p>
-          <div className="cad-layer-stack">
-            {model.envelope.roof.layers.map((layer, index) => (
-              <div key={`${layer.materialId}-${index}`}>
-                <span>{layer.name || layer.materialId}</span>
-                <strong>{Math.round(layer.thickness * 1000)} mm</strong>
-              </div>
-            ))}
-          </div>
+          <AssemblyMaterialSelector
+            target="roof"
+            model={model}
+            onUpdate={onUpdate}
+            onOpenMaterials={onOpenMaterials}
+          />
           <RoofSolarPanelsEditor model={model} onUpdate={onUpdate} />
         </div>
       );
@@ -613,15 +1187,12 @@ export function PropertyInspector({
             <span>{(model.geometry.length * model.geometry.width).toFixed(1)} m²</span>
             <span>{model.envelope.floor.groundContact ? "Slab-on-Grade" : "Suspended"}</span>
           </div>
-          <p className="cad-subhead mt-2">Foundation & Insulation Layers</p>
-          <div className="cad-layer-stack">
-            {model.envelope.floor.layers.map((layer, index) => (
-              <div key={`${layer.materialId}-${index}`}>
-                <span>{layer.name || layer.materialId}</span>
-                <strong>{Math.round(layer.thickness * 1000)} mm</strong>
-              </div>
-            ))}
-          </div>
+          <AssemblyMaterialSelector
+            target="floor"
+            model={model}
+            onUpdate={onUpdate}
+            onOpenMaterials={onOpenMaterials}
+          />
         </div>
       );
     }
@@ -959,15 +1530,13 @@ export function PropertyInspector({
           <span>{totalThickMm} mm Assembly</span>
         </div>
 
-        <p className="cad-subhead mt-3">Active Facade Layers ({activeWall})</p>
-        <div className="cad-layer-stack">
-          {wall.layers.map((layer, index) => (
-            <div key={`${layer.materialId}-${index}`}>
-              <span>{layer.name || layer.materialId}</span>
-              <strong>{Math.round(layer.thickness * 1000)} mm</strong>
-            </div>
-          ))}
-        </div>
+        <AssemblyMaterialSelector
+          target="walls"
+          activeWallOrientation={activeWall}
+          model={model}
+          onUpdate={onUpdate}
+          onOpenMaterials={onOpenMaterials}
+        />
 
         <div className="cad-action-grid mt-4">
           <button
@@ -1020,15 +1589,12 @@ export function PropertyInspector({
             onUpdate({ envelope: { ...model.envelope, roof: { ...model.envelope.roof, overhang: v } } })
           }
         />
-        <p className="cad-subhead mt-3">Roof Layer Stack</p>
-        <div className="cad-layer-stack">
-          {model.envelope.roof.layers.map((layer, index) => (
-            <div key={`${layer.materialId}-${index}`}>
-              <span>{layer.name || layer.materialId}</span>
-              <strong>{Math.round(layer.thickness * 1000)} mm</strong>
-            </div>
-          ))}
-        </div>
+        <AssemblyMaterialSelector
+          target="roof"
+          model={model}
+          onUpdate={onUpdate}
+          onOpenMaterials={onOpenMaterials}
+        />
         <RoofSolarPanelsEditor model={model} onUpdate={onUpdate} />
       </div>
     );
@@ -1043,15 +1609,12 @@ export function PropertyInspector({
           <span>{(model.geometry.length * model.geometry.width).toFixed(1)} m² Slab Area</span>
           <span>{model.envelope.floor.groundContact ? "Ground Contact" : "Suspended"}</span>
         </div>
-        <p className="cad-subhead mt-3">Foundation Layers</p>
-        <div className="cad-layer-stack">
-          {model.envelope.floor.layers.map((layer, index) => (
-            <div key={`${layer.materialId}-${index}`}>
-              <span>{layer.name || layer.materialId}</span>
-              <strong>{Math.round(layer.thickness * 1000)} mm</strong>
-            </div>
-          ))}
-        </div>
+        <AssemblyMaterialSelector
+          target="floor"
+          model={model}
+          onUpdate={onUpdate}
+          onOpenMaterials={onOpenMaterials}
+        />
       </div>
     );
   }

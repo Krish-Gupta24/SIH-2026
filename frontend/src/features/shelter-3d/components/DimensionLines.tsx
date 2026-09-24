@@ -34,7 +34,7 @@ export function DimensionLines({
 }) {
   const { length: l, width: w, height: h } = model.geometry;
   const geom = useMemo(() => deriveShelter3DGeometry(model), [model]);
-  const offset = 0.95;
+  const offset = 1.35;
   const showEnvelope =
     !selected ||
     selected.type === "shelter" ||

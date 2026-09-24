@@ -1097,7 +1097,13 @@ export function ShelterMesh({
                     stackZ = wallPos[2] + wall.dimensions[0] * 0.5 + 0.52;
                   }
 
-                  if (suppressHtmlLabels) return null;
+                  const isStackVisible =
+                    (selected?.type === "wall" && selected.orientation === side) ||
+                    hovered === `wall-${wall.id}` ||
+                    hovered === `wall-${side}` ||
+                    (selected?.type !== "wall" && side === "south");
+
+                  if (suppressHtmlLabels || !isStackVisible) return null;
 
                   return (
                     <Html

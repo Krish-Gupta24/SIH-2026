@@ -12,39 +12,46 @@
   "project": {
     "id": "shelter-spiti-03",
     "name": "Spiti Valley High-Solar Clerestory (91% Comfort)",
+    "version": "1.0.0",
     "description": "High-altitude cold desert shelter in Kaza, Spiti Valley (3,800m). Features a 22\u00b0 south clerestory solar-harvesting roof, 150mm PIR rigid insulation, and Phase Change Material (PCM Salt Hydrate 21\u00b0C) latent heat ceiling panels for year-round 91%+ thermal comfort.",
+    "createdAt": "2026-09-24T12:09:14.416Z",
     "tags": [
       "Spiti-Valley",
       "PCM-Latent-Storage",
       "Clerestory-Roof",
       "Annual-Comfort-91%"
     ],
-    "version": "1.0.0"
+    "updatedAt": "2026-09-24T15:44:37.990Z"
   },
   "location": {
+    "region": "Kaza, Spiti Valley, HP, India",
     "latitude": 32.246,
     "longitude": 78.034,
-    "elevation": 3800.0,
-    "region": "Kaza, Spiti Valley, HP, India",
+    "elevation": 3800,
     "climateZone": "Cold Desert High-Altitude",
-    "weatherSource": "spiti_valley.epw"
+    "weatherSource": "spiti_valley.epw",
+    "designTempWinter": -20,
+    "designTempSummer": 28
   },
   "geometry": {
     "shape": "Rectangle",
+    "orientation": 0,
+    "roofAngle": 22,
+    "floorElevation": 0.2,
     "length": 6.5,
-    "width": 4.0,
+    "width": 4,
     "height": 3.2,
-    "orientation": 0.0,
-    "roofType": "Shed",
-    "roofAngle": 22.0,
-    "floorElevation": 0.2
+    "roofType": "Shed"
   },
   "designTargets": {
-    "comfortTempMinC": 18.0,
-    "comfortTempMaxC": 24.0,
-    "targetIndoorTempC": 21.0,
-    "targetComfortPercent": 91.0,
-    "maxAnnualHeatingDemandKwhM2": 21.8
+    "comfortTempMinC": 18,
+    "comfortTempMaxC": 24,
+    "targetIndoorTempC": 21,
+    "targetComfortPercent": 91,
+    "maxAnnualHeatingDemandKwhM2": 21.8,
+    "comfortModel": "ASHRAE 55 Adaptive Cold Extreme",
+    "assumptions": "Clo: 1.5, Met: 1.2, Air: 0.1 m/s",
+    "applicableConditions": "Unconditioned passive high-altitude shelter"
   },
   "simulationSettings": {
     "engine": "ThermoShelter Core",
@@ -53,5 +60,132 @@
     "startMonth": 1,
     "startDay": 15,
     "detailedComponentOutputs": true
+  },
+  "envelope": {
+    "walls": {
+      "north": {
+        "constructionId": "const-north-insulated-rammed-earth",
+        "name": "Wall North",
+        "layers": [
+          {
+            "materialId": "mat-eps-insulation",
+            "name": "Expanded Polystyrene (EPS)",
+            "thickness": 0.15
+          },
+          {
+            "materialId": "mat-rammed-earth",
+            "name": "Stabilized Rammed Earth",
+            "thickness": 0.25
+          }
+        ]
+      },
+      "south": {
+        "constructionId": "const-south-passive-solar-trombe",
+        "name": "Wall South",
+        "layers": [
+          {
+            "materialId": "mat-eps-insulation",
+            "name": "Expanded Polystyrene (EPS)",
+            "thickness": 0.15
+          },
+          {
+            "materialId": "mat-rammed-earth",
+            "name": "Stabilized Rammed Earth",
+            "thickness": 0.25
+          }
+        ]
+      },
+      "east": {
+        "constructionId": "const-east-insulated-wall",
+        "name": "Wall East",
+        "layers": [
+          {
+            "materialId": "mat-eps-insulation",
+            "name": "Expanded Polystyrene (EPS)",
+            "thickness": 0.15
+          },
+          {
+            "materialId": "mat-rammed-earth",
+            "name": "Stabilized Rammed Earth",
+            "thickness": 0.25
+          }
+        ]
+      },
+      "west": {
+        "constructionId": "const-west-insulated-wall",
+        "name": "Wall West",
+        "layers": [
+          {
+            "materialId": "mat-eps-insulation",
+            "name": "Expanded Polystyrene (EPS)",
+            "thickness": 0.15
+          },
+          {
+            "materialId": "mat-rammed-earth",
+            "name": "Stabilized Rammed Earth",
+            "thickness": 0.25
+          }
+        ]
+      }
+    },
+    "roof": {
+      "constructionId": "const-insulated-metal-roof",
+      "name": "Insulated Standing Seam Roof",
+      "slope": 22,
+      "overhang": 0.5,
+      "solarAbsorptance": 0.3,
+      "layers": [
+        {
+          "materialId": "mat-galvanized-steel",
+          "name": "Galvanized Corrugated Steel",
+          "thickness": 0.005
+        },
+        {
+          "materialId": "mat-eps-insulation",
+          "name": "Expanded Polystyrene (EPS)",
+          "thickness": 0.15
+        }
+      ]
+    },
+    "floor": {
+      "constructionId": "const-insulated-concrete-floor",
+      "name": "Insulated Slab on Grade",
+      "groundContact": true,
+      "perimeterInsulation": true,
+      "layers": [
+        {
+          "materialId": "mat-concrete-slab",
+          "name": "Heavy Concrete Floor Slab",
+          "thickness": 0.15
+        },
+        {
+          "materialId": "mat-xps-insulation",
+          "name": "Extruded Polystyrene Sub-Slab",
+          "thickness": 0.05
+        }
+      ]
+    }
+  },
+  "windows": [],
+  "doors": [],
+  "thermalMass": [],
+  "ventilation": {
+    "infiltrationACH": 0.25,
+    "mechanicalVentilationACH": 0.5,
+    "heatRecoveryEfficiency": 0.85,
+    "naturalVentilationEnabled": true,
+    "naturalSchedule": "TemperatureControlled",
+    "mechanicalVentilationEnabled": false,
+    "mechanicalFlowRateLps": 15
+  },
+  "internalLoads": {
+    "occupantsCount": 4,
+    "activityLevelW": 120,
+    "lightingPowerDensityWPerM2": 5,
+    "equipmentPowerDensityWPerM2": 3,
+    "activityLevelWatts": 120,
+    "lightingPowerDensityWpm2": 3.5,
+    "equipmentPowerWatts": 110,
+    "scheduleProfile": "DiurnalOccupied"
   }
 }

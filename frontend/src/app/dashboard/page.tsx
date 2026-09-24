@@ -2,7 +2,7 @@ import { AppShell } from "@/components/layout/AppShell";
 import { DashboardView } from "@/features/dashboard/DashboardView";
 
 export const metadata = {
-  title: "Dashboard | ShelterThermal",
+  title: "Dashboard | ThemoShelter",
   description: "Area-Specific Shelter Thermal Design & Simulation Dashboard",
 };
 

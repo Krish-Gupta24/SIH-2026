@@ -21,7 +21,6 @@ import {
   Wind,
   X,
 } from "lucide-react";
-import type { SimulationJobItem } from "@/lib/store/use-shelter-store";
 import {
   ActionButton,
   BrandMark,
@@ -30,6 +29,9 @@ import {
   PerformanceBars,
   SolarDiagram,
 } from "@/components/v0/platform-components";
+import { motion, AnimatePresence } from "framer-motion";
+import { AnimatedCounter, PulseBeacon } from "@/components/motion/MotionWrappers";
+import type { SimulationJobItem } from "@/lib/store/use-shelter-store";
 
 interface LandingProps {
   onOpen: () => void;
@@ -273,9 +275,14 @@ export function PremiumLanding({ onOpen, onContinue, hasProject, summary }: Land
             {/* Hero Main: Left Pitch & Action + Right Live HUD */}
             <div className="grid lg:grid-cols-[1.12fr_.88fr] items-center gap-10 xl:gap-14 w-full">
               {/* Left Column: Eyebrow + Catchy Headline + Subtitle + CTAs */}
-              <div className="max-w-[44rem]">
+              <motion.div
+                initial={{ opacity: 0, y: 24 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+                className="max-w-[44rem]"
+              >
                 <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-black/40 px-3.5 py-1 text-[11px] font-medium text-white/90 backdrop-blur-md">
-                  <span className="size-2 rounded-full bg-emerald-400 animate-pulse" />
+                  <PulseBeacon color="emerald" size="sm" />
                   <span className="font-semibold uppercase tracking-wider">SIH 2026 · DRDO PS 26051</span>
                   <span className="text-white/30">•</span>
                   <span className="font-mono text-emerald-300">ANSYS-based Solver</span>
@@ -298,7 +305,7 @@ export function PremiumLanding({ onOpen, onContinue, hasProject, summary }: Land
                   <Link href="/designer/3d">
                     <ActionButton
                       tone="secondary"
-                      className="rounded-full border-white bg-white pl-6 pr-2 text-black shadow-xl hover:scale-[1.02] transition-transform"
+                      className="rounded-full border-white bg-white pl-6 pr-2 text-black shadow-xl hover:scale-[1.03] active:scale-[0.98] transition-transform"
                     >
                       Launch 3D Studio
                       <span className="flex size-8 items-center justify-center rounded-full bg-black text-white">
@@ -308,7 +315,7 @@ export function PremiumLanding({ onOpen, onContinue, hasProject, summary }: Land
                   </Link>
 
                   <Link href="/simulations">
-                    <button className="hero-outline-button flex items-center gap-2 hover:scale-[1.02] transition-transform">
+                    <button className="hero-outline-button flex items-center gap-2 hover:scale-[1.03] active:scale-[0.98] transition-transform">
                       <Cpu className="size-4 text-emerald-300" />
                       <span>Run Simulation</span>
                     </button>
@@ -322,17 +329,19 @@ export function PremiumLanding({ onOpen, onContinue, hasProject, summary }: Land
                     <ArrowDown className="size-3.5" />
                   </button>
                 </div>
-              </div>
+              </motion.div>
 
               {/* Right Column: Sleek Glassmorphic Live Telemetry HUD */}
-              <aside className="hidden md:block w-full max-w-[380px] justify-self-end rounded-[1.75rem] border border-white/20 bg-black/55 p-5 backdrop-blur-2xl shadow-[0_25px_70px_rgba(0,0,0,0.5)]">
+              <motion.aside
+                initial={{ opacity: 0, x: 30 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.75, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
+                className="hidden md:block w-full max-w-[380px] justify-self-end rounded-[1.75rem] border border-white/20 bg-black/55 p-5 backdrop-blur-2xl shadow-[0_25px_70px_rgba(0,0,0,0.5)]"
+              >
                 {/* Station Status Header */}
                 <div className="flex items-center justify-between border-b border-white/10 pb-3.5">
                   <div className="flex items-center gap-2">
-                    <span className="relative flex size-2">
-                      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-                      <span className="relative inline-flex size-2 rounded-full bg-emerald-500" />
-                    </span>
+                    <PulseBeacon color="emerald" size="sm" />
                     <div>
                       <p className="text-[9px] font-mono uppercase tracking-wider text-white/50">Leh Airport · WMO 427053</p>
                       <p className="text-xs font-semibold text-white">Alpine Design Telemetry</p>
@@ -345,12 +354,12 @@ export function PremiumLanding({ onOpen, onContinue, hasProject, summary }: Land
 
                 {/* Temperature Comparison Gauge */}
                 <div className="mt-4 grid grid-cols-2 gap-2.5">
-                  <div className="rounded-xl border border-sky-500/20 bg-sky-950/30 p-3">
+                  <div className="rounded-xl border border-sky-500/20 bg-sky-950/30 p-3 hover:scale-[1.02] transition-transform">
                     <p className="text-[9px] font-semibold uppercase tracking-wider text-sky-300">Exterior Freeze</p>
                     <p className="mt-1 text-2xl font-bold tracking-tight text-white">−20.5°C</p>
                     <p className="text-[9px] text-sky-200/60">Ladakh Winter Night</p>
                   </div>
-                  <div className="rounded-xl border border-emerald-500/20 bg-emerald-950/30 p-3">
+                  <div className="rounded-xl border border-emerald-500/20 bg-emerald-950/30 p-3 hover:scale-[1.02] transition-transform">
                     <p className="text-[9px] font-semibold uppercase tracking-wider text-emerald-300">Living Zone</p>
                     <p className="mt-1 text-2xl font-bold tracking-tight text-emerald-400">+18.6°C</p>
                     <p className="text-[9px] text-emerald-200/60">Passive ASHRAE 55</p>
@@ -364,7 +373,12 @@ export function PremiumLanding({ onOpen, onContinue, hasProject, summary }: Land
                     <span className="font-mono text-emerald-300">+39.1°C ΔT</span>
                   </div>
                   <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-white/10">
-                    <div className="h-full w-[88%] rounded-full bg-gradient-to-r from-sky-400 via-amber-300 to-emerald-400" />
+                    <motion.div
+                      initial={{ width: 0 }}
+                      animate={{ width: "88%" }}
+                      transition={{ duration: 1.5, delay: 0.6, ease: "easeOut" }}
+                      className="h-full rounded-full bg-gradient-to-r from-sky-400 via-amber-300 to-emerald-400"
+                    />
                   </div>
                 </div>
 
@@ -395,24 +409,29 @@ export function PremiumLanding({ onOpen, onContinue, hasProject, summary }: Land
                     <ArrowRight className="size-2.5" />
                   </Link>
                 </div>
-              </aside>
+              </motion.aside>
             </div>
 
             {/* Bottom Telemetry Bar: Uncluttered 3-metric strip */}
-            <div className="hero-bottom mt-auto pt-8">
+            <motion.div
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.35, ease: [0.16, 1, 0.3, 1] }}
+              className="hero-bottom mt-auto pt-8"
+            >
               <div className="hero-metrics">
                 {[
                   ["+39.1°C", "Passive thermal lift"],
                   [summary?.comfortHoursPct ? `${summary.comfortHoursPct}%` : "84%", "Comfort hours (18–24°C)"],
                   ["0 Liters", "Peak fuel reliance"],
                 ].map(([value, label]) => (
-                  <div key={label} className="px-4 first:pl-0 sm:px-6">
+                  <div key={label} className="px-4 first:pl-0 sm:px-6 hover:scale-[1.02] transition-transform">
                     <p className="text-2xl font-medium tracking-[-0.06em] sm:text-3xl text-white">{value}</p>
                     <p className="mt-1 text-[8px] font-semibold uppercase tracking-[0.12em] text-white/60">{label}</p>
                   </div>
                 ))}
               </div>
-            </div>
+            </motion.div>
           </div>
         </div>
       </section>

@@ -622,44 +622,6 @@ export function ShelterDesignerWizard() {
         </div>
       </div>
 
-      {/* 9-Step Architectural Sequence Navigation Ribbon */}
-      <div className="rounded-2xl border border-border bg-card p-2 sm:p-2.5 shadow-xs">
-        <div className="grid grid-cols-9 gap-1 sm:gap-1.5" role="tablist" aria-label="9-Step Architectural Sequence">
-          {WIZARD_STEPS.map((s) => {
-            const isCurrent = currentStep === s.id;
-            const isDone = currentStep > s.id;
-            const Icon = s.icon;
-            return (
-              <button
-                key={s.id}
-                type="button"
-                onClick={() => handleStepSelect(s.id)}
-                className={`group flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-1.5 rounded-xl py-2 px-1 text-center transition ${
-                  isCurrent
-                    ? "bg-foreground text-background shadow-xs ring-2 ring-foreground/20 font-bold"
-                    : isDone
-                    ? "border border-border/80 bg-card text-foreground hover:bg-secondary font-medium"
-                    : "border border-border/40 bg-secondary/30 text-muted-foreground hover:bg-secondary hover:text-foreground"
-                }`}
-                title={`Step ${s.id}: ${s.name} — ${s.description} (${isDone ? "Completed" : isCurrent ? "Active" : "Upcoming"})`}
-              >
-                <span className={`text-[10px] font-mono font-bold ${
-                  isCurrent
-                    ? "text-background"
-                    : isDone
-                    ? "text-emerald-600 dark:text-emerald-400"
-                    : "text-muted-foreground"
-                }`}>
-                  {isDone ? "✓" : `0${s.id}`}
-                </span>
-                <Icon className="size-3.5 hidden md:inline shrink-0" />
-                <span className="text-[11px] truncate hidden sm:inline">{s.name}</span>
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
       {/* Studio View Modes: Split (Side-by-Side), Blueprint Only, or Parameters Only */}
       {studioMode === "blueprint" && (
         <div className="space-y-6">
@@ -735,9 +697,8 @@ export function ShelterDesignerWizard() {
                     <button
                       type="button"
                       onClick={() => setIsStepDropdownOpen(!isStepDropdownOpen)}
-                      className={`flex items-center gap-1.5 rounded-lg border border-border px-2.5 py-1 text-xs font-semibold transition ${
-                        isStepDropdownOpen ? "bg-foreground text-background" : "bg-secondary/50 text-foreground hover:bg-secondary"
-                      }`}
+                      className={`flex items-center gap-1.5 rounded-lg border border-border px-2.5 py-1 text-xs font-semibold transition ${isStepDropdownOpen ? "bg-foreground text-background" : "bg-secondary/50 text-foreground hover:bg-secondary"
+                        }`}
                       aria-expanded={isStepDropdownOpen}
                       title="Jump to any step"
                     >
@@ -806,13 +767,12 @@ export function ShelterDesignerWizard() {
                         key={s.id}
                         type="button"
                         onClick={() => handleStepSelect(s.id)}
-                        className={`flex h-7 items-center justify-center rounded-lg text-[11px] font-bold transition-all duration-150 ${
-                          isCurrent
-                            ? "bg-foreground text-background shadow-xs ring-2 ring-foreground/20 ring-offset-1 ring-offset-card"
-                            : isDone
+                        className={`flex h-7 items-center justify-center rounded-lg text-[11px] font-bold transition-all duration-150 ${isCurrent
+                          ? "bg-foreground text-background shadow-xs ring-2 ring-foreground/20 ring-offset-1 ring-offset-card"
+                          : isDone
                             ? "border border-border bg-card text-emerald-600 dark:text-emerald-400 hover:bg-secondary"
                             : "border border-border/50 bg-secondary/30 text-muted-foreground hover:bg-secondary hover:text-foreground"
-                        }`}
+                          }`}
                         title={`${s.id}. ${s.name} (${isDone ? "Completed" : isCurrent ? "Active" : "Upcoming"})`}
                       >
                         {isDone ? "✓" : s.id}
@@ -1010,22 +970,20 @@ export function ShelterDesignerWizard() {
                     key={phase.id}
                     type="button"
                     onClick={() => handleStepSelect(firstStep)}
-                    className={`group flex items-center gap-2.5 rounded-xl px-3 py-2 text-left text-xs transition ${
-                      isPhaseActive
-                        ? "bg-foreground text-background shadow-sm font-bold"
-                        : isPhaseCompleted
+                    className={`group flex items-center gap-2.5 rounded-xl px-3 py-2 text-left text-xs transition ${isPhaseActive
+                      ? "bg-foreground text-background shadow-sm font-bold"
+                      : isPhaseCompleted
                         ? "bg-secondary/70 border border-border text-foreground hover:bg-secondary font-medium"
                         : "bg-secondary/40 text-muted-foreground hover:bg-secondary hover:text-foreground"
-                    }`}
+                      }`}
                   >
                     <span
-                      className={`flex size-5 shrink-0 items-center justify-center rounded-full text-[9px] font-bold ${
-                        isPhaseActive
-                          ? "bg-background text-foreground"
-                          : isPhaseCompleted
+                      className={`flex size-5 shrink-0 items-center justify-center rounded-full text-[9px] font-bold ${isPhaseActive
+                        ? "bg-background text-foreground"
+                        : isPhaseCompleted
                           ? "bg-emerald-500 text-white"
                           : "bg-foreground/10 text-muted-foreground"
-                      }`}
+                        }`}
                     >
                       {isPhaseCompleted ? "✓" : `0${phase.id}`}
                     </span>
@@ -1046,13 +1004,12 @@ export function ShelterDesignerWizard() {
                     key={s.id}
                     type="button"
                     onClick={() => handleStepSelect(s.id)}
-                    className={`flex flex-col items-center justify-center gap-1 rounded-xl p-2 text-center transition ${
-                      isCurrent
-                        ? "bg-foreground text-background shadow-xs ring-2 ring-foreground/20 font-bold"
-                        : isDone
+                    className={`flex flex-col items-center justify-center gap-1 rounded-xl p-2 text-center transition ${isCurrent
+                      ? "bg-foreground text-background shadow-xs ring-2 ring-foreground/20 font-bold"
+                      : isDone
                         ? "border border-border bg-card text-foreground hover:bg-secondary font-medium"
                         : "border border-border/40 bg-secondary/30 text-muted-foreground hover:bg-secondary hover:text-foreground"
-                    }`}
+                      }`}
                     title={`${s.id}. ${s.name}: ${s.description}`}
                   >
                     <div className="flex items-center gap-1">

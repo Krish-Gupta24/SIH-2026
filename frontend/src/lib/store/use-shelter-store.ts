@@ -4,6 +4,7 @@ import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import { ShelterModel } from "@/types/shelter";
 import { api } from "../api";
+import { useAuthStore, DEMO_USER_ACCOUNT } from "./use-auth-store";
 
 // -----------------------------------------------------------------------------
 // Type Definitions
@@ -2253,6 +2254,11 @@ export const useShelterStore = create<ShelterStoreState>()(
 
       addProject: (project: ShelterModel) => {
         const normalized = normalizeShelterModel(project);
+        const currentUserId = useAuthStore.getState().currentUser?.id || DEMO_USER_ACCOUNT.id;
+        if (!normalized.project.userId && !normalized.userId) {
+          normalized.project.userId = currentUserId;
+          normalized.userId = currentUserId;
+        }
         set((state) => {
           let matchedWeatherId = state.activeWeatherId;
           if (normalized.location?.weatherSource) {
@@ -2376,17 +2382,20 @@ export const useShelterStore = create<ShelterStoreState>()(
 
       saveProjectVersion: (sourceId: string, versionName: string, description?: string) => {
         const state = get();
+        const currentUserId = useAuthStore.getState().currentUser?.id || DEMO_USER_ACCOUNT.id;
         const source = state.projects.find((p) => p.id === sourceId) || state.projects[0];
         const newId = `${sourceId}-v${Date.now().toString(36)}`;
         const newVersionModel: ShelterModel = {
           ...JSON.parse(JSON.stringify(source)),
           id: newId,
+          userId: currentUserId,
           project: {
             ...source.project,
             id: newId,
             name: `${source.project.name} (${versionName})`,
             description: description || `Forked from ${source.project.name} as ${versionName}`,
             version: versionName,
+            userId: currentUserId,
           },
         };
 
@@ -2400,6 +2409,7 @@ export const useShelterStore = create<ShelterStoreState>()(
 
       applyAICandidate: (candidateModel: any) => {
         const normalized = normalizeShelterModel(candidateModel);
+        const currentUserId = useAuthStore.getState().currentUser?.id || DEMO_USER_ACCOUNT.id;
         
         // Scan all projects in store to find highest ThermoShelter_AI_OPT_XXX
         const stateProjects = get().projects || [];
@@ -2444,6 +2454,7 @@ export const useShelterStore = create<ShelterStoreState>()(
 
         normalized.id = finalId;
         normalized.name = finalName;
+        normalized.userId = currentUserId;
         if (!normalized.project) {
           normalized.project = {} as any;
         }
@@ -2452,6 +2463,7 @@ export const useShelterStore = create<ShelterStoreState>()(
         normalized.project.version = "1.0.0";
         normalized.project.description = "AI generative inverse-designed shelter optimized for extreme high-altitude thermal performance.";
         normalized.project.createdAt = new Date().toISOString();
+        normalized.project.userId = currentUserId;
         normalized.project.tags = Array.from(new Set([...(normalized.project.tags || []), "AI-Generative", "Pareto-Optimal", "High-Altitude"]));
 
         // Register as a brand-new project and switch active project

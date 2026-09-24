@@ -11,8 +11,15 @@ import {
   Search,
   Trash2,
   RotateCcw,
+  ShieldCheck,
+  Lock,
+  User,
+  Sparkles,
 } from "lucide-react";
 import { useShelterStore } from "@/lib/store/use-shelter-store";
+import { useAuthStore } from "@/lib/store/use-auth-store";
+import { filterProjectsForUser, CANONICAL_PRESET_IDS } from "@/lib/store/shelter-auth-filter";
+import { PulseBeacon } from "@/components/motion/MotionWrappers";
 import type { ShelterModel } from "@/types/shelter";
 import { ActionButton, DataPair, EmptyState, PageIntro } from "@/components/v0/platform-components";
 import { NewProjectModal } from "./NewProjectModal";
@@ -20,6 +27,7 @@ import { DeleteProjectModal } from "./DeleteProjectModal";
 
 export function ProjectsView() {
   const router = useRouter();
+  const { currentUser, setAuthModalOpen } = useAuthStore();
   const {
     projects,
     simulations,
@@ -33,10 +41,43 @@ export function ProjectsView() {
 
   const [search, setSearch] = useState("");
   const [sort, setSort] = useState<"name" | "region">("name");
+  const [filterTab, setFilterTab] = useState<"all" | "mine" | "templates">("all");
   const [isNewProjectModalOpen, setIsNewProjectModalOpen] = useState(false);
   const [projectToDelete, setProjectToDelete] = useState<ShelterModel | null>(null);
 
-  const filteredProjects = [...projects]
+  // Helper to distinguish standard military benchmarks vs user-created custom shelters
+  const isCustomShelter = (p: ShelterModel) => {
+    const isPreset =
+      p.isSystemPreset ||
+      p.project?.isSystemPreset ||
+      CANONICAL_PRESET_IDS.has(p.id) ||
+      p.id === "shelter-ladakh-01" ||
+      p.id === "shelter-kargil-02" ||
+      p.id === "shelter-spiti-03" ||
+      p.id === "shelter-tawang-04" ||
+      p.id === "shelter-baseline-tin";
+    return !isPreset;
+  };
+
+  const isOwnedByMe = (p: ShelterModel) => {
+    const owner = p.project?.userId || (p as any).userId;
+    if (!owner) return currentUser?.id === "MES-14CORPS-DEMO";
+    return owner === currentUser?.id;
+  };
+
+  // Only shelters belonging to active user or standard templates are accessible
+  const userScopedProjects = filterProjectsForUser(projects, currentUser?.id);
+  const mySheltersCount = userScopedProjects.filter((p) => isCustomShelter(p) && isOwnedByMe(p)).length;
+  const templatesCount = userScopedProjects.filter((p) => !isCustomShelter(p)).length;
+
+  // Filter according to selected tab (All vs Mine vs Standard Templates)
+  const tabProjects = userScopedProjects.filter((p) => {
+    if (filterTab === "mine") return isCustomShelter(p) && isOwnedByMe(p);
+    if (filterTab === "templates") return !isCustomShelter(p);
+    return true;
+  });
+
+  const filteredProjects = [...tabProjects]
     .filter((project) =>
       `${project.project?.name || project.name || ""} ${project.location?.region || ""} ${project.project?.description || (project as any).description || ""}`
         .toLowerCase()
@@ -67,13 +108,16 @@ export function ProjectsView() {
   const createProject = () => {
     const base = projects.find((p) => p.id === activeProjectId) || projects[0];
     const id = `shelter-${Date.now().toString().slice(-7)}`;
+    const currentUserId = currentUser?.id || "MES-14CORPS-DEMO";
     const newModel: ShelterModel = base
       ? JSON.parse(JSON.stringify(base))
       : {
           schemaVersion: "1.0.0",
           id,
+          userId: currentUserId,
           project: {
             id,
+            userId: currentUserId,
             name: "New Alpine Shelter",
             version: "0.1.0",
             description: "High-altitude shelter model ready for engineering definition.",
@@ -133,7 +177,9 @@ export function ProjectsView() {
         };
 
     newModel.id = id;
+    newModel.userId = currentUserId;
     newModel.project.id = id;
+    newModel.project.userId = currentUserId;
     newModel.project.name = "Untitled high-altitude shelter";
     newModel.project.version = "0.1.0";
     newModel.project.createdAt = new Date().toISOString();
@@ -171,30 +217,131 @@ export function ProjectsView() {
         }
       />
 
-      {/* Search & Sort bar */}
-      <div className="project-controls grid gap-3 md:grid-cols-[1fr_auto]">
-        <label className="flex min-h-12 items-center gap-3 rounded-2xl border border-border bg-card px-4 shadow-[0_10px_30px_rgba(0,0,0,.04)] transition-shadow focus-within:shadow-[0_14px_38px_rgba(0,0,0,.08)]">
-          <Search className="size-4 text-muted-foreground" />
-          <span className="sr-only">Search projects</span>
-          <input
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-            placeholder="Search project, description, or region"
-            className="w-full bg-transparent py-3 text-sm outline-none placeholder:text-muted-foreground"
-          />
-        </label>
-        <label className="flex min-h-12 items-center gap-3 rounded-2xl border border-border bg-card px-4 text-xs shadow-[0_10px_30px_rgba(0,0,0,.04)]">
-          <span className="text-muted-foreground">Sort by</span>
-          <select
-            value={sort}
-            onChange={(event) => setSort(event.target.value as "name" | "region")}
-            className="bg-transparent font-semibold outline-none cursor-pointer"
+      {/* Defense Workspace Isolation & Active Identity Banner */}
+      <div className="rounded-3xl border border-emerald-500/30 bg-gradient-to-r from-emerald-500/10 via-background to-teal-500/10 p-5 sm:p-6 shadow-sm">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-start sm:items-center gap-3.5">
+            <div className="size-12 rounded-2xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-600 dark:text-emerald-400 shrink-0">
+              <ShieldCheck className="size-6" />
+            </div>
+            <div>
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 bg-emerald-500/15 border border-emerald-500/30 px-2.5 py-0.5 rounded-full flex items-center gap-1.5">
+                  <PulseBeacon color="emerald" size="sm" />
+                  AUTHENTICATED ACCESS CONTROL
+                </span>
+                <span className="text-[11px] font-mono text-muted-foreground">
+                  Officer ID: <strong className="text-foreground">{currentUser?.id}</strong>
+                </span>
+                {currentUser?.isDemoDefault && (
+                  <span className="rounded-md bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 font-extrabold text-[9px] uppercase px-1.5 py-0.5">
+                    Demo Mode Active
+                  </span>
+                )}
+              </div>
+              <h3 className="text-base font-bold text-foreground mt-1">
+                {currentUser?.name} · <span className="font-normal text-muted-foreground">{currentUser?.rank}</span>
+              </h3>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                {currentUser?.unit} · <span className="font-mono text-foreground font-semibold">{currentUser?.callsign}</span> · Sector: {currentUser?.sector}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 self-start sm:self-center shrink-0">
+            <button
+              type="button"
+              onClick={() => setAuthModalOpen(true)}
+              className="rounded-full border border-border bg-card px-4 py-2 text-xs font-semibold text-foreground hover:border-foreground hover:bg-secondary transition-all flex items-center gap-2 shadow-2xs group"
+            >
+              <User className="size-3.5 text-muted-foreground group-hover:text-foreground" />
+              <span>Switch Identity / Call Sign</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Telemetry Footer */}
+        <div className="mt-4 pt-3.5 border-t border-emerald-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-muted-foreground">
+          <div className="flex items-center gap-2">
+            <Lock className="size-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+            <span>
+              Shelter Isolation Active: Custom shelters created under <strong className="font-mono text-foreground">{currentUser?.id}</strong> are visible only to this account.
+            </span>
+          </div>
+          <div className="flex items-center gap-2 text-[11px] font-mono shrink-0">
+            <span className="text-emerald-700 dark:text-emerald-300 font-bold">{mySheltersCount} My Shelters</span>
+            <span>·</span>
+            <span>{templatesCount} System Templates</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Filter Tabs & Search & Sort */}
+      <div className="flex flex-col gap-4">
+        {/* Workspace Scope Tabs */}
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setFilterTab("all")}
+            className={`rounded-full px-4 py-1.5 text-xs font-semibold transition-all ${
+              filterTab === "all"
+                ? "bg-foreground text-background shadow-xs font-bold"
+                : "border border-border bg-card/80 text-muted-foreground hover:text-foreground hover:bg-secondary"
+            }`}
           >
-            <option value="name">Name</option>
-            <option value="region">Region</option>
-          </select>
-          <ChevronDown className="size-4 text-muted-foreground" />
-        </label>
+            All Accessible Shelters ({userScopedProjects.length})
+          </button>
+          <button
+            type="button"
+            onClick={() => setFilterTab("mine")}
+            className={`rounded-full px-4 py-1.5 text-xs font-semibold transition-all flex items-center gap-1.5 ${
+              filterTab === "mine"
+                ? "bg-emerald-600 text-white shadow-xs font-bold"
+                : "border border-border bg-card/80 text-muted-foreground hover:text-foreground hover:bg-secondary"
+            }`}
+          >
+            <Lock className="size-3" />
+            My Custom Shelters ({mySheltersCount})
+          </button>
+          <button
+            type="button"
+            onClick={() => setFilterTab("templates")}
+            className={`rounded-full px-4 py-1.5 text-xs font-semibold transition-all flex items-center gap-1.5 ${
+              filterTab === "templates"
+                ? "bg-foreground text-background shadow-xs font-bold"
+                : "border border-border bg-card/80 text-muted-foreground hover:text-foreground hover:bg-secondary"
+            }`}
+          >
+            <ShieldCheck className="size-3" />
+            Standard Templates ({templatesCount})
+          </button>
+        </div>
+
+        {/* Search & Sort bar */}
+        <div className="project-controls grid gap-3 md:grid-cols-[1fr_auto]">
+          <label className="flex min-h-12 items-center gap-3 rounded-2xl border border-border bg-card px-4 shadow-[0_10px_30px_rgba(0,0,0,.04)] transition-shadow focus-within:shadow-[0_14px_38px_rgba(0,0,0,.08)]">
+            <Search className="size-4 text-muted-foreground" />
+            <span className="sr-only">Search projects</span>
+            <input
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder="Search project, description, or region"
+              className="w-full bg-transparent py-3 text-sm outline-none placeholder:text-muted-foreground"
+            />
+          </label>
+          <label className="flex min-h-12 items-center gap-3 rounded-2xl border border-border bg-card px-4 text-xs shadow-[0_10px_30px_rgba(0,0,0,.04)]">
+            <span className="text-muted-foreground">Sort by</span>
+            <select
+              value={sort}
+              onChange={(event) => setSort(event.target.value as "name" | "region")}
+              className="bg-transparent font-semibold outline-none cursor-pointer"
+            >
+              <option value="name">Name</option>
+              <option value="region">Region</option>
+            </select>
+            <ChevronDown className="size-4 text-muted-foreground" />
+          </label>
+        </div>
       </div>
 
       {/* Projects Grid */}
@@ -224,6 +371,8 @@ export function ProjectsView() {
             ].filter(Boolean).length;
             const projectProgressPct = Math.round((completedStages / 9) * 100);
             const isActive = project.id === activeProjectId;
+            const isCustom = isCustomShelter(project);
+            const isMine = isCustom && isOwnedByMe(project);
 
             return (
               <article
@@ -232,10 +381,23 @@ export function ProjectsView() {
                   isActive ? "border-foreground" : "border-border"
                 }`}
               >
-                <div className="flex items-start justify-between">
-                  <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-muted-foreground">
-                    0{index + 1} · {projectRegion} {isActive ? "· Active" : ""}
-                  </span>
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-muted-foreground">
+                      0{index + 1} · {projectRegion} {isActive ? "· Active" : ""}
+                    </span>
+                    {isMine ? (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 px-2 py-0.5 text-[9px] font-bold text-emerald-700 dark:text-emerald-300">
+                        <Lock className="size-2.5" />
+                        My Custom Shelter
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-slate-500/10 border border-slate-500/20 px-2 py-0.5 text-[9px] font-bold text-slate-600 dark:text-slate-400">
+                        <ShieldCheck className="size-2.5" />
+                        Standard Template
+                      </span>
+                    )}
+                  </div>
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => duplicateProject(project)}
@@ -245,7 +407,7 @@ export function ProjectsView() {
                     >
                       <Copy className="size-3.5" />
                     </button>
-                    {projects.length > 1 && (
+                    {isCustom && (
                       <button
                         type="button"
                         onClick={(e) => {
@@ -255,7 +417,7 @@ export function ProjectsView() {
                         }}
                         className="flex size-9 items-center justify-center rounded-full border border-border text-red-500 opacity-60 transition-all hover:opacity-100 hover:bg-red-50 dark:hover:bg-red-950/30"
                         aria-label={`Delete ${projectName}`}
-                        title="Delete project"
+                        title="Delete custom shelter"
                       >
                         <Trash2 className="size-3.5" />
                       </button>

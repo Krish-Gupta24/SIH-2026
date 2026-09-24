@@ -1,40 +1,27 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
 import {
-  GitCompare,
-  Check,
   RotateCcw,
-  Sparkles,
-  Layers,
-  ArrowRight,
-  ShieldCheck,
-  CheckSquare,
-  Square,
   Copy,
+  ChevronDown,
+  Sparkles,
 } from "lucide-react";
 import { useShelterStore } from "@/lib/store/use-shelter-store";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import {
-  ActionButton,
-  DataPair,
-  EmptyState,
-  PageIntro,
-  Status,
-} from "@/components/v0/platform-components";
+import { ActionButton, EmptyState, PageIntro } from "@/components/v0/platform-components";
 import { WorkflowFooter } from "@/components/layout/WorkflowFooter";
-import { ComparisonObjectiveId } from "./types";
-import {
-  evaluateObjectiveWinner,
-  generateReproducibilityManifest,
-} from "./comparison-engine";
+import { generateReproducibilityManifest } from "./comparison-engine";
 
-// Comparison Sub-Components
-import { ObjectiveWinnerCard } from "./components/ObjectiveWinnerCard";
-import { SideBySideTable } from "./components/SideBySideTable";
-import { ComparisonCharts } from "./components/ComparisonCharts";
+// Design Decision Workspace Components
+import { ConfigurationComparisonStrip } from "./components/ConfigurationComparisonStrip";
+import { ControlledConditionsBar } from "./components/ControlledConditionsBar";
+import { WhatChangedDiff } from "./components/WhatChangedDiff";
+import { ThermalResultsSection } from "./components/ThermalResultsSection";
+import { SynchronizedEnergyCharts } from "./components/SynchronizedEnergyCharts";
+import { ThermalBehaviourInsights } from "./components/ThermalBehaviourInsights";
+import { Comparison3DViewer } from "./components/Comparison3DViewer";
+import { EngineeringComparisonMatrix } from "./components/EngineeringComparisonMatrix";
 import { ReproducibilityManifestCard } from "./components/ReproducibilityManifestCard";
 import { SaveVersionModal } from "./components/SaveVersionModal";
 
@@ -52,8 +39,6 @@ export function ComparisonView() {
     activeWeatherId,
   } = useShelterStore();
 
-  const [selectedObjectiveId, setSelectedObjectiveId] =
-    useState<ComparisonObjectiveId>("passive-resilience");
   const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
   const [selectionNotice, setSelectionNotice] = useState<string | null>(null);
 
@@ -67,22 +52,30 @@ export function ComparisonView() {
     return completedJobs.filter((s) => comparisonJobIds.includes(s.id));
   }, [completedJobs, comparisonJobIds]);
 
+  // Ensure default comparison candidates if fewer than 2 selected for immediate storytelling
+  useEffect(() => {
+    if (comparisonJobIds.length < 2 && completedJobs.length >= 2) {
+      const first = completedJobs[0];
+      const second = completedJobs[1];
+      if (first && !comparisonJobIds.includes(first.id)) {
+        toggleComparisonJobId(first.id);
+      }
+      if (second && !comparisonJobIds.includes(second.id)) {
+        toggleComparisonJobId(second.id);
+      }
+    }
+  }, [comparisonJobIds, completedJobs, toggleComparisonJobId]);
+
   const handleToggleJob = (jobId: string) => {
     const isSelected = comparisonJobIds.includes(jobId);
-    if (!isSelected && comparisonJobIds.length >= 3) {
-      setSelectionNotice("Maximum 3 cases can be compared simultaneously. Deselect a case to add another.");
+    if (!isSelected && comparisonJobIds.length >= 4) {
+      setSelectionNotice("Maximum 4 configurations can be compared simultaneously. Remove a case to add another.");
       setTimeout(() => setSelectionNotice(null), 3500);
       return;
     }
     setSelectionNotice(null);
     toggleComparisonJobId(jobId);
   };
-
-  // Compute objective winner
-  const evaluationResult = useMemo(() => {
-    if (comparedJobs.length < 2) return null;
-    return evaluateObjectiveWinner(comparedJobs, selectedObjectiveId);
-  }, [comparedJobs, selectedObjectiveId]);
 
   // Generate reproducibility manifest
   const reproducibilityManifest = useMemo(() => {
@@ -116,7 +109,7 @@ export function ComparisonView() {
       <div className="max-w-3xl mx-auto py-16">
         <EmptyState
           title="Minimum 2 simulation runs needed"
-          description="Multi-design comparison requires at least two simulation results to perform thermodynamic trade-off analysis and compute delta percentages."
+          description="Scenario comparison requires at least two simulation runs to evaluate thermal differences, physical deltas, and envelope trade-offs."
           action={
             <div className="flex items-center justify-center gap-3">
               <Link href="/designer/3d">
@@ -137,12 +130,12 @@ export function ComparisonView() {
   }
 
   return (
-    <div className="space-y-8 max-w-7xl mx-auto pb-12">
-      {/* V0 Page Intro */}
+    <div className="space-y-10 max-w-7xl mx-auto pb-16">
+      {/* 0. Professional Design Decision Workspace Intro */}
       <PageIntro
-        eyebrow="Stored completed runs"
-        title="Compare outcomes"
-        description="Select up to three cases. Values come directly from stored simulation outputs with delta analysis."
+        eyebrow="Design decision workspace"
+        title="Scenario comparison"
+        description="One coherent story: Here is the same shelter, here are the configurations we tested, here is exactly what changed, and here is how those changes affected thermal behaviour."
         action={
           <div className="flex flex-wrap items-center gap-3">
             <ActionButton
@@ -151,7 +144,7 @@ export function ComparisonView() {
               className="rounded-full text-xs font-bold"
             >
               <Copy className="size-3.5" />
-              Save New Version
+              Save As New Variant
             </ActionButton>
 
             <ActionButton
@@ -160,104 +153,70 @@ export function ComparisonView() {
               className="rounded-full text-xs font-semibold"
             >
               <RotateCcw className="size-3.5" />
-              Reset
+              Reset Selection
             </ActionButton>
           </div>
         }
       />
 
-      {/* Candidate Selection Cards Grid */}
-      <div>
-        <div className="mb-3 flex items-center justify-between text-xs">
-          <span className="micro-label">
-            Select Cases to Compare ({comparedJobs.length} of {completedJobs.length} selected · max 3)
-          </span>
-          <span className="text-[11px] text-muted-foreground">
-            First selected serves as Baseline reference
-          </span>
-        </div>
-
-        {selectionNotice && (
-          <div className="mb-3 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-2 text-xs font-medium text-amber-600 dark:text-amber-400 animate-in fade-in slide-in-from-top-1">
-            {selectionNotice}
-          </div>
-        )}
-
-        <div className="comparison-grid grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {completedJobs.map((job) => {
-            const isSelected = comparisonJobIds.includes(job.id);
-            const isBaseline = comparedJobs[0]?.id === job.id;
-
-            return (
-              <button
-                key={job.id}
-                onClick={() => handleToggleJob(job.id)}
-                className={`comparison-card flex min-h-32 flex-col justify-between rounded-2xl border p-5 text-left transition-all ${isSelected
-                    ? "border-[#6E818F] bg-[#CBDCE6] shadow-[0_15px_35px_rgba(0,0,0,.08)] text-black"
-                    : "border-border bg-card hover:-translate-y-0.5 hover:border-[#6E818F]"
-                  }`}
-              >
-                <div className="flex items-start justify-between w-full">
-                  <div>
-                    <span className="block text-sm font-semibold">{job.projectName}</span>
-                    <span className="mt-1 block text-[10px] text-muted-foreground">
-                      {job.id} · {job.weatherDatasetName}
-                    </span>
-                  </div>
-                  <span
-                    className={`flex size-5 shrink-0 items-center justify-center rounded border ${isSelected ? "border-black bg-black text-white" : "border-black/20 bg-card"
-                      }`}
-                  >
-                    {isSelected ? <Check className="size-3" /> : null}
-                  </span>
-                </div>
-
-                <div className="mt-4 flex items-center justify-between border-t border-black/10 pt-2 text-[10px]">
-                  <span>Demand: <strong>{job.results?.summary.heatingDemandKwhM2 ?? "—"} kWh/m²</strong></span>
-                  {isBaseline ? (
-                    <span className="rounded-full bg-black px-2 py-0.5 font-bold uppercase tracking-wider text-white text-[9px]">
-                      Baseline
-                    </span>
-                  ) : (
-                    <span>Comfort: <strong>{job.results?.summary.comfortHoursPct ?? "—"}%</strong></span>
-                  )}
-                </div>
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* When fewer than 2 cases are selected */}
-      {comparedJobs.length < 2 && (
-        <div className="rounded-2xl border border-dashed border-border bg-secondary/20 p-8 text-center space-y-2">
-          <p className="text-sm font-semibold text-foreground">
-            {comparedJobs.length === 0
-              ? "Select at least 2 simulation runs above to compare performance deltas"
-              : `1 case selected (${comparedJobs[0].projectName}). Select at least 1 more candidate above to compare against baseline.`}
-          </p>
-          <p className="text-xs text-muted-foreground max-w-lg mx-auto">
-            Multi-design comparison evaluates thermal trade-offs, calculates delta percentages across envelope losses, and provides objective-constrained rankings.
-          </p>
+      {selectionNotice && (
+        <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-2.5 text-xs font-medium text-amber-700 dark:text-amber-300 animate-in fade-in slide-in-from-top-1">
+          {selectionNotice}
         </div>
       )}
 
-      {/* 3. Objective-Constrained Decision Winner Card */}
-      {comparedJobs.length >= 2 && evaluationResult && (
-        <ObjectiveWinnerCard
-          evaluation={evaluationResult}
-          selectedObjectiveId={selectedObjectiveId}
-          onSelectObjective={setSelectedObjectiveId}
+      {/* 1. DESIGNS: Configuration Comparison Strip */}
+      <section aria-label="Tested Configurations">
+        <ConfigurationComparisonStrip
+          comparedJobs={comparedJobs}
+          allCompletedJobs={completedJobs}
+          onToggleJob={handleToggleJob}
         />
+      </section>
+
+      {/* 2. CONTROLLED CONDITIONS: Reassuring Controlled Experiment Bar */}
+      <section aria-label="Controlled Experimental Parameters">
+        <ControlledConditionsBar jobs={comparedJobs} />
+      </section>
+
+      {/* 3. WHAT CHANGED: Elegant Visual Diff highlighting only differing parameters */}
+      <section aria-label="Parametric Differences">
+        <WhatChangedDiff jobs={comparedJobs} />
+      </section>
+
+      {/* 4. THERMAL RESULTS: Large Diurnal Graph with Comfort Bands + Authentic KPIs */}
+      <section aria-label="Thermal Temperature Results">
+        <ThermalResultsSection jobs={comparedJobs} />
+      </section>
+
+      {/* 5. THERMAL BEHAVIOUR: Factual Physical Observations */}
+      <section aria-label="Physical Thermal Behaviour">
+        <ThermalBehaviourInsights jobs={comparedJobs} />
+      </section>
+
+      {/* 6. ENERGY & HEAT BEHAVIOUR: Synchronized Heat Loss, Solar, and Storage Balance */}
+      <section aria-label="Synchronized Physics Charts">
+        <SynchronizedEnergyCharts jobs={comparedJobs} />
+      </section>
+
+      {/* 7. 3D VISUAL EXPLANATION: Single Polished Viewer with Layer Inspection */}
+      <section aria-label="3D CAD Explanation">
+        <Comparison3DViewer jobs={comparedJobs} />
+      </section>
+
+      {/* 8. ENGINEERING COMPARISON MATRIX: Collapsible Progressive Disclosure */}
+      <section aria-label="Engineering Specifications Matrix">
+        <EngineeringComparisonMatrix jobs={comparedJobs} />
+      </section>
+
+      {/* 9. SIMULATION VERIFICATION: Reproducibility Manifest */}
+      {reproducibilityManifest && (
+        <section aria-label="Simulation Audit Manifest">
+          <ReproducibilityManifestCard manifest={reproducibilityManifest} />
+        </section>
       )}
 
-      {/* 4. Side-by-Side Parametric Metric Table with Difference Percentages */}
-      {comparedJobs.length >= 2 && <SideBySideTable jobs={comparedJobs} />}
-
-      {/* 5. Comparative Visual Charts */}
-      {comparedJobs.length >= 2 && <ComparisonCharts jobs={comparedJobs} />}
-
-      {/* Save / Clone Version Modal */}
+      {/* Save Version Modal */}
       <SaveVersionModal
         isOpen={isSaveModalOpen}
         onClose={() => setIsSaveModalOpen(false)}
@@ -266,7 +225,7 @@ export function ComparisonView() {
         onSaveVersion={handleSaveVersion}
       />
 
-      {/* Connected Linear Workflow Footer */}
+      {/* Linear Engineering Workflow Pipeline Footer */}
       <WorkflowFooter customNextLabel="Generate Certified Report" customNextHref="/reports" />
     </div>
   );

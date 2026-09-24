@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, type ButtonHTMLAttributes, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ButtonHTMLAttributes, type ReactNode } from "react";
 import Image from "next/image";
 import { Canvas } from "@react-three/fiber";
 import { Grid, OrbitControls } from "@react-three/drei";
@@ -9,6 +9,9 @@ import { ArrowRight, Compass, Rotate3D } from "lucide-react";
 import type { ShelterModel } from "@/types/shelter";
 import type { SimulationJobItem } from "@/lib/store/use-shelter-store";
 import { ShelterMesh } from "@/features/shelter-3d/components/ShelterMesh";
+import { SceneEnvironment } from "@/features/shelter-3d/components/SceneEnvironment";
+import { SunLighting } from "@/features/shelter-3d/components/SunLighting";
+import type { ViewerSettings } from "@/features/shelter-3d/types";
 
 export function BrandMark({ inverse = false }: { inverse?: boolean }) {
   return (
@@ -420,19 +423,37 @@ function DashboardCameraController({ model }: { model: ShelterModel }) {
 export function ShelterScene({
   project,
   wireframe = false,
+  showEnvironment = true,
 }: {
   project: ShelterModel;
   wireframe?: boolean;
+  showEnvironment?: boolean;
 }) {
   const [mounted, setMounted] = useState(false);
   useEffect(() => {
     setMounted(true);
   }, []);
 
+  const viewerSettings: ViewerSettings = useMemo(
+    () => ({
+      showGrid: true,
+      showDimensions: false,
+      showCompass: false,
+      showSunShadows: true,
+      showEnvironment: showEnvironment,
+      explodedView: false,
+      wireframe: wireframe,
+      transparentWalls: false,
+      revealLayers: false,
+      visualization: "model",
+    }),
+    [showEnvironment, wireframe]
+  );
+
   if (!mounted) {
     return (
-      <div className="absolute inset-0 flex items-center justify-center bg-[#f0f4f8] text-[#6e818f] text-xs font-semibold">
-        <span>Loading parametric 3D model...</span>
+      <div className="absolute inset-0 flex items-center justify-center bg-[#c9d8e4] text-[#6e818f] text-xs font-semibold">
+        <span>Loading parametric 3D model & environment...</span>
       </div>
     );
   }
@@ -441,68 +462,79 @@ export function ShelterScene({
     <div
       className="absolute inset-0"
       role="img"
-      aria-label="Interactive three-dimensional shelter model"
+      aria-label="Interactive three-dimensional shelter model with site environment"
     >
       <Canvas
-        camera={{ position: [12, 8, 12], fov: 36, near: 0.1, far: 200 }}
+        camera={{ position: [12, 8, 12], fov: 38, near: 0.1, far: 350 }}
         shadows
         className="touch-none"
       >
-        <color attach="background" args={["#f0f4f8"]} />
-        <fog attach="fog" args={["#f0f4f8", 30, 75]} />
+        <color attach="background" args={[showEnvironment ? "#c9d8e4" : "#f0f4f8"]} />
 
         <DashboardCameraController model={project} />
 
-        <ambientLight intensity={0.75} />
-        <hemisphereLight args={["#ffffff", "#cbdce6", 0.75]} />
+        {showEnvironment ? (
+          <>
+            <SunLighting
+              model={project}
+              settings={viewerSettings}
+              sunHour={12}
+              solarDate="2026-01-15"
+              suppressHtmlLabels={true}
+            />
+            <SceneEnvironment
+              model={project}
+              settings={viewerSettings}
+              sunHour={12}
+              solarDate="2026-01-15"
+            />
+          </>
+        ) : (
+          <>
+            <fog attach="fog" args={["#f0f4f8", 30, 75]} />
+            <ambientLight intensity={0.75} />
+            <hemisphereLight args={["#ffffff", "#cbdce6", 0.75]} />
+            <directionalLight
+              position={[11, 18, 10]}
+              intensity={1.85}
+              castShadow
+              shadow-mapSize-width={2048}
+              shadow-mapSize-height={2048}
+              shadow-bias={-0.0002}
+            />
 
-        <directionalLight
-          position={[11, 18, 10]}
-          intensity={1.85}
-          castShadow
-          shadow-mapSize-width={2048}
-          shadow-mapSize-height={2048}
-          shadow-bias={-0.0002}
-        />
+            {/* Ground Terrain Plane */}
+            <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.025, 0]} receiveShadow>
+              <planeGeometry args={[100, 100]} />
+              <meshStandardMaterial color="#e2ecf2" roughness={0.9} metalness={0.05} />
+            </mesh>
 
-        {/* Ground Terrain Plane */}
-        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.025, 0]} receiveShadow>
-          <planeGeometry args={[100, 100]} />
-          <meshStandardMaterial color="#e2ecf2" roughness={0.9} metalness={0.05} />
-        </mesh>
+            {/* Precision Architectural Grid */}
+            <Grid
+              position={[0, 0.005, 0]}
+              args={[60, 60]}
+              cellSize={0.5}
+              cellThickness={0.5}
+              cellColor="#cbdce6"
+              sectionSize={5}
+              sectionThickness={1.1}
+              sectionColor="#94a3b8"
+              fadeDistance={45}
+              fadeStrength={1.2}
+              infiniteGrid
+            />
+          </>
+        )}
 
-        {/* Precision Architectural Grid */}
-        <Grid
-          position={[0, 0.005, 0]}
-          args={[60, 60]}
-          cellSize={0.5}
-          cellThickness={0.5}
-          cellColor="#cbdce6"
-          sectionSize={5}
-          sectionThickness={1.1}
-          sectionColor="#94a3b8"
-          fadeDistance={45}
-          fadeStrength={1.2}
-          infiniteGrid
-        />
-
-        {/* Canonical Parametric 3D Shelter Mesh (Clean Model Preview) */}
+        {/* Canonical Parametric 3D Shelter Mesh */}
         <ShelterMesh
           model={project}
           selected={null}
           onSelect={() => { }}
-          settings={{
-            showGrid: true,
-            showDimensions: false,
-            showCompass: false,
-            showSunShadows: true,
-            showEnvironment: false,
-            explodedView: false,
-            wireframe: wireframe,
-            transparentWalls: false,
-            revealLayers: false,
-            visualization: "model",
-          }}
+          settings={viewerSettings}
+          sunHour={12}
+          solarDate="2026-01-15"
+          suppressHtmlLabels={true}
         />
       </Canvas>
     </div>
