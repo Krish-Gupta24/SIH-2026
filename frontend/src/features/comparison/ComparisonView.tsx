@@ -7,13 +7,29 @@ import {
   Copy,
   ChevronDown,
   Sparkles,
+  Sliders,
+  Layers,
+  Building2,
+  GitCompare,
+  ArrowRight,
+  ShieldCheck,
+  Check,
 } from "lucide-react";
 import { useShelterStore } from "@/lib/store/use-shelter-store";
-import { ActionButton, EmptyState, PageIntro } from "@/components/v0/platform-components";
+import { ActionButton, PageIntro, EmptyState } from "@/components/v0/platform-components";
 import { WorkflowFooter } from "@/components/layout/WorkflowFooter";
-import { generateReproducibilityManifest } from "./comparison-engine";
 
-// Design Decision Workspace Components
+// Variant Explorer Components
+import {
+  ShelterVariant,
+  generateDefaultVariants,
+  calculateVariantMetrics,
+} from "./variant-calculator";
+import { VariantDesignerStrip } from "./components/VariantDesignerStrip";
+import { VariantResultsMatrix } from "./components/VariantResultsMatrix";
+import { VariantRecommendation } from "./components/VariantRecommendation";
+
+// Multi-run Comparison Components (Secondary mode)
 import { ConfigurationComparisonStrip } from "./components/ConfigurationComparisonStrip";
 import { ControlledConditionsBar } from "./components/ControlledConditionsBar";
 import { WhatChangedDiff } from "./components/WhatChangedDiff";
@@ -24,52 +40,112 @@ import { Comparison3DViewer } from "./components/Comparison3DViewer";
 import { EngineeringComparisonMatrix } from "./components/EngineeringComparisonMatrix";
 import { ReproducibilityManifestCard } from "./components/ReproducibilityManifestCard";
 import { SaveVersionModal } from "./components/SaveVersionModal";
+import { generateReproducibilityManifest } from "./comparison-engine";
 
 export function ComparisonView() {
   const {
     projects,
     activeProjectId,
+    setActiveProject,
     simulations,
     comparisonJobIds,
     toggleComparisonJobId,
-    clearComparison,
+    materials,
     saveProjectVersion,
     addSimulationJob,
     weatherDatasets,
     activeWeatherId,
   } = useShelterStore();
 
+  const activeProject = useMemo(() => {
+    return projects.find((p) => p.id === activeProjectId) || projects[0] || null;
+  }, [projects, activeProjectId]);
+
+  // Primary mode: "variants" (Same shelter, different material/size) vs "runs" (legacy multi-sim)
+  const [activeMode, setActiveMode] = useState<"variants" | "runs">("variants");
+
+  // State for active shelter variants
+  const [variants, setVariants] = useState<ShelterVariant[]>(() =>
+    generateDefaultVariants(activeProject)
+  );
+
+  // Reset or regenerate variants when active project changes
+  useEffect(() => {
+    if (activeProject) {
+      setVariants(generateDefaultVariants(activeProject));
+    }
+  }, [activeProject?.id]);
+
+  // Calculate live metrics for each variant
+  const outdoorWinterTemp = activeProject?.location?.designTempWinter ?? -20;
+  const metrics = useMemo(() => {
+    return variants.map((v) => calculateVariantMetrics(v, materials, outdoorWinterTemp));
+  }, [variants, materials, outdoorWinterTemp]);
+
+  const handleUpdateVariant = (index: number, updated: ShelterVariant) => {
+    setVariants((prev) => {
+      const copy = [...prev];
+      copy[index] = updated;
+      return copy;
+    });
+  };
+
+  const handleAddVariant = () => {
+    if (variants.length >= 4) return;
+    const letter = String.fromCharCode(65 + variants.length);
+    const geom = activeProject?.geometry || { length: 6, width: 4, height: 2.8 };
+
+    const newVar: ShelterVariant = {
+      id: `var-${Date.now().toString(36)}`,
+      name: `Variant ${letter}: Custom Insulation`,
+      description: "Custom user-configured envelope assembly.",
+      length: geom.length || 6,
+      width: geom.width || 4,
+      height: geom.height || 2.8,
+      wallInsulationMatId: "mat-polyurethane-foam",
+      wallInsulationThicknessMm: 150,
+      wallMassMatId: "mat-rammed-earth",
+      wallMassThicknessMm: 250,
+      roofInsulationMatId: "mat-eps-insulation",
+      roofInsulationThicknessMm: 200,
+      floorInsulationMatId: "mat-xps-insulation",
+      floorInsulationThicknessMm: 100,
+      glazingMatId: "mat-double-low-e",
+      windowAreaM2: 3.2,
+      hasPcm: false,
+      pcmThicknessMm: 0,
+    };
+
+    setVariants((prev) => [...prev, newVar]);
+  };
+
+  const handleRemoveVariant = (index: number) => {
+    if (variants.length <= 2) return;
+    setVariants((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleResetDefaults = () => {
+    setVariants(generateDefaultVariants(activeProject));
+  };
+
+  // -------------------------------------------------------------
+  // Legacy Multi-Simulation Runs state & logic
+  // -------------------------------------------------------------
   const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
   const [selectionNotice, setSelectionNotice] = useState<string | null>(null);
 
-  // All completed simulation jobs with valid results
   const completedJobs = useMemo(() => {
     return simulations.filter((s) => s.status === "completed" && s.results);
   }, [simulations]);
 
-  // Active compared jobs based directly on store selection
   const comparedJobs = useMemo(() => {
     return completedJobs.filter((s) => comparisonJobIds.includes(s.id));
   }, [completedJobs, comparisonJobIds]);
 
-  // Ensure default comparison candidates if fewer than 2 selected for immediate storytelling
-  useEffect(() => {
-    if (comparisonJobIds.length < 2 && completedJobs.length >= 2) {
-      const first = completedJobs[0];
-      const second = completedJobs[1];
-      if (first && !comparisonJobIds.includes(first.id)) {
-        toggleComparisonJobId(first.id);
-      }
-      if (second && !comparisonJobIds.includes(second.id)) {
-        toggleComparisonJobId(second.id);
-      }
-    }
-  }, [comparisonJobIds, completedJobs, toggleComparisonJobId]);
-
   const handleToggleJob = (jobId: string) => {
     const isSelected = comparisonJobIds.includes(jobId);
     if (!isSelected && comparisonJobIds.length >= 4) {
-      setSelectionNotice("Maximum 4 configurations can be compared simultaneously. Remove a case to add another.");
+      setSelectionNotice("Maximum 4 configurations can be compared simultaneously.");
       setTimeout(() => setSelectionNotice(null), 3500);
       return;
     }
@@ -77,7 +153,6 @@ export function ComparisonView() {
     toggleComparisonJobId(jobId);
   };
 
-  // Generate reproducibility manifest
   const reproducibilityManifest = useMemo(() => {
     if (comparedJobs.length === 0) return null;
     return generateReproducibilityManifest(comparedJobs);
@@ -104,129 +179,189 @@ export function ComparisonView() {
     }
   };
 
-  if (completedJobs.length < 2) {
-    return (
-      <div className="max-w-3xl mx-auto py-16">
-        <EmptyState
-          title="Minimum 2 simulation runs needed"
-          description="Scenario comparison requires at least two simulation runs to evaluate thermal differences, physical deltas, and envelope trade-offs."
-          action={
-            <div className="flex items-center justify-center gap-3">
-              <Link href="/designer/3d">
-                <ActionButton tone="primary" className="rounded-full text-xs font-semibold">
-                  Create Design in 3D
-                </ActionButton>
-              </Link>
-              <Link href="/simulations">
-                <ActionButton tone="secondary" className="rounded-full text-xs font-semibold">
-                  Run Simulations
-                </ActionButton>
-              </Link>
-            </div>
-          }
-        />
-      </div>
-    );
-  }
-
   return (
-    <div className="space-y-10 max-w-7xl mx-auto pb-16">
-      {/* 0. Professional Design Decision Workspace Intro */}
-      <PageIntro
-        eyebrow="Design decision workspace"
-        title="Scenario comparison"
-        description="One coherent story: Here is the same shelter, here are the configurations we tested, here is exactly what changed, and here is how those changes affected thermal behaviour."
-        action={
-          <div className="flex flex-wrap items-center gap-3">
-            <ActionButton
-              tone="primary"
-              onClick={() => setIsSaveModalOpen(true)}
-              className="rounded-full text-xs font-bold"
-            >
-              <Copy className="size-3.5" />
-              Save As New Variant
-            </ActionButton>
-
-            <ActionButton
-              tone="quiet"
-              onClick={clearComparison}
-              className="rounded-full text-xs font-semibold"
-            >
-              <RotateCcw className="size-3.5" />
-              Reset Selection
-            </ActionButton>
+    <div className="space-y-8 max-w-7xl mx-auto pb-16">
+      {/* 0. Header & Mode Switcher */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-border pb-6">
+        <div>
+          <div className="flex items-center gap-2 mb-1.5">
+            <span className="text-xs text-muted-foreground">
+              {activeProject?.location?.region || "Leh, Ladakh (3,500m MSL)"}
+            </span>
           </div>
-        }
-      />
+          <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-foreground">
+            Shelter Design & Material Variant Explorer
+          </h1>
+          <p className="text-xs sm:text-sm text-muted-foreground mt-1 max-w-2xl leading-relaxed">
+            Test the same base shelter with different insulation materials, wall thicknesses, glazing packages, and spatial dimensions to identify the most efficient design for high-altitude thermal comfort.
+          </p>
+        </div>
 
-      {selectionNotice && (
-        <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-2.5 text-xs font-medium text-amber-700 dark:text-amber-300 animate-in fade-in slide-in-from-top-1">
-          {selectionNotice}
+        {/* Shelter Switcher & Mode Toggles */}
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+          <div className="flex items-center gap-2.5 bg-card border border-border rounded-2xl px-3.5 py-2 shadow-xs">
+            <div className="size-8 rounded-xl bg-primary/10 flex items-center justify-center text-primary shrink-0">
+              <Building2 className="w-4 h-4" />
+            </div>
+            <div className="flex flex-col min-w-0">
+              <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider leading-none">
+                Base Shelter
+              </span>
+              <select
+                value={activeProjectId}
+                onChange={(e) => setActiveProject(e.target.value)}
+                className="bg-transparent text-xs sm:text-sm font-bold text-foreground outline-none cursor-pointer pr-4 py-0.5 hover:text-primary transition truncate max-w-[200px] sm:max-w-[240px]"
+              >
+                {projects.map((proj) => (
+                  <option key={proj.id} value={proj.id} className="bg-popover text-popover-foreground">
+                    {proj.project?.name || "Unnamed Shelter"}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {/* Mode Selector Tabs */}
+          <div className="flex items-center p-1 rounded-2xl bg-secondary/80 border border-border">
+            <button
+              type="button"
+              onClick={() => setActiveMode("variants")}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition cursor-pointer ${activeMode === "variants"
+                ? "bg-card text-foreground shadow-xs font-bold"
+                : "text-muted-foreground hover:text-foreground"
+                }`}
+            >
+              <Sliders className="size-3.5 text-primary" />
+              <span>Material & Size Explorer</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveMode("runs")}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition cursor-pointer ${activeMode === "runs"
+                ? "bg-card text-foreground shadow-xs font-bold"
+                : "text-muted-foreground hover:text-foreground"
+                }`}
+            >
+              <Layers className="size-3.5 text-sky-500" />
+              <span>Simulation Runs ({completedJobs.length})</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* ------------------------------------------------------------------ */}
+      {/* MODE 1: Material & Size Variant Explorer ( Goal) */}
+      {/* ------------------------------------------------------------------ */}
+      {activeMode === "variants" && (
+        <div className="space-y-8 animate-in fade-in duration-200">
+          {/* AI Recommended Winner Banner */}
+          <VariantRecommendation
+            variants={variants}
+            metrics={metrics}
+            activeProject={activeProject}
+          />
+
+          {/* Interactive Variant Designer Strip */}
+          <VariantDesignerStrip
+            variants={variants}
+            metrics={metrics}
+            materials={materials}
+            onUpdateVariant={handleUpdateVariant}
+            onAddVariant={handleAddVariant}
+            onRemoveVariant={handleRemoveVariant}
+          />
+
+          {/* Side-by-Side Results & Physical Matrix */}
+          <VariantResultsMatrix
+            variants={variants}
+            metrics={metrics}
+          />
         </div>
       )}
 
-      {/* 1. DESIGNS: Configuration Comparison Strip */}
-      <section aria-label="Tested Configurations">
-        <ConfigurationComparisonStrip
-          comparedJobs={comparedJobs}
-          allCompletedJobs={completedJobs}
-          onToggleJob={handleToggleJob}
-        />
-      </section>
+      {/* ------------------------------------------------------------------ */}
+      {/* MODE 2: Multi-Simulation Runs Benchmarking */}
+      {/* ------------------------------------------------------------------ */}
+      {activeMode === "runs" && (
+        <div className="space-y-10 animate-in fade-in duration-200">
+          {completedJobs.length < 2 ? (
+            <div className="max-w-3xl mx-auto py-12">
+              <EmptyState
+                title="Minimum 2 completed simulation runs needed"
+                description="To benchmark historical solver runs side-by-side, complete at least two simulations for your projects. You can also explore design variants in the Material Explorer without waiting for simulations!"
+                action={
+                  <div className="flex items-center justify-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setActiveMode("variants")}
+                      className="px-4 py-2 rounded-xl text-xs font-bold bg-primary text-primary-foreground shadow-xs hover:opacity-90 transition cursor-pointer"
+                    >
+                      Open Material & Size Explorer
+                    </button>
+                    <Link href="/simulations">
+                      <ActionButton tone="secondary" className="rounded-full text-xs font-semibold">
+                        Launch Simulations
+                      </ActionButton>
+                    </Link>
+                  </div>
+                }
+              />
+            </div>
+          ) : (
+            <>
+              {/* Configuration Candidate Comparison Strip */}
+              <ConfigurationComparisonStrip
+                allCompletedJobs={completedJobs}
+                comparedJobs={comparedJobs}
+                onToggleJob={handleToggleJob}
+              />
 
-      {/* 2. CONTROLLED CONDITIONS: Reassuring Controlled Experiment Bar */}
-      <section aria-label="Controlled Experimental Parameters">
-        <ControlledConditionsBar jobs={comparedJobs} />
-      </section>
+              {/* Controlled Physics Boundary Conditions Bar */}
+              <ControlledConditionsBar jobs={comparedJobs} />
 
-      {/* 3. WHAT CHANGED: Elegant Visual Diff highlighting only differing parameters */}
-      <section aria-label="Parametric Differences">
-        <WhatChangedDiff jobs={comparedJobs} />
-      </section>
+              {/* What Changed Diff Matrix */}
+              <WhatChangedDiff jobs={comparedJobs} />
 
-      {/* 4. THERMAL RESULTS: Large Diurnal Graph with Comfort Bands + Authentic KPIs */}
-      <section aria-label="Thermal Temperature Results">
-        <ThermalResultsSection jobs={comparedJobs} />
-      </section>
+              {/* 3D Architectural Spatial Delta Viewer */}
+              <Comparison3DViewer jobs={comparedJobs} />
 
-      {/* 5. THERMAL BEHAVIOUR: Factual Physical Observations */}
-      <section aria-label="Physical Thermal Behaviour">
-        <ThermalBehaviourInsights jobs={comparedJobs} />
-      </section>
+              {/* Synchronized Diurnal Thermal & Sol-Air Response Charts */}
+              <SynchronizedEnergyCharts jobs={comparedJobs} />
 
-      {/* 6. ENERGY & HEAT BEHAVIOUR: Synchronized Heat Loss, Solar, and Storage Balance */}
-      <section aria-label="Synchronized Physics Charts">
-        <SynchronizedEnergyCharts jobs={comparedJobs} />
-      </section>
+              {/* High-Altitude Thermal Behaviour Diagnostics */}
+              <ThermalBehaviourInsights jobs={comparedJobs} />
 
-      {/* 7. 3D VISUAL EXPLANATION: Single Polished Viewer with Layer Inspection */}
-      <section aria-label="3D CAD Explanation">
-        <Comparison3DViewer jobs={comparedJobs} />
-      </section>
+              {/* Rigorous Engineering Metrics Matrix */}
+              <EngineeringComparisonMatrix jobs={comparedJobs} />
 
-      {/* 8. ENGINEERING COMPARISON MATRIX: Collapsible Progressive Disclosure */}
-      <section aria-label="Engineering Specifications Matrix">
-        <EngineeringComparisonMatrix jobs={comparedJobs} />
-      </section>
+              {/* Forensic Thermal Results Breakdown */}
+              <ThermalResultsSection jobs={comparedJobs} />
 
-      {/* 9. SIMULATION VERIFICATION: Reproducibility Manifest */}
-      {reproducibilityManifest && (
-        <section aria-label="Simulation Audit Manifest">
-          <ReproducibilityManifestCard manifest={reproducibilityManifest} />
-        </section>
+              {/* Reproducibility Manifest Card */}
+              {reproducibilityManifest && (
+                <ReproducibilityManifestCard manifest={reproducibilityManifest} />
+              )}
+            </>
+          )}
+        </div>
       )}
 
-      {/* Save Version Modal */}
+      {/* Save Project Version Modal */}
       <SaveVersionModal
         isOpen={isSaveModalOpen}
         onClose={() => setIsSaveModalOpen(false)}
-        projects={projects}
-        activeProjectId={activeProjectId || undefined}
+        projects={projects || []}
+        activeProjectId={activeProjectId}
         onSaveVersion={handleSaveVersion}
       />
 
-      {/* Linear Engineering Workflow Pipeline Footer */}
-      <WorkflowFooter customNextLabel="Generate Certified Report" customNextHref="/reports" />
+      {/* Workflow Navigation Footer */}
+      <WorkflowFooter
+        customNextHref="/reports"
+        customNextLabel="Certified Compliance Report"
+        customPrevHref="/optimization"
+        customPrevLabel="Optimization"
+      />
     </div>
   );
 }

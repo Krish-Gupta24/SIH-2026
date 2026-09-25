@@ -255,7 +255,7 @@ export function getPageConfig(
       subtitle: "Platform Mode · Habitat Engineering",
       isProjectPage: false,
       suggestedQueries: [
-        "What is ThermoShelter and DRDO PS 26051 compliance?",
+        "What is ThermoShelter and  compliance?",
         "How does passive solar heating work in Ladakh & Siachen?",
         "Compare Rammed Earth vs Aerogel vs PIR insulation",
         "How do I start a shelter thermal simulation?",
@@ -329,10 +329,10 @@ export function getPageConfig(
       subtitle: `${name} · ${elevationM}m ASL`,
       isProjectPage: true,
       suggestedQueries: [
-        `What are the dimensions and solar orientation of ${name}?`,
-        `Audit south-facing glazing area and Trombe wall placement`,
-        `Check wall and roof layer thermal resistances (R-values)`,
-        `How to optimize envelope for extreme sub-zero winds?`,
+        `Suggest suitable materials for ${name} before simulation`,
+        `Recommend ideal wall & roof insulation thicknesses`,
+        `Which glazing and thermal mass combination works best here?`,
+        `Evaluate pre-simulation envelope U-value vs DRDO target`,
       ],
     };
   }
@@ -413,7 +413,7 @@ export function getPageConfig(
       subtitle: `${name} · ${elevationM}m ASL`,
       isProjectPage: true,
       suggestedQueries: [
-        `Generate an executive summary for DRDO PS 26051 compliance`,
+        `Generate an executive summary for  compliance`,
         `Audit envelope U-values against NBC 2016 and ECBC guidelines`,
         `What key metrics should be highlighted to Military Engineer Services (MES)?`,
         `Export verification checklist for cold-climate deployment`,
@@ -441,7 +441,7 @@ export function getPageConfig(
     subtitle: "Platform Mode · Habitat Engineering",
     isProjectPage: false,
     suggestedQueries: [
-      "What is ThermoShelter and DRDO PS 26051 compliance?",
+      "What is ThermoShelter and  compliance?",
       "How does passive solar heating work in Ladakh & Siachen?",
       "Compare Rammed Earth vs Aerogel vs PIR insulation",
       "How do I start a shelter thermal simulation?",
@@ -482,6 +482,8 @@ export function ChatbotPanel() {
   const latestSim = simulations.find(
     (s) => s.projectId === activeProject?.id && s.status === "completed" && s.results
   );
+
+  const isDesignerPage = pathname.includes("designer") || pathname.includes("3d");
 
   const projectTelemetry: ProjectContextTelemetry = useMemo(() => {
     const pageContext: PageContextInfo = {
@@ -888,6 +890,27 @@ export function ChatbotPanel() {
 
           {/* Messages Scroll Area */}
           <div className="flex-1 overflow-y-auto p-3.5 space-y-3.5 bg-background">
+            {/* Pre-Simulation Material Advisor Banner (Active in 2D/3D Designer) */}
+            {isDesignerPage && (
+              <div className="p-2.5 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-between text-xs gap-2">
+                <div className="flex items-center gap-2 min-w-0">
+                  <Sparkles className="size-4 text-amber-500 shrink-0" />
+                  <div className="min-w-0">
+                    <span className="font-bold text-foreground block text-[11px] leading-tight">Pre-Simulation Material Advisor</span>
+                    <span className="text-[10px] text-muted-foreground truncate block">Suggest suitable envelope layers before running solver</span>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => sendMessage(`Suggest suitable materials for ${rawActiveProject?.project?.name || "this shelter"} before simulation`)}
+                  disabled={isLoading}
+                  className="px-2.5 py-1 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-bold text-[10px] shrink-0 transition shadow-xs cursor-pointer"
+                >
+                  Suggest
+                </button>
+              </div>
+            )}
+
             {messages.length <= 1 && (
               <div className="pt-1 pb-1 space-y-2">
                 <p className="text-[11px] font-semibold text-muted-foreground px-1">

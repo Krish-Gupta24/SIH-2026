@@ -195,10 +195,55 @@ Tone and Formatting:
 `;
 
 export const QUICK_SUGGESTIONS = [
+  "Suggest suitable materials for this shelter before simulation",
   "Analyze current shelter simulation & comfort score",
   "Recommend best insulation materials for -30°C Ladakh",
   "How does a Trombe wall provide an 8-10 hour thermal lag?",
   "Calculate U-value for 150mm EPS + 300mm rammed earth",
   "How much Bukhari kerosene fuel did this design save?",
-  "What are the DRDO PS 26051 thermal comfort targets?",
+  "What are the thermal comfort targets?",
 ];
+
+export interface ClimateMaterialRecommendation {
+  zone: string;
+  winterMinC: number;
+  wallInsulation: { material: string; thicknessMm: number; uValue: number };
+  thermalMass: { material: string; thicknessMm: number; lagHours: number };
+  roofInsulation: { material: string; thicknessMm: number; uValue: number };
+  glazing: { type: string; uValue: number; shgc: number };
+  optimalOrientation: string;
+  recommendedShape: string;
+}
+
+export const MATERIAL_RECOMMENDATIONS_BY_CLIMATE: Record<string, ClimateMaterialRecommendation> = {
+  ladakh: {
+    zone: "Cold Arid / Alpine Desert (Leh 3,500m)",
+    winterMinC: -20,
+    wallInsulation: { material: "Expanded Polystyrene (EPS) / PIR", thicknessMm: 200, uValue: 0.17 },
+    thermalMass: { material: "Stabilized Rammed Earth (Local Ladakh)", thicknessMm: 300, lagHours: 9.5 },
+    roofInsulation: { material: "200mm EPS + 50mm XPS High Load Cap", thicknessMm: 250, uValue: 0.13 },
+    glazing: { type: "Triple Glazed Low-E Krypton", uValue: 0.78, shgc: 0.58 },
+    optimalOrientation: "True South (0° Azimuth)",
+    recommendedShape: "Elongated Rectangle (1.5:1 ratio, South facade maximizing solar collection)",
+  },
+  siachen: {
+    zone: "Extreme Glacier Sub-Zero (Siachen / Dras 4,500m+)",
+    winterMinC: -40,
+    wallInsulation: { material: "Closed-Cell Spray PUF + Structural Aerogel Blanket", thicknessMm: 150, uValue: 0.12 },
+    thermalMass: { material: "PCM Salt Hydrate Panels (21°C) + Concrete Core", thicknessMm: 25, lagHours: 11.0 },
+    roofInsulation: { material: "Vacuum Insulation Panels (VIP) + 150mm PUF", thicknessMm: 175, uValue: 0.08 },
+    glazing: { type: "Quadruple Glazed Ultra-Alpine Krypton", uValue: 0.45, shgc: 0.45 },
+    optimalOrientation: "True South (0° Azimuth) with Aerodynamic Windward Nose",
+    recommendedShape: "Aerodynamic Semi-Cylindrical or Octagonal (minimal wind chill)",
+  },
+  kargil: {
+    zone: "Cold Alpine Mountain Valley (Kargil 2,700m)",
+    winterMinC: -25,
+    wallInsulation: { material: "High-Density Rockwool + EPS", thicknessMm: 150, uValue: 0.19 },
+    thermalMass: { material: "Local Granite Stone / Compressed Mud Brick", thicknessMm: 250, lagHours: 8.5 },
+    roofInsulation: { material: "200mm Mineral Wool + Radiant Foil", thicknessMm: 200, uValue: 0.16 },
+    glazing: { type: "Triple Glazed Low-E Argon", uValue: 0.85, shgc: 0.60 },
+    optimalOrientation: "South-Southeast (10° East of South)",
+    recommendedShape: "Compact Rectangle (1.3:1 ratio)",
+  },
+};

@@ -63,7 +63,7 @@ describe("thermal-ai-engine page context awareness", () => {
     const reply = generateThermalAIResponse("analyze simulation comfort score", context);
     expect(reply).toContain("High-Altitude Thermal Performance Benchmarks");
     expect(reply).toContain("Materials Library");
-    expect(reply).toContain("DRDO PS 26051 Mandatory Compliance Benchmarks");
+    expect(reply).toContain(" Mandatory Compliance Benchmarks");
     expect(reply).not.toContain("Active High-Altitude Shelter");
   });
 
@@ -84,7 +84,7 @@ describe("thermal-ai-engine page context awareness", () => {
     expect(reply).toContain("Live Thermal Performance Analysis");
     expect(reply).toContain("Kargil Ridge Outpost");
     expect(reply).toContain("88%");
-    expect(reply).toContain("EXCEEDS DRDO PS 26051 TARGET");
+    expect(reply).toContain("EXCEEDS  TARGET");
   });
 
   it("displays workspace context rather than a false project in the default fallback when hasActiveProject is false", () => {

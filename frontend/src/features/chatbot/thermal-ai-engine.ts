@@ -8,6 +8,7 @@ import {
   MATERIAL_DATABASE,
   THERMAL_ENGINEERING_FORMULAS,
   MaterialSpec,
+  MATERIAL_RECOMMENDATIONS_BY_CLIMATE,
 } from "./chatbot-knowledge";
 
 export interface PageContextInfo {
@@ -132,6 +133,62 @@ Can I help you with high-altitude building physics, material conductivity, or pa
 *💡 All metrics are synchronized in real-time with your active project in the workspace.*`;
   }
 
+  // 1.5. Pre-Simulation Material & Envelope Recommendations for 2D/3D Designer
+  if (
+    query.includes("suggest") ||
+    query.includes("recommend") ||
+    query.includes("suitable material") ||
+    query.includes("before running") ||
+    query.includes("before simulation") ||
+    query.includes("pre-simulation") ||
+    query.includes("what materials") ||
+    query.includes("which material") ||
+    query.includes("material advice") ||
+    query.includes("material recommendation") ||
+    (query.includes("material") && (query.includes("use") || query.includes("best") || query.includes("designer") || query.includes("3d")))
+  ) {
+    const projName = context?.projectName || "Active Habitat Model";
+    const loc = context?.locationName || "Leh, Ladakh (3,500m ASL)";
+    const winterMin = context?.winterMinC ?? -20;
+    const dim = context?.dimensions;
+
+    return `### 🧱 Pre-Simulation Material & Envelope Optimization Advisory
+**Target Habitat:** **${projName}**  
+**Deployment Region:** **${loc}** (Design Winter Temp: **${winterMin}°C**)  
+**Guidance Mode:** *Pre-Simulation Thermal Sizing &  Compliance*
+
+---
+
+#### 1. Recommended Material Stack for This Climate Zone
+To achieve **≥92% autonomous annual comfort** and eliminate Bukhari fuel convoys at ${winterMin}°C, configure these assemblies in the **2D / 3D Designer**:
+
+| Component | Recommended Material | Thickness | Target U-Value | Engineering Role |
+| :--- | :--- | :--- | :--- | :--- |
+| **External Walls** | Continuous EPS or Rigid PIR Board | 150 – 200 mm | **0.17 W/m²·K** | Primary thermal barrier eliminating sub-zero envelope conduction |
+| **Internal Mass** | Stabilized Rammed Earth or CSEB Adobe | 250 – 300 mm | *Thermal Lag: ~9.5h* | High volumetric heat storage (1.9 MJ/m³·K); releases solar heat at 22:00–04:00 |
+| **Roof Assembly** | Standing Seam Metal + EPS + 50mm XPS Cap | 250 mm total | **0.13 W/m²·K** | Stops upward convective buoyancy heat escape; resists snow drifts |
+| **Sub-Grade Floor** | XPS High-Load (compressive >300 kPa) + Concrete | 150 mm XPS | **0.18 W/m²·K** | Prevents permafrost/moraine thermal leaching into living floor |
+| **South Glazing** | Triple Glazed Low-E Krypton / Argon | 36 – 44 mm | **0.78 W/m²·K** | Maximize daylight passive solar collection (SHGC ≥ 0.55) |
+| **Thermal Buffer** | Microencapsulated PCM (21°C Comfort Band) | 15 – 20 mm | *Latent: 180 kJ/kg* | Prevents midday solar overheating, locks interior around 21°C |
+
+---
+
+#### 2. Geometry & Aspect Ratio Guidelines
+* **Floor Plan Ratio:** For high-altitude solar harvesting, orient the long axis **East-West** (Ratio \`1.4:1\` to \`1.6:1\`).
+* **Active Dimensions:** Currently \`${dim?.length ?? 6}m × ${dim?.width ?? 4}m × ${dim?.height ?? 2.8}m\` (\`${dim?.floorAreaM2 ?? 24} m²\`), which is an optimal thermal-to-surface volume ratio.
+* **Window-to-Wall Ratio (WWR):** Keep **South facade WWR between 20% – 25%** with a **0.45m solar overhang** to block high summer sun while harvesting low winter solar angles.
+
+---
+
+#### 3. Expected Performance Before Running Simulation
+* **Projected Wall U-Value:** \`~0.17 W/m²·K\` *( target: ≤ 0.20 W/m²·K)* ✅
+* **Projected Roof U-Value:** \`~0.13 W/m²·K\` *( target: ≤ 0.15 W/m²·K)* ✅
+* **Estimated Annual Comfort:** **94% – 96%** autonomous comfort hours
+* **Anticipated Bukhari Fuel Cut:** **~75% reduction** (saving ~1,650 Liters kerosene / winter)
+
+*👉 You can set these materials directly in the **[2D Designer](/designer)** or **[3D View](/designer/3d)**, then click **[Simulate](/simulations)** to verify exact diurnal hourly curves!*`;
+  }
+
   // 2. Analyze Active Simulation Results / Diagnosis
   if (
     query.includes("analyze") ||
@@ -146,7 +203,7 @@ Can I help you with high-altitude building physics, material conductivity, or pa
       return `### 📊 High-Altitude Thermal Performance Benchmarks
 You are currently viewing **${pageTitle}** without an active project open in the simulation runner.
 
-#### DRDO PS 26051 Mandatory Compliance Benchmarks:
+####  Mandatory Compliance Benchmarks:
 * **Thermal Comfort Target:** ≥80% of annual hours within the 18°C–24°C operative comfort band without active fossil fuel heating.
 * **Peak Winter Extreme:** Under -20°C to -40°C blizzard conditions, indoor temperatures must not drop below +10°C even under zero active heating.
 * **Envelope U-Values:** Walls ≤ 0.20 W/m²K, Roof ≤ 0.15 W/m²K, Sub-grade Floor ≤ 0.22 W/m²K.
@@ -167,7 +224,7 @@ To run a 24-hour diurnal heat balance calculation on a specific habitat, please 
 
     const statusBadge =
       comfort >= 80
-        ? "✅ **EXCEEDS DRDO PS 26051 TARGET (≥80% Comfort)**"
+        ? "✅ **EXCEEDS  TARGET (≥80% Comfort)**"
         : "⚠️ **MARGINAL DEFICIT (<80% Target)**";
 
     return `### 📊 Live Thermal Performance Analysis
@@ -346,7 +403,7 @@ In the Western Himalayas (Leh, Siachen, Kargil, Dras), space heating via traditi
 2. **Silent Signature:** No generator hum or exhaust thermal plume detectable by thermal imaging reconnaissance.`;
   }
 
-  // 6. DRDO PS 26051 Requirements & Standards
+  // 6.  Requirements & Standards
   if (
     query.includes("drdo") ||
     query.includes("ps 26051") ||

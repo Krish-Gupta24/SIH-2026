@@ -25,6 +25,7 @@ import {
   RotateCcw,
   Check,
   Fuel,
+  BarChart3,
 } from "lucide-react";
 import {
   ResponsiveContainer,
@@ -40,6 +41,7 @@ import {
   PieChart,
   Pie,
   Cell,
+  ComposedChart,
 } from "recharts";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -86,6 +88,10 @@ export function FuelCostsView() {
 
   // Active view tab: "overview" | "timeline" | "compare" | "calculator" | "settings"
   const [activeTab, setActiveTab] = useState<"overview" | "timeline" | "compare" | "calculator" | "settings">("overview");
+
+  // Monthly savings graph interactive state
+  const [savingsGraphMetric, setSavingsGraphMetric] = useState<"fuel" | "cost">("fuel");
+  const [savingsGraphScope, setSavingsGraphScope] = useState<"single" | "outpost">("single");
 
   // Interactive Outpost Calculator state
   const [campShelterCount, setCampShelterCount] = useState<number>(5);
@@ -244,6 +250,61 @@ export function FuelCostsView() {
       ]
     : [];
 
+  // High-altitude annual monthly profile with seasonal heating loads
+  const monthlySavingsData = useMemo(() => {
+    const MONTHS = [
+      { name: "Jan", label: "January", mult: 1.35, temp: "-14°C" },
+      { name: "Feb", label: "February", mult: 1.28, temp: "-11°C" },
+      { name: "Mar", label: "March", mult: 1.10, temp: "-4°C" },
+      { name: "Apr", label: "April", mult: 0.85, temp: "+3°C" },
+      { name: "May", label: "May", mult: 0.70, temp: "+8°C" },
+      { name: "Jun", label: "June", mult: 0.55, temp: "+14°C" },
+      { name: "Jul", label: "July", mult: 0.50, temp: "+17°C" },
+      { name: "Aug", label: "August", mult: 0.52, temp: "+16°C" },
+      { name: "Sep", label: "September", mult: 0.70, temp: "+11°C" },
+      { name: "Oct", label: "October", mult: 0.90, temp: "+5°C" },
+      { name: "Nov", label: "November", mult: 1.15, temp: "-2°C" },
+      { name: "Dec", label: "December", mult: 1.30, temp: "-10°C" },
+    ];
+
+    const count = savingsGraphScope === "outpost" ? campShelterCount : 1;
+
+    return MONTHS.map((m) => {
+      const bFuel = Math.round(baselineLitresMo * m.mult * count);
+      const pFuel = Math.round(proposedLitresMo * m.mult * count);
+      const sFuel = Math.max(0, bFuel - pFuel);
+
+      const bCost = Math.round(baselineCostMo * m.mult * count);
+      const pCost = Math.round(proposedCostMo * m.mult * count);
+      const sCost = Math.max(0, bCost - pCost);
+
+      return {
+        month: m.name,
+        monthFull: m.label,
+        temp: m.temp,
+        baselineFuel: bFuel,
+        proposedFuel: pFuel,
+        savedFuel: sFuel,
+        baselineCost: bCost,
+        proposedCost: pCost,
+        savedCost: sCost,
+        pctSaved: bFuel > 0 ? Math.round((sFuel / bFuel) * 100) : 0,
+      };
+    });
+  }, [baselineLitresMo, proposedLitresMo, baselineCostMo, proposedCostMo, savingsGraphScope, campShelterCount]);
+
+  const totalAnnualFuelSaved = useMemo(() => {
+    return monthlySavingsData.reduce((acc, cur) => acc + cur.savedFuel, 0);
+  }, [monthlySavingsData]);
+
+  const totalAnnualCostSaved = useMemo(() => {
+    return monthlySavingsData.reduce((acc, cur) => acc + cur.savedCost, 0);
+  }, [monthlySavingsData]);
+
+  const maxFuelSavedMonth = useMemo(() => {
+    return [...monthlySavingsData].sort((a, b) => b.savedFuel - a.savedFuel)[0];
+  }, [monthlySavingsData]);
+
   return (
     <div className="space-y-8 max-w-7xl mx-auto px-4 py-8">
       {/* 1. Header & Project Switcher */}
@@ -375,6 +436,243 @@ export function FuelCostsView() {
               {tp ? tp.comfortPercentage : 96}% of the winter
             </span>
           </div>
+        </div>
+      </div>
+
+      {/* 2.5. Total Monthly Fuel & Operational Cost Savings Graph */}
+      <div className="p-6 rounded-3xl bg-card border border-border/80 shadow-xs space-y-6">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-primary/10 text-primary border border-primary/20">
+                <BarChart3 className="w-3 h-3" /> Annual Trajectory (12 Months)
+              </span>
+              <span className="text-xs text-muted-foreground font-medium">
+                {savingsGraphScope === "outpost" ? `Full Outpost (${campShelterCount} Shelters)` : "Active Shelter"}
+              </span>
+            </div>
+            <h2 className="text-lg sm:text-xl font-bold text-foreground tracking-tight">
+              {savingsGraphMetric === "fuel" ? "Monthly Kerosene Consumption & Litres Saved" : "Monthly Operational & Mountain Logistics Cost Savings"}
+            </h2>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              {savingsGraphMetric === "fuel"
+                ? "Simulated month-by-month kerosene demand comparing uninsulated CGI bukhari baseline vs passive solar ThermoShelter."
+                : "Monetary savings across kerosene purchase and high-altitude transport convoys across all four seasons."}
+            </p>
+          </div>
+
+          {/* Interactive Metric & Scope Toggles */}
+          <div className="flex flex-wrap items-center gap-2">
+            {/* Metric Toggle */}
+            <div className="flex items-center p-1 rounded-xl bg-secondary/80 border border-border">
+              <button
+                type="button"
+                onClick={() => setSavingsGraphMetric("fuel")}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
+                  savingsGraphMetric === "fuel"
+                    ? "bg-card text-foreground shadow-xs"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <Fuel className="w-3.5 h-3.5 text-emerald-500" />
+                <span>Fuel (L)</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setSavingsGraphMetric("cost")}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
+                  savingsGraphMetric === "cost"
+                    ? "bg-card text-foreground shadow-xs"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <IndianRupee className="w-3.5 h-3.5 text-amber-500" />
+                <span>Cost (₹)</span>
+              </button>
+            </div>
+
+            {/* Scope Toggle: Single Shelter vs All Outpost Shelters */}
+            <div className="flex items-center p-1 rounded-xl bg-secondary/80 border border-border">
+              <button
+                type="button"
+                onClick={() => setSavingsGraphScope("single")}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
+                  savingsGraphScope === "single"
+                    ? "bg-card text-foreground shadow-xs"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <Building2 className="w-3.5 h-3.5" />
+                <span>1 Shelter</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setSavingsGraphScope("outpost")}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
+                  savingsGraphScope === "outpost"
+                    ? "bg-card text-foreground shadow-xs"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <Truck className="w-3.5 h-3.5 text-sky-500" />
+                <span>All {campShelterCount} Shelters</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* 3 Summary Chips for the Month Graph */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div className="px-4 py-3 rounded-2xl bg-secondary/40 border border-border/70 flex items-center justify-between">
+            <div>
+              <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">
+                Total Annual Savings
+              </span>
+              <span className="text-lg font-black text-emerald-600 dark:text-emerald-400 font-mono">
+                {savingsGraphMetric === "fuel"
+                  ? `${totalAnnualFuelSaved.toLocaleString()} L / yr`
+                  : `₹${(totalAnnualCostSaved / 100000).toFixed(2)} Lakhs / yr`}
+              </span>
+            </div>
+            <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+              <TrendingDown className="w-4 h-4" />
+            </div>
+          </div>
+
+          <div className="px-4 py-3 rounded-2xl bg-secondary/40 border border-border/70 flex items-center justify-between">
+            <div>
+              <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">
+                Peak Savings Month
+              </span>
+              <span className="text-base sm:text-lg font-black text-foreground font-mono">
+                {maxFuelSavedMonth?.monthFull} ({maxFuelSavedMonth?.temp})
+              </span>
+            </div>
+            <div className="text-right">
+              <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 font-mono block">
+                {savingsGraphMetric === "fuel"
+                  ? `+${maxFuelSavedMonth?.savedFuel.toLocaleString()} L`
+                  : `+₹${maxFuelSavedMonth?.savedCost.toLocaleString()}`}
+              </span>
+              <span className="text-[10px] text-muted-foreground">in coldest sub-zero</span>
+            </div>
+          </div>
+
+          <div className="px-4 py-3 rounded-2xl bg-secondary/40 border border-border/70 flex items-center justify-between">
+            <div>
+              <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">
+                Avg. Displacement
+              </span>
+              <span className="text-lg font-black text-sky-600 dark:text-sky-400 font-mono">
+                {pctFuelSaved}% Displacement
+              </span>
+            </div>
+            <div className="p-2 rounded-xl bg-sky-500/10 text-sky-600 dark:text-sky-400">
+              <ShieldCheck className="w-4 h-4" />
+            </div>
+          </div>
+        </div>
+
+        {/* The Recharts Composed Chart */}
+        <div className="h-[320px] w-full pt-2">
+          <ResponsiveContainer width="100%" height="100%">
+            <ComposedChart data={monthlySavingsData} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" opacity={0.12} vertical={false} />
+              <XAxis dataKey="month" tick={{ fontSize: 11 }} tickLine={false} axisLine={{ opacity: 0.2 }} />
+              <YAxis
+                tick={{ fontSize: 11 }}
+                tickLine={false}
+                axisLine={{ opacity: 0.2 }}
+                tickFormatter={(val) => {
+                  if (savingsGraphMetric === "cost") {
+                    return val >= 100000 ? `₹${(val / 100000).toFixed(1)}L` : `₹${Math.round(val / 1000)}k`;
+                  }
+                  return `${val}L`;
+                }}
+              />
+              <Tooltip
+                content={({ active, payload }) => {
+                  if (active && payload && payload.length) {
+                    const data = payload[0].payload;
+                    return (
+                      <div className="rounded-2xl border border-border bg-popover/95 p-3.5 shadow-xl backdrop-blur-md text-xs space-y-2 min-w-[210px]">
+                        <div className="flex items-center justify-between border-b border-border pb-1.5 font-bold">
+                          <span className="text-foreground">{data.monthFull}</span>
+                          <span className="font-mono text-muted-foreground">{data.temp}</span>
+                        </div>
+                        <div className="space-y-1">
+                          <div className="flex items-center justify-between text-muted-foreground">
+                            <span className="flex items-center gap-1.5">
+                              <span className="size-2 rounded-full bg-rose-500" />
+                              Baseline CGI Tin:
+                            </span>
+                            <span className="font-mono font-semibold text-rose-500">
+                              {savingsGraphMetric === "fuel"
+                                ? `${data.baselineFuel.toLocaleString()} L`
+                                : `₹${data.baselineCost.toLocaleString()}`}
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-between text-muted-foreground">
+                            <span className="flex items-center gap-1.5">
+                              <span className="size-2 rounded-full bg-emerald-500" />
+                              ThermoShelter:
+                            </span>
+                            <span className="font-mono font-semibold text-emerald-600 dark:text-emerald-400">
+                              {savingsGraphMetric === "fuel"
+                                ? `${data.proposedFuel.toLocaleString()} L`
+                                : `₹${data.proposedCost.toLocaleString()}`}
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-between border-t border-border/60 pt-1 font-bold text-foreground">
+                            <span className="flex items-center gap-1.5 text-amber-500">
+                              <span className="size-2 rounded-full bg-amber-500" />
+                              Net Saved:
+                            </span>
+                            <span className="font-mono text-amber-600 dark:text-amber-400">
+                              {savingsGraphMetric === "fuel"
+                                ? `${data.savedFuel.toLocaleString()} L (${data.pctSaved}%)`
+                                : `₹${data.savedCost.toLocaleString()} (${data.pctSaved}%)`}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  }
+                  return null;
+                }}
+              />
+              <Legend
+                verticalAlign="top"
+                align="right"
+                iconType="circle"
+                wrapperStyle={{ paddingBottom: 12, fontSize: 11 }}
+              />
+              <Bar
+                dataKey={savingsGraphMetric === "fuel" ? "baselineFuel" : "baselineCost"}
+                name="Baseline CGI Tin Bukhari"
+                fill="#f43f5e"
+                opacity={0.65}
+                radius={[4, 4, 0, 0]}
+                maxBarSize={28}
+              />
+              <Bar
+                dataKey={savingsGraphMetric === "fuel" ? "proposedFuel" : "proposedCost"}
+                name="ThermoShelter Passive"
+                fill="#10b981"
+                radius={[4, 4, 0, 0]}
+                maxBarSize={28}
+              />
+              <Line
+                type="monotone"
+                dataKey={savingsGraphMetric === "fuel" ? "savedFuel" : "savedCost"}
+                name="Monthly Savings (Net)"
+                stroke="#f59e0b"
+                strokeWidth={2.5}
+                dot={{ r: 3.5, fill: "#f59e0b", strokeWidth: 1 }}
+                activeDot={{ r: 6 }}
+              />
+            </ComposedChart>
+          </ResponsiveContainer>
         </div>
       </div>
 

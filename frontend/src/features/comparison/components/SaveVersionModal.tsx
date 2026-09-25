@@ -22,11 +22,13 @@ interface SaveVersionModalProps {
 export function SaveVersionModal({
   isOpen,
   onClose,
-  projects,
+  projects = [],
   activeProjectId,
   onSaveVersion,
 }: SaveVersionModalProps) {
-  const [selectedSourceId, setSelectedSourceId] = useState(activeProjectId || projects[0]?.id || "");
+  const [selectedSourceId, setSelectedSourceId] = useState(
+    activeProjectId || projects?.[0]?.id || ""
+  );
   const [versionName, setVersionName] = useState("");
   const [description, setDescription] = useState("");
 
@@ -35,7 +37,7 @@ export function SaveVersionModal({
     if (!versionName.trim()) return;
 
     onSaveVersion(
-      selectedSourceId || projects[0]?.id,
+      selectedSourceId || projects?.[0]?.id || "",
       versionName.trim(),
       description.trim()
     );
@@ -77,9 +79,9 @@ export function SaveVersionModal({
               onChange={(e) => setSelectedSourceId(e.target.value)}
               className="w-full rounded-xl border border-border bg-muted/30 px-3.5 py-2 text-xs font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 transition"
             >
-              {projects.map((p) => (
+              {(projects || []).map((p) => (
                 <option key={p.id} value={p.id}>
-                  {p.project.name} (v{p.project.version})
+                  {p.project?.name || p.name || p.id} (v{p.project?.version || "1.0"})
                 </option>
               ))}
             </select>

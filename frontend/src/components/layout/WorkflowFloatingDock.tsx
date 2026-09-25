@@ -23,6 +23,7 @@ import {
   ArrowRight,
   ShieldCheck,
   Zap,
+  Lock,
 } from "lucide-react";
 import { WORKFLOW_PIPELINE, getWorkflowStepIndex, WorkflowStep } from "./workflow-pipeline";
 import { motion, AnimatePresence } from "framer-motion";
@@ -100,6 +101,12 @@ export function WorkflowFloatingDock({
       s.projectId === activeProject?.id &&
       (s.status === "running" || s.status === "queued" || s.status === "preparing")
   );
+
+  const completedRuns = simulations.filter(
+    (s) => s.projectId === activeProject?.id && s.status === "completed"
+  );
+  const hasNoSimulation = completedRuns.length === 0;
+  const SIMULATION_GATED_STEPS = ["results", "optimize", "compare", "report"];
 
   // Defaults to expanded: true so pipeline stages are prominently visible
   const [expanded, setExpanded] = useState<boolean>(true);
@@ -320,6 +327,7 @@ export function WorkflowFloatingDock({
                   const isActive = stepIndex === currentStepIndex;
                   const isDone = completedStepIds.includes(step.id);
                   const isSimStepRunning = step.id === "simulate" && isSimulating;
+                  const isLocked = hasNoSimulation && SIMULATION_GATED_STEPS.includes(step.id);
 
                   return (
                     <div key={step.id} className="relative group">
@@ -334,6 +342,8 @@ export function WorkflowFloatingDock({
                               ? "text-background font-bold shadow-xs"
                               : isDone
                               ? "text-foreground hover:bg-secondary/70 font-medium"
+                              : isLocked
+                              ? "text-muted-foreground/75 hover:bg-secondary/40 hover:text-foreground font-normal"
                               : "text-muted-foreground hover:bg-secondary/50 hover:text-foreground font-normal"
                           }`}
                         >
@@ -351,13 +361,20 @@ export function WorkflowFloatingDock({
                             {isSimStepRunning ? (
                               <RotateCw className="size-4 animate-spin text-sky-400" />
                             ) : (
-                              <Icon className={`size-4 ${isActive ? "text-background" : "text-foreground/80"}`} />
+                              <Icon className={`size-4 ${isActive ? "text-background" : isLocked ? "text-muted-foreground/70" : "text-foreground/80"}`} />
                             )}
 
                             {/* Completed Mini Indicator Dot when collapsed */}
                             {isDone && !isActive && !expanded && (
                               <span className="absolute -bottom-1 -right-1 flex size-2.5 items-center justify-center rounded-full bg-emerald-500 ring-2 ring-card">
                                 <span className="block size-1 rounded-full bg-white" />
+                              </span>
+                            )}
+
+                            {/* Locked Mini Indicator Dot when collapsed */}
+                            {isLocked && !isDone && !isActive && !expanded && (
+                              <span className="absolute -bottom-1 -right-1 flex size-2.5 items-center justify-center rounded-full bg-amber-500/25 ring-2 ring-card" title="Locked - requires simulation">
+                                <Lock className="size-1.5 text-amber-500" />
                               </span>
                             )}
                           </div>
@@ -377,6 +394,14 @@ export function WorkflowFloatingDock({
                                 ) : isDone ? (
                                   <span className="flex size-4 items-center justify-center rounded-full bg-emerald-500/15 text-[10px] font-bold text-emerald-600 dark:text-emerald-400">
                                     ✓
+                                  </span>
+                                ) : isLocked ? (
+                                  <span
+                                    className="flex items-center gap-1 text-[9px] font-mono font-medium text-amber-500/90 bg-amber-500/10 px-1.5 py-0.5 rounded-md border border-amber-500/20"
+                                    title="Locked: Run physics simulation to populate live metrics"
+                                  >
+                                    <Lock className="size-2.5" />
+                                    <span>Lock</span>
                                   </span>
                                 ) : (
                                   <span
@@ -402,10 +427,18 @@ export function WorkflowFloatingDock({
                             <span className="font-bold text-foreground">
                               {step.stepNumber}. {step.label}
                             </span>
-                            {isDone && <CheckCircle2 className="size-3.5 text-emerald-500" />}
+                            {isDone ? (
+                              <CheckCircle2 className="size-3.5 text-emerald-500" />
+                            ) : isLocked ? (
+                              <span className="flex items-center gap-0.5 text-[9px] font-mono font-semibold text-amber-500 bg-amber-500/10 px-1 py-0.2 rounded border border-amber-500/20">
+                                <Lock className="size-2" /> Locked
+                              </span>
+                            ) : null}
                           </div>
                           <span className="text-[10px] text-muted-foreground mt-0.5 max-w-[200px] whitespace-normal">
-                            {step.description}
+                            {isLocked
+                              ? "Run a simulation for this project first to unlock full data."
+                              : step.description}
                           </span>
                         </div>
                       )}
